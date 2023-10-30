@@ -16,11 +16,8 @@ processor = LayoutLMv3Processor.from_pretrained("microsoft/layoutlmv3-base", app
 
 CHUNK_KEYS = ["input_ids", "attention_mask", "bbox", "offset_mapping"]
 NO_CHUNK_KEYS = ["pixel_values"]
-MODEL_MAX_LEN = 512
-CHUNK_OVERLAP = 128
 
-
-def load_model():
+def load_layout_model():
     model = LayoutLMv3ForTokenClassification.from_pretrained("Kwan0/layoutlmv3-base-finetune-DocLayNet-100k").to(settings.TORCH_DEVICE)
     model.config.id2label = {
         0: "Caption",
@@ -40,19 +37,16 @@ def load_model():
     return model
 
 
-layoutlm_model = load_model()
-
-
-def detect_all_block_types(doc, blocks: List[Page]):
+def detect_all_block_types(doc, blocks: List[Page], layoutlm_model):
     block_types = []
     for pnum, page in enumerate(doc):
         page_blocks = blocks[pnum]
-        predictions = detect_page_block_types(page, page_blocks)
+        predictions = detect_page_block_types(page, page_blocks, layoutlm_model)
         block_types.append(predictions)
     return block_types
 
 
-def detect_page_block_types(page, page_blocks: Page):
+def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
     page_box = page.bound()
     pwidth = page_box[2] - page_box[0]
     pheight = page_box[3] - page_box[1]
@@ -66,7 +60,7 @@ def detect_page_block_types(page, page_blocks: Page):
     boxes = [s.bbox for s in lines]
     text = [s.prelim_text for s in lines]
 
-    predictions = make_predictions(rgb_image, text, boxes, pwidth, pheight)
+    predictions = make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model)
     return predictions
 
 
@@ -85,10 +79,10 @@ def get_provisional_boxes(pred, box, is_subword, start_idx=0):
     return prov_predictions, prov_boxes
 
 
-def make_predictions(rgb_image, text, boxes, pwidth, pheight) -> List[BlockType]:
+def make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model) -> List[BlockType]:
     # Normalize boxes for model (scale to 1000x1000)
     boxes = [normalize_box(box, pwidth, pheight) for box in boxes]
-    encoding = processor(rgb_image, text=text, boxes=boxes, return_offsets_mapping=True, return_tensors="pt", truncation=True, stride=CHUNK_OVERLAP, padding="max_length", max_length=MODEL_MAX_LEN, return_overflowing_tokens=True)
+    encoding = processor(rgb_image, text=text, boxes=boxes, return_offsets_mapping=True, return_tensors="pt", truncation=True, stride=settings.LAYOUT_CHUNK_OVERLAP, padding="max_length", max_length=settings.LAYOUT_MODEL_MAX, return_overflowing_tokens=True)
     offset_mapping = encoding.pop('offset_mapping')
     overflow_to_sample_mapping = encoding.pop('overflow_to_sample_mapping')
 
@@ -108,7 +102,7 @@ def make_predictions(rgb_image, text, boxes, pwidth, pheight) -> List[BlockType]
     predictions = logits.argmax(-1).squeeze().tolist()
     token_boxes = encoding.bbox.squeeze().tolist()
 
-    if len(token_boxes) == MODEL_MAX_LEN:
+    if len(token_boxes) == settings.LAYOUT_MODEL_MAX:
         predictions = [predictions]
         token_boxes = [token_boxes]
 
@@ -118,7 +112,7 @@ def make_predictions(rgb_image, text, boxes, pwidth, pheight) -> List[BlockType]
         is_subword = np.array(mapped.squeeze().tolist())[:, 0] != 0
         overlap_adjust = 0
         if i > 0:
-            overlap_adjust = 1 + CHUNK_OVERLAP - sum(is_subword[:1 + CHUNK_OVERLAP])
+            overlap_adjust = 1 + settings.LAYOUT_CHUNK_OVERLAP - sum(is_subword[:1 + settings.LAYOUT_CHUNK_OVERLAP])
 
         prov_predictions, prov_boxes = get_provisional_boxes(pred, box, is_subword, overlap_adjust)
 
@@ -135,5 +129,23 @@ def make_predictions(rgb_image, text, boxes, pwidth, pheight) -> List[BlockType]
             if len(predicted_block_types) == 0 or unnorm_box != predicted_block_types[-1].bbox:
                 predicted_block_types.append(block_type)
 
-    return predicted_block_types
+    # Align bboxes
+    # This will search both lists to find matching bboxes
+    # This will align both sets of bboxes by index
+    # If there are duplicate bboxes, it may result in issues
+    aligned_blocks = []
+    for i in range(len(boxes)):
+        unnorm_box = unnormalize_box(boxes[i], pwidth, pheight)
+        appended = False
+        for j in range(len(predicted_block_types)):
+            if unnorm_box == predicted_block_types[j].bbox:
+                aligned_blocks.append(predicted_block_types[j])
+                appended = True
+                break
+        if not appended:
+            aligned_blocks.append(BlockType(
+                block_type="Text",
+                bbox=unnorm_box
+            ))
+    return aligned_blocks
 

@@ -69,7 +69,7 @@ def block_surround(text, block_type):
         case "List-item":
             pass
         case "Code":
-            text = "```\n" + text + "\n```\n"
+            text = "\n" + text + "\n"
         case _:
             pass
     return text

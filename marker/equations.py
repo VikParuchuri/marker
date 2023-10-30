@@ -13,7 +13,7 @@ from marker.schema import Page, Span, Line, Block, BlockType
 from nougat.utils.device import move_to_device
 
 
-def load_model():
+def load_nougat_model():
     ckpt = get_checkpoint(None, model_tag="0.1.0-small")
     nougat_model = NougatModel.from_pretrained(ckpt)
     if settings.TORCH_DEVICE != "cpu":
@@ -21,12 +21,6 @@ def load_model():
         move_to_device(nougat_model, bf16=is_cuda, cuda=is_cuda)
     nougat_model.eval()
     return nougat_model
-
-
-nougat_model = load_model()
-MODEL_MAX = nougat_model.config.max_length
-
-NOUGAT_HALLUCINATION_WORDS = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote", "\par\par\par", "## Chapter", "Fig."]
 
 
 def contains_equation(text):
@@ -66,18 +60,18 @@ def mask_bbox(png_image, bbox, selected_bboxes):
     return result
 
 
-def get_nougat_text(page, old_text, bbox, selected_bboxes, save_id, max_length=MODEL_MAX):
+def get_nougat_text(page, bbox, selected_bboxes, nougat_model, max_length=settings.NOUGAT_MODEL_MAX):
     pix = page.get_pixmap(dpi=settings.DPI, clip=bbox)
     png = pix.pil_tobytes(format="PNG")
     png_image = Image.open(io.BytesIO(png))
     png_image = mask_bbox(png_image, bbox, selected_bboxes)
 
-    nougat_model.config.max_length = min(max_length, MODEL_MAX)
+    nougat_model.config.max_length = min(max_length, settings.NOUGAT_MODEL_MAX)
     output = nougat_model.inference(image=png_image)
     return output["predictions"][0]
 
 
-def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]]):
+def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model):
     span_id = 0
     new_blocks = []
     for pnum, page in enumerate(blocks):
@@ -126,10 +120,10 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
                 # This prevents hallucinations from running on for a long time
                 max_tokens = len(block_text) + 50
                 max_char_length = 2 * len(block_text) + 100
-                nougat_text = get_nougat_text(doc[pnum], block_text, bbox, selected_bboxes, f"{pnum}_{i}", max_length=max_tokens)
+                nougat_text = get_nougat_text(doc[pnum], bbox, selected_bboxes, nougat_model, max_length=max_tokens)
                 conditions = [
                     len(nougat_text) > 0,
-                    not any([word in nougat_text for word in NOUGAT_HALLUCINATION_WORDS]),
+                    not any([word in nougat_text for word in settings.NOUGAT_HALLUCINATION_WORDS]),
                     len(nougat_text) < max_char_length, # Reduce hallucinations
                     len(nougat_text) >= len(block_text) * .8
                 ]

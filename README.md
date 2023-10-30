@@ -2,7 +2,7 @@
 
 This project converts PDF to Markdown, balancing speed with quality:
 
-- Equations will be detected and converted to Latex.  This is not 100% accurate.
+- Equations will be detected and converted to Latex when possible.
 - All headers/footers/other artifacts will be removed.
 
 
@@ -11,3 +11,8 @@ This project converts PDF to Markdown, balancing speed with quality:
 
 - `poetry install`
 - Set `TESSDATA_PREFIX`
+
+
+## Usage
+
+Can work with CPU, MPS, or GPU

@@ -1,8 +1,10 @@
+import argparse
+
 import fitz as pymupdf
 from marker.extract_text import get_text_blocks
 from marker.headers import categorize_blocks, filter_header_footer
-from marker.equations import replace_equations
-from marker.segmentation import detect_all_block_types
+from marker.equations import replace_equations, load_nougat_model
+from marker.segmentation import detect_all_block_types, load_layout_model
 from marker.code import identify_code_blocks, indent_blocks
 from marker.markdown import merge_spans, merge_lines, get_full_text
 from marker.schema import Page, BlockType
@@ -17,11 +19,17 @@ def annotate_spans(blocks: List[Page], block_types: List[BlockType]):
 
 
 if __name__ == "__main__":
-    fname = "test_data/thinkpython.pdf"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename", help="PDF file to parse")
+    parser.add_argument("output", help="Output file name")
+    args = parser.parse_args()
+
+    fname = args.filename
     doc = pymupdf.open(fname)
     blocks, toc = get_text_blocks(doc)
 
-    block_types = detect_all_block_types(doc, blocks)
+    layoutlm_model = load_layout_model()
+    block_types = detect_all_block_types(doc, blocks, layoutlm_model)
 
     filtered = deepcopy(blocks)
     annotate_spans(filtered, block_types)
@@ -38,12 +46,13 @@ if __name__ == "__main__":
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types(block_types[page.pnum])
 
-    filtered = replace_equations(doc, filtered, block_types)
+    nougat_model = load_nougat_model()
+    filtered = replace_equations(doc, filtered, block_types, nougat_model)
 
     # Copy to avoid changing original data
     merged_lines = merge_spans(filtered)
     text_blocks = merge_lines(merged_lines, filtered)
     full_text = get_full_text(text_blocks)
 
-    with open("test_data/thinkpython.md", "w+") as f:
+    with open(args.output, "w+") as f:
         f.write(full_text)

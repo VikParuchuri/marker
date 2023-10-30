@@ -4,7 +4,7 @@ from typing import List
 import fitz as pymupdf
 
 
-def is_code_linelen(lines, thresh=50):
+def is_code_linelen(lines, thresh=70):
     # Decide based on chars per newline threshold
     total_alnum_chars = sum(len(re.findall(r'\w', line.prelim_text)) for line in lines)
     total_newlines = len(lines) - 1
@@ -16,7 +16,20 @@ def is_code_linelen(lines, thresh=50):
     return ratio < thresh
 
 
+def comment_count(lines):
+    pattern = re.compile(r"^(//|#|'|--|/\*|'''|\"\"\"|--\[\[|<!--|%|%{|\(\*)")
+    return sum([1 for line in lines if pattern.match(line)])
+
+
 def identify_code_blocks(blocks: List[Page]):
+    font_info = None
+    for p in blocks:
+        stats = p.get_font_stats()
+        if font_info is None:
+            font_info = stats
+        else:
+            font_info += stats
+    most_common_font = font_info.most_common(1)[0][0]
     for page in blocks:
         try:
             common_height = page.get_line_height_stats().most_common(1)[0][0]
@@ -31,19 +44,30 @@ def identify_code_blocks(blocks: List[Page]):
                 continue
 
             is_code = []
+            line_fonts = []
             for line in block.lines:
                 fonts = [span.font for span in line.spans]
-                monospace_font = any([font for font in fonts if "mono" in font.lower() or "prop" in font.lower()])
+                line_fonts += fonts
                 line_height = line.bbox[3] - line.bbox[1]
                 line_start = line.bbox[0]
-                if line_height <= common_height and line_start > common_start and monospace_font:
+                if line_start > common_start:
                     is_code.append(True)
                 else:
                     is_code.append(False)
+            comment_lines = comment_count([line.prelim_text for line in block.lines])
             is_code = [
-                sum(is_code) > len(block.lines) / 1.5,
-                len(block.lines) > 4,
-                is_code_linelen(block.lines)
+                len(block.lines) > 2,
+                sum([f != most_common_font for f in line_fonts]) > len(line_fonts) // 1.5,  # At least 1/3 of the fonts are not the most common, since code usually uses a different font from the main body text
+                (
+                    sum(is_code) > len(block.lines) * .2
+                    or
+                    comment_lines > len(block.lines) * .1
+                 ), # 20% of lines are indented or comments
+                (
+                    is_code_linelen(block.lines)
+                    or
+                    comment_lines > len(block.lines) * .1
+                ), # 60 chars per newline or less for code, or 20% of lines are comments
             ]
 
             if all(is_code):
@@ -54,7 +78,8 @@ def indent_blocks(blocks: List[Page]):
     span_counter = 0
     for page in blocks:
         for block in page.blocks:
-            if block.most_common_block_type() != "Code":
+            block_types = [span.block_type for line in block.lines for span in line.spans]
+            if "Code" not in block_types:
                 continue
 
             lines = []
