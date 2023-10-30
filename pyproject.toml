@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "marker"
+version = "0.1.0"
+description = ""
+authors = ["Vik Paruchuri <vik.paruchuri@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.13"
+scikit-learn = "^1.3.2"
+Pillow = "^10.1.0"
+pytesseract = "^0.3.10"
+PyMuPDF = "^1.23.5"
+pymupdf-fonts = "^1.0.5"
+pydantic = "^2.4.2"
+pydantic-settings = "^2.0.3"
+nougat-ocr = "^0.1.17"
+transformers = "^4.34.1"
+torch = "^2.1.0"
+numpy = "^1.26.1"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
