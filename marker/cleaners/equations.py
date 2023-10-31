@@ -78,6 +78,7 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
         i = 0
         new_page_blocks = []
         equation_boxes = [b.bbox for b in block_types[pnum] if b.block_type == "Formula"]
+        reformatted_blocks = []
         while i < len(page.blocks):
             block = page.blocks[i]
             block_text = block.prelim_text
@@ -88,19 +89,21 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
                 i += 1
                 continue
 
-            selected_blocks = [i]
+            selected_blocks = [(i, page.blocks[i])]
             if i > 0:
-                j = 1
-                prev_block = page.blocks[i - j]
+                j = len(new_page_blocks) - 1
+                prev_block = new_page_blocks[j]
                 prev_bbox = prev_block.bbox
-                while (should_merge_blocks(prev_bbox, bbox) or prev_block.contains_equation(equation_boxes)) and i - j >= 0:
+                while (should_merge_blocks(prev_bbox, bbox) or prev_block.contains_equation(equation_boxes)) \
+                        and j >= 0 \
+                        and j not in reformatted_blocks:
                     bbox = merge_boxes(prev_bbox, bbox)
-                    prev_block = page.blocks[i - j]
+                    prev_block = new_page_blocks[j]
                     prev_bbox = prev_block.bbox
                     block_text = prev_block.prelim_text + " " + block_text
                     new_page_blocks = new_page_blocks[:-1]  # Remove the previous block, since we're merging it in
-                    j += 1
-                    selected_blocks.append(i - j)
+                    selected_blocks.append((j, prev_block))
+                    j -= 1
 
             if i < len(page.blocks) - 1:
                 next_block = page.blocks[i + 1]
@@ -109,14 +112,14 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
                     bbox = merge_boxes(bbox, next_bbox)
                     block_text += " " + next_block.prelim_text
                     i += 1
-                    selected_blocks.append(i)
+                    selected_blocks.append((i, next_block))
                     if i + 1 < len(page.blocks):
                         next_block = page.blocks[i + 1]
                         next_bbox = next_block.bbox
 
             used_nougat = False
             if len(block_text) < 2000:
-                selected_bboxes = [page.blocks[i].bbox for i in selected_blocks]
+                selected_bboxes = [bl.bbox for i, bl in selected_blocks]
                 # This prevents hallucinations from running on for a long time
                 max_tokens = len(block_text) + 50
                 max_char_length = 2 * len(block_text) + 100
@@ -148,10 +151,13 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
                     ))
                     used_nougat = True
                     span_id += 1
+                    reformatted_blocks.append(len(new_page_blocks) - 1)
 
             if not used_nougat:
-                for block_idx in selected_blocks:
-                    new_page_blocks.append(page.blocks[block_idx])
+                # Sort so previous blocks are in order
+                selected_blocks = sorted(selected_blocks, key=lambda x: x[0])
+                for block_idx, block in selected_blocks:
+                    new_page_blocks.append(block)
 
             i += 1
         # Assign back to page

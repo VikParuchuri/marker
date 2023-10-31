@@ -27,15 +27,25 @@ def merge_spans(blocks):
                 for i, span in enumerate(line.spans):
                     font = span.font.lower()
                     next_font = None
-                    if len(line.spans) > i + 1:
-                        next_font = line.spans[i + 1].font.lower()
+                    next_idx = 1
+                    while len(line.spans) > i + next_idx:
+                        next_span = line.spans[i + next_idx]
+                        next_font = next_span.font.lower()
+                        next_idx += 1
+                        if len(next_span.text.strip()) > 2:
+                            break
+
                     fonts.append(font)
                     block_types.append(span.block_type)
                     span_text = span.text
-                    if "ital" in font and (not next_font or "ital" not in next_font):
-                        span_text = surround_text(span_text, "*")
-                    elif "bold" in font and (not next_font or "bold" not in next_font):
-                        span_text = surround_text(span_text, "**")
+
+                    # Don't bold or italicize very short sequences
+                    # Avoid bolding first and last sequence so lines can be joined properly
+                    if len(span_text) > 3 and 0 < i < len(line.spans) - 1:
+                        if "ital" in font and (not next_font or "ital" not in next_font):
+                            span_text = surround_text(span_text, "*")
+                        elif "bold" in font and (not next_font or "bold" not in next_font):
+                            span_text = surround_text(span_text, "**")
                     line_text += span_text
                 block_lines.append(MergedLine(
                     text=line_text,

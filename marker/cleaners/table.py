@@ -41,7 +41,7 @@ def merge_table_blocks(blocks: List[Page]):
                 pnum=last_block.pnum,
                 bbox=current_bbox
             )
-            blocks[-1].blocks.append(new_block)
+            new_page_blocks.append(new_block)
             current_lines = []
             current_bbox = []
 

@@ -19,6 +19,8 @@ NO_CHUNK_KEYS = ["pixel_values"]
 
 def load_layout_model():
     model = LayoutLMv3ForTokenClassification.from_pretrained("Kwan0/layoutlmv3-base-finetune-DocLayNet-100k").to(settings.TORCH_DEVICE)
+    if "cuda" in settings.TORCH_DEVICE:
+        model = model.to(torch.float16)
 
     model.config.id2label = {
         0: "Caption",
@@ -93,6 +95,9 @@ def make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model) ->
         x.append(encoding['pixel_values'][i])
     x = torch.stack(x)
     encoding['pixel_values'] = x
+
+    if "cuda" in settings.TORCH_DEVICE:
+        encoding["pixel_values"] = encoding["pixel_values"].to(torch.float16)
 
     with torch.no_grad():
         encoding = encoding.to(settings.TORCH_DEVICE)

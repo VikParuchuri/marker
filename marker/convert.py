@@ -1,8 +1,10 @@
 import fitz as pymupdf
+
+from marker.cleaners.table import merge_table_blocks, create_new_tables
 from marker.extract_text import get_text_blocks
 from marker.cleaners.headers import categorize_blocks, filter_header_footer
-from marker.cleaners.equations import replace_equations, load_nougat_model
-from marker.segmentation import detect_all_block_types, load_layout_model
+from marker.cleaners.equations import replace_equations
+from marker.segmentation import detect_all_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.markdown import merge_spans, merge_lines, get_full_text
 from marker.schema import Page, BlockType
@@ -28,8 +30,14 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model):
 
     filtered = deepcopy(blocks)
     annotate_spans(filtered, block_types)
+
+    # Fix code blocks
     identify_code_blocks(filtered)
     indent_blocks(filtered)
+
+    # Fix table blocks
+    merge_table_blocks(filtered)
+    create_new_tables(filtered)
 
     for page in filtered:
         for block in page.blocks:

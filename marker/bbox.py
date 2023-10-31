@@ -1,7 +1,7 @@
-def should_merge_blocks(box1, box2, tol=10):
+def should_merge_blocks(box1, box2, tol=5):
     # Within tol y px, and to the right within tol px
     merge = [
-        box2[0] > box1[0],
+        box2[0] > box1[0], # After in the x coordinate
         abs(box2[1] - box1[1]) < tol, # Within tol y px
         abs(box2[3] - box1[3]) < tol, # Within tol y px
         abs(box2[0] - box1[2]) < tol, # Within tol x px

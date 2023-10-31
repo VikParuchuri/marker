@@ -2,6 +2,7 @@ import argparse
 import os
 import ray
 from tqdm import tqdm
+import math
 
 from marker.convert import convert_single_pdf
 from marker.segmentation import load_layout_model
@@ -40,7 +41,8 @@ if __name__ == "__main__":
     os.makedirs(out_folder, exist_ok=True)
 
     # Handle chunks if we're processing in parallel
-    chunk_size = len(files) // args.num_chunks
+    # Ensure we get all files into a chunk
+    chunk_size = math.ceil(len(files) / args.num_chunks)
     start_idx = args.chunk_idx * chunk_size
     end_idx = start_idx + chunk_size
     files_to_convert = files[start_idx:end_idx]
