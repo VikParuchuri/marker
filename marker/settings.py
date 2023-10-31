@@ -6,17 +6,29 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Path settings
-    DPI: int = 400
-    INVALID_CHARS: List[str] = [chr(0xfffd), "~", chr(65533), "↵"]
+    # General
     TORCH_DEVICE: str = "cpu"
+
+    # OCR
+    INVALID_CHARS: List[str] = [chr(0xfffd), "~", chr(65533), "↵"]
+    DPI: int = 400
     TESSDATA_PREFIX: str = ""
-    BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
+
+    # Nougat Model
     NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
                                   "\par\par\par", "## Chapter", "Fig."]
+
+    # Layout Model
+    BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
     LAYOUT_MODEL_MAX: int = 512
     LAYOUT_CHUNK_OVERLAP: int = 128
+
+    # Ray
+    RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
+    RAY_DASHBOARD_HOST: str = "127.0.0.1"
+    RAY_CORES_PER_WORKER: int = 1 # How many cpu cores to allocate per worker
+
 
     class Config:
         env_file = find_dotenv("local.env")

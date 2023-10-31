@@ -19,6 +19,7 @@ NO_CHUNK_KEYS = ["pixel_values"]
 
 def load_layout_model():
     model = LayoutLMv3ForTokenClassification.from_pretrained("Kwan0/layoutlmv3-base-finetune-DocLayNet-100k").to(settings.TORCH_DEVICE)
+
     model.config.id2label = {
         0: "Caption",
         1: "Footnote",
@@ -33,7 +34,7 @@ def load_layout_model():
         10: "Title"
     }
 
-    model.config.label2id = d = {v: k for k, v in model.config.id2label.items()}
+    model.config.label2id = {v: k for k, v in model.config.id2label.items()}
     return model
 
 

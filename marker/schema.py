@@ -26,6 +26,22 @@ class BboxElement(BaseModel):
             raise ValueError('bbox must have 4 elements')
         return v
 
+    @property
+    def height(self):
+        return self.bbox[3] - self.bbox[1]
+
+    @property
+    def width(self):
+        return self.bbox[2] - self.bbox[0]
+
+    @property
+    def x_start(self):
+        return self.bbox[0]
+
+    @property
+    def y_start(self):
+        return self.bbox[1]
+
 
 class BlockType(BboxElement):
     block_type: str
@@ -151,6 +167,11 @@ class Page(BaseModel):
         start_counts = Counter(starts)
         return start_counts
 
+    def get_min_line_start(self):
+        starts = [l.bbox[0] for l in self.get_nonblank_lines() if l.spans[0].block_type == "Text"]
+        if len(starts) == 0:
+            raise IndexError("No lines found")
+        return min(starts)
 
 class MergedLine(BboxElement):
     text: str

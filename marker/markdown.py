@@ -55,8 +55,6 @@ def merge_spans(blocks):
 
 
 def block_surround(text, block_type):
-    dot_pattern = re.compile(r'(\s*\.\s*){4,}')
-    dot_multiline_pattern = re.compile(r'.*(\s*\.\s*){4,}.*', re.DOTALL)
     match block_type:
         case "Section-header":
             if not text.startswith("#"):
@@ -64,8 +62,8 @@ def block_surround(text, block_type):
         case "Title":
             if not text.startswith("#"):
                 text = "# " + text.strip() + "\n"
-        case "Table" if dot_multiline_pattern.match(text):
-            text = dot_pattern.sub(' ', text)
+        case "Table":
+            text = "\n" + text + "\n"
         case "List-item":
             pass
         case "Code":
@@ -89,7 +87,7 @@ def line_separator(line1, line2, block_type, is_continuation=False):
 
     if block_type in ["Title", "Section-header"]:
         return line1.rstrip() + " " + line2.lstrip()
-    elif lowercase_pattern1.match(line1) and lowercase_pattern2.match(line2):
+    elif lowercase_pattern1.match(line1) and lowercase_pattern2.match(line2) and block_type == "Text":
         return line1.rstrip() + " " + line2.lstrip()
     elif is_continuation:
         return line1.rstrip() + " " + line2.lstrip()

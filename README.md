@@ -10,7 +10,9 @@ This project converts PDF to Markdown, balancing speed with quality:
 ## Install
 
 - `poetry install`
+- Install apt requirements
 - Set `TESSDATA_PREFIX`
+  - Find tessdata folder
 
 
 ## Usage
