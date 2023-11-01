@@ -43,7 +43,7 @@ def merge_table_blocks(blocks: List[Page]):
             )
             new_page_blocks.append(new_block)
             current_lines = []
-            current_bbox = []
+            current_bbox = None
 
         page.blocks = new_page_blocks
 

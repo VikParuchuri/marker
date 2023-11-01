@@ -2,12 +2,14 @@ import os
 from typing import Optional, List
 
 from dotenv import find_dotenv
+from pydantic import computed_field
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
+    NUM_GPUS: int = 1 # How many gpus are available.  1 GPU means ~40GB of VRAM.  Set to fractions if you have less.
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "~", chr(65533), "↵"]
@@ -29,6 +31,10 @@ class Settings(BaseSettings):
     RAY_DASHBOARD_HOST: str = "127.0.0.1"
     RAY_CORES_PER_WORKER: int = 1 # How many cpu cores to allocate per worker
 
+    @computed_field
+    @property
+    def CUDA(self) -> bool:
+        return "cuda" in self.TORCH_DEVICE
 
     class Config:
         env_file = find_dotenv("local.env")

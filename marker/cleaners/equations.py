@@ -17,8 +17,7 @@ def load_nougat_model():
     ckpt = get_checkpoint(None, model_tag="0.1.0-small")
     nougat_model = NougatModel.from_pretrained(ckpt)
     if settings.TORCH_DEVICE != "cpu":
-        is_cuda = "cuda" in settings.TORCH_DEVICE
-        move_to_device(nougat_model, bf16=is_cuda, cuda=is_cuda)
+        move_to_device(nougat_model, bf16=settings.CUDA, cuda=settings.CUDA)
     nougat_model.eval()
     return nougat_model
 

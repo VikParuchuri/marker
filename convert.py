@@ -8,9 +8,10 @@ from marker.convert import convert_single_pdf
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 from marker.settings import settings
+import traceback
 
 
-@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER)
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
 def process_single_pdf(fname, out_folder, nougat_model, layout_model):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
@@ -22,6 +23,7 @@ def process_single_pdf(fname, out_folder, nougat_model, layout_model):
             f.write(full_text)
     except Exception as e:
         print(f"Error converting {fname}: {e}")
+        print(traceback.format_exc())
 
 
 if __name__ == "__main__":
@@ -35,9 +37,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    in_folder = args.in_folder
-    out_folder = args.out_folder
-    files = [os.path.join(in_folder, f) for f in os.listdir(in_folder) if f.endswith(".pdf")]
+    in_folder = os.path.abspath(args.in_folder)
+    out_folder = os.path.abspath(args.out_folder)
+    files = [os.path.join(in_folder, f) for f in os.listdir(in_folder)]
     os.makedirs(out_folder, exist_ok=True)
 
     # Handle chunks if we're processing in parallel
@@ -51,10 +53,11 @@ if __name__ == "__main__":
     if args.max:
         files_to_convert = files_to_convert[:args.max]
 
-    total_processes = min(len(files), args.workers)
+    total_processes = min(len(files_to_convert), args.workers)
 
     ray.init(
         num_cpus=total_processes,
+        num_gpus=settings.NUM_GPUS if settings.CUDA else 0,
         storage=settings.RAY_CACHE_PATH,
         _temp_dir=settings.RAY_CACHE_PATH,
         dashboard_host=settings.RAY_DASHBOARD_HOST
@@ -66,7 +69,7 @@ if __name__ == "__main__":
     nougat_ref = ray.put(nougat_model)
     layoutlm_ref = ray.put(layoutlm_model)
 
-    print(f"Converting {len(files_to_convert)} pdfs with {total_processes} processes, and storing in {out_folder}")
+    print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
     futures = [process_single_pdf.remote(filename, out_folder, nougat_ref, layoutlm_ref) for filename in files_to_convert]
 
     # Run all ray conversion tasks
@@ -76,7 +79,10 @@ if __name__ == "__main__":
             futures, timeout=7.0
         )
         finished_lst = ray.get(finished)
-        progress_bar.update(len(finished_lst))
+        if isinstance(finished_lst, list):
+            progress_bar.update(len(finished_lst))
+        else:
+            progress_bar.update(1)
 
     # Shutdown ray to free resources
     ray.shutdown()
