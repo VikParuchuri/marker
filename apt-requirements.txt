@@ -1,2 +1,3 @@
 tesseract-ocr
 libtesseract-dev
+libmagic1

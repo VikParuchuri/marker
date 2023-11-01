@@ -19,6 +19,7 @@ def find_span_type(span, page_blocks):
 class BboxElement(BaseModel):
     bbox: List[float]
 
+
     @field_validator('bbox')
     @classmethod
     def check_4_elements(cls, v: List[float]) -> List[float]:
@@ -41,6 +42,10 @@ class BboxElement(BaseModel):
     @property
     def y_start(self):
         return self.bbox[1]
+
+    @property
+    def area(self):
+        return self.width * self.height
 
 
 class BlockType(BboxElement):

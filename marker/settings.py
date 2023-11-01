@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from dotenv import find_dotenv
 from pydantic import computed_field
@@ -10,6 +10,14 @@ class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
     NUM_GPUS: int = 1 # How many gpus are available.  1 GPU means ~40GB of VRAM.  Set to fractions if you have less.
+    SUPPORTED_FILETYPES: Dict = {
+        "application/pdf": "pdf",
+        "application/epub+zip": "epub",
+        "application/x-mobipocket-ebook": "mobi",
+        "application/vnd.ms-xpsdocument": "xps",
+        "application/x-fictionbook+xml": "fb2"
+    }
+
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "~", chr(65533), "↵"]

@@ -19,8 +19,11 @@ def process_single_pdf(fname, out_folder, nougat_model, layout_model):
         return
     try:
         full_text = convert_single_pdf(fname, layout_model, nougat_model)
-        with open(out_filename, "w+") as f:
-            f.write(full_text)
+        if len(full_text.strip()) > 0:
+            with open(out_filename, "w+") as f:
+                f.write(full_text)
+        else:
+            print(f"Empty file: {fname}.  Could not convert.")
     except Exception as e:
         print(f"Error converting {fname}: {e}")
         print(traceback.format_exc())

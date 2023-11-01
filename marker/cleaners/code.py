@@ -29,7 +29,12 @@ def identify_code_blocks(blocks: List[Page]):
             font_info = stats
         else:
             font_info += stats
-    most_common_font = font_info.most_common(1)[0][0]
+    try:
+        most_common_font = font_info.most_common(1)[0][0]
+    except IndexError:
+        print(f"Could not find most common font")
+        most_common_font = None
+
     last_block = None
     for page in blocks:
         try:

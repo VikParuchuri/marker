@@ -17,6 +17,10 @@ def get_tessocr(page, old_text, bbox):
         # If the OCR fails, just return the original text
         return old_text
 
+    if not new_text.strip():
+        # If the OCR data is blank, return old text
+        return old_text
+
     # Tesseract ignores leading spaces, hence some corrections
     lblanks = len(old_text) - len(old_text.lstrip())
 
@@ -77,13 +81,17 @@ def get_single_page_blocks(page, pnum):
                 spans=spans,
                 bbox=l["bbox"]
             )
-            block_lines.append(line_obj)
+            # Only select valid lines, with positive bboxes
+            if line_obj.area > 0:
+                block_lines.append(line_obj)
         block_obj = Block(
             lines=block_lines,
             bbox=block["bbox"],
             pnum=pnum
         )
-        page_blocks.append(block_obj)
+        # Only select blocks with multiple lines
+        if len(block_lines) > 0:
+            page_blocks.append(block_obj)
     return page_blocks
 
 

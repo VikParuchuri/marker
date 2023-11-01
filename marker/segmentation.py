@@ -45,7 +45,10 @@ def detect_all_block_types(doc, blocks: List[Page], layoutlm_model):
     for page_blocks in blocks:
         pnum = page_blocks.pnum
         page = doc[pnum]
-        predictions = detect_page_block_types(page, page_blocks, layoutlm_model)
+        predictions = []
+        # Don't make predictions for blank lines
+        if len(page_blocks.get_all_lines()) > 0:
+            predictions = detect_page_block_types(page, page_blocks, layoutlm_model)
         block_types.append(predictions)
     return block_types
 
@@ -61,8 +64,12 @@ def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
     rgb_image = png_image.convert('RGB')
 
     lines = page_blocks.get_all_lines()
-    boxes = [s.bbox for s in lines]
-    text = [s.prelim_text for s in lines]
+
+    boxes = []
+    text = []
+    for line in lines:
+        boxes.append(line.bbox)
+        text.append(line.prelim_text)
 
     predictions = make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model)
     return predictions
