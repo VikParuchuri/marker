@@ -75,7 +75,7 @@ def create_new_tables(blocks: List[Page]):
                     row.append(text)
             if len(row) > 0:
                 table_rows.append(row)
-            new_text = tabulate(table_rows, headers="firstrow", tablefmt="pipe")
+            new_text = tabulate(table_rows, headers="firstrow", tablefmt="simple")
             new_span = Span(
                 bbox=block.bbox,
                 span_id=f"{table_idx}_fix_table",

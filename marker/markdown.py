@@ -68,10 +68,10 @@ def block_surround(text, block_type):
     match block_type:
         case "Section-header":
             if not text.startswith("#"):
-                text = "\n## " + text.strip() + "\n"
+                text = "\n## " + text.strip().title() + "\n"
         case "Title":
             if not text.startswith("#"):
-                text = "# " + text.strip() + "\n"
+                text = "# " + text.strip().title() + "\n"
         case "Table":
             text = "\n" + text + "\n"
         case "List-item":
@@ -84,15 +84,18 @@ def block_surround(text, block_type):
 
 
 def line_separator(line1, line2, block_type, is_continuation=False):
+    # Should cover latin-derived languages and russian
+    lowercase_letters = "a-zà-öø-ÿа-яşćăâđêôơưþðæøå"
+    uppercase_letters = "A-ZÀ-ÖØ-ßА-ЯŞĆĂÂĐÊÔƠƯÞÐÆØÅ"
     # Remove hyphen in current line if next line and current line appear to be joined
-    hyphen_pattern = re.compile(r'.*[a-z][-]\s?$', re.DOTALL)
-    if line1 and hyphen_pattern.match(line1) and re.match(r"^[a-z]", line2):
+    hyphen_pattern = re.compile(rf'.*[{lowercase_letters}][-]\s?$', re.DOTALL)
+    if line1 and hyphen_pattern.match(line1) and re.match(rf"^[{lowercase_letters}]", line2):
         # Split on — or - from the right
         line1 = re.split(r"[-—]\s?$", line1)[0]
         return line1.rstrip() + line2.lstrip()
 
-    lowercase_pattern1 = re.compile(r'.*[a-z,]\s?$', re.DOTALL)
-    lowercase_pattern2 = re.compile(r'^\s?[A-Za-z]', re.DOTALL)
+    lowercase_pattern1 = re.compile(rf'.*[{lowercase_letters},]\s?$', re.DOTALL)
+    lowercase_pattern2 = re.compile(rf'^\s?[{uppercase_letters}{lowercase_letters}]', re.DOTALL)
     end_pattern = re.compile(r'.*[.?!]\s?$', re.DOTALL)
 
     if block_type in ["Title", "Section-header"]:
@@ -138,6 +141,7 @@ def merge_lines(blocks, page_blocks: List[Page]):
 
             prev_type = block_type
             common_line_height = common_line_heights[block.pnum].most_common(1)[0][0]
+            # Join lines in the block together properly
             for i, line in enumerate(block.lines):
                 line_height = line.bbox[3] - line.bbox[1]
                 prev_line_height = prev_line.bbox[3] - prev_line.bbox[1] if prev_line else 0

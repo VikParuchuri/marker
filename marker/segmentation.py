@@ -42,8 +42,9 @@ def load_layout_model():
 
 def detect_all_block_types(doc, blocks: List[Page], layoutlm_model):
     block_types = []
-    for pnum, page in enumerate(doc):
-        page_blocks = blocks[pnum]
+    for page_blocks in blocks:
+        pnum = page_blocks.pnum
+        page = doc[pnum]
         predictions = detect_page_block_types(page, page_blocks, layoutlm_model)
         block_types.append(predictions)
     return block_types

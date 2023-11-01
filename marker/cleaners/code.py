@@ -97,10 +97,18 @@ def indent_blocks(blocks: List[Page]):
                 lines.append((pymupdf.Rect(line.bbox), text))
 
             block_text = ""
+            blank_line = False
             for line in lines:
                 text = line[1]
                 prefix = " " * int((line[0].x0 - min_left) / col_width)
+                current_line_blank = len(text.strip()) == 0
+                if blank_line and current_line_blank:
+                    # Don't put multiple blank lines in a row
+                    continue
+
                 block_text += prefix + text + "\n"
+                blank_line = current_line_blank
+
             new_span = Span(
                 text=block_text,
                 bbox=block.bbox,

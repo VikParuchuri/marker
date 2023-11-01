@@ -87,10 +87,12 @@ def get_single_page_blocks(page, pnum):
     return page_blocks
 
 
-def get_text_blocks(doc):
+def get_text_blocks(doc, max_pages=None):
     all_blocks = []
     toc = doc.get_toc()
     for pnum, page in enumerate(doc):
+        if max_pages and pnum >= max_pages:
+            break
         blocks = get_single_page_blocks(page, pnum)
         page_obj = Page(blocks=blocks, pnum=pnum)
         all_blocks.append(page_obj)
