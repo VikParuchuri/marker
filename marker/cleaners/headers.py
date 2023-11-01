@@ -19,7 +19,7 @@ def filter_common_elements(lines, page_count):
     return bad_span_ids
 
 
-def filter_header_footer(all_page_blocks, max_selected_lines = 2):
+def filter_header_footer(all_page_blocks, max_selected_lines=2):
     first_lines = []
     last_lines = []
     for page in all_page_blocks:

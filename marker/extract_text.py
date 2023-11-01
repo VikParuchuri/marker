@@ -9,9 +9,13 @@ os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 def get_tessocr(page, old_text, bbox):
     pix = page.get_pixmap(dpi=settings.DPI, clip=bbox)
 
-    ocrpdf = pymupdf.open("pdf", pix.pdfocr_tobytes())
-    ocrpage = ocrpdf[0]
-    new_text = ocrpage.get_text()  # extract OCR-ed text
+    try:
+        ocrpdf = pymupdf.open("pdf", pix.pdfocr_tobytes())
+        ocrpage = ocrpdf[0]
+        new_text = ocrpage.get_text()  # extract OCR-ed text
+    except RuntimeError:
+        # If the OCR fails, just return the original text
+        return old_text
 
     # Tesseract ignores leading spaces, hence some corrections
     lblanks = len(old_text) - len(old_text.lstrip())

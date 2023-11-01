@@ -25,8 +25,7 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model):
     block_types = detect_all_block_types(doc, blocks, layoutlm_model)
 
     # Find headers and footers
-    bad_span_ids = categorize_blocks(blocks)
-    bad_span_ids += filter_header_footer(blocks)
+    bad_span_ids = filter_header_footer(blocks)
 
     filtered = deepcopy(blocks)
     annotate_spans(filtered, block_types)
@@ -42,7 +41,7 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model):
     for page in filtered:
         for block in page.blocks:
             block.filter_spans(bad_span_ids)
-            block.filter_bad_span_types(block_types[page.pnum])
+            block.filter_bad_span_types()
 
     filtered = replace_equations(doc, filtered, block_types, nougat_model)
 

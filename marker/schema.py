@@ -96,13 +96,12 @@ class Block(BboxElement):
                 new_lines.append(line)
         self.lines = new_lines
 
-    def filter_bad_span_types(self, block_types: List[BlockType]):
-        bad_spans = [b.bbox for b in block_types if b.block_type in settings.BAD_SPAN_TYPES]
+    def filter_bad_span_types(self):
         new_lines = []
         for line in self.lines:
             new_spans = []
             for span in line.spans:
-                if not multiple_boxes_intersect(span.bbox, bad_spans):
+                if span.block_type not in settings.BAD_SPAN_TYPES:
                     new_spans.append(span)
             line.spans = new_spans
             if len(new_spans) > 0:
