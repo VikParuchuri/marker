@@ -177,6 +177,10 @@ class Page(BaseModel):
             raise IndexError("No lines found")
         return min(starts)
 
+    @property
+    def prelim_text(self):
+        return "\n".join([b.prelim_text for b in self.blocks])
+
 class MergedLine(BboxElement):
     text: str
     fonts: List[str]

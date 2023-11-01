@@ -140,7 +140,6 @@ def merge_lines(blocks, page_blocks: List[Page]):
                 block_text = ""
 
             prev_type = block_type
-            common_line_height = common_line_heights[block.pnum].most_common(1)[0][0]
             # Join lines in the block together properly
             for i, line in enumerate(block.lines):
                 line_height = line.bbox[3] - line.bbox[1]

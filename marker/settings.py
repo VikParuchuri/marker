@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     INVALID_CHARS: List[str] = [chr(0xfffd), "~", chr(65533), "↵"]
     DPI: int = 400
     TESSDATA_PREFIX: str = ""
+    FALLBACK_OCR_LANG: str = "eng"
 
     # Nougat Model
     NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat

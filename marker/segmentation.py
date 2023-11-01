@@ -11,6 +11,10 @@ import numpy as np
 from marker.settings import settings
 from marker.schema import Page, BlockType
 import torch
+from math import isclose
+
+# Otherwise some images can be truncated
+Image.MAX_IMAGE_PIXELS = None
 
 processor = LayoutLMv3Processor.from_pretrained("microsoft/layoutlmv3-base", apply_ocr=False)
 
@@ -20,7 +24,7 @@ NO_CHUNK_KEYS = ["pixel_values"]
 def load_layout_model():
     model = LayoutLMv3ForTokenClassification.from_pretrained("Kwan0/layoutlmv3-base-finetune-DocLayNet-100k").to(settings.TORCH_DEVICE)
     if settings.CUDA:
-        model = model.to(torch.float16)
+        model = model.to(torch.bfloat16)
 
     model.config.id2label = {
         0: "Caption",
@@ -53,22 +57,55 @@ def detect_all_block_types(doc, blocks: List[Page], layoutlm_model):
     return block_types
 
 
+def resize_image(png_image, max_size=8000):
+    width, height = png_image.size
+
+    if width > max_size:
+        max_size = (max_size, max_size)
+
+        # Resize the image, preserving the aspect ratio
+        png_image.thumbnail(max_size, Image.LANCZOS)
+
+
 def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
     page_box = page.bound()
     pwidth = page_box[2] - page_box[0]
     pheight = page_box[3] - page_box[1]
 
-    pix = page.get_pixmap(dpi=400)
+    pix = page.get_pixmap(dpi=settings.DPI, annots=False, clip=page.bound())
     png = pix.pil_tobytes(format="PNG")
     png_image = Image.open(io.BytesIO(png))
+    # If it is too large, make it smaller for the model
     rgb_image = png_image.convert('RGB')
+    rgb_width, rgb_height = rgb_image.size
+
+    # Image is correct size wrt the pdf page
+    assert isclose(rgb_width / pwidth, rgb_height / pheight, abs_tol=2e-2)
 
     lines = page_blocks.get_all_lines()
 
     boxes = []
     text = []
     for line in lines:
-        boxes.append(line.bbox)
+        box = line.bbox
+        # Bounding boxes sometimes overflow
+        if box[0] < page_box[0]:
+            box[0] = page_box[0]
+        if box[1] < page_box[1]:
+            box[1] = page_box[1]
+        if box[2] > page_box[2]:
+            box[2] = page_box[2]
+        if box[3] > page_box[3]:
+            box[3] = page_box[3]
+
+        # Handle case when boxes are 0 or less width or height
+        if box[2] <= box[0]:
+            print("Zero width box found, cannot convert properly")
+            raise ValueError
+        if box[3] <= box[1]:
+            print("Zero height box found, cannot convert properly")
+            raise ValueError
+        boxes.append(box)
         text.append(line.prelim_text)
 
     predictions = make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model)
@@ -93,6 +130,12 @@ def get_provisional_boxes(pred, box, is_subword, start_idx=0):
 def make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model) -> List[BlockType]:
     # Normalize boxes for model (scale to 1000x1000)
     boxes = [normalize_box(box, pwidth, pheight) for box in boxes]
+    for box in boxes:
+        # Verify that boxes are all valid
+        assert(len(box) == 4)
+        assert(max(box)) <= 1000
+        assert(min(box)) >= 0
+
     encoding = processor(rgb_image, text=text, boxes=boxes, return_offsets_mapping=True, return_tensors="pt", truncation=True, stride=settings.LAYOUT_CHUNK_OVERLAP, padding="max_length", max_length=settings.LAYOUT_MODEL_MAX, return_overflowing_tokens=True)
     offset_mapping = encoding.pop('offset_mapping')
     overflow_to_sample_mapping = encoding.pop('overflow_to_sample_mapping')
@@ -105,10 +148,11 @@ def make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model) ->
     encoding['pixel_values'] = x
 
     if settings.CUDA:
-        encoding["pixel_values"] = encoding["pixel_values"].to(torch.float16)
+        encoding["pixel_values"] = encoding["pixel_values"].to(torch.bfloat16)
 
     with torch.no_grad():
-        encoding = encoding.to(settings.TORCH_DEVICE)
+        for k in ["bbox", "input_ids", "pixel_values", "attention_mask"]:
+            encoding[k] = encoding[k].to(settings.TORCH_DEVICE)
         outputs = layoutlm_model(**encoding)
 
     logits = outputs.logits
