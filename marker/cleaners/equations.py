@@ -60,10 +60,12 @@ def mask_bbox(png_image, bbox, selected_bboxes):
 
 
 def get_nougat_text(page, bbox, selected_bboxes, nougat_model, max_length=settings.NOUGAT_MODEL_MAX):
-    pix = page.get_pixmap(dpi=settings.DPI, clip=bbox)
-    png = pix.pil_tobytes(format="PNG")
+    mat = pymupdf.Matrix(settings.NOUGAT_ZOOM, settings.NOUGAT_ZOOM)
+    pix = page.get_pixmap(dpi=settings.NOUGAT_DPI, clip=bbox, matrix=mat)
+    png = pix.pil_tobytes(format="BMP")
     png_image = Image.open(io.BytesIO(png))
     png_image = mask_bbox(png_image, bbox, selected_bboxes)
+    png_image = png_image.convert("RGB")
 
     nougat_model.config.max_length = min(max_length, settings.NOUGAT_MODEL_MAX)
     output = nougat_model.inference(image=png_image)

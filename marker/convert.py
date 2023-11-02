@@ -50,9 +50,12 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None,
 
     # Use tesseract language if available
     tess_lang = settings.TESSERACT_LANGUAGES.get(lang, settings.DEFAULT_LANG)
+    spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang)
+    if "eng" not in tess_lang:
+        tess_lang = f"eng+{tess_lang}"
 
     doc = pymupdf.open(fname, filetype=filetype)
-    blocks, toc = get_text_blocks(doc, tess_lang, max_pages=max_pages)
+    blocks, toc = get_text_blocks(doc, tess_lang, spell_lang, max_pages=max_pages)
     if len([b for p in blocks for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
         return ""

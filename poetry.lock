@@ -2969,6 +2969,17 @@ files = [
 ]
 
 [[package]]
+name = "pyspellchecker"
+version = "0.7.2"
+description = "Pure python spell checker based on work by Peter Norvig"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pyspellchecker-0.7.2-py3-none-any.whl", hash = "sha256:b5ef23437702b8d03626f814b9646779b572d378b325ad252d8a8e616b3d76db"},
+    {file = "pyspellchecker-0.7.2.tar.gz", hash = "sha256:bc51ffb2c18ba26eaa1340756ebf96d0d886ed6a31d6f8e7a0094ad49d24550a"},
+]
+
+[[package]]
 name = "pytesseract"
 version = "0.3.10"
 description = "Python-tesseract is a python wrapper for Google's Tesseract-OCR"
@@ -5101,4 +5112,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "33d4e5f0b75444610f943b725c2419c55a728c4bcb6dace418c8ba532d408bb0"
+content-hash = "75fb733b7de5d7f77571ba03e8e76fe59454d7bec6d7af8052d910f3d6d95e22"

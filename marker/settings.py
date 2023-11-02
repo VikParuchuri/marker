@@ -21,24 +21,33 @@ class Settings(BaseSettings):
 
 
     # OCR
-    INVALID_CHARS: List[str] = [chr(0xfffd), "~", chr(65533), "↵"]
-    DPI: int = 400
+    INVALID_CHARS: List[str] = [chr(0xfffd), chr(65533)]
+    DPI: int = 800
+    SEGMENT_ZOOM: int = 2
     TESSDATA_PREFIX: str = ""
     TESSERACT_LANGUAGES: Dict = {
         "English": "eng",
         "Spanish": "spa",
         "Portuguese": "por",
-        "Italian": "ita",
         "French": "fra",
         "German": "deu",
-        "Dutch": "nld",
         "Russian": "rus",
+    }
+    SPELLCHECK_LANGUAGES: Dict = {
+        "English": "en",
+        "Spanish": "es",
+        "Portuguese": "pt",
+        "French": "fr",
+        "German": "de",
+        "Russian": "ru",
     }
 
     # Nougat Model
     NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
-                                  "\par\par\par", "## Chapter", "Fig."]
+                                  "\par\par\par", "## Chapter", "Fig.", "particle"]
+    NOUGAT_DPI: int = 96 # DPI to render images at
+    NOUGAT_ZOOM: int = 3 # Zoom to render images at
 
     # Layout Model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]

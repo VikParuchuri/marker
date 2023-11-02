@@ -6,5 +6,3 @@ tesseract-ocr-por
 tesseract-ocr-spa
 tesseract-ocr-rus
 tesseract-ocr-fra
-tesseract-ocr-nld
-tesseract-ocr-ita
