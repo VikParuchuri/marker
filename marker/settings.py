@@ -17,13 +17,23 @@ class Settings(BaseSettings):
         "application/vnd.ms-xpsdocument": "xps",
         "application/x-fictionbook+xml": "fb2"
     }
+    DEFAULT_LANG: str = "eng" # Default language we assume files to be in
 
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "~", chr(65533), "↵"]
     DPI: int = 400
     TESSDATA_PREFIX: str = ""
-    FALLBACK_OCR_LANG: str = "eng"
+    TESSERACT_LANGUAGES: Dict = {
+        "English": "eng",
+        "Spanish": "spa",
+        "Portuguese": "por",
+        "Italian": "ita",
+        "French": "fra",
+        "German": "deu",
+        "Dutch": "nld",
+        "Russian": "rus",
+    }
 
     # Nougat Model
     NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat

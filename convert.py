@@ -1,5 +1,7 @@
 import argparse
 import os
+from typing import Dict
+
 import ray
 from tqdm import tqdm
 import math
@@ -9,16 +11,17 @@ from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 from marker.settings import settings
 import traceback
+import json
 
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(fname, out_folder, nougat_model, layout_model):
+def process_single_pdf(fname, out_folder, nougat_model, layout_model, metadata: Dict | None=None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
     if os.path.exists(out_filename):
         return
     try:
-        full_text = convert_single_pdf(fname, layout_model, nougat_model)
+        full_text = convert_single_pdf(fname, layout_model, nougat_model, metadata=metadata)
         if len(full_text.strip()) > 0:
             with open(out_filename, "w+") as f:
                 f.write(full_text)
@@ -37,6 +40,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of pdfs to convert")
     parser.add_argument("--workers", type=int, default=5, help="Number of worker processes to use")
+    parser.add_argument("--metadata_file", type=str, default=None, help="Metadata file to use for filtering")
 
     args = parser.parse_args()
 
@@ -56,6 +60,12 @@ if __name__ == "__main__":
     if args.max:
         files_to_convert = files_to_convert[:args.max]
 
+    metadata = {}
+    if args.metadata_file:
+        metadata_file = os.path.abspath(args.metadata_file)
+        with open(metadata_file, "r") as f:
+            metadata = json.load(f)
+
     total_processes = min(len(files_to_convert), args.workers)
 
     ray.init(
@@ -73,7 +83,15 @@ if __name__ == "__main__":
     layoutlm_ref = ray.put(layoutlm_model)
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
-    futures = [process_single_pdf.remote(filename, out_folder, nougat_ref, layoutlm_ref) for filename in files_to_convert]
+    futures = [
+        process_single_pdf.remote(
+            filename,
+            out_folder,
+            nougat_ref,
+            layoutlm_ref,
+            metadata.get(os.path.basename(filename))
+        ) for filename in files_to_convert
+    ]
 
     # Run all ray conversion tasks
     progress_bar = tqdm(total=len(futures))

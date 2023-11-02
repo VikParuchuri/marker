@@ -1,3 +1,10 @@
 tesseract-ocr
 libtesseract-dev
 libmagic1
+tesseract-ocr-deu
+tesseract-ocr-por
+tesseract-ocr-spa
+tesseract-ocr-rus
+tesseract-ocr-fra
+tesseract-ocr-nld
+tesseract-ocr-ita

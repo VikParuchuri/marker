@@ -8,7 +8,7 @@ from marker.segmentation import detect_all_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.markdown import merge_spans, merge_lines, get_full_text
 from marker.schema import Page, BlockType
-from typing import List
+from typing import List, Dict
 from copy import deepcopy
 import re
 import magic
@@ -39,13 +39,20 @@ def annotate_spans(blocks: List[Page], block_types: List[BlockType]):
         page.add_block_types(page_block_types)
 
 
-def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None) -> str:
+def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None, metadata: Dict | None=None) -> str:
     filetype = find_filetype(fname)
     if filetype == "other":
         return ""
 
+    lang = settings.DEFAULT_LANG
+    if metadata:
+        lang = metadata.get("language", settings.DEFAULT_LANG)
+
+    # Use tesseract language if available
+    tess_lang = settings.TESSERACT_LANGUAGES.get(lang, settings.DEFAULT_LANG)
+
     doc = pymupdf.open(fname, filetype=filetype)
-    blocks, toc = get_text_blocks(doc, max_pages=max_pages)
+    blocks, toc = get_text_blocks(doc, tess_lang, max_pages=max_pages)
     if len([b for p in blocks for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
         return ""
@@ -78,6 +85,9 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None)
     text_blocks = merge_lines(merged_lines, filtered)
     text_blocks = filter_common_titles(text_blocks)
     full_text = get_full_text(text_blocks)
+
+    # Handle empty blocks being joined
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
+    full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
 
     return full_text

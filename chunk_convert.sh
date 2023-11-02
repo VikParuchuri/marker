@@ -13,6 +13,7 @@ if [[ -z "$NUM_WORKERS" ]]; then
     exit 1
 fi
 
+
 # Get input folder and output folder from args
 if [[ -z "$1" ]]; then
     echo "Please provide an input folder."
@@ -34,7 +35,9 @@ for (( i=0; i<$NUM_DEVICES; i++ )); do
     export NUM_DEVICES
     export NUM_WORKERS
     echo "Running convert.py on GPU $DEVICE_NUM"
-    CUDA_VISIBLE_DEVICES=$DEVICE_NUM python convert.py $INPUT_FOLDER $OUTPUT_FOLDER --num_chunks $NUM_DEVICES --chunk_idx $DEVICE_NUM --workers $NUM_WORKERS &
+    cmd="CUDA_VISIBLE_DEVICES=$DEVICE_NUM python convert.py $INPUT_FOLDER $OUTPUT_FOLDER --num_chunks $NUM_DEVICES --chunk_idx $DEVICE_NUM --workers $NUM_WORKERS"
+    [[ -n "$METADATA_FILE" ]] && cmd="$cmd --metadata_file $METADATA_FILE"
+    eval $cmd &
 
     sleep 5
 done
