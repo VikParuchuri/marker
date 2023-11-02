@@ -13,6 +13,7 @@ PDF is a tricky format, so this will not always work perfectly, but it is good e
 ## Install
 
 - `poetry install`
+- Recommend installing tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/).  You may get tesseract 4 otherwise.
 - Install apt requirements
 - Set `TESSDATA_PREFIX`
   - Find tessdata folder

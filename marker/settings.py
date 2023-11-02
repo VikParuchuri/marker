@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), chr(65533)]
     DPI: int = 800
-    SEGMENT_ZOOM: int = 2
+    SEGMENT_DPI: int = 1200
     TESSDATA_PREFIX: str = ""
     TESSERACT_LANGUAGES: Dict = {
         "English": "eng",
@@ -46,8 +46,7 @@ class Settings(BaseSettings):
     NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
                                   "\par\par\par", "## Chapter", "Fig.", "particle"]
-    NOUGAT_DPI: int = 96 # DPI to render images at
-    NOUGAT_ZOOM: int = 3 # Zoom to render images at
+    NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
 
     # Layout Model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]

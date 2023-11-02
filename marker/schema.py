@@ -2,6 +2,7 @@ from collections import Counter
 from typing import List
 
 from pydantic import BaseModel, field_validator
+import ftfy
 
 from marker.bbox import boxes_intersect_pct, multiple_boxes_intersect
 from marker.settings import settings
@@ -61,6 +62,12 @@ class Span(BboxElement):
     descender: float | None = None
     block_type: str | None = None
     selected: bool = True
+
+
+    @field_validator('text')
+    @classmethod
+    def fix_unicode(cls, text: str) -> str:
+        return ftfy.fix_text(text)
 
 
 class Line(BboxElement):

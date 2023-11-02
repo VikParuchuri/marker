@@ -4,39 +4,53 @@ from marker.settings import settings
 from marker.schema import Span, Line, Block, Page
 import string
 from spellchecker import SpellChecker
+from nltk.tokenize import wordpunct_tokenize
 
 os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 TEXT_FLAGS = ~pymupdf.TEXT_PRESERVE_LIGATURES & pymupdf.TEXT_PRESERVE_WHITESPACE & ~pymupdf.TEXT_PRESERVE_IMAGES & ~pymupdf.TEXT_INHIBIT_SPACES & pymupdf.TEXT_DEHYPHENATE & pymupdf.TEXT_MEDIABOX_CLIP
 
 
+def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.8, space_threshold=.5, newline_threshold=.3):
+    words = wordpunct_tokenize(text)
+    words = [w for w in words if w.strip()]
+    alpha_words = [word for word in words if word.isalnum()]
+    nonalpha_words = [word for word in words if not word.isalnum()]
+
+    if spell_lang:
+        spell = SpellChecker(language=spell_lang)
+        misspelled = spell.unknown(alpha_words)
+        if len(misspelled) + len(nonalpha_words) > len(words) * misspell_threshold:
+            return True
+    spaces = text.count(" ")
+    # More than 50% of chars are spaces
+    if spaces / len(text) > space_threshold:
+        return True
+
+    newlines = text.count("\n")
+    # More than 30% of chars are newlines
+    if newlines / len(text) > newline_threshold:
+        return True
+    return False
+
+
 def ocr_entire_page(page, lang: str, spell_lang: str | None):
-    mat = pymupdf.Matrix(settings.SEGMENT_ZOOM, settings.SEGMENT_ZOOM)
     try:
-        full_tp = page.get_textpage_ocr(flags=TEXT_FLAGS, dpi=settings.DPI, full=True, language=lang, matrix=mat)
+        full_tp = page.get_textpage_ocr(flags=TEXT_FLAGS, dpi=settings.DPI, full=True, language=lang)
         blocks = page.get_text("dict", sort=True, flags=TEXT_FLAGS, textpage=full_tp)["blocks"]
         full_text = page.get_text("text", flags=TEXT_FLAGS, textpage=full_tp)
-
-        words = full_text.split()
-        words = [w for w in words if w.strip()]
-        alpha_words = [word for word in words if word.isalnum()]
-        nonalpha_words = [word for word in words if not word.isalnum()]
 
         # Check spelling to determine if OCR worked
         # If it didn't, return empty list
         # OCR can fail if there is a scanned blank page with some faint text impressions, for example
-        if spell_lang:
-            spell = SpellChecker(language=spell_lang)
-            misspelled = spell.unknown(alpha_words)
-            if len(misspelled) + len(nonalpha_words) > len(words) / 1.5:
-                return []
+        if detect_bad_ocr(full_text, spell_lang):
+            return []
     except RuntimeError:
         return []
     return blocks
 
 
 def ocr_bbox(page, old_text, bbox, lang: str):
-    mat = pymupdf.Matrix(settings.SEGMENT_ZOOM, settings.SEGMENT_ZOOM)
-    pix = page.get_pixmap(dpi=settings.DPI, clip=bbox, matrix=mat)
+    pix = page.get_pixmap(dpi=settings.SEGMENT_DPI, clip=bbox)
 
     try:
         ocrpdf = pymupdf.open("pdf", pix.pdfocr_tobytes(language=lang))
@@ -131,8 +145,11 @@ def get_single_page_blocks(page, pnum: int, tess_lang: str, spell_lang=None, ocr
 def alphanum_ratio(text):
     alphanumeric_count = sum([1 for c in text if c.isalnum()])
 
-    if alphanumeric_count == 0:
-        return 0
+    if len(text) == 0:
+        if alphanumeric_count == 0:
+            return 1
+        else:
+            return 0
 
     ratio = alphanumeric_count / len(text)
     return ratio
@@ -141,6 +158,7 @@ def alphanum_ratio(text):
 def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None=None):
     all_blocks = []
     toc = doc.get_toc()
+    page_extracted = False
     for pnum, page in enumerate(doc):
         if max_pages and pnum >= max_pages:
             break
@@ -149,16 +167,18 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None=
 
         # OCR page if we got minimal text, or if we got too many spaces
         conditions = [
-            len(page_obj.get_nonblank_lines()) < 3,
             (
-                    alphanum_ratio(page_obj.prelim_text) < .7 # Garbled or bad OCR text
-                    or (page_obj.prelim_text.count(" ") / len(page_obj.prelim_text)) > .3 ## too many spaces on the page
+                (len(page_obj.get_nonblank_lines()) < 3 and not page_extracted) # Possibly PDF has no text, and needs full OCR
+                or alphanum_ratio(page_obj.prelim_text) < .6 # Garbled text
             ),
             2 < pnum < len(doc) - 2
         ]
         if all(conditions):
             blocks = get_single_page_blocks(page, pnum, tess_lang, spell_lang, ocr=True)
             page_obj = Page(blocks=blocks, pnum=pnum)
-        all_blocks.append(page_obj)
+            page_extracted = False
+        else:
+            page_extracted = True
 
+        all_blocks.append(page_obj)
     return all_blocks, toc
