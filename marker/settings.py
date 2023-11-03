@@ -4,6 +4,7 @@ from typing import Optional, List, Dict
 from dotenv import find_dotenv
 from pydantic import computed_field
 from pydantic_settings import BaseSettings
+import fitz as pymupdf
 
 
 class Settings(BaseSettings):
@@ -19,6 +20,8 @@ class Settings(BaseSettings):
     }
     DEFAULT_LANG: str = "eng" # Default language we assume files to be in
 
+    # PyMuPDF
+    TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), chr(65533)]
@@ -41,6 +44,7 @@ class Settings(BaseSettings):
         "German": "de",
         "Russian": "ru",
     }
+    OCR_ALL_PAGES: bool = False
 
     # Nougat Model
     NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat

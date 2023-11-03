@@ -15,16 +15,19 @@ import json
 
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(fname, out_folder, nougat_model, layout_model, metadata: Dict | None=None):
+def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, metadata: Dict | None=None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
+    out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"
     if os.path.exists(out_filename):
         return
     try:
-        full_text = convert_single_pdf(fname, layout_model, nougat_model, metadata=metadata)
+        full_text, out_metadata = convert_single_pdf(fname, layout_model, nougat_model, metadata=metadata)
         if len(full_text.strip()) > 0:
             with open(out_filename, "w+") as f:
                 f.write(full_text)
+            with open(out_meta_filename, "w+") as f:
+                f.write(json.dumps(out_metadata))
         else:
             print(f"Empty file: {fname}.  Could not convert.")
     except Exception as e:

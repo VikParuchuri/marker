@@ -73,6 +73,8 @@ def get_nougat_text(page, bbox, selected_bboxes, nougat_model, max_length=settin
 
 def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model):
     span_id = 0
+    unsuccessful_ocr = 0
+    eq_count = 0
     new_blocks = []
     for pnum, page in enumerate(blocks):
         i = 0
@@ -89,6 +91,7 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
                 i += 1
                 continue
 
+            eq_count += 1
             selected_blocks = [(i, page.blocks[i])]
             if i > 0:
                 j = len(new_page_blocks) - 1
@@ -152,6 +155,8 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
                     used_nougat = True
                     span_id += 1
                     reformatted_blocks.append(len(new_page_blocks) - 1)
+                else:
+                    unsuccessful_ocr += 1
 
             if not used_nougat:
                 # Sort so previous blocks are in order
@@ -164,4 +169,4 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
         new_page = deepcopy(page)
         new_page.blocks = new_page_blocks
         new_blocks.append(new_page)
-    return new_blocks
+    return new_blocks, {"successful_ocr": span_id, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}

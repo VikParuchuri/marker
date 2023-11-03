@@ -95,3 +95,4 @@ def create_new_tables(blocks: List[Page]):
             )
             block.lines = [new_line]
             table_idx += 1
+    return table_idx

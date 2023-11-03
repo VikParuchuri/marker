@@ -3,6 +3,7 @@ import argparse
 from marker.convert import convert_single_pdf
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
+import json
 
 
 if __name__ == "__main__":
@@ -15,7 +16,11 @@ if __name__ == "__main__":
     fname = args.filename
     layoutlm_model = load_layout_model()
     nougat_model = load_nougat_model()
-    full_text = convert_single_pdf(fname, layoutlm_model, nougat_model, max_pages=args.max_pages)
+    full_text, out_meta = convert_single_pdf(fname, layoutlm_model, nougat_model, max_pages=args.max_pages)
 
     with open(args.output, "w+") as f:
         f.write(full_text)
+
+    out_meta_filename = args.output.rsplit(".", 1)[0] + "_meta.json"
+    with open(out_meta_filename, "w+") as f:
+        f.write(json.dumps(out_meta))

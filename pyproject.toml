@@ -27,6 +27,7 @@ python-magic = "^0.4.27"
 pyspellchecker = "^0.7.2"
 ftfy = "^6.1.1"
 nltk = "^3.8.1"
+ocrmypdf = "^15.4.0"
 
 
 [tool.poetry.group.dev.dependencies]

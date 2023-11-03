@@ -8,7 +8,7 @@ from marker.segmentation import detect_all_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.markdown import merge_spans, merge_lines, get_full_text
 from marker.schema import Page, BlockType
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from copy import deepcopy
 import re
 import magic
@@ -39,11 +39,7 @@ def annotate_spans(blocks: List[Page], block_types: List[BlockType]):
         page.add_block_types(page_block_types)
 
 
-def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None, metadata: Dict | None=None) -> str:
-    filetype = find_filetype(fname)
-    if filetype == "other":
-        return ""
-
+def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None, metadata: Dict | None=None) -> Tuple[str, Dict]:
     lang = settings.DEFAULT_LANG
     if metadata:
         lang = metadata.get("language", settings.DEFAULT_LANG)
@@ -54,34 +50,55 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None,
     if "eng" not in tess_lang:
         tess_lang = f"eng+{tess_lang}"
 
+    # Output metadata
+    out_meta = {"lang": lang}
+
+    filetype = find_filetype(fname)
+    if filetype == "other":
+        return "", out_meta
+
+    out_meta["filetype"] = filetype
+
     doc = pymupdf.open(fname, filetype=filetype)
-    blocks, toc = get_text_blocks(doc, tess_lang, spell_lang, max_pages=max_pages)
+    if filetype != "pdf":
+        conv = doc.convert_to_pdf()
+        doc = pymupdf.open("pdf", conv)
+
+    blocks, toc, ocr_stats = get_text_blocks(doc, tess_lang, spell_lang, max_pages=max_pages)
+
+    out_meta["toc"] = toc
+    out_meta["pages"] = len(blocks)
+    out_meta["ocr_stats"] = ocr_stats
     if len([b for p in blocks for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
-        return ""
+        return "", out_meta
 
     block_types = detect_all_block_types(doc, blocks, layoutlm_model)
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(blocks)
+    out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
     filtered = deepcopy(blocks)
     annotate_spans(filtered, block_types)
 
     # Fix code blocks
-    identify_code_blocks(filtered)
+    code_block_count = identify_code_blocks(filtered)
+    out_meta["block_stats"]["code"] = code_block_count
     indent_blocks(filtered)
 
     # Fix table blocks
     merge_table_blocks(filtered)
-    create_new_tables(filtered)
+    table_count = create_new_tables(filtered)
+    out_meta["block_stats"]["table"] = table_count
 
     for page in filtered:
         for block in page.blocks:
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
 
-    filtered = replace_equations(doc, filtered, block_types, nougat_model)
+    filtered, eq_stats = replace_equations(doc, filtered, block_types, nougat_model)
+    out_meta["block_stats"]["equations"] = eq_stats
 
     # Copy to avoid changing original data
     merged_lines = merge_spans(filtered)
@@ -93,4 +110,4 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None,
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
 
-    return full_text
+    return full_text, out_meta

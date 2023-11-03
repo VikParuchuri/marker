@@ -22,6 +22,7 @@ def comment_count(lines):
 
 
 def identify_code_blocks(blocks: List[Page]):
+    code_block_count = 0
     font_info = None
     for p in blocks:
         stats = p.get_font_stats()
@@ -76,9 +77,11 @@ def identify_code_blocks(blocks: List[Page]):
             ]
 
             if all(is_code) or all(is_code_prev):
+                code_block_count += 1
                 block.set_block_type("Code")
 
             last_block = block
+    return code_block_count
 
 
 def indent_blocks(blocks: List[Page]):
