@@ -1,17 +1,21 @@
 import io
+from typing import List
 
 import fitz as pymupdf
 import ocrmypdf
 
 from marker.ocr.utils import detect_bad_ocr
+from marker.schema import Block
 from marker.settings import settings
 
+ocrmypdf.configure_logging(verbosity=ocrmypdf.Verbosity.quiet)
 
-def ocr_entire_page_ocrmp(page, lang: str, spell_lang: str | None):
+
+def ocr_entire_page_ocrmp(page, lang: str, spell_lang: str | None) -> List[Block]:
     # Use ocrmypdf to get OCR text for the whole page
     src = page.parent  # the page's document
     blank_doc = pymupdf.open()  # make temporary 1-pager
-    blank_doc.insert_pdf(src, from_page=page.number, to_page=page.number)
+    blank_doc.insert_pdf(src, from_page=page.number, to_page=page.number, annots=False, links=False)
     pdfbytes = blank_doc.tobytes()
     inbytes = io.BytesIO(pdfbytes)  # transform to BytesIO object
     outbytes = io.BytesIO()  # let ocrmypdf store its result pdf here
@@ -20,7 +24,9 @@ def ocr_entire_page_ocrmp(page, lang: str, spell_lang: str | None):
         outbytes,
         language=lang,
         output_type="pdf",
-        redo_ocr=True
+        redo_ocr=True,
+        progress_bar=False,
+        oversample=400
     )
     ocr_pdf = pymupdf.open("pdf", outbytes.getvalue())  # read output as fitz PDF
     blocks = ocr_pdf[0].get_text("dict", sort=True, flags=settings.TEXT_FLAGS)["blocks"]
@@ -38,7 +44,7 @@ def ocr_entire_page_ocrmp(page, lang: str, spell_lang: str | None):
     return blocks
 
 
-def ocr_entire_page_tess(page, lang: str, spell_lang: str | None):
+def ocr_entire_page_tess(page, lang: str, spell_lang: str | None) -> List[Block]:
     try:
         full_tp = page.get_textpage_ocr(flags=settings.TEXT_FLAGS, dpi=settings.DPI, full=True, language=lang)
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp)["blocks"]

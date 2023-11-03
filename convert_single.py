@@ -1,9 +1,12 @@
 import argparse
 
 from marker.convert import convert_single_pdf
+from marker.logger import configure_logging
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 import json
+
+configure_logging()
 
 
 if __name__ == "__main__":

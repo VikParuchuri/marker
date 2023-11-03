@@ -10,9 +10,11 @@ from marker.convert import convert_single_pdf
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 from marker.settings import settings
+from marker.logger import configure_logging
 import traceback
 import json
 
+configure_logging()
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
 def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, metadata: Dict | None=None):
@@ -76,7 +78,8 @@ if __name__ == "__main__":
         num_gpus=settings.NUM_GPUS if settings.CUDA else 0,
         storage=settings.RAY_CACHE_PATH,
         _temp_dir=settings.RAY_CACHE_PATH,
-        dashboard_host=settings.RAY_DASHBOARD_HOST
+        dashboard_host=settings.RAY_DASHBOARD_HOST,
+        log_to_driver=False
     )
 
     nougat_model = load_nougat_model()

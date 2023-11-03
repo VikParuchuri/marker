@@ -22,19 +22,6 @@ def load_nougat_model():
     return nougat_model
 
 
-def contains_equation(text):
-    # Define a regular expression pattern to look for operators and symbols commonly found in equations
-    pattern = re.compile(r'[=\^\√∑∏∫∂∆π≈≠≤≥∞∩∪∈∉∀∃∅∇λμσαβγδεζηθφχψω]')
-    # Search the text for the pattern
-    match = pattern.search(text)
-
-    # Alternative equation patterns
-    alt_pattern = re.compile(r' P(?=[ \n\(\)$])')
-    alt_match = alt_pattern.search(text)
-    # Return True if the pattern is found, otherwise return False
-    return bool(match) or bool(alt_match)
-
-
 def mask_bbox(png_image, bbox, selected_bboxes):
     mask = Image.new('L', png_image.size, 0)  # 'L' mode for grayscale
     draw = ImageDraw.Draw(mask)

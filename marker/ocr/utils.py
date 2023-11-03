@@ -1,5 +1,6 @@
 from nltk import wordpunct_tokenize
 from spellchecker import SpellChecker
+from marker.settings import settings
 
 
 def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.8, space_threshold=.5, newline_threshold=.3, alphanum_threshold=.5):
@@ -28,6 +29,14 @@ def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.8, space_th
         return True
 
     if alphanum_ratio(text) < alphanum_threshold: # Garbled text
+        return True
+
+    invalid_chars = 0
+    for char in text:
+        if char in settings.INVALID_CHARS:
+            invalid_chars += 1
+
+    if invalid_chars > 2:
         return True
 
     return False

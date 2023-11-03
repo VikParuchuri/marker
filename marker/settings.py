@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
                                   "\par\par\par", "## Chapter", "Fig.", "particle"]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
+    NOUGAT_MODEL_NAME: str = "Norm/nougat-latex-base" # Name of the model to use
 
     # Layout Model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
