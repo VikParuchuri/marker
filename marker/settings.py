@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
 
     # OCR
-    INVALID_CHARS: List[str] = [chr(0xfffd), chr(65533)]
+    INVALID_CHARS: List[str] = [chr(0xfffd)]
     DPI: int = 800
     SEGMENT_DPI: int = 1200
     TESSDATA_PREFIX: str = ""

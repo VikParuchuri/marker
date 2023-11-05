@@ -1,7 +1,6 @@
 import os
 from typing import Tuple, List
 
-from marker.ocr.segment import ocr_bbox
 from marker.ocr.page import ocr_entire_page_ocrmp
 from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
 from marker.settings import settings
@@ -61,6 +60,8 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None=
     extracted = [False]
     ocr_pages = 0
     min_ocr_page = 2
+    ocr_failed = 0
+    ocr_success = 0
     for pnum, page in enumerate(doc):
         if max_pages and pnum >= max_pages:
             break
@@ -81,9 +82,13 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None=
             page_obj = Page(blocks=blocks, pnum=pnum)
             extracted.append(False)
             ocr_pages += 1
+            if len(blocks) == 0:
+                ocr_failed += 1
+            else:
+                ocr_success += 1
         else:
             if pnum > min_ocr_page:
                 extracted.append(True)
 
         all_blocks.append(page_obj)
-    return all_blocks, toc, {"ocr_pages": ocr_pages}
+    return all_blocks, toc, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}

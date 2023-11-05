@@ -6,7 +6,7 @@ import ray
 from tqdm import tqdm
 import math
 
-from marker.convert import convert_single_pdf
+from marker.convert import convert_single_pdf, get_length_of_text
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 from marker.settings import settings
@@ -16,14 +16,23 @@ import json
 
 configure_logging()
 
+
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, metadata: Dict | None=None):
+def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, metadata: Dict | None=None, min_length: int | None = None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
     out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"
     if os.path.exists(out_filename):
         return
     try:
+        # Skip trying to convert files that don't have a lot of embedded text
+        # This can indicate that they were scanned, and not OCRed properly
+        # Usually these files are not recent/high-quality
+        if min_length:
+            length = get_length_of_text(fname)
+            if length < min_length:
+                return
+
         full_text, out_metadata = convert_single_pdf(fname, layout_model, nougat_model, metadata=metadata)
         if len(full_text.strip()) > 0:
             with open(out_filename, "w+") as f:
@@ -46,6 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--max", type=int, default=None, help="Maximum number of pdfs to convert")
     parser.add_argument("--workers", type=int, default=5, help="Number of worker processes to use")
     parser.add_argument("--metadata_file", type=str, default=None, help="Metadata file to use for filtering")
+    parser.add_argument("--min_length", type=int, default=None, help="Minimum length of pdf to convert")
 
     args = parser.parse_args()
 
@@ -95,7 +105,8 @@ if __name__ == "__main__":
             out_folder,
             nougat_ref,
             layoutlm_ref,
-            metadata.get(os.path.basename(filename))
+            metadata=metadata.get(os.path.basename(filename)),
+            min_length=args.min_length
         ) for filename in files_to_convert
     ]
 

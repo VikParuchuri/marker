@@ -37,6 +37,7 @@ for (( i=0; i<$NUM_DEVICES; i++ )); do
     echo "Running convert.py on GPU $DEVICE_NUM"
     cmd="CUDA_VISIBLE_DEVICES=$DEVICE_NUM python convert.py $INPUT_FOLDER $OUTPUT_FOLDER --num_chunks $NUM_DEVICES --chunk_idx $DEVICE_NUM --workers $NUM_WORKERS"
     [[ -n "$METADATA_FILE" ]] && cmd="$cmd --metadata_file $METADATA_FILE"
+    [[ -n "$MIN_LENGTH" ]] && cmd="$cmd --min_length $MIN_LENGTH"
     eval $cmd &
 
     sleep 5

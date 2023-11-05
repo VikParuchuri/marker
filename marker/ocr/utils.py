@@ -36,7 +36,7 @@ def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.8, space_th
         if char in settings.INVALID_CHARS:
             invalid_chars += 1
 
-    if invalid_chars > 2:
+    if invalid_chars > max(2.0, len(text) * .02):
         return True
 
     return False

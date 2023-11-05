@@ -39,6 +39,19 @@ def annotate_spans(blocks: List[Page], block_types: List[BlockType]):
         page.add_block_types(page_block_types)
 
 
+def get_length_of_text(fname: str) -> int:
+    filetype = find_filetype(fname)
+    if filetype == "other":
+        return 0
+
+    doc = pymupdf.open(fname, filetype=filetype)
+    full_text = ""
+    for page in doc:
+        full_text += page.get_text("text", sort=True, flags=settings.TEXT_FLAGS)
+
+    return len(full_text)
+
+
 def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None, metadata: Dict | None=None) -> Tuple[str, Dict]:
     lang = settings.DEFAULT_LANG
     if metadata:
