@@ -3,6 +3,7 @@ import os
 from typing import Dict
 
 import ray
+import torch
 from tqdm import tqdm
 import math
 
@@ -17,7 +18,7 @@ import json
 configure_logging()
 
 
-@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=1/settings.TASKS_PER_GPU if settings.CUDA else 0)
 def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, metadata: Dict | None=None, min_length: int | None = None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
@@ -85,7 +86,7 @@ if __name__ == "__main__":
 
     ray.init(
         num_cpus=total_processes,
-        num_gpus=settings.NUM_GPUS if settings.CUDA else 0,
+        num_gpus=1 if settings.CUDA else 0,
         storage=settings.RAY_CACHE_PATH,
         _temp_dir=settings.RAY_CACHE_PATH,
         dashboard_host=settings.RAY_DASHBOARD_HOST,

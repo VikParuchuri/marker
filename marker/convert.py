@@ -6,6 +6,7 @@ from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.cleaners.equations import replace_equations
 from marker.segmentation import detect_all_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
+from marker.cleaners.bullets import replace_bullets
 from marker.markdown import merge_spans, merge_lines, get_full_text
 from marker.schema import Page, BlockType
 from typing import List, Dict, Tuple
@@ -122,5 +123,8 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None,
     # Handle empty blocks being joined
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
+
+    # Replace bullet characters with a -
+    full_text = replace_bullets(full_text)
 
     return full_text, out_meta

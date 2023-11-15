@@ -10,7 +10,7 @@ import fitz as pymupdf
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
-    NUM_GPUS: int = 1 # How many gpus are available.  1 GPU means ~40GB of VRAM.  Set to fractions if you have less.
+    TASKS_PER_GPU: int = 30 # Each process needs about 1.5GB of VRAM, so set this accordingly
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
         "application/epub+zip": "epub",
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     # Nougat Model
     NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat
+    NOUGAT_MIN_TOKENS: int = 192 # Min number of tokens to allow nougat to generate
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
                                   "\par\par\par", "## Chapter", "Fig.", "particle"]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat

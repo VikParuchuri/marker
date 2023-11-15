@@ -12,7 +12,6 @@ from marker.settings import settings
 from marker.schema import Page, Span, Line, Block, BlockType
 from nougat.utils.device import move_to_device
 
-
 def load_nougat_model():
     ckpt = get_checkpoint(None, model_tag="0.1.0-small")
     nougat_model = NougatModel.from_pretrained(ckpt)
@@ -111,9 +110,10 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
             if len(block_text) < 2000:
                 selected_bboxes = [bl.bbox for i, bl in selected_blocks]
                 # This prevents hallucinations from running on for a long time
-                max_tokens = len(block_text) + 50
-                max_char_length = 2 * len(block_text) + 100
+                max_tokens = len(block_text) // 2 + settings.NOUGAT_MIN_TOKENS
                 nougat_text = get_nougat_text(doc[pnum], bbox, selected_bboxes, nougat_model, max_length=max_tokens)
+
+                max_char_length = 2 * len(block_text) + 500
                 conditions = [
                     len(nougat_text) > 0,
                     not any([word in nougat_text for word in settings.NOUGAT_HALLUCINATION_WORDS]),

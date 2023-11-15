@@ -3,6 +3,8 @@ private.py
 local.env
 experiments
 test_data
+training
+benchmark_data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
