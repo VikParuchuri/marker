@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     OCR_ALL_PAGES: bool = False
 
     # Nougat Model
-    NOUGAT_MODEL_MAX: int = 1024 # Max inference length for nougat
+    NOUGAT_MODEL_MAX: int = 768 # Max inference length for nougat
     NOUGAT_MIN_TOKENS: int = 192 # Min number of tokens to allow nougat to generate
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
                                   "\par\par\par", "## Chapter", "Fig.", "particle"]
@@ -57,7 +57,8 @@ class Settings(BaseSettings):
     # Layout Model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
     LAYOUT_MODEL_MAX: int = 512
-    LAYOUT_CHUNK_OVERLAP: int = 128
+    LAYOUT_CHUNK_OVERLAP: int = 64
+    LAYOUT_DPI: int = 96
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache

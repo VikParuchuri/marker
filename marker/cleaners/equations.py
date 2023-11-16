@@ -110,7 +110,7 @@ def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
         if len(block_text) < 2000:
             selected_bboxes = [bl.bbox for i, bl in selected_blocks]
             # This prevents hallucinations from running on for a long time
-            max_tokens = len(block_text) // 2 + settings.NOUGAT_MIN_TOKENS
+            max_tokens = len(block_text) // 3 + settings.NOUGAT_MIN_TOKENS
             nougat_text = get_nougat_text(doc[pnum], bbox, selected_bboxes, nougat_model, max_length=max_tokens)
 
             max_char_length = 2 * len(block_text) + 500
@@ -152,11 +152,10 @@ def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
                 new_page_blocks.append(block)
 
         i += 1
-    # Assign back to page
-    new_page = deepcopy(page)
-    new_page.blocks = new_page_blocks
+    # Assign blocks back to page
+    page.blocks = new_page_blocks
 
-    return new_page, {"successful_ocr": span_id, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}
+    return page, {"successful_ocr": span_id, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}
 
 
 def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model, parallel: int = 1):
@@ -166,7 +165,11 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
     new_blocks = []
     with ThreadPoolExecutor(max_workers=parallel) as pool:
         args_list = [(doc, pnum, page, block_types, nougat_model) for pnum, page in enumerate(blocks)]
-        results = pool.map(lambda a: replace_single_page_equations(*a), args_list)
+        if parallel == 1:
+            func = map
+        else:
+            func = pool.map
+        results = func(lambda a: replace_single_page_equations(*a), args_list)
 
         for result in results:
             new_page, stats = result

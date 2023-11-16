@@ -94,7 +94,11 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None 
         range_end = min(max_pages, len(doc))
     with ThreadPoolExecutor(max_workers=parallel) as pool:
         args_list = [(doc, pnum, tess_lang, spell_lang) for pnum in range(range_end)]
-        results = pool.map(lambda a: convert_single_page(*a), args_list)
+        if parallel == 1:
+            func = map
+        else:
+            func = pool.map
+        results = func(lambda a: convert_single_page(*a), args_list)
 
         for result in results:
             page_obj, ocr_stats = result

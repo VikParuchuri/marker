@@ -20,7 +20,7 @@ if __name__ == "__main__":
     fname = args.filename
     layoutlm_model = load_layout_model()
     nougat_model = load_nougat_model()
-    full_text, out_meta = convert_single_pdf(fname, layoutlm_model, nougat_model, max_pages=args.max_pages, parallel=args.max_workers)
+    full_text, out_meta = convert_single_pdf(fname, layoutlm_model, nougat_model, max_pages=args.max_pages, parallel=args.workers)
 
     with open(args.output, "w+") as f:
         f.write(full_text)

@@ -35,6 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("reference_folder", help="Reference folder with reference markdown files")
     parser.add_argument("out_file", help="Output filename")
     parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
+    # A batch size of 4 for nougat has about the same GPU VRAM usage as 12 for marker
     parser.add_argument("--nougat_batch_size", type=int, default=4, help="Batch size to use when making predictions")
     parser.add_argument("--marker_parallel", type=int, default=12, help="Number of marker processes to run in parallel")
     args = parser.parse_args()

@@ -50,7 +50,11 @@ def detect_all_block_types(doc, blocks: List[Page], layoutlm_model, parallel: in
     block_types = []
     with ThreadPoolExecutor(max_workers=parallel) as pool:
         args_list = [(doc[blocks[i].pnum], blocks[i], layoutlm_model) for i in range(len(blocks))]
-        results = pool.map(lambda a: detect_page_block_types(*a), args_list)
+        if parallel == 1:
+            func = map
+        else:
+            func = pool.map
+        results = func(lambda a: detect_page_block_types(*a), args_list)
 
         for result in results:
             block_types.append(result)
@@ -75,7 +79,7 @@ def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
     pwidth = page_box[2] - page_box[0]
     pheight = page_box[3] - page_box[1]
 
-    pix = page.get_pixmap(dpi=settings.DPI, annots=False, clip=page.bound())
+    pix = page.get_pixmap(dpi=settings.LAYOUT_DPI, annots=False, clip=page.bound())
     png = pix.pil_tobytes(format="PNG")
     png_image = Image.open(io.BytesIO(png))
     # If it is too large, make it smaller for the model

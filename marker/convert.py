@@ -100,25 +100,24 @@ def convert_single_pdf(
     bad_span_ids = filter_header_footer(blocks)
     out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
-    filtered = deepcopy(blocks)
-    annotate_spans(filtered, block_types)
+    annotate_spans(blocks, block_types)
 
     # Fix code blocks
-    code_block_count = identify_code_blocks(filtered)
+    code_block_count = identify_code_blocks(blocks)
     out_meta["block_stats"]["code"] = code_block_count
-    indent_blocks(filtered)
+    indent_blocks(blocks)
 
     # Fix table blocks
-    merge_table_blocks(filtered)
-    table_count = create_new_tables(filtered)
+    merge_table_blocks(blocks)
+    table_count = create_new_tables(blocks)
     out_meta["block_stats"]["table"] = table_count
 
-    for page in filtered:
+    for page in blocks:
         for block in page.blocks:
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
 
-    filtered, eq_stats = replace_equations(doc, filtered, block_types, nougat_model, parallel=parallel)
+    filtered, eq_stats = replace_equations(doc, blocks, block_types, nougat_model, parallel=parallel)
     out_meta["block_stats"]["equations"] = eq_stats
 
     # Copy to avoid changing original data
