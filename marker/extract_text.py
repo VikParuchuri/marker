@@ -5,6 +5,7 @@ from marker.ocr.page import ocr_entire_page_ocrmp
 from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
 from marker.settings import settings
 from marker.schema import Span, Line, Block, Page
+from concurrent.futures import ThreadPoolExecutor
 
 os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 
@@ -54,41 +55,52 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spell_lang=None, ocr=
     return page_blocks
 
 
-def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None=None):
+def convert_single_page(doc, pnum, tess_lang, spell_lang, min_ocr_page: int = 2):
+    ocr_pages = 0
+    ocr_success = 0
+    ocr_failed = 0
+    blocks = get_single_page_blocks(doc, pnum, tess_lang)
+    page_obj = Page(blocks=blocks, pnum=pnum)
+
+    # OCR page if we got minimal text, or if we got too many spaces
+    conditions = [
+        (
+            (len(page_obj.get_nonblank_lines()) == 0)  # Possibly PDF has no text, and needs full OCR
+            or
+            (len(page_obj.prelim_text) > 0 and detect_bad_ocr(page_obj.prelim_text, spell_lang))  # Bad OCR
+        ),
+        min_ocr_page < pnum < len(doc) - 1
+    ]
+    if all(conditions) or settings.OCR_ALL_PAGES:
+        blocks = get_single_page_blocks(doc, pnum, tess_lang, spell_lang, ocr=True)
+        page_obj = Page(blocks=blocks, pnum=pnum)
+        ocr_pages = 1
+        if len(blocks) == 0:
+            ocr_failed = 1
+        else:
+            ocr_success = 1
+    return page_obj, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+
+
+def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None = None, parallel: int = 1):
     all_blocks = []
     toc = doc.get_toc()
-    extracted = [False]
     ocr_pages = 0
-    min_ocr_page = 2
     ocr_failed = 0
     ocr_success = 0
-    for pnum, page in enumerate(doc):
-        if max_pages and pnum >= max_pages:
-            break
-        blocks = get_single_page_blocks(doc, pnum, tess_lang)
-        page_obj = Page(blocks=blocks, pnum=pnum)
+    # This is a thread because most of the work happens in a separate process (tesseract)
+    range_end = len(doc)
+    if max_pages:
+        range_end = min(max_pages, len(doc))
+    with ThreadPoolExecutor(max_workers=parallel) as pool:
+        args_list = [(doc, pnum, tess_lang, spell_lang) for pnum in range(range_end)]
+        results = pool.map(lambda a: convert_single_page(*a), args_list)
 
-        # OCR page if we got minimal text, or if we got too many spaces
-        conditions = [
-            (
-                    (len(page_obj.get_nonblank_lines()) < 3 and not extracted[-1])  # Possibly PDF has no text, and needs full OCR
-                    or
-                    (len(page_obj.prelim_text) > 0 and detect_bad_ocr(page_obj.prelim_text, spell_lang)) # Bad OCR
-            ),
-            min_ocr_page < pnum < len(doc) - 1
-        ]
-        if all(conditions) or settings.OCR_ALL_PAGES:
-            blocks = get_single_page_blocks(doc, pnum, tess_lang, spell_lang, ocr=True)
-            page_obj = Page(blocks=blocks, pnum=pnum)
-            extracted.append(False)
-            ocr_pages += 1
-            if len(blocks) == 0:
-                ocr_failed += 1
-            else:
-                ocr_success += 1
-        else:
-            if pnum > min_ocr_page:
-                extracted.append(True)
+        for result in results:
+            page_obj, ocr_stats = result
+            all_blocks.append(page_obj)
+            ocr_pages += ocr_stats["ocr_pages"]
+            ocr_failed += ocr_stats["ocr_failed"]
+            ocr_success += ocr_stats["ocr_success"]
 
-        all_blocks.append(page_obj)
     return all_blocks, toc, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}

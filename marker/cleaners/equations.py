@@ -1,4 +1,5 @@
 import io
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from typing import List
 
@@ -57,103 +58,121 @@ def get_nougat_text(page, bbox, selected_bboxes, nougat_model, max_length=settin
     return output["predictions"][0]
 
 
-def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model):
+def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
+    i = 0
     span_id = 0
-    unsuccessful_ocr = 0
     eq_count = 0
-    new_blocks = []
-    for pnum, page in enumerate(blocks):
-        i = 0
-        new_page_blocks = []
-        equation_boxes = [b.bbox for b in block_types[pnum] if b.block_type == "Formula"]
-        reformatted_blocks = []
-        while i < len(page.blocks):
-            block = page.blocks[i]
-            block_text = block.prelim_text
-            bbox = block.bbox
-            # Check if the block contains an equation
-            if not block.contains_equation(equation_boxes):
-                new_page_blocks.append(block)
-                i += 1
-                continue
+    unsuccessful_ocr = 0
+    new_page_blocks = []
+    equation_boxes = [b.bbox for b in block_types[pnum] if b.block_type == "Formula"]
+    reformatted_blocks = []
+    while i < len(page.blocks):
+        block = page.blocks[i]
+        block_text = block.prelim_text
+        bbox = block.bbox
+        # Check if the block contains an equation
+        if not block.contains_equation(equation_boxes):
+            new_page_blocks.append(block)
+            i += 1
+            continue
 
-            eq_count += 1
-            selected_blocks = [(i, page.blocks[i])]
-            if i > 0:
-                j = len(new_page_blocks) - 1
+        eq_count += 1
+        selected_blocks = [(i, page.blocks[i])]
+        if i > 0:
+            j = len(new_page_blocks) - 1
+            prev_block = new_page_blocks[j]
+            prev_bbox = prev_block.bbox
+            while (should_merge_blocks(prev_bbox, bbox) or prev_block.contains_equation(equation_boxes)) \
+                    and j >= 0 \
+                    and j not in reformatted_blocks:
+                bbox = merge_boxes(prev_bbox, bbox)
                 prev_block = new_page_blocks[j]
                 prev_bbox = prev_block.bbox
-                while (should_merge_blocks(prev_bbox, bbox) or prev_block.contains_equation(equation_boxes)) \
-                        and j >= 0 \
-                        and j not in reformatted_blocks:
-                    bbox = merge_boxes(prev_bbox, bbox)
-                    prev_block = new_page_blocks[j]
-                    prev_bbox = prev_block.bbox
-                    block_text = prev_block.prelim_text + " " + block_text
-                    new_page_blocks = new_page_blocks[:-1]  # Remove the previous block, since we're merging it in
-                    selected_blocks.append((j, prev_block))
-                    j -= 1
+                block_text = prev_block.prelim_text + " " + block_text
+                new_page_blocks = new_page_blocks[:-1]  # Remove the previous block, since we're merging it in
+                selected_blocks.append((j, prev_block))
+                j -= 1
 
-            if i < len(page.blocks) - 1:
-                next_block = page.blocks[i + 1]
-                next_bbox = next_block.bbox
-                while (should_merge_blocks(bbox, next_bbox) or next_block.contains_equation(equation_boxes)) and i + 1 < len(page.blocks):
-                    bbox = merge_boxes(bbox, next_bbox)
-                    block_text += " " + next_block.prelim_text
-                    i += 1
-                    selected_blocks.append((i, next_block))
-                    if i + 1 < len(page.blocks):
-                        next_block = page.blocks[i + 1]
-                        next_bbox = next_block.bbox
+        if i < len(page.blocks) - 1:
+            next_block = page.blocks[i + 1]
+            next_bbox = next_block.bbox
+            while (should_merge_blocks(bbox, next_bbox) or next_block.contains_equation(
+                    equation_boxes)) and i + 1 < len(page.blocks):
+                bbox = merge_boxes(bbox, next_bbox)
+                block_text += " " + next_block.prelim_text
+                i += 1
+                selected_blocks.append((i, next_block))
+                if i + 1 < len(page.blocks):
+                    next_block = page.blocks[i + 1]
+                    next_bbox = next_block.bbox
 
-            used_nougat = False
-            if len(block_text) < 2000:
-                selected_bboxes = [bl.bbox for i, bl in selected_blocks]
-                # This prevents hallucinations from running on for a long time
-                max_tokens = len(block_text) // 2 + settings.NOUGAT_MIN_TOKENS
-                nougat_text = get_nougat_text(doc[pnum], bbox, selected_bboxes, nougat_model, max_length=max_tokens)
+        used_nougat = False
+        if len(block_text) < 2000:
+            selected_bboxes = [bl.bbox for i, bl in selected_blocks]
+            # This prevents hallucinations from running on for a long time
+            max_tokens = len(block_text) // 2 + settings.NOUGAT_MIN_TOKENS
+            nougat_text = get_nougat_text(doc[pnum], bbox, selected_bboxes, nougat_model, max_length=max_tokens)
 
-                max_char_length = 2 * len(block_text) + 500
-                conditions = [
-                    len(nougat_text) > 0,
-                    not any([word in nougat_text for word in settings.NOUGAT_HALLUCINATION_WORDS]),
-                    len(nougat_text) < max_char_length, # Reduce hallucinations
-                    len(nougat_text) >= len(block_text) * .8
-                ]
-                if all(conditions):
-                    block_line = Line(
-                        spans=[
-                            Span(
-                                text=nougat_text,
-                                bbox=bbox,
-                                span_id=f"{pnum}_{span_id}_fixeq",
-                                font="Latex",
-                                color=0,
-                                block_type="Formula"
-                            )
-                        ],
-                        bbox=bbox
-                    )
-                    new_page_blocks.append(Block(
-                        lines=[block_line],
-                        bbox=bbox,
-                        pnum=pnum
-                    ))
-                    used_nougat = True
-                    span_id += 1
-                    reformatted_blocks.append(len(new_page_blocks) - 1)
-                else:
-                    unsuccessful_ocr += 1
+            max_char_length = 2 * len(block_text) + 500
+            conditions = [
+                len(nougat_text) > 0,
+                not any([word in nougat_text for word in settings.NOUGAT_HALLUCINATION_WORDS]),
+                len(nougat_text) < max_char_length,  # Reduce hallucinations
+                len(nougat_text) >= len(block_text) * .8
+            ]
+            if all(conditions):
+                block_line = Line(
+                    spans=[
+                        Span(
+                            text=nougat_text,
+                            bbox=bbox,
+                            span_id=f"{pnum}_{span_id}_fixeq",
+                            font="Latex",
+                            color=0,
+                            block_type="Formula"
+                        )
+                    ],
+                    bbox=bbox
+                )
+                new_page_blocks.append(Block(
+                    lines=[block_line],
+                    bbox=bbox,
+                    pnum=pnum
+                ))
+                used_nougat = True
+                span_id += 1
+                reformatted_blocks.append(len(new_page_blocks) - 1)
+            else:
+                unsuccessful_ocr += 1
 
-            if not used_nougat:
-                # Sort so previous blocks are in order
-                selected_blocks = sorted(selected_blocks, key=lambda x: x[0])
-                for block_idx, block in selected_blocks:
-                    new_page_blocks.append(block)
+        if not used_nougat:
+            # Sort so previous blocks are in order
+            selected_blocks = sorted(selected_blocks, key=lambda x: x[0])
+            for block_idx, block in selected_blocks:
+                new_page_blocks.append(block)
 
-            i += 1
-        # Assign back to page
-        new_page = deepcopy(page)
-        new_page.blocks = new_page_blocks
-        new_blocks.append(new_page)
-    return new_blocks, {"successful_ocr": span_id, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}
+        i += 1
+    # Assign back to page
+    new_page = deepcopy(page)
+    new_page.blocks = new_page_blocks
+
+    return new_page, {"successful_ocr": span_id, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}
+
+
+def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model, parallel: int = 1):
+    unsuccessful_ocr = 0
+    eq_count = 0
+    successful_ocr = 0
+    new_blocks = []
+    with ThreadPoolExecutor(max_workers=parallel) as pool:
+        args_list = [(doc, pnum, page, block_types, nougat_model) for pnum, page in enumerate(blocks)]
+        results = pool.map(lambda a: replace_single_page_equations(*a), args_list)
+
+        for result in results:
+            new_page, stats = result
+            unsuccessful_ocr += stats["unsuccessful_ocr"]
+            eq_count += stats["equations"]
+            successful_ocr += stats["successful_ocr"]
+            new_blocks.append(new_page)
+
+    return new_blocks, {"successful_ocr": successful_ocr, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}

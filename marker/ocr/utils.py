@@ -3,7 +3,7 @@ from spellchecker import SpellChecker
 from marker.settings import settings
 
 
-def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.8, space_threshold=.5, newline_threshold=.3, alphanum_threshold=.5):
+def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.6, space_threshold=.5, newline_threshold=.4, alphanum_threshold=.5):
     if len(text) == 0:
         # Assume OCR failed if we have no text
         return True
@@ -11,20 +11,21 @@ def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.8, space_th
     words = wordpunct_tokenize(text)
     words = [w for w in words if w.strip()]
     alpha_words = [word for word in words if word.isalnum()]
-    nonalpha_words = [word for word in words if not word.isalnum()]
 
     if spell_lang:
+        # More than 60% of words are misspelled
         spell = SpellChecker(language=spell_lang)
         misspelled = spell.unknown(alpha_words)
-        if len(misspelled) + len(nonalpha_words) > len(words) * misspell_threshold:
+        if len(misspelled) > len(alpha_words) * misspell_threshold:
             return True
+
     spaces = text.count(" ")
     # More than 50% of chars are spaces
     if spaces / len(text) > space_threshold:
         return True
 
     newlines = text.count("\n")
-    # More than 30% of chars are newlines
+    # More than 40% of chars are newlines
     if newlines / len(text) > newline_threshold:
         return True
 
@@ -36,7 +37,7 @@ def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.8, space_th
         if char in settings.INVALID_CHARS:
             invalid_chars += 1
 
-    if invalid_chars > max(2.0, len(text) * .02):
+    if invalid_chars > max(3.0, len(text) * .03):
         return True
 
     return False

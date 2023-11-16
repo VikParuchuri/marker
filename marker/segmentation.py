@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
 from transformers import LayoutLMv3ForTokenClassification
@@ -20,6 +21,7 @@ processor = LayoutLMv3Processor.from_pretrained("microsoft/layoutlmv3-base", app
 
 CHUNK_KEYS = ["input_ids", "attention_mask", "bbox", "offset_mapping"]
 NO_CHUNK_KEYS = ["pixel_values"]
+
 
 def load_layout_model():
     model = LayoutLMv3ForTokenClassification.from_pretrained("Kwan0/layoutlmv3-base-finetune-DocLayNet-100k").to(settings.TORCH_DEVICE)
@@ -44,16 +46,14 @@ def load_layout_model():
     return model
 
 
-def detect_all_block_types(doc, blocks: List[Page], layoutlm_model):
+def detect_all_block_types(doc, blocks: List[Page], layoutlm_model, parallel: int = 1):
     block_types = []
-    for page_blocks in blocks:
-        pnum = page_blocks.pnum
-        page = doc[pnum]
-        predictions = []
-        # Don't make predictions for blank lines
-        if len(page_blocks.get_all_lines()) > 0:
-            predictions = detect_page_block_types(page, page_blocks, layoutlm_model)
-        block_types.append(predictions)
+    with ThreadPoolExecutor(max_workers=parallel) as pool:
+        args_list = [(doc[blocks[i].pnum], blocks[i], layoutlm_model) for i in range(len(blocks))]
+        results = pool.map(lambda a: detect_page_block_types(*a), args_list)
+
+        for result in results:
+            block_types.append(result)
     return block_types
 
 
@@ -68,6 +68,9 @@ def resize_image(png_image, max_size=8000):
 
 
 def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
+    if len(page_blocks.get_all_lines()) == 0:
+        return []
+
     page_box = page.bound()
     pwidth = page_box[2] - page_box[0]
     pheight = page_box[3] - page_box[1]

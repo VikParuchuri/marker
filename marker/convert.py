@@ -53,7 +53,14 @@ def get_length_of_text(fname: str) -> int:
     return len(full_text)
 
 
-def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None, metadata: Dict | None=None) -> Tuple[str, Dict]:
+def convert_single_pdf(
+        fname: str,
+        layoutlm_model,
+        nougat_model,
+        max_pages=None,
+        metadata: Dict | None=None,
+        parallel: int = 1
+) -> Tuple[str, Dict]:
     lang = settings.DEFAULT_LANG
     if metadata:
         lang = metadata.get("language", settings.DEFAULT_LANG)
@@ -78,7 +85,7 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None,
         conv = doc.convert_to_pdf()
         doc = pymupdf.open("pdf", conv)
 
-    blocks, toc, ocr_stats = get_text_blocks(doc, tess_lang, spell_lang, max_pages=max_pages)
+    blocks, toc, ocr_stats = get_text_blocks(doc, tess_lang, spell_lang, max_pages=max_pages, parallel=parallel)
 
     out_meta["toc"] = toc
     out_meta["pages"] = len(blocks)
@@ -87,7 +94,7 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None,
         print(f"Could not extract any text blocks for {fname}")
         return "", out_meta
 
-    block_types = detect_all_block_types(doc, blocks, layoutlm_model)
+    block_types = detect_all_block_types(doc, blocks, layoutlm_model, parallel=parallel)
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(blocks)
@@ -111,7 +118,7 @@ def convert_single_pdf(fname: str, layoutlm_model, nougat_model, max_pages=None,
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
 
-    filtered, eq_stats = replace_equations(doc, filtered, block_types, nougat_model)
+    filtered, eq_stats = replace_equations(doc, filtered, block_types, nougat_model, parallel=parallel)
     out_meta["block_stats"]["equations"] = eq_stats
 
     # Copy to avoid changing original data
