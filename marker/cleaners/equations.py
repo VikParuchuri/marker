@@ -12,6 +12,10 @@ from marker.bbox import should_merge_blocks, merge_boxes, multiple_boxes_interse
 from marker.settings import settings
 from marker.schema import Page, Span, Line, Block, BlockType
 from nougat.utils.device import move_to_device
+import os
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 
 def load_nougat_model():
     ckpt = get_checkpoint(None, model_tag="0.1.0-small")
@@ -53,7 +57,7 @@ def get_nougat_text(page, bbox, selected_bboxes, nougat_model, max_length=settin
     png_image = mask_bbox(png_image, bbox, selected_bboxes)
     png_image = png_image.convert("RGB")
 
-    nougat_model.config.max_length = min(max_length, settings.NOUGAT_MODEL_MAX + settings.NOUGAT_TOKEN_BUFFER)
+    nougat_model.config.max_length = max_length
     output = nougat_model.inference(image=png_image)
     return output["predictions"][0]
 
@@ -122,12 +126,15 @@ def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
 
         used_nougat = False
         # Add small buffer to max tokens
-        if get_total_nougat_tokens(block_text, nougat_model) < settings.NOUGAT_MODEL_MAX + settings.NOUGAT_TOKEN_BUFFER:
+        if get_total_nougat_tokens(block_text, nougat_model) < settings.NOUGAT_MODEL_MAX:
             selected_bboxes = [bl.bbox for i, bl in selected_blocks]
             # This prevents hallucinations from running on for a long time
+            # We use simple length (based on chars), since latex adds extra tokens
             max_tokens = len(block_text) + settings.NOUGAT_MIN_TOKENS
+            max_tokens = min(max_tokens, settings.NOUGAT_MODEL_MAX + settings.NOUGAT_TOKEN_BUFFER)
             nougat_text = get_nougat_text(doc[pnum], bbox, selected_bboxes, nougat_model, max_length=max_tokens)
 
+            # Conditions for not being hallucinated
             conditions = [
                 len(nougat_text) > 0,
                 not any([word in nougat_text for word in settings.NOUGAT_HALLUCINATION_WORDS]),

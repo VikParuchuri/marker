@@ -1,6 +1,7 @@
 import argparse
 import tempfile
 import time
+from collections import defaultdict
 
 from tqdm import tqdm
 
@@ -13,6 +14,9 @@ import json
 import os
 import subprocess
 import shutil
+import fitz as pymupdf
+from marker.settings import settings
+from tabulate import tabulate
 
 configure_logging()
 
@@ -29,77 +33,86 @@ def nougat_prediction(pdf_filename, batch_size=1):
     return data
 
 
+def naive_get_text(pdf_filename):
+    doc = pymupdf.open(pdf_filename)
+    full_text = ""
+    for page in doc:
+        full_text += page.get_text("text", sort=True, flags=settings.TEXT_FLAGS)
+        full_text += "\n"
+    return full_text
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Benchmark PDF to MD conversion.  Needs source pdfs, and a refernece folder with the correct markdown.")
     parser.add_argument("in_folder", help="Input PDF files")
     parser.add_argument("reference_folder", help="Reference folder with reference markdown files")
     parser.add_argument("out_file", help="Output filename")
     parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
-    # A batch size of 4 for nougat has about the same GPU VRAM usage as 12 for marker
     parser.add_argument("--nougat_batch_size", type=int, default=4, help="Batch size to use when making predictions")
-    parser.add_argument("--marker_parallel", type=int, default=12, help="Number of marker processes to run in parallel")
+    parser.add_argument("--marker_parallel", type=int, default=4, help="Number of marker processes to run in parallel")
     parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
     args = parser.parse_args()
+
+    methods = ["naive", "marker"]
+    if args.nougat:
+        methods.append("nougat")
 
     layoutlm_model = load_layout_model()
     nougat_model = load_nougat_model()
 
-    marker_scores = {}
-    marker_time = 0
-    nougat_scores = {}
-    nougat_time = 0
+    scores = defaultdict(dict)
     benchmark_files = os.listdir(args.in_folder)
     benchmark_files = [b for b in benchmark_files if b.endswith(".pdf")]
+    times = defaultdict(int)
 
     for fname in tqdm(benchmark_files):
-        pdf_filename = os.path.join(args.in_folder, fname)
-        start = time.time()
-        full_text, out_meta = convert_single_pdf(pdf_filename, layoutlm_model, nougat_model, parallel=args.marker_parallel)
-        marker_time += time.time() - start
-
         md_filename = fname.rsplit(".", 1)[0] + ".md"
 
         reference_filename = os.path.join(args.reference_folder, md_filename)
         with open(reference_filename, "r") as f:
             reference = f.read()
 
-        score = score_text(full_text, reference)
-        marker_scores[fname] = score
-
-        if args.md_out_path:
-            marker_filename = f"marker_{md_filename}"
-            with open(os.path.join(args.md_out_path, marker_filename), "w+") as f:
-                f.write(full_text)
-
-        if args.nougat:
+        for method in methods:
+            pdf_filename = os.path.join(args.in_folder, fname)
             start = time.time()
-            nougat_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
-            nougat_time += time.time() - start
+            if method == "marker":
+                full_text, out_meta = convert_single_pdf(pdf_filename, layoutlm_model, nougat_model, parallel=args.marker_parallel)
+            elif method == "nougat":
+                full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
+            elif method == "naive":
+                full_text = naive_get_text(pdf_filename)
+            else:
+                raise ValueError(f"Unknown method {method}")
 
-            score = score_text(nougat_text, reference)
-            nougat_scores[fname] = score
+            times[method] += time.time() - start
+
+            score = score_text(full_text, reference)
+            scores[method][fname] = score
 
             if args.md_out_path:
-                nougat_filename = f"nougat_{md_filename}"
-                with open(os.path.join(args.md_out_path, nougat_filename), "w+") as f:
-                    f.write(nougat_text)
+                md_out_filename = f"{method}_{md_filename}"
+                with open(os.path.join(args.md_out_path, md_out_filename), "w+") as f:
+                    f.write(full_text)
 
     with open(args.out_file, "w+") as f:
-        write_data = {
-            "marker": {
-                "avg_score": sum(marker_scores.values()) / len(marker_scores),
-                "scores": marker_scores,
-                "time_per_doc": marker_time / len(marker_scores)
-            }
-        }
-
-        if args.nougat:
-            write_data["nougat"] = {
-                "avg_score": sum(nougat_scores.values()) / len(nougat_scores),
-                "scores": nougat_scores,
-                "time_per_doc": nougat_time / len(nougat_scores)
+        write_data = defaultdict(dict)
+        for method in methods:
+            write_data[method] = {
+                "avg_score": sum(scores[method].values()) / len(scores[method]),
+                "scores": scores[method],
+                "time_per_doc": times[method] / len(scores[method])
             }
 
         json.dump(write_data, f, indent=4)
 
-    print(write_data)
+    summary_table = []
+    score_table = []
+    score_headers = benchmark_files
+    for method in methods:
+        summary_table.append([method, write_data[method]["avg_score"], write_data[method]["time_per_doc"]])
+        score_table.append([method, *[write_data[method]["scores"][h] for h in score_headers]])
+
+    print(tabulate(summary_table, headers=["Method", "Average Score", "Time per doc"]))
+    print("")
+    print("Scores by file")
+    print(tabulate(score_table, headers=["Method", *score_headers]))

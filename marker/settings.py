@@ -10,7 +10,7 @@ import fitz as pymupdf
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
-    TASKS_PER_GPU: int = 30 # Each process needs about 1.5GB of VRAM, so set this accordingly
+    MAX_TASKS_PER_GPU: int = 30 # Each process needs about 1.5GB of VRAM, so set this accordingly
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
         "application/epub+zip": "epub",
@@ -18,12 +18,13 @@ class Settings(BaseSettings):
         "application/vnd.ms-xpsdocument": "xps",
         "application/x-fictionbook+xml": "fb2"
     }
-    DEFAULT_LANG: str = "eng" # Default language we assume files to be in
+    DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
     # PyMuPDF
     TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
 
     # OCR
+    OCR_PARALLELISM: int = 2 # OCR is CPU-bound, so can add extra parallelism here
     INVALID_CHARS: List[str] = [chr(0xfffd)]
     DPI: int = 800
     SEGMENT_DPI: int = 1200

@@ -92,7 +92,7 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None 
     range_end = len(doc)
     if max_pages:
         range_end = min(max_pages, len(doc))
-    with ThreadPoolExecutor(max_workers=parallel) as pool:
+    with ThreadPoolExecutor(max_workers=parallel * settings.OCR_PARALLELISM) as pool:
         args_list = [(doc, pnum, tess_lang, spell_lang) for pnum in range(range_end)]
         if parallel == 1:
             func = map

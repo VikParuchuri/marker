@@ -66,13 +66,13 @@ def convert_single_pdf(
         lang = metadata.get("language", settings.DEFAULT_LANG)
 
     # Use tesseract language if available
-    tess_lang = settings.TESSERACT_LANGUAGES.get(lang, settings.DEFAULT_LANG)
-    spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang)
+    tess_lang = settings.TESSERACT_LANGUAGES.get(lang, "eng")
+    spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang, "en")
     if "eng" not in tess_lang:
         tess_lang = f"eng+{tess_lang}"
 
     # Output metadata
-    out_meta = {"lang": lang}
+    out_meta = {"language": lang}
 
     filetype = find_filetype(fname)
     if filetype == "other":

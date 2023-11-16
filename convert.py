@@ -18,7 +18,7 @@ import json
 configure_logging()
 
 
-@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=1/settings.TASKS_PER_GPU if settings.CUDA else 0)
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=1/settings.MAX_TASKS_PER_GPU if settings.CUDA else 0)
 def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, metadata: Dict | None=None, min_length: int | None = None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of pdfs to convert")
     parser.add_argument("--workers", type=int, default=5, help="Number of worker processes to use")
-    parser.add_argument("--metadata_file", type=str, default=None, help="Metadata file to use for filtering")
+    parser.add_argument("--metadata_file", type=str, default=None, help="Metadata json file to use for filtering")
     parser.add_argument("--min_length", type=int, default=None, help="Minimum length of pdf to convert")
 
     args = parser.parse_args()

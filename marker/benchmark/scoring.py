@@ -1,8 +1,8 @@
-from thefuzz import fuzz
+from rapidfuzz import fuzz
 import re
 
-CHUNK_SIZE = 256
-CHUNK_OVERLAP = 128
+CHUNK_SIZE = 128
+CHUNK_OVERLAP = 96
 
 
 def tokenize(text):
