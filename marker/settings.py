@@ -47,8 +47,9 @@ class Settings(BaseSettings):
     OCR_ALL_PAGES: bool = False
 
     # Nougat Model
-    NOUGAT_MODEL_MAX: int = 768 # Max inference length for nougat
+    NOUGAT_MODEL_MAX: int = 896 # Max inference length for nougat
     NOUGAT_MIN_TOKENS: int = 192 # Min number of tokens to allow nougat to generate
+    NOUGAT_TOKEN_BUFFER: int = 128 # Number of tokens to buffer above max for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
                                   "\par\par\par", "## Chapter", "Fig.", "particle"]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat

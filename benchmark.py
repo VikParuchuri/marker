@@ -38,6 +38,7 @@ if __name__ == "__main__":
     # A batch size of 4 for nougat has about the same GPU VRAM usage as 12 for marker
     parser.add_argument("--nougat_batch_size", type=int, default=4, help="Batch size to use when making predictions")
     parser.add_argument("--marker_parallel", type=int, default=12, help="Number of marker processes to run in parallel")
+    parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
     args = parser.parse_args()
 
     layoutlm_model = load_layout_model()
@@ -49,18 +50,26 @@ if __name__ == "__main__":
     nougat_time = 0
     benchmark_files = os.listdir(args.in_folder)
     benchmark_files = [b for b in benchmark_files if b.endswith(".pdf")]
+
     for fname in tqdm(benchmark_files):
         pdf_filename = os.path.join(args.in_folder, fname)
         start = time.time()
         full_text, out_meta = convert_single_pdf(pdf_filename, layoutlm_model, nougat_model, parallel=args.marker_parallel)
         marker_time += time.time() - start
 
-        reference_filename = os.path.join(args.reference_folder, fname.rsplit(".", 1)[0] + ".md")
+        md_filename = fname.rsplit(".", 1)[0] + ".md"
+
+        reference_filename = os.path.join(args.reference_folder, md_filename)
         with open(reference_filename, "r") as f:
             reference = f.read()
 
         score = score_text(full_text, reference)
         marker_scores[fname] = score
+
+        if args.md_out_path:
+            marker_filename = f"marker_{md_filename}"
+            with open(os.path.join(args.md_out_path, marker_filename), "w+") as f:
+                f.write(full_text)
 
         if args.nougat:
             start = time.time()
@@ -69,6 +78,11 @@ if __name__ == "__main__":
 
             score = score_text(nougat_text, reference)
             nougat_scores[fname] = score
+
+            if args.md_out_path:
+                nougat_filename = f"nougat_{md_filename}"
+                with open(os.path.join(args.md_out_path, nougat_filename), "w+") as f:
+                    f.write(nougat_text)
 
     with open(args.out_file, "w+") as f:
         write_data = {

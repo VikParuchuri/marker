@@ -53,9 +53,15 @@ def get_nougat_text(page, bbox, selected_bboxes, nougat_model, max_length=settin
     png_image = mask_bbox(png_image, bbox, selected_bboxes)
     png_image = png_image.convert("RGB")
 
-    nougat_model.config.max_length = min(max_length, settings.NOUGAT_MODEL_MAX)
+    nougat_model.config.max_length = min(max_length, settings.NOUGAT_MODEL_MAX + settings.NOUGAT_TOKEN_BUFFER)
     output = nougat_model.inference(image=png_image)
     return output["predictions"][0]
+
+
+def get_total_nougat_tokens(text, nougat_model):
+    tokenizer = nougat_model.decoder.tokenizer
+    tokens = tokenizer(text)
+    return len(tokens["input_ids"])
 
 
 def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
@@ -88,7 +94,11 @@ def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
                 bbox = merge_boxes(prev_bbox, bbox)
                 prev_block = new_page_blocks[j]
                 prev_bbox = prev_block.bbox
-                block_text = prev_block.prelim_text + " " + block_text
+                prelim_block_text = prev_block.prelim_text + " " + block_text
+                if get_total_nougat_tokens(prelim_block_text, nougat_model) >= settings.NOUGAT_MODEL_MAX:
+                    break
+
+                block_text = prelim_block_text
                 new_page_blocks = new_page_blocks[:-1]  # Remove the previous block, since we're merging it in
                 selected_blocks.append((j, prev_block))
                 j -= 1
@@ -99,7 +109,11 @@ def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
             while (should_merge_blocks(bbox, next_bbox) or next_block.contains_equation(
                     equation_boxes)) and i + 1 < len(page.blocks):
                 bbox = merge_boxes(bbox, next_bbox)
-                block_text += " " + next_block.prelim_text
+                prelim_block_text = block_text + " " + next_block.prelim_text
+                if get_total_nougat_tokens(prelim_block_text, nougat_model) >= settings.NOUGAT_MODEL_MAX:
+                    break
+
+                block_text = prelim_block_text
                 i += 1
                 selected_blocks.append((i, next_block))
                 if i + 1 < len(page.blocks):
@@ -107,17 +121,17 @@ def replace_single_page_equations(doc, pnum, page, block_types, nougat_model):
                     next_bbox = next_block.bbox
 
         used_nougat = False
-        if len(block_text) < 2000:
+        # Add small buffer to max tokens
+        if get_total_nougat_tokens(block_text, nougat_model) < settings.NOUGAT_MODEL_MAX + settings.NOUGAT_TOKEN_BUFFER:
             selected_bboxes = [bl.bbox for i, bl in selected_blocks]
             # This prevents hallucinations from running on for a long time
-            max_tokens = len(block_text) // 3 + settings.NOUGAT_MIN_TOKENS
+            max_tokens = len(block_text) + settings.NOUGAT_MIN_TOKENS
             nougat_text = get_nougat_text(doc[pnum], bbox, selected_bboxes, nougat_model, max_length=max_tokens)
 
-            max_char_length = 2 * len(block_text) + 500
             conditions = [
                 len(nougat_text) > 0,
                 not any([word in nougat_text for word in settings.NOUGAT_HALLUCINATION_WORDS]),
-                len(nougat_text) < max_char_length,  # Reduce hallucinations
+                get_total_nougat_tokens(nougat_text, nougat_model) < max_tokens, # Make sure we didn't run to the token max
                 len(nougat_text) >= len(block_text) * .8
             ]
             if all(conditions):
