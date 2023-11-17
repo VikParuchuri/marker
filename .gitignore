@@ -5,6 +5,7 @@ experiments
 test_data
 training
 benchmark_data
+wandb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

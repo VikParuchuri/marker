@@ -3,6 +3,7 @@ from typing import List
 
 import fitz as pymupdf
 import ocrmypdf
+from spellchecker import SpellChecker
 
 from marker.ocr.utils import detect_bad_ocr
 from marker.schema import Block
@@ -11,7 +12,7 @@ from marker.settings import settings
 ocrmypdf.configure_logging(verbosity=ocrmypdf.Verbosity.quiet)
 
 
-def ocr_entire_page_ocrmp(page, lang: str, spell_lang: str | None) -> List[Block]:
+def ocr_entire_page_ocrmp(page, lang: str, spellchecker: SpellChecker | None = None) -> List[Block]:
     # Use ocrmypdf to get OCR text for the whole page
     src = page.parent  # the page's document
     blank_doc = pymupdf.open()  # make temporary 1-pager
@@ -38,26 +39,7 @@ def ocr_entire_page_ocrmp(page, lang: str, spell_lang: str | None) -> List[Block
     if len(full_text) == 0:
         return []
 
-    if detect_bad_ocr(full_text, spell_lang):
+    if detect_bad_ocr(full_text, spellchecker):
         return []
 
-    return blocks
-
-
-def ocr_entire_page_tess(page, lang: str, spell_lang: str | None) -> List[Block]:
-    try:
-        full_tp = page.get_textpage_ocr(flags=settings.TEXT_FLAGS, dpi=settings.DPI, full=True, language=lang)
-        blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp)["blocks"]
-        full_text = page.get_text("text", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp)
-
-        if len(full_text) == 0:
-            return []
-
-        # Check spelling to determine if OCR worked
-        # If it didn't, return empty list
-        # OCR can fail if there is a scanned blank page with some faint text impressions, for example
-        if detect_bad_ocr(full_text, spell_lang):
-            return []
-    except RuntimeError:
-        return []
     return blocks

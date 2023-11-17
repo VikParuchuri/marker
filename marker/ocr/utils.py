@@ -3,7 +3,7 @@ from spellchecker import SpellChecker
 from marker.settings import settings
 
 
-def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.6, space_threshold=.5, newline_threshold=.4, alphanum_threshold=.5):
+def detect_bad_ocr(text, spellchecker: SpellChecker | None, misspell_threshold=.6, space_threshold=.5, newline_threshold=.4, alphanum_threshold=.4):
     if len(text) == 0:
         # Assume OCR failed if we have no text
         return True
@@ -12,10 +12,8 @@ def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.6, space_th
     words = [w for w in words if w.strip()]
     alpha_words = [word for word in words if word.isalnum()]
 
-    if spell_lang:
-        # More than 60% of words are misspelled
-        spell = SpellChecker(language=spell_lang)
-        misspelled = spell.unknown(alpha_words)
+    if spellchecker:
+        misspelled = spellchecker.unknown(alpha_words)
         if len(misspelled) > len(alpha_words) * misspell_threshold:
             return True
 
@@ -32,11 +30,7 @@ def detect_bad_ocr(text, spell_lang: str | None, misspell_threshold=.6, space_th
     if alphanum_ratio(text) < alphanum_threshold: # Garbled text
         return True
 
-    invalid_chars = 0
-    for char in text:
-        if char in settings.INVALID_CHARS:
-            invalid_chars += 1
-
+    invalid_chars = len([c for c in text if c in settings.INVALID_CHARS])
     if invalid_chars > max(3.0, len(text) * .03):
         return True
 

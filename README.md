@@ -1,6 +1,6 @@
 # Marker
 
-This project converts PDF, EPUB, and MOBI to Markdown, balancing speed with quality.  It runs on GPU or CPU, with configurable parallelism.  It is up to 10x faster than nougat, and minimizes hallucinations.
+Marker converts PDF, EPUB, and MOBI to Markdown, balancing speed with quality.  It runs on GPU or CPU, with configurable parallelism.  It is up to 10x faster than nougat, and minimizes hallucinations.
 
 Features:
 

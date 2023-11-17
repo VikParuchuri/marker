@@ -10,6 +10,7 @@ from marker.logger import configure_logging
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 from marker.benchmark.scoring import score_text
+from marker.extract_text import naive_get_text
 import json
 import os
 import subprocess
@@ -31,15 +32,6 @@ def nougat_prediction(pdf_filename, batch_size=1):
         data = f.read()
     shutil.rmtree(out_dir)
     return data
-
-
-def naive_get_text(pdf_filename):
-    doc = pymupdf.open(pdf_filename)
-    full_text = ""
-    for page in doc:
-        full_text += page.get_text("text", sort=True, flags=settings.TEXT_FLAGS)
-        full_text += "\n"
-    return full_text
 
 
 if __name__ == "__main__":
@@ -72,15 +64,17 @@ if __name__ == "__main__":
         with open(reference_filename, "r") as f:
             reference = f.read()
 
+        pdf_filename = os.path.join(args.in_folder, fname)
+        doc = pymupdf.open(pdf_filename)
+
         for method in methods:
-            pdf_filename = os.path.join(args.in_folder, fname)
             start = time.time()
             if method == "marker":
                 full_text, out_meta = convert_single_pdf(pdf_filename, layoutlm_model, nougat_model, parallel=args.marker_parallel)
             elif method == "nougat":
                 full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
             elif method == "naive":
-                full_text = naive_get_text(pdf_filename)
+                full_text = naive_get_text(doc)
             else:
                 raise ValueError(f"Unknown method {method}")
 
