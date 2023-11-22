@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
+from marker.ordering import load_ordering_model
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 from marker.benchmark.scoring import score_text
@@ -51,6 +52,7 @@ if __name__ == "__main__":
 
     layoutlm_model = load_layout_model()
     nougat_model = load_nougat_model()
+    order_model = load_ordering_model()
 
     scores = defaultdict(dict)
     benchmark_files = os.listdir(args.in_folder)
@@ -70,7 +72,7 @@ if __name__ == "__main__":
         for method in methods:
             start = time.time()
             if method == "marker":
-                full_text, out_meta = convert_single_pdf(pdf_filename, layoutlm_model, nougat_model, parallel=args.marker_parallel)
+                full_text, out_meta = convert_single_pdf(pdf_filename, layoutlm_model, nougat_model, order_model, parallel=args.marker_parallel)
             elif method == "nougat":
                 full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
             elif method == "naive":

@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     LAYOUT_CHUNK_OVERLAP: int = 64
     LAYOUT_DPI: int = 96
 
+    # Ordering model
+    ORDERER_BATCH_SIZE: int = 8
+
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
     RAY_DASHBOARD_HOST: str = "127.0.0.1"
@@ -74,6 +77,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = find_dotenv("local.env")
+        extra = "ignore"
 
 
 settings = Settings()

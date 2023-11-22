@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
 import ftfy
@@ -130,9 +130,10 @@ class Block(BboxElement):
                 span.block_type = block_type
 
 
-class Page(BaseModel):
+class Page(BboxElement):
     blocks: List[Block]
     pnum: int
+    column_count: Optional[int] = None
 
     def get_nonblank_lines(self):
         lines = self.get_all_lines()

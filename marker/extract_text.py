@@ -57,16 +57,17 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: SpellCh
     return page_blocks
 
 
-def convert_single_page(doc, pnum, tess_lang: str, spell_lang: str, no_text: bool, min_ocr_page: int = 2):
+def convert_single_page(doc, pnum, tess_lang: str, spell_lang: str, no_text: bool, disable_ocr: bool = False, min_ocr_page: int = 2):
     ocr_pages = 0
     ocr_success = 0
     ocr_failed = 0
     spellchecker = None
+    page_bbox = doc[pnum].bound()
     if spell_lang:
         spellchecker = SpellChecker(language=spell_lang)
 
     blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker)
-    page_obj = Page(blocks=blocks, pnum=pnum)
+    page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
 
     # OCR page if we got minimal text, or if we got too many spaces
     conditions = [
@@ -75,11 +76,12 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: str, no_text: boo
             or
             (len(page_obj.prelim_text) > 0 and detect_bad_ocr(page_obj.prelim_text, spellchecker))  # Bad OCR
         ),
-        min_ocr_page < pnum < len(doc) - 1
+        min_ocr_page < pnum < len(doc) - 1,
+        not disable_ocr
     ]
     if all(conditions) or settings.OCR_ALL_PAGES:
         blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker, ocr=True)
-        page_obj = Page(blocks=blocks, pnum=pnum)
+        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
         ocr_pages = 1
         if len(blocks) == 0:
             ocr_failed = 1

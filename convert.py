@@ -8,6 +8,7 @@ from tqdm import tqdm
 import math
 
 from marker.convert import convert_single_pdf, get_length_of_text
+from marker.ordering import load_ordering_model
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
 from marker.settings import settings
@@ -19,7 +20,7 @@ configure_logging()
 
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=1/settings.MAX_TASKS_PER_GPU if settings.CUDA else 0)
-def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, metadata: Dict | None=None, min_length: int | None = None):
+def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, order_model, metadata: Dict | None=None, min_length: int | None = None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
     out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"
@@ -34,7 +35,7 @@ def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, 
             if length < min_length:
                 return
 
-        full_text, out_metadata = convert_single_pdf(fname, layout_model, nougat_model, metadata=metadata)
+        full_text, out_metadata = convert_single_pdf(fname, layout_model, nougat_model, order_model, metadata=metadata)
         if len(full_text.strip()) > 0:
             with open(out_filename, "w+") as f:
                 f.write(full_text)
@@ -95,9 +96,11 @@ if __name__ == "__main__":
 
     nougat_model = load_nougat_model()
     layoutlm_model = load_layout_model()
+    order_model = load_ordering_model()
 
     nougat_ref = ray.put(nougat_model)
     layoutlm_ref = ray.put(layoutlm_model)
+    order_ref = ray.put(order_model)
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
     futures = [
@@ -106,6 +109,7 @@ if __name__ == "__main__":
             out_folder,
             nougat_ref,
             layoutlm_ref,
+            order_ref,
             metadata=metadata.get(os.path.basename(filename)),
             min_length=args.min_length
         ) for filename in files_to_convert

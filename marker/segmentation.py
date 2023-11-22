@@ -61,25 +61,15 @@ def detect_all_block_types(doc, blocks: List[Page], layoutlm_model, parallel: in
     return block_types
 
 
-def resize_image(png_image, max_size=8000):
-    width, height = png_image.size
-
-    if width > max_size:
-        max_size = (max_size, max_size)
-
-        # Resize the image, preserving the aspect ratio
-        png_image.thumbnail(max_size, Image.LANCZOS)
-
-
 def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
     if len(page_blocks.get_all_lines()) == 0:
         return []
 
-    page_box = page.bound()
-    pwidth = page_box[2] - page_box[0]
-    pheight = page_box[3] - page_box[1]
+    page_box = page_blocks.bbox
+    pwidth = page_blocks.width
+    pheight = page_blocks.height
 
-    pix = page.get_pixmap(dpi=settings.LAYOUT_DPI, annots=False, clip=page.bound())
+    pix = page.get_pixmap(dpi=settings.LAYOUT_DPI, annots=False, clip=page_blocks.bbox)
     png = pix.pil_tobytes(format="PNG")
     png_image = Image.open(io.BytesIO(png))
     # If it is too large, make it smaller for the model
@@ -117,15 +107,6 @@ def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
 
     predictions = make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model)
     return predictions
-
-
-def find_first_false(lst, start_idx):
-    # Traverse the list to the left from start_idx
-    for idx in range(start_idx, -1, -1):
-        if not lst[idx]:
-            return idx
-
-    return 0  # Return 0 if no false found (aka, no lines)
 
 
 def get_provisional_boxes(pred, box, is_subword, start_idx=0):

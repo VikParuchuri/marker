@@ -4,6 +4,7 @@ from marker.cleaners.table import merge_table_blocks, create_new_tables
 from marker.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.cleaners.equations import replace_equations
+from marker.ordering import order_blocks
 from marker.segmentation import detect_all_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
@@ -57,6 +58,7 @@ def convert_single_pdf(
         fname: str,
         layoutlm_model,
         nougat_model,
+        order_model,
         max_pages=None,
         metadata: Dict | None=None,
         parallel: int = 1
@@ -102,6 +104,7 @@ def convert_single_pdf(
 
     annotate_spans(blocks, block_types)
 
+    blocks = order_blocks(doc, blocks, order_model)
     # Fix code blocks
     code_block_count = identify_code_blocks(blocks)
     out_meta["block_stats"]["code"] = code_block_count
