@@ -19,7 +19,7 @@ import json
 configure_logging()
 
 
-@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=1/settings.MAX_TASKS_PER_GPU if settings.CUDA else 0)
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
 def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, order_model, metadata: Dict | None=None, min_length: int | None = None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
@@ -102,9 +102,12 @@ if __name__ == "__main__":
     layoutlm_ref = ray.put(layoutlm_model)
     order_ref = ray.put(order_model)
 
+    # Dynamically set GPU allocation per task based on GPU ram
+    gpu_frac = settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
+
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
     futures = [
-        process_single_pdf.remote(
+        process_single_pdf.options(num_gpus=gpu_frac).remote(
             filename,
             out_folder,
             nougat_ref,

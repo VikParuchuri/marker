@@ -1,17 +1,16 @@
 # Marker
 
-Marker converts PDF, EPUB, and MOBI to Markdown, balancing speed with quality.  It runs on GPU or CPU, with configurable parallelism.  It is up to 10x faster than nougat, and minimizes hallucinations.
+Marker converts PDF, EPUB, and MOBI to Markdown.  It is up to 10x faster than nougat, works across many types of documents, and minimizes hallucinations. It runs on GPU or CPU, with configurable parallelism.
 
 Features:
 
-- Latex conversion for most equations
+- Support for a range of PDF documents (optimized for books and scientific papers)
+- Support for 1 and 2 column layouts
 - Removal of headers/footers/other artifacts
+- Latex conversion for most equations
 - Proper code block and table formatting
 - Support for multiple languages (although most testing is done in English)
-- Support for a range of PDF documents (optimized for books and scientific papers)
 - Works on GPU, CPU, or MPS (mac)
-
-PDF is a tricky format, so this will not always work perfectly, but it is good enough for most purposes.
 
 ## How it works
 
@@ -26,14 +25,17 @@ Marker minimizes autoregression, which reduces the risk of hallucinations to clo
 
 ## Limitations
 
+PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
+
 - Marker will convert fewer equations to latex that nougat.  This is because it has to first detect equations, then convert them without hallucation.
-- Marker is much faster than autoregressive methods, but much slower than heuristic methods like pdftotext.
+- Marker is much faster than autoregressive methods like nougat or kosmos, but much slower than just extracting text directly from the pdf with no processing.
 - Whitespace and indentations are not always respected.
-- Multicolumn documents will not always be in the correct order
+- Images and most charts will be removed, since text can't be extracted effectively.
+- Only languages similar to English (Spanish, French, German, Russian, etc) are supported.  Languages with different character sets (Chinese, Japanese, Korean, etc) are not.
 
 # Installation
 
-This has been tested on Mac, and Ubuntu.
+This has been tested on Mac and Linux (Ubuntu).
 
 **Clone repo**
 

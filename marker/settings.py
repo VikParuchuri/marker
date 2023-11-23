@@ -10,7 +10,8 @@ import fitz as pymupdf
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
-    MAX_TASKS_PER_GPU: int = 30 # Each process needs about 1.5GB of VRAM, so set this accordingly
+    INFERENCE_RAM: int = 40 # How much VRAM to allocate for inference per GPU (in GB).
+    VRAM_PER_TASK: float = 1.5 # How much VRAM to allocate per task (in GB)
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
         "application/epub+zip": "epub",
@@ -24,7 +25,6 @@ class Settings(BaseSettings):
     TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
 
     # OCR
-    OCR_PARALLELISM: int = 2 # OCR is CPU-bound, so can add extra parallelism here
     INVALID_CHARS: List[str] = [chr(0xfffd)]
     DPI: int = 800
     SEGMENT_DPI: int = 1200
@@ -48,13 +48,13 @@ class Settings(BaseSettings):
     OCR_ALL_PAGES: bool = False
 
     # Nougat Model
-    NOUGAT_MODEL_MAX: int = 896 # Max inference length for nougat
-    NOUGAT_MIN_TOKENS: int = 192 # Min number of tokens to allow nougat to generate
-    NOUGAT_TOKEN_BUFFER: int = 128 # Number of tokens to buffer above max for nougat
+    NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat
+    NOUGAT_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
-                                  "\par\par\par", "## Chapter", "Fig.", "particle"]
+                                  "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]"]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
     NOUGAT_MODEL_NAME: str = "facebook/nougat-small" # Name of the model to use
+    NOUGAT_BATCH_SIZE: int = 4
 
     # Layout Model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     LAYOUT_DPI: int = 96
 
     # Ordering model
-    ORDERER_BATCH_SIZE: int = 8
+    ORDERER_BATCH_SIZE: int = 16 # This can be high, because max token count is 128
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
