@@ -362,6 +362,17 @@ html5lib = ["html5lib"]
 lxml = ["lxml"]
 
 [[package]]
+name = "bitsandbytes"
+version = "0.41.2.post2"
+description = "k-bit optimizers and matrix multiplication routines."
+optional = false
+python-versions = "*"
+files = [
+    {file = "bitsandbytes-0.41.2.post2-py3-none-any.whl", hash = "sha256:98e5e1979aea3d481ed06181c689f3a154d7f5dc1af770c5173485bc54cf7b72"},
+    {file = "bitsandbytes-0.41.2.post2.tar.gz", hash = "sha256:d374da4700651f36a285ed53e012ee527736109614e3f5c0249985d41027136d"},
+]
+
+[[package]]
 name = "bleach"
 version = "6.1.0"
 description = "An easy safelist-based HTML-sanitizing tool."
@@ -5484,4 +5495,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "2fb598c6fe9ac11179d892a4c57a776a3274f2a26b24e4db308e44871ed2f8d3"
+content-hash = "867abbd491c21af26d74884792e63116aab25a1a362e1c719dfe145c6cc3c2bd"

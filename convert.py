@@ -8,6 +8,7 @@ from tqdm import tqdm
 import math
 
 from marker.convert import convert_single_pdf, get_length_of_text
+from marker.models import load_all_models
 from marker.ordering import load_ordering_model
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
@@ -20,7 +21,7 @@ configure_logging()
 
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, order_model, metadata: Dict | None=None, min_length: int | None = None):
+def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Dict | None=None, min_length: int | None = None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
     out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"
@@ -35,7 +36,7 @@ def process_single_pdf(fname: str, out_folder: str, nougat_model, layout_model, 
             if length < min_length:
                 return
 
-        full_text, out_metadata = convert_single_pdf(fname, layout_model, nougat_model, order_model, metadata=metadata)
+        full_text, out_metadata = convert_single_pdf(fname, model_refs, metadata=metadata)
         if len(full_text.strip()) > 0:
             with open(out_filename, "w+") as f:
                 f.write(full_text)
@@ -94,13 +95,8 @@ if __name__ == "__main__":
         log_to_driver=False
     )
 
-    nougat_model = load_nougat_model()
-    layoutlm_model = load_layout_model()
-    order_model = load_ordering_model()
-
-    nougat_ref = ray.put(nougat_model)
-    layoutlm_ref = ray.put(layoutlm_model)
-    order_ref = ray.put(order_model)
+    model_lst = load_all_models()
+    model_refs = [ray.put(m) if m else None for m in model_lst]
 
     # Dynamically set GPU allocation per task based on GPU ram
     gpu_frac = settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
@@ -110,9 +106,7 @@ if __name__ == "__main__":
         process_single_pdf.options(num_gpus=gpu_frac).remote(
             filename,
             out_folder,
-            nougat_ref,
-            layoutlm_ref,
-            order_ref,
+            model_refs,
             metadata=metadata.get(os.path.basename(filename)),
             min_length=args.min_length
         ) for filename in files_to_convert

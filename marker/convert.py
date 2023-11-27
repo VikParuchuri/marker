@@ -5,6 +5,7 @@ from marker.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.cleaners.equations import replace_equations
 from marker.ordering import order_blocks
+from marker.postprocessors.editor import edit_full_text
 from marker.segmentation import detect_all_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
@@ -56,9 +57,7 @@ def get_length_of_text(fname: str) -> int:
 
 def convert_single_pdf(
         fname: str,
-        layoutlm_model,
-        nougat_model,
-        order_model,
+        model_lst: List,
         max_pages=None,
         metadata: Dict | None=None,
         parallel: int = 1
@@ -95,6 +94,9 @@ def convert_single_pdf(
     if len([b for p in blocks for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
         return "", out_meta
+
+    # Unpack models from list
+    nougat_model, layoutlm_model, order_model, edit_model = model_lst
 
     block_types = detect_all_block_types(doc, blocks, layoutlm_model, parallel=parallel)
 
@@ -135,5 +137,7 @@ def convert_single_pdf(
 
     # Replace bullet characters with a -
     full_text = replace_bullets(full_text)
+    full_text, edit_stats = edit_full_text(full_text, edit_model)
+    out_meta["postprocess_stats"] = {"edit": edit_stats}
 
     return full_text, out_meta

@@ -2,6 +2,7 @@ import argparse
 
 from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
+from marker.models import load_all_models
 from marker.ordering import load_ordering_model
 from marker.segmentation import load_layout_model
 from marker.cleaners.equations import load_nougat_model
@@ -19,10 +20,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     fname = args.filename
-    layoutlm_model = load_layout_model()
-    nougat_model = load_nougat_model()
-    order_model = load_ordering_model()
-    full_text, out_meta = convert_single_pdf(fname, layoutlm_model, nougat_model, order_model, max_pages=args.max_pages, parallel=args.workers)
+    model_lst = load_all_models()
+    full_text, out_meta = convert_single_pdf(fname, model_lst, max_pages=args.max_pages, parallel=args.workers)
 
     with open(args.output, "w+") as f:
         f.write(full_text)

@@ -1,6 +1,6 @@
 # Marker
 
-Marker converts PDF, EPUB, and MOBI to Markdown.  It is up to 10x faster than nougat, works across many types of documents, and minimizes the risk of hallucinations significantly.
+Marker converts PDF, EPUB, and MOBI to Markdown.  It is 12x faster than nougat, works across many types of documents, and minimizes the risk of hallucinations significantly.
 
 Features:
 
@@ -115,18 +115,33 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.s
 
 # Benchmarks
 
-Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I can then convert the latex to text, and compare it to the output of marker using edit distance.
+Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I can then convert the latex to text, and compare the reference to the output of text extraction methods.
 
-Benchmarks show that marker is up to 10x faster than nougat, and more accurate outside arXiv (nougat is better inside arXiv):
+Benchmarks show that marker is 12x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
 
+**Speed**
 
+Method      Average Score    Time per doc
+--------  ---------------  --------------
+naive            0.287605      0.149704
+marker           0.62978       33.9778
+nougat           0.63989       395.091
 
+**Accuracy**
+
+First 3 are non-arXiv books, last 3 are arXiv papers.
+
+Method      thinkos.pdf    thinkdsp.pdf    thinkpython.pdf    switch_trans.pdf    crowd.pdf    multicolcnn.pdf
+--------  -------------  --------------  -----------------  ------------------  -----------  -----------------
+naive          0.366817        0.412014           0.468147             0.244739     0.14489           0.0890217
+marker         0.753291        0.787938           0.779262             0.478387     0.446068          0.533737
+nougat         0.638434        0.632723           0.637626             0.690028     0.540994          0.699539
 
 Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `3.7GB` for marker.
 
 ## Running your own benchmarks
 
-You can benchmark the performance of marker on your machine.  The benchmark consists of 3 scientific papers from arXiv, and 3 textbooks. 
+You can benchmark the performance of marker on your machine.
 
 Run `benchmark.py` like this:
 
@@ -134,7 +149,7 @@ Run `benchmark.py` like this:
 python benchmark.py benchmark_data/pdfs benchmark_data/references report.json --nougat
 ```
 
-This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each (4GB).
+This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each.
 
 Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
 
