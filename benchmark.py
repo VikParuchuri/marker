@@ -23,10 +23,8 @@ from tabulate import tabulate
 configure_logging()
 
 
-def nougat_prediction(pdf_filename, batch_size=2):
+def nougat_prediction(pdf_filename, batch_size=1):
     out_dir = tempfile.mkdtemp()
-    # No skipping avoids failure detection, so we attempt to convert the full doc
-    # Batch size 2 is to match VRAM usage of marker
     subprocess.run(["nougat", pdf_filename, "-o", out_dir, "--no-skipping", "--recompute", "--batchsize", str(batch_size)], check=True)
     md_file = os.listdir(out_dir)[0]
     with open(os.path.join(out_dir, md_file), "r") as f:

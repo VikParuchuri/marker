@@ -113,9 +113,22 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.s
 - `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
 - `NUM_WORKERS` is the number of parallel processes to run on each GPU.  Per-GPU parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK`.
 
-## Benchmark
+# Benchmarks
 
-You can benchmark the performance of marker on your machine.  Run `benchmark.py`, like this:
+Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I can then convert the latex to text, and compare it to the output of marker using edit distance.
+
+Benchmarks show that marker is up to 10x faster than nougat, and more accurate outside arXiv (nougat is better inside arXiv):
+
+
+
+
+Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `3.7GB` for marker.
+
+## Running your own benchmarks
+
+You can benchmark the performance of marker on your machine.  The benchmark consists of 3 scientific papers from arXiv, and 3 textbooks. 
+
+Run `benchmark.py` like this:
 
 ```
 python benchmark.py benchmark_data/pdfs benchmark_data/references report.json --nougat
@@ -128,3 +141,12 @@ Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running
 # Commercial usage
 
 Due to the licensing of the underlying models like layoutlmv3 and nougat, this is only suitable for noncommercial usage.  I'm building a version that can be used commercially. If you would like to get early access, email me at marker@vikas.sh.
+
+# Thanks
+
+This work would not have been possible without amazing open source models and datasets, including:
+
+- Nougat from Meta
+- Layoutlmv3 from Microsoft
+- DocLayNet from IBM
+- BLOOM from BigScience
