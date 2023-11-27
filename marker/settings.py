@@ -53,17 +53,19 @@ class Settings(BaseSettings):
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
                                   "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]"]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
-    NOUGAT_MODEL_NAME: str = "facebook/nougat-small" # Name of the model to use
-    NOUGAT_BATCH_SIZE: int = 4
+    NOUGAT_MODEL_NAME: str = "0.1.0-small" # Name of the model to use
+    NOUGAT_BATCH_SIZE: int = 4 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu
 
     # Layout Model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
     LAYOUT_MODEL_MAX: int = 512
     LAYOUT_CHUNK_OVERLAP: int = 64
     LAYOUT_DPI: int = 96
+    LAYOUT_MODEL_NAME: str = "vikp/layout_segmenter"
 
     # Ordering model
     ORDERER_BATCH_SIZE: int = 16 # This can be high, because max token count is 128
+    ORDERER_MODEL_NAME: str = "vikp/column_detector"
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache

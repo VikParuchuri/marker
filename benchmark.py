@@ -23,11 +23,11 @@ from tabulate import tabulate
 configure_logging()
 
 
-def nougat_prediction(pdf_filename, batch_size=1):
+def nougat_prediction(pdf_filename, batch_size=2):
     out_dir = tempfile.mkdtemp()
     # No skipping avoids failure detection, so we attempt to convert the full doc
-    # Batch size 1 is to compare to single-threaded marker
-    subprocess.run(["nougat", pdf_filename, "-o", out_dir, "--no-skipping", "--batchsize", str(batch_size)], check=True)
+    # Batch size 2 is to match VRAM usage of marker
+    subprocess.run(["nougat", pdf_filename, "-o", out_dir, "--no-skipping", "--recompute", "--batchsize", str(batch_size)], check=True)
     md_file = os.listdir(out_dir)[0]
     with open(os.path.join(out_dir, md_file), "r") as f:
         data = f.read()
@@ -41,8 +41,8 @@ if __name__ == "__main__":
     parser.add_argument("reference_folder", help="Reference folder with reference markdown files")
     parser.add_argument("out_file", help="Output filename")
     parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
-    parser.add_argument("--nougat_batch_size", type=int, default=4, help="Batch size to use when making predictions")
-    parser.add_argument("--marker_parallel", type=int, default=4, help="Number of marker processes to run in parallel")
+    parser.add_argument("--nougat_batch_size", type=int, default=settings.NOUGAT_BATCH_SIZE, help="Batch size to use for nougat when making predictions.")
+    parser.add_argument("--marker_parallel", type=int, default=4, help="Number of marker CPU processes to run in parallel")
     parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
     args = parser.parse_args()
 

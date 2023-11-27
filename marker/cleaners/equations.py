@@ -23,7 +23,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def load_nougat_model():
-    ckpt = get_checkpoint(None, model_tag="0.1.0-small")
+    ckpt = get_checkpoint(None, model_tag=settings.NOUGAT_MODEL_NAME)
     nougat_model = NougatModel.from_pretrained(ckpt)
     if settings.TORCH_DEVICE != "cpu":
         move_to_device(nougat_model, bf16=settings.CUDA, cuda=settings.CUDA)
@@ -94,7 +94,7 @@ def get_nougat_text_batched(images, reformat_region_lens, nougat_model):
         max_length += settings.NOUGAT_TOKEN_BUFFER
 
         nougat_model.config.max_length = max_length
-        model_output = nougat_model.inference(image_tensors=sample)
+        model_output = nougat_model.inference(image_tensors=sample, early_stopping=False)
         for j, output in enumerate(model_output["predictions"]):
             disclaimer = ""
             token_count = get_total_nougat_tokens(output, nougat_model)

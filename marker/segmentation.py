@@ -17,14 +17,14 @@ from math import isclose
 # Otherwise some images can be truncated
 Image.MAX_IMAGE_PIXELS = None
 
-processor = LayoutLMv3Processor.from_pretrained("microsoft/layoutlmv3-base", apply_ocr=False)
+processor = LayoutLMv3Processor.from_pretrained(settings.LAYOUT_MODEL_NAME, apply_ocr=False)
 
 CHUNK_KEYS = ["input_ids", "attention_mask", "bbox", "offset_mapping"]
 NO_CHUNK_KEYS = ["pixel_values"]
 
 
 def load_layout_model():
-    model = LayoutLMv3ForTokenClassification.from_pretrained("Kwan0/layoutlmv3-base-finetune-DocLayNet-100k").to(settings.TORCH_DEVICE)
+    model = LayoutLMv3ForTokenClassification.from_pretrained(settings.LAYOUT_MODEL_NAME).to(settings.TORCH_DEVICE)
     if settings.CUDA:
         model = model.to(torch.bfloat16)
 

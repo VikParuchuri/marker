@@ -1,6 +1,6 @@
 # Marker
 
-Marker converts PDF, EPUB, and MOBI to Markdown.  It is up to 10x faster than nougat, works across many types of documents, and minimizes hallucinations. It runs on GPU or CPU, with configurable parallelism.
+Marker converts PDF, EPUB, and MOBI to Markdown.  It is up to 10x faster than nougat, works across many types of documents, and minimizes the risk of hallucinations significantly.
 
 Features:
 
@@ -9,19 +9,21 @@ Features:
 - Removal of headers/footers/other artifacts
 - Latex conversion for most equations
 - Proper code block and table formatting
-- Support for multiple languages (although most testing is done in English)
-- Works on GPU, CPU, or MPS (mac)
+- Support for multiple languages (although most testing is done in English).  See `settings.py` for a list of supported languages.
+- Works on GPU, CPU, or MPS
 
 ## How it works
 
 Marker is a pipeline of steps and deep learning models:
 
-- OCR if text cannot be detected
-- Detect page layout
-- Format blocks properly based on layout
+- Loop through each document page, and:
+  - OCR the page if text cannot be detected
+  - Detect page layout
+  - Format blocks properly based on layout
+- Combine text from all pages
 - Postprocess extracted text
 
-Marker minimizes autoregression, which reduces the risk of hallucinations to close to zero, and improves speed.  The only parts of the document that are passed through an LLM forward pass are equation regions.
+Marker minimizes the use of autoregressive models, which reduces the risk of hallucinations to close to zero, and improves speed.  The only parts of a document that are passed through an LLM forward pass are equation blocks.
 
 ## Limitations
 
@@ -46,12 +48,12 @@ This has been tested on Mac and Linux (Ubuntu).
 
 - Install the system requirements at `install/apt-requirements.txt` for Linux or `install/brew-requirements.txt` for Mac
   - Linux only: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/).  You may get tesseract 4 otherwise.
-  - Linux only: Install ghostscript > 9.55 (see `install/ghostscript_install.sh` for details).
+  - Linux only: Install ghostscript > 9.55 (see `install/ghostscript_install.sh` for the commands).
 - Set the tesseract data folder path
   - Find the tesseract data folder `tessdata`
     - On mac, you can run `brew list tesseract`
-    - Or run `find / -name tessdata` to find it
-  - Create a `local.env` file with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+    - On linux, run `find / -name tessdata`
+  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 
 **Python packages**
 
@@ -62,7 +64,8 @@ This has been tested on Mac and Linux (Ubuntu).
 **Configuration**
 
 - Set your torch device in the `local.env` file.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`.  `cpu` is the default.
-  - If using GPU, set `MAX_TASKS_PER_GPU` to your GPU VRAM (per GPU) divided by 1.5 GB.  For example, if you have 16 GB of VRAM, set `MAX_TASKS_PER_GPU=10`.
+  - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
+  - Depending on your document types, marker's average memory usage per task can vary.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
 - Inspect the settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
 
 ## Convert a single file
@@ -73,7 +76,7 @@ Run `convert_single.py`, like this:
 python convert_single.py /path/to/file.pdf /path/to/output.md --workers 4 --max_pages 10
 ```
 
-- `--workers` is the number of parallel processes to run.  This is set to 1 by default, but you can increase it to speed up processing, at the cost of more CPU/GPU usage.
+- `--workers` is the number of parallel CPU processes to run for OCR.  This is set to 1 by default, but you can increase it to speed up processing.
 - `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
 
 Make sure the `DEFAULT_LANG` setting is set correctly for this.
@@ -86,14 +89,14 @@ Run `convert.py`, like this:
 python convert.py /path/to/input/folder /path/to/output/folder --workers 4 --max 10 --metadata_file /path/to/metadata.json
 ```
 
-- `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to speed up processing, at the cost of more CPU/GPU usage. This should not be higher than the `MAX_TASKS_PER_GPU` setting.
+- `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage. Parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK` if you're using GPU.
 - `--max` is the maximum number of pdfs to convert.  Omit this to convert all pdfs in the folder.
 - `--metadata_file` is an optional path to a json file with metadata about the pdfs.  If you provide it, it will be used to set the language for each pdf.  If not, `DEFAULT_LANG` will be used. The format is:
 
 ```
 {
   "pdf1.pdf": {"language": "English"},
-  "pdf2.pdf": {"language": "English"},
+  "pdf2.pdf": {"language": "Spanish"},
   ...
 }
 ```
@@ -107,15 +110,21 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.s
 ```
 
 - `METADATA_FILE` is an optional path to a json file with metadata about the pdfs.  See above for the format.
-- `NUM_DEVICES` is the number of GPUs to use.  Should be 2 or greater.
-- `NUM_WORKERS` is the number of parallel processes to run on each GPU.  This should not be higher than the `MAX_TASKS_PER_GPU` setting.
+- `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
+- `NUM_WORKERS` is the number of parallel processes to run on each GPU.  Per-GPU parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK`.
 
 ## Benchmark
 
-You can also benchmark the performance of the pipeline on your machine.  Run `benchmark.py`, like this:
+You can benchmark the performance of marker on your machine.  Run `benchmark.py`, like this:
 
 ```
 python benchmark.py benchmark_data/pdfs benchmark_data/references report.json --nougat
 ```
 
-This will benchmark marker against other text extraction methods.  Omit `--nougat` to exclude nougat from the benchmark. (it will take longer)
+This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each (4GB).
+
+Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
+
+# Commercial usage
+
+Due to the licensing of the underlying models like layoutlmv3 and nougat, this is only suitable for noncommercial usage.  I'm building a version that can be used commercially. If you would like to get early access, email me at marker@vikas.sh.

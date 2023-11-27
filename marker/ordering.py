@@ -12,11 +12,11 @@ import io
 from marker.schema import Page
 from marker.settings import settings
 
-processor = LayoutLMv3Processor.from_pretrained("vikp/column_detector")
+processor = LayoutLMv3Processor.from_pretrained(settings.ORDERER_MODEL_NAME)
 
 
 def load_ordering_model():
-    model = LayoutLMv3ForSequenceClassification.from_pretrained("vikp/column_detector").to(settings.TORCH_DEVICE)
+    model = LayoutLMv3ForSequenceClassification.from_pretrained(settings.ORDERER_MODEL_NAME).to(settings.TORCH_DEVICE)
     if settings.CUDA:
         model = model.to(torch.bfloat16)
     return model
