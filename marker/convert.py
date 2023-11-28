@@ -6,7 +6,7 @@ from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.cleaners.equations import replace_equations
 from marker.ordering import order_blocks
 from marker.postprocessors.editor import edit_full_text
-from marker.segmentation import detect_all_block_types
+from marker.segmentation import detect_document_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
 from marker.markdown import merge_spans, merge_lines, get_full_text
@@ -98,7 +98,7 @@ def convert_single_pdf(
     # Unpack models from list
     nougat_model, layoutlm_model, order_model, edit_model = model_lst
 
-    block_types = detect_all_block_types(doc, blocks, layoutlm_model, parallel=parallel)
+    block_types = detect_document_block_types(doc, blocks, layoutlm_model, parallel=parallel)
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(blocks)

@@ -62,15 +62,17 @@ class Settings(BaseSettings):
     LAYOUT_CHUNK_OVERLAP: int = 64
     LAYOUT_DPI: int = 96
     LAYOUT_MODEL_NAME: str = "vikp/layout_segmenter"
+    LAYOUT_BATCH_SIZE: int = 8 # Max 512 tokens means high batch size
 
     # Ordering model
-    ORDERER_BATCH_SIZE: int = 16 # This can be high, because max token count is 128
+    ORDERER_BATCH_SIZE: int = 32 # This can be high, because max token count is 128
     ORDERER_MODEL_NAME: str = "vikp/column_detector"
 
     # Final editing model
     EDITOR_BATCH_SIZE: int = 4
     EDITOR_MAX_LENGTH: int = 1024
     EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor"
+    DISABLE_EDITOR_MODEL: bool = True
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache

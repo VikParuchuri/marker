@@ -10,8 +10,8 @@ import torch
 tokenizer = AutoTokenizer.from_pretrained(settings.EDITOR_MODEL_NAME)
 
 
-def load_editing_model(disable_editor=False):
-    if disable_editor:
+def load_editing_model():
+    if settings.DISABLE_EDITOR_MODEL:
         return None
 
     if not settings.CUDA:
@@ -42,7 +42,7 @@ def load_editing_model(disable_editor=False):
 
 def edit_full_text(text: str, model: Optional[BloomForTokenClassification]):
     if not model:
-        return text
+        return text, {}
 
     tokenized = tokenizer(
         text,

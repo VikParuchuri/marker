@@ -81,7 +81,7 @@ def batch_inference(rgb_images, bboxes, words, model):
 
 def add_column_counts(doc, doc_blocks, model):
     for i in range(0, len(doc), settings.ORDERER_BATCH_SIZE):
-        batch = range(i, min(i + settings.ORDERER_BATCH_SIZE, len(doc)))
+        batch = range(i, min(i + settings.ORDERER_BATCH_SIZE, len(doc_blocks)))
         rgb_images = []
         bboxes = []
         words = []

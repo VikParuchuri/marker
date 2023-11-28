@@ -46,24 +46,23 @@ def load_layout_model():
     return model
 
 
-def detect_all_block_types(doc, blocks: List[Page], layoutlm_model, parallel: int = 1):
-    block_types = []
-    with ThreadPoolExecutor(max_workers=parallel) as pool:
-        args_list = [(doc[blocks[i].pnum], blocks[i], layoutlm_model) for i in range(len(blocks))]
-        if parallel == 1:
-            func = map
-        else:
-            func = pool.map
-        results = func(lambda a: detect_page_block_types(*a), args_list)
-
-        for result in results:
-            block_types.append(result)
+def detect_document_block_types(doc, blocks: List[Page], layoutlm_model, parallel: int = 1):
+    encodings, metadata, sample_lengths = get_features(doc, blocks)
+    predictions = predict_block_types(encodings, layoutlm_model)
+    block_types = match_predictions_to_boxes(encodings, predictions, metadata, sample_lengths, layoutlm_model)
+    assert len(block_types) == len(blocks)
     return block_types
 
 
-def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
+def get_provisional_boxes(pred, box, is_subword, start_idx=0):
+    prov_predictions = [pred_ for idx, pred_ in enumerate(pred) if not is_subword[idx]][start_idx:]
+    prov_boxes = [box_ for idx, box_ in enumerate(box) if not is_subword[idx]][start_idx:]
+    return prov_predictions, prov_boxes
+
+
+def get_page_encoding(page, page_blocks: Page):
     if len(page_blocks.get_all_lines()) == 0:
-        return []
+        return [], []
 
     page_box = page_blocks.bbox
     pwidth = page_blocks.width
@@ -105,17 +104,6 @@ def detect_page_block_types(page, page_blocks: Page, layoutlm_model):
         boxes.append(box)
         text.append(line.prelim_text)
 
-    predictions = make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model)
-    return predictions
-
-
-def get_provisional_boxes(pred, box, is_subword, start_idx=0):
-    prov_predictions = [pred_ for idx, pred_ in enumerate(pred) if not is_subword[idx]][start_idx:]
-    prov_boxes = [box_ for idx, box_ in enumerate(box) if not is_subword[idx]][start_idx:]
-    return prov_predictions, prov_boxes
-
-
-def make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model) -> List[BlockType]:
     # Normalize boxes for model (scale to 1000x1000)
     boxes = [normalize_box(box, pwidth, pheight) for box in boxes]
     for box in boxes:
@@ -124,74 +112,150 @@ def make_predictions(rgb_image, text, boxes, pwidth, pheight, layoutlm_model) ->
         assert(max(box)) <= 1000
         assert(min(box)) >= 0
 
-    encoding = processor(rgb_image, text=text, boxes=boxes, return_offsets_mapping=True, return_tensors="pt", truncation=True, stride=settings.LAYOUT_CHUNK_OVERLAP, padding="max_length", max_length=settings.LAYOUT_MODEL_MAX, return_overflowing_tokens=True)
+    encoding = processor(
+        rgb_image,
+        text=text,
+        boxes=boxes,
+        return_offsets_mapping=True,
+        truncation=True,
+        return_tensors="pt",
+        stride=settings.LAYOUT_CHUNK_OVERLAP,
+        padding="max_length",
+        max_length=settings.LAYOUT_MODEL_MAX,
+        return_overflowing_tokens=True
+    )
     offset_mapping = encoding.pop('offset_mapping')
     overflow_to_sample_mapping = encoding.pop('overflow_to_sample_mapping')
+    bbox = list(encoding["bbox"])
+    input_ids = list(encoding["input_ids"])
+    attention_mask = list(encoding["attention_mask"])
+    pixel_values = list(encoding["pixel_values"])
 
-    # change the shape of pixel values
-    x = []
-    for i in range(0, len(encoding['pixel_values'])):
-        x.append(encoding['pixel_values'][i])
-    x = torch.stack(x)
-    encoding['pixel_values'] = x
+    assert len(bbox) == len(input_ids) == len(attention_mask) == len(pixel_values) == len(offset_mapping)
 
-    if settings.CUDA:
-        encoding["pixel_values"] = encoding["pixel_values"].to(torch.bfloat16)
+    list_encoding = []
+    for i in range(len(bbox)):
+        list_encoding.append({
+            "bbox": bbox[i],
+            "input_ids": input_ids[i],
+            "attention_mask": attention_mask[i],
+            "pixel_values": pixel_values[i],
+            "offset_mapping": offset_mapping[i]
+        })
 
-    with torch.no_grad():
-        for k in ["bbox", "input_ids", "pixel_values", "attention_mask"]:
-            encoding[k] = encoding[k].to(settings.TORCH_DEVICE)
-        outputs = layoutlm_model(**encoding)
+    other_data = {
+        "original_bbox": boxes,
+        "pwidth": pwidth,
+        "pheight": pheight,
+    }
+    return list_encoding, other_data
 
-    logits = outputs.logits
-    # We take the highest score for each token, using argmax. This serves as the predicted label for each token.
-    predictions = logits.argmax(-1).squeeze().tolist()
-    token_boxes = encoding.bbox.squeeze().tolist()
 
-    if len(token_boxes) == settings.LAYOUT_MODEL_MAX:
-        predictions = [predictions]
-        token_boxes = [token_boxes]
+def get_features(doc, blocks):
+    encodings = []
+    metadata = []
+    sample_lengths = []
+    for i in range(len(blocks)):
+        encoding, other_data = get_page_encoding(doc[i], blocks[i])
+        encodings.extend(encoding)
+        metadata.append(other_data)
+        sample_lengths.append(len(encoding))
+    return encodings, metadata, sample_lengths
 
-    predicted_block_types = []
 
-    for i, (pred, box, mapped) in enumerate(zip(predictions, token_boxes, offset_mapping)):
-        is_subword = np.array(mapped.squeeze().tolist())[:, 0] != 0
-        overlap_adjust = 0
-        if i > 0:
-            overlap_adjust = 1 + settings.LAYOUT_CHUNK_OVERLAP - sum(is_subword[:1 + settings.LAYOUT_CHUNK_OVERLAP])
+def predict_block_types(encodings, layoutlm_model):
+    all_predictions = []
+    for i in range(0, len(encodings), settings.LAYOUT_BATCH_SIZE):
+        batch_start = i
+        batch_end = min(i + settings.LAYOUT_BATCH_SIZE, len(encodings))
+        batch = encodings[batch_start:batch_end]
 
-        prov_predictions, prov_boxes = get_provisional_boxes(pred, box, is_subword, overlap_adjust)
+        model_in = {}
+        for k in ["bbox", "input_ids", "attention_mask", "pixel_values"]:
+            model_in[k] = torch.stack([b[k] for b in batch]).to(settings.TORCH_DEVICE)
 
-        for prov_box, prov_prediction in zip(prov_boxes, prov_predictions):
-            if prov_box == [0, 0, 0, 0]:
-                continue
-            unnorm_box = unnormalize_box(prov_box, pwidth, pheight)
-            block_type = BlockType(
-                block_type=layoutlm_model.config.id2label[prov_prediction],
-                bbox=unnorm_box
-            )
+        if settings.CUDA:
+            model_in["pixel_values"] = model_in["pixel_values"].to(torch.bfloat16)
 
-            # Sometimes blocks will cross chunks, unclear why
-            if len(predicted_block_types) == 0 or unnorm_box != predicted_block_types[-1].bbox:
-                predicted_block_types.append(block_type)
+        with torch.inference_mode():
+            outputs = layoutlm_model(**model_in)
+            logits = outputs.logits
 
-    # Align bboxes
-    # This will search both lists to find matching bboxes
-    # This will align both sets of bboxes by index
-    # If there are duplicate bboxes, it may result in issues
-    aligned_blocks = []
-    for i in range(len(boxes)):
-        unnorm_box = unnormalize_box(boxes[i], pwidth, pheight)
-        appended = False
-        for j in range(len(predicted_block_types)):
-            if unnorm_box == predicted_block_types[j].bbox:
-                aligned_blocks.append(predicted_block_types[j])
-                appended = True
-                break
-        if not appended:
-            aligned_blocks.append(BlockType(
-                block_type="Text",
-                bbox=unnorm_box
-            ))
-    return aligned_blocks
+        predictions = logits.argmax(-1).squeeze().tolist()
+        if len(predictions) == settings.LAYOUT_MODEL_MAX:
+            predictions = [predictions]
+        all_predictions.extend(predictions)
+    return all_predictions
+
+
+def match_predictions_to_boxes(encodings, predictions, metadata, sample_lengths, layoutlm_model) -> List[List[BlockType]]:
+    assert len(encodings) == len(predictions) == sum(sample_lengths)
+    assert len(metadata) == len(sample_lengths)
+
+    page_start = 0
+    page_block_types = []
+    for pnum, sample_length in enumerate(sample_lengths):
+        # Page has no blocks
+        if sample_length == 0:
+            page_block_types.append([])
+            continue
+
+        page_data = metadata[pnum]
+        page_end = min(page_start + sample_length, len(predictions))
+        page_predictions = predictions[page_start:page_end]
+        page_encodings = encodings[page_start:page_end]
+        token_boxes = [e["bbox"] for e in page_encodings]
+        offset_mapping = [e["offset_mapping"] for e in page_encodings]
+        pwidth = page_data["pwidth"]
+        pheight = page_data["pheight"]
+        boxes = page_data["original_bbox"]
+
+        predicted_block_types = []
+
+        for i in range(len(token_boxes)):
+            assert len(token_boxes[i]) == len(page_predictions[i])
+
+        for i, (pred, box, mapped) in enumerate(zip(page_predictions, token_boxes, offset_mapping)):
+            box = box.tolist()
+            is_subword = np.array(mapped)[:, 0] != 0
+            overlap_adjust = 0
+            if i > 0:
+                overlap_adjust = 1 + settings.LAYOUT_CHUNK_OVERLAP - sum(is_subword[:1 + settings.LAYOUT_CHUNK_OVERLAP])
+
+            prov_predictions, prov_boxes = get_provisional_boxes(pred, box, is_subword, overlap_adjust)
+
+            for prov_box, prov_prediction in zip(prov_boxes, prov_predictions):
+                if prov_box == [0, 0, 0, 0]:
+                    continue
+                block_type = BlockType(
+                    block_type=layoutlm_model.config.id2label[prov_prediction],
+                    bbox=prov_box
+                )
+
+                # Sometimes blocks will cross chunks, unclear why
+                if len(predicted_block_types) == 0 or prov_box != predicted_block_types[-1].bbox:
+                    predicted_block_types.append(block_type)
+
+        # Align bboxes
+        # This will search both lists to find matching bboxes
+        # This will align both sets of bboxes by index
+        # If there are duplicate bboxes, it may result in issues
+        aligned_blocks = []
+        for i in range(len(boxes)):
+            unnorm_box = unnormalize_box(boxes[i], pwidth, pheight)
+            appended = False
+            for j in range(len(predicted_block_types)):
+                if boxes[i] == predicted_block_types[j].bbox:
+                    predicted_block_types[j].bbox = unnorm_box
+                    aligned_blocks.append(predicted_block_types[j])
+                    appended = True
+                    break
+            if not appended:
+                aligned_blocks.append(BlockType(
+                    block_type="Text",
+                    bbox=unnorm_box
+                ))
+        page_block_types.append(aligned_blocks)
+        page_start += sample_length
+    return page_block_types
 
