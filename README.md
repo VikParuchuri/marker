@@ -47,16 +47,18 @@ First, clone the repo:
 ## Linux
 
 - Install system requirements
-  - `cat install/apt-requirements.txt | xargs sudo apt-get install -y`
   - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `install/tesseract_5_install.sh`.
   - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `install/ghostscript_install.sh`.
+  - Install other requirements with `cat install/apt-requirements.txt | xargs sudo apt-get install -y`
 - Set the tesseract data folder path
   - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the right tesseract version if you have multiple!
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
+- Update pytorch as needed since poetry doesn't play nicely with it
   - GPU only: run `pip install torch` to install other torch dependencies.
+  - CPU only: Uninstall torch, then follow the [CPU install](https://pytorch.org/) instructions.
 
 ## Mac
 

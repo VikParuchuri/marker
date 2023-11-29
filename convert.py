@@ -92,14 +92,14 @@ if __name__ == "__main__":
         storage=settings.RAY_CACHE_PATH,
         _temp_dir=settings.RAY_CACHE_PATH,
         dashboard_host=settings.RAY_DASHBOARD_HOST,
-        log_to_driver=False
+        log_to_driver=settings.DEBUG
     )
 
     model_lst = load_all_models()
-    model_refs = [ray.put(m) if m else None for m in model_lst]
+    model_refs = ray.put(model_lst)
 
     # Dynamically set GPU allocation per task based on GPU ram
-    gpu_frac = settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
+    gpu_frac = settings.VRAM_PER_TASK / settings.INFERENCE_RAM if settings.CUDA else 0
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
     futures = [

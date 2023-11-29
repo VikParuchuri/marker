@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     TORCH_DEVICE: str = "cpu"
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
     VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB)
+    DEBUG: bool = False # Enable debug logging
+    DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
+
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
         "application/epub+zip": "epub",
@@ -19,7 +22,6 @@ class Settings(BaseSettings):
         "application/vnd.ms-xpsdocument": "xps",
         "application/x-fictionbook+xml": "fb2"
     }
-    DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
     # PyMuPDF
     TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
@@ -48,7 +50,7 @@ class Settings(BaseSettings):
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
     OCR_PARALLEL_WORKERS: int = 4 # How many CPU workers to use for OCR
 
-    # Nougat Model
+    # Nougat model
     NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat
     NOUGAT_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
@@ -57,7 +59,7 @@ class Settings(BaseSettings):
     NOUGAT_MODEL_NAME: str = "0.1.0-small" # Name of the model to use
     NOUGAT_BATCH_SIZE: int = 4 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu
 
-    # Layout Model
+    # Layout model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
     LAYOUT_MODEL_MAX: int = 512
     LAYOUT_CHUNK_OVERLAP: int = 64
