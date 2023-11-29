@@ -40,7 +40,8 @@ if __name__ == "__main__":
     parser.add_argument("reference_folder", help="Reference folder with reference markdown files")
     parser.add_argument("out_file", help="Output filename")
     parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
-    parser.add_argument("--nougat_batch_size", type=int, default=2, help="Batch size to use for nougat when making predictions.")
+    # Nougat batch size 1 uses about as much VRAM as default marker settings
+    parser.add_argument("--nougat_batch_size", type=int, default=1, help="Batch size to use for nougat when making predictions.")
     parser.add_argument("--marker_parallel_factor", type=int, default=1, help="How much to multiply default parallel OCR workers and model batch sizes by.")
     parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
     args = parser.parse_args()

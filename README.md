@@ -51,14 +51,14 @@ First, clone the repo:
   - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `install/ghostscript_install.sh`.
   - Install other requirements with `cat install/apt-requirements.txt | xargs sudo apt-get install -y`
 - Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the right tesseract version if you have multiple!
+  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple!
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
 - Update pytorch as needed since poetry doesn't play nicely with it
   - GPU only: run `pip install torch` to install other torch dependencies.
-  - CPU only: Uninstall torch, then follow the [CPU install](https://pytorch.org/) instructions.
+  - CPU only: Uninstall torch, then follow the [CPU install](https://pytorch.org/get-started/locally/) instructions.
 
 ## Mac
 
@@ -126,7 +126,7 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.s
 
 # Benchmarks
 
-Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I converted the latex to text, and compared the reference to the output of text extraction methods.
+Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I converted the latex to text, and compare the reference to the output of text extraction methods.
 
 Benchmarks show that marker is 10x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
 
@@ -142,21 +142,21 @@ nougat           0.614548      810.756
 
 **Accuracy**
 
-First 4 are non-arXiv books, last 3 are arXiv papers.
+First 3 are non-arXiv books, last 3 are arXiv papers.
 
-Method      thinkos.pdf    thinkdsp.pdf    thinkpython.pdf    paip.pdf    switch_trans.pdf    crowd.pdf    multicolcnn.pdf
---------  -------------  --------------  -----------------  ----------  ------------------  -----------  -----------------
-naive          0.366817        0.412014           0.468147    0.735464             0.244739     0.14489           0.0890217
-marker         0.753291        0.787938           0.779262    0.679189             0.478387     0.446068          0.533737
-nougat         0.638434        0.632723           0.637626    0.462495             0.690028     0.540994          0.699539
+Method      thinkos.pdf    thinkdsp.pdf    thinkpython.pdf   switch_trans.pdf    crowd.pdf    multicolcnn.pdf
+--------  -------------  --------------  -----------------  ------------------  -----------  -----------------
+naive          0.366817        0.412014           0.468147            0.244739     0.14489          0.0890217
+marker         0.753291        0.787938           0.779262            0.478387     0.446068          0.533737
+nougat         0.638434        0.632723           0.637626            0.690028     0.540994          0.699539
 
-Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `2.7GB` for marker.  Benchmarks were run on an A6000.
+Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `3.1GB` for marker.  Benchmarks were run on an A6000.
 
 ## Running your own benchmarks
 
-You can benchmark the performance of marker on your machine.
+You can benchmark the performance of marker on your machine.  First, download the benchmark data [here](https://drive.google.com/file/d/1WiN4K2-jQfwyQMe4wSSurbpz3hxo2fG9/view?usp=drive_link) and unzip.
 
-Run `benchmark.py` like this:
+Then run `benchmark.py` like this:
 
 ```
 python benchmark.py benchmark_data/pdfs benchmark_data/references report.json --nougat
@@ -168,7 +168,17 @@ Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running
 
 # Commercial usage
 
-Due to the licensing of the underlying models like layoutlmv3 and nougat, this is only suitable for noncommercial usage.  I'm building a version that can be used commercially. If you would like to get early access, email me at marker@vikas.sh.
+Due to the licensing of the underlying models like layoutlmv3 and nougat, this is only suitable for noncommercial usage.  
+
+I'm building a version that can be used commercially, by stripping out the dependencies below. If you would like to get early access, email me at marker@vikas.sh.
+
+Here are the non-commercial/restrictive dependencies:
+
+- LayoutLMv3: CC BY-NC-SA 4.0 .  [Source](https://huggingface.co/microsoft/layoutlmv3-base)
+- Nougat: CC-BY-NC . [Source](https://github.com/facebookresearch/nougat)
+- PyMuPDF - GPL . [Source](https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright)
+
+Other dependencies/datasets are openly licensed (doclaynet, byt5), or used in a way that is compatible with commercial usage (ghostscript).
 
 # Thanks
 
@@ -178,3 +188,5 @@ This work would not have been possible without amazing open source models and da
 - Layoutlmv3 from Microsoft
 - DocLayNet from IBM
 - ByT5 from Google
+
+Thank you to the authors of these models and datasets for making them available to the community.

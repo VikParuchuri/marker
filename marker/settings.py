@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
-    VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB)
+    VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3GB, but avg across workers is lower.
     DEBUG: bool = False # Enable debug logging
     DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
                                   "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]", "### "]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
     NOUGAT_MODEL_NAME: str = "0.1.0-small" # Name of the model to use
-    NOUGAT_BATCH_SIZE: int = 4 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu
+    NOUGAT_BATCH_SIZE: int = 6 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu
 
     # Layout model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
@@ -73,7 +73,7 @@ class Settings(BaseSettings):
 
     # Final editing model
     EDITOR_BATCH_SIZE: int = 4
-    EDITOR_MAX_LENGTH: int = 1024
+    EDITOR_MAX_LENGTH: int = 2048
     EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor"
     ENABLE_EDITOR_MODEL: bool = False # The editor model can create false positives
 
