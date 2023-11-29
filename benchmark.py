@@ -40,8 +40,8 @@ if __name__ == "__main__":
     parser.add_argument("reference_folder", help="Reference folder with reference markdown files")
     parser.add_argument("out_file", help="Output filename")
     parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
-    parser.add_argument("--nougat_batch_size", type=int, default=settings.NOUGAT_BATCH_SIZE, help="Batch size to use for nougat when making predictions.")
-    parser.add_argument("--marker_parallel", type=int, default=4, help="Number of marker CPU processes to run in parallel")
+    parser.add_argument("--nougat_batch_size", type=int, default=2, help="Batch size to use for nougat when making predictions.")
+    parser.add_argument("--marker_parallel_factor", type=int, default=1, help="How much to multiply default parallel OCR workers and model batch sizes by.")
     parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
     args = parser.parse_args()
 
@@ -55,6 +55,7 @@ if __name__ == "__main__":
     benchmark_files = os.listdir(args.in_folder)
     benchmark_files = [b for b in benchmark_files if b.endswith(".pdf")]
     times = defaultdict(int)
+    total_pages = 0
 
     for fname in tqdm(benchmark_files):
         md_filename = fname.rsplit(".", 1)[0] + ".md"
@@ -65,11 +66,12 @@ if __name__ == "__main__":
 
         pdf_filename = os.path.join(args.in_folder, fname)
         doc = pymupdf.open(pdf_filename)
+        total_pages += len(doc)
 
         for method in methods:
             start = time.time()
             if method == "marker":
-                full_text, out_meta = convert_single_pdf(pdf_filename, model_lst, parallel=args.marker_parallel)
+                full_text, out_meta = convert_single_pdf(pdf_filename, model_lst, parallel_factor=args.marker_parallel_factor)
             elif method == "nougat":
                 full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
             elif method == "naive":
@@ -93,6 +95,7 @@ if __name__ == "__main__":
             write_data[method] = {
                 "avg_score": sum(scores[method].values()) / len(scores[method]),
                 "scores": scores[method],
+                "time_per_page": times[method] / total_pages,
                 "time_per_doc": times[method] / len(scores[method])
             }
 
@@ -102,10 +105,10 @@ if __name__ == "__main__":
     score_table = []
     score_headers = benchmark_files
     for method in methods:
-        summary_table.append([method, write_data[method]["avg_score"], write_data[method]["time_per_doc"]])
+        summary_table.append([method, write_data[method]["avg_score"], write_data[method]["time_per_page"], write_data[method]["time_per_doc"]])
         score_table.append([method, *[write_data[method]["scores"][h] for h in score_headers]])
 
-    print(tabulate(summary_table, headers=["Method", "Average Score", "Time per doc"]))
+    print(tabulate(summary_table, headers=["Method", "Average Score", "Time per page", "Time per document"]))
     print("")
     print("Scores by file")
     print(tabulate(score_table, headers=["Method", *score_headers]))

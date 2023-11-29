@@ -60,7 +60,7 @@ def convert_single_pdf(
         model_lst: List,
         max_pages=None,
         metadata: Dict | None=None,
-        parallel: int = 1
+        parallel_factor: int = 1
 ) -> Tuple[str, Dict]:
     lang = settings.DEFAULT_LANG
     if metadata:
@@ -86,7 +86,13 @@ def convert_single_pdf(
         conv = doc.convert_to_pdf()
         doc = pymupdf.open("pdf", conv)
 
-    blocks, toc, ocr_stats = get_text_blocks(doc, tess_lang, spell_lang, max_pages=max_pages, parallel=parallel)
+    blocks, toc, ocr_stats = get_text_blocks(
+        doc,
+        tess_lang,
+        spell_lang,
+        max_pages=max_pages,
+        parallel=parallel_factor * settings.OCR_PARALLEL_WORKERS
+    )
 
     out_meta["toc"] = toc
     out_meta["pages"] = len(blocks)
@@ -98,7 +104,12 @@ def convert_single_pdf(
     # Unpack models from list
     nougat_model, layoutlm_model, order_model, edit_model = model_lst
 
-    block_types = detect_document_block_types(doc, blocks, layoutlm_model, parallel=parallel)
+    block_types = detect_document_block_types(
+        doc,
+        blocks,
+        layoutlm_model,
+        batch_size=settings.LAYOUT_BATCH_SIZE * parallel_factor
+    )
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(blocks)
@@ -106,7 +117,13 @@ def convert_single_pdf(
 
     annotate_spans(blocks, block_types)
 
-    blocks = order_blocks(doc, blocks, order_model)
+    blocks = order_blocks(
+        doc,
+        blocks,
+        order_model,
+        batch_size=settings.ORDERER_BATCH_SIZE * parallel_factor
+    )
+
     # Fix code blocks
     code_block_count = identify_code_blocks(blocks)
     out_meta["block_stats"]["code"] = code_block_count
@@ -122,7 +139,13 @@ def convert_single_pdf(
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
 
-    filtered, eq_stats = replace_equations(doc, blocks, block_types, nougat_model, parallel=parallel)
+    filtered, eq_stats = replace_equations(
+        doc,
+        blocks,
+        block_types,
+        nougat_model,
+        batch_size=settings.NOUGAT_BATCH_SIZE * parallel_factor
+    )
     out_meta["block_stats"]["equations"] = eq_stats
 
     # Copy to avoid changing original data
@@ -137,7 +160,13 @@ def convert_single_pdf(
 
     # Replace bullet characters with a -
     full_text = replace_bullets(full_text)
-    full_text, edit_stats = edit_full_text(full_text, edit_model)
+
+    # Postprocess text with editor model
+    full_text, edit_stats = edit_full_text(
+        full_text,
+        edit_model,
+        batch_size=settings.EDITOR_BATCH_SIZE * parallel_factor
+    )
     out_meta["postprocess_stats"] = {"edit": edit_stats}
 
     return full_text, out_meta

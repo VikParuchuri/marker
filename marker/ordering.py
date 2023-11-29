@@ -79,9 +79,9 @@ def batch_inference(rgb_images, bboxes, words, model):
     return predictions
 
 
-def add_column_counts(doc, doc_blocks, model):
-    for i in range(0, len(doc), settings.ORDERER_BATCH_SIZE):
-        batch = range(i, min(i + settings.ORDERER_BATCH_SIZE, len(doc_blocks)))
+def add_column_counts(doc, doc_blocks, model, batch_size):
+    for i in range(0, len(doc), batch_size):
+        batch = range(i, min(i + batch_size, len(doc_blocks)))
         rgb_images = []
         bboxes = []
         words = []
@@ -97,8 +97,8 @@ def add_column_counts(doc, doc_blocks, model):
             doc_blocks[pnum].column_count = prediction
 
 
-def order_blocks(doc, doc_blocks: List[Page], model):
-    add_column_counts(doc, doc_blocks, model)
+def order_blocks(doc, doc_blocks: List[Page], model, batch_size=settings.ORDERER_BATCH_SIZE):
+    add_column_counts(doc, doc_blocks, model, batch_size)
 
     for page_blocks in doc_blocks:
         if page_blocks.column_count > 1:

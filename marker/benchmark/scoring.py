@@ -33,7 +33,7 @@ def overlap_score(hypothesis_chunks, reference_chunks):
         chunk_range = range(max(0, i_offset-search_distance), min(len(reference_chunks), i_offset+search_distance))
         for j in chunk_range:
             ref_chunk = reference_chunks[j]
-            score = fuzz.ratio(hyp_chunk, ref_chunk) / 100
+            score = fuzz.ratio(hyp_chunk, ref_chunk, score_cutoff=30) / 100
             if score > max_score:
                 max_score = score
                 chunk_weight = math.sqrt(len(ref_chunk))

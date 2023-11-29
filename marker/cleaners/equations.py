@@ -67,7 +67,7 @@ def get_nougat_image(page, bbox, selected_bboxes):
     return img_out
 
 
-def get_nougat_text_batched(images, reformat_region_lens, nougat_model):
+def get_nougat_text_batched(images, reformat_region_lens, nougat_model, batch_size):
     if len(images) == 0:
         return []
 
@@ -80,15 +80,15 @@ def get_nougat_text_batched(images, reformat_region_lens, nougat_model):
 
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=settings.NOUGAT_BATCH_SIZE,
+        batch_size=batch_size,
         pin_memory=True,
         shuffle=False,
     )
 
     for idx, sample in enumerate(dataloader):
         # Dynamically set max length to save inference time
-        min_idx = idx * settings.NOUGAT_BATCH_SIZE
-        max_idx = min(min_idx + settings.NOUGAT_BATCH_SIZE, len(images))
+        min_idx = idx * batch_size
+        max_idx = min(min_idx + batch_size, len(images))
         max_length = max(reformat_region_lens[min_idx:max_idx])
         max_length = min(max_length, settings.NOUGAT_MODEL_MAX)
         max_length += settings.NOUGAT_TOKEN_BUFFER
@@ -101,7 +101,7 @@ def get_nougat_text_batched(images, reformat_region_lens, nougat_model):
             if token_count >= max_length:
                 disclaimer = "[TRUNCATED]"
 
-            image_idx = idx * settings.NOUGAT_BATCH_SIZE + j
+            image_idx = idx * batch_size + j
             predictions[image_idx] = (
                 markdown_compatible(output) + disclaimer
             )
@@ -249,7 +249,7 @@ def replace_blocks_with_nougat_predictions(page_blocks: Page, merged_boxes, refo
     return new_blocks, success_count, fail_count
 
 
-def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model, parallel: int = 1):
+def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model, batch_size=settings.NOUGAT_BATCH_SIZE):
     unsuccessful_ocr = 0
     successful_ocr = 0
 
@@ -276,7 +276,7 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
             merged_boxes.append(merged_box)
 
     # Make batched predictions
-    predictions = get_nougat_text_batched(images, flat_reformat_region_lens, nougat_model)
+    predictions = get_nougat_text_batched(images, flat_reformat_region_lens, nougat_model, batch_size)
 
     # Replace blocks with predictions
     page_start = 0

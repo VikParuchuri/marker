@@ -38,10 +38,10 @@ def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Dict |
 
         full_text, out_metadata = convert_single_pdf(fname, model_refs, metadata=metadata)
         if len(full_text.strip()) > 0:
-            with open(out_filename, "w+") as f:
+            with open(out_filename, "w+", encoding='utf-8') as f:
                 f.write(full_text)
             with open(out_meta_filename, "w+") as f:
-                f.write(json.dumps(out_metadata))
+                f.write(json.dumps(out_metadata, indent=4))
         else:
             print(f"Empty file: {fname}.  Could not convert.")
     except Exception as e:

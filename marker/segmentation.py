@@ -46,9 +46,9 @@ def load_layout_model():
     return model
 
 
-def detect_document_block_types(doc, blocks: List[Page], layoutlm_model, parallel: int = 1):
+def detect_document_block_types(doc, blocks: List[Page], layoutlm_model, batch_size=settings.LAYOUT_BATCH_SIZE):
     encodings, metadata, sample_lengths = get_features(doc, blocks)
-    predictions = predict_block_types(encodings, layoutlm_model)
+    predictions = predict_block_types(encodings, layoutlm_model, batch_size)
     block_types = match_predictions_to_boxes(encodings, predictions, metadata, sample_lengths, layoutlm_model)
     assert len(block_types) == len(blocks)
     return block_types
@@ -163,11 +163,11 @@ def get_features(doc, blocks):
     return encodings, metadata, sample_lengths
 
 
-def predict_block_types(encodings, layoutlm_model):
+def predict_block_types(encodings, layoutlm_model, batch_size):
     all_predictions = []
-    for i in range(0, len(encodings), settings.LAYOUT_BATCH_SIZE):
+    for i in range(0, len(encodings), batch_size):
         batch_start = i
-        batch_end = min(i + settings.LAYOUT_BATCH_SIZE, len(encodings))
+        batch_end = min(i + batch_size, len(encodings))
         batch = encodings[batch_start:batch_end]
 
         model_in = {}

@@ -10,8 +10,8 @@ import fitz as pymupdf
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
-    INFERENCE_RAM: int = 40 # How much VRAM to allocate for inference per GPU (in GB).
-    VRAM_PER_TASK: float = 1.5 # How much VRAM to allocate per task (in GB)
+    INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
+    VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB)
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
         "application/epub+zip": "epub",
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
 
     # OCR
-    INVALID_CHARS: List[str] = [chr(0xfffd)]
+    INVALID_CHARS: List[str] = [chr(0xfffd), "�"]
     DPI: int = 800
     SEGMENT_DPI: int = 1200
     TESSDATA_PREFIX: str = ""
@@ -45,13 +45,14 @@ class Settings(BaseSettings):
         "German": "de",
         "Russian": "ru",
     }
-    OCR_ALL_PAGES: bool = False
+    OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
+    OCR_PARALLEL_WORKERS: int = 4 # How many CPU workers to use for OCR
 
     # Nougat Model
     NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat
     NOUGAT_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
-                                  "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]"]
+                                  "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]", "### "]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
     NOUGAT_MODEL_NAME: str = "0.1.0-small" # Name of the model to use
     NOUGAT_BATCH_SIZE: int = 4 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu
@@ -72,7 +73,7 @@ class Settings(BaseSettings):
     EDITOR_BATCH_SIZE: int = 4
     EDITOR_MAX_LENGTH: int = 1024
     EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor"
-    DISABLE_EDITOR_MODEL: bool = True
+    ENABLE_EDITOR_MODEL: bool = False # The editor model can create false positives
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache

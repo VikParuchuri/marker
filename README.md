@@ -1,6 +1,6 @@
 # Marker
 
-Marker converts PDF, EPUB, and MOBI to Markdown.  It is 12x faster than nougat, works across many types of documents, and minimizes the risk of hallucinations significantly.
+Marker converts PDF, EPUB, and MOBI to Markdown.  It is 10x faster than nougat, works across many types of documents, and minimizes the risk of hallucinations significantly.
 
 Features:
 
@@ -37,27 +37,36 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 
 # Installation
 
-This has been tested on Mac and Linux (Ubuntu).
+This has been tested on Mac and Linux (Ubuntu and Debian).  You will need python 3.9+ and [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer).
 
-**Clone repo**
+First, clone the repo:
 
 - `git clone https://github.com/VikParuchuri/marker.git`
 - `cd marker`
 
-**System packages**
+## Linux
 
-- Install the system requirements at `install/apt-requirements.txt` for Linux or `install/brew-requirements.txt` for Mac
-  - Linux only: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/).  You may get tesseract 4 otherwise.
-  - Linux only: Install ghostscript > 9.55 (see `install/ghostscript_install.sh` for the commands).
+- Install system requirements
+  - `cat install/apt-requirements.txt | xargs sudo apt-get install -y`
+  - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `install/tesseract_5_install.sh`.
+  - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `install/ghostscript_install.sh`.
 - Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata`
-    - On mac, you can run `brew list tesseract`
-    - On linux, run `find / -name tessdata`
+  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the right tesseract version if you have multiple!
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+- Install python requirements
+  - `poetry install`
+  - `poetry shell` to activate your poetry venv
+  - GPU only: run `pip install torch` to install other torch dependencies.
 
-**Python packages**
+## Mac
 
-- `poetry install`
+- Install system requirements from `install/brew-requirements.txt`
+- Set the tesseract data folder path
+  - Find the tesseract data folder `tessdata` with `brew list tesseract`
+  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+- Install python requirements
+  - `poetry install`
+  - `poetry shell` to activate your poetry venv
 
 # Usage
 
@@ -65,7 +74,7 @@ This has been tested on Mac and Linux (Ubuntu).
 
 - Set your torch device in the `local.env` file.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`.  `cpu` is the default.
   - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
-  - Depending on your document types, marker's average memory usage per task can vary.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
+  - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
 - Inspect the settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
 
 ## Convert a single file
@@ -73,13 +82,13 @@ This has been tested on Mac and Linux (Ubuntu).
 Run `convert_single.py`, like this:
 
 ```
-python convert_single.py /path/to/file.pdf /path/to/output.md --workers 4 --max_pages 10
+python convert_single.py /path/to/file.pdf /path/to/output.md --parallel_factor 2 --max_pages 10
 ```
 
-- `--workers` is the number of parallel CPU processes to run for OCR.  This is set to 1 by default, but you can increase it to speed up processing.
+- `--parallel_factor` is how much to increase batch size and parallel OCR workers by.  Higher numbers will take more VRAM and CPU, but process faster.  Set to 1 by default.
 - `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
 
-Make sure the `DEFAULT_LANG` setting is set correctly for this.
+Make sure the `DEFAULT_LANG` setting is set appropriately for your document.
 
 ## Convert multiple files
 
@@ -115,29 +124,31 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.s
 
 # Benchmarks
 
-Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I can then convert the latex to text, and compare the reference to the output of text extraction methods.
+Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I converted the latex to text, and compared the reference to the output of text extraction methods.
 
-Benchmarks show that marker is 12x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
+Benchmarks show that marker is 10x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
 
 **Speed**
 
+The books are several hundred pages long (paip is almost 1000 pages).
+
 Method      Average Score    Time per doc
 --------  ---------------  --------------
-naive            0.287605      0.149704
-marker           0.62978       33.9778
-nougat           0.63989       395.091
+naive            0.351585        0.328931
+marker           0.636839       78.1468
+nougat           0.614548      810.756
 
 **Accuracy**
 
-First 3 are non-arXiv books, last 3 are arXiv papers.
+First 4 are non-arXiv books, last 3 are arXiv papers.
 
-Method      thinkos.pdf    thinkdsp.pdf    thinkpython.pdf    switch_trans.pdf    crowd.pdf    multicolcnn.pdf
---------  -------------  --------------  -----------------  ------------------  -----------  -----------------
-naive          0.366817        0.412014           0.468147             0.244739     0.14489           0.0890217
-marker         0.753291        0.787938           0.779262             0.478387     0.446068          0.533737
-nougat         0.638434        0.632723           0.637626             0.690028     0.540994          0.699539
+Method      thinkos.pdf    thinkdsp.pdf    thinkpython.pdf    paip.pdf    switch_trans.pdf    crowd.pdf    multicolcnn.pdf
+--------  -------------  --------------  -----------------  ----------  ------------------  -----------  -----------------
+naive          0.366817        0.412014           0.468147    0.735464             0.244739     0.14489           0.0890217
+marker         0.753291        0.787938           0.779262    0.679189             0.478387     0.446068          0.533737
+nougat         0.638434        0.632723           0.637626    0.462495             0.690028     0.540994          0.699539
 
-Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `3.7GB` for marker.
+Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `2.7GB` for marker.  Benchmarks were run on an A6000.
 
 ## Running your own benchmarks
 
@@ -159,9 +170,9 @@ Due to the licensing of the underlying models like layoutlmv3 and nougat, this i
 
 # Thanks
 
-This work would not have been possible without amazing open source models and datasets, including:
+This work would not have been possible without amazing open source models and datasets, including (but not limited to):
 
 - Nougat from Meta
 - Layoutlmv3 from Microsoft
 - DocLayNet from IBM
-- BLOOM from BigScience
+- ByT5 from Google

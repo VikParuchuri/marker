@@ -90,7 +90,7 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: str, no_text: boo
     return page_obj, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
 
 
-def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None = None, parallel: int = 1):
+def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None = None, parallel: int = settings.OCR_PARALLEL_WORKERS):
     all_blocks = []
     toc = doc.get_toc()
     ocr_pages = 0
