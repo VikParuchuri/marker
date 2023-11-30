@@ -1,43 +1,42 @@
 # Marker
 
-Marker converts PDF, EPUB, and MOBI to Markdown.  It is 10x faster than nougat, works across many types of documents, and minimizes the risk of hallucinations significantly.
-
-Features:
+Marker converts PDF, EPUB, and MOBI to markdown.  It's 10x faster than nougat, more accurate on most documents, and has near-zero hallucination risk.
 
 - Support for a range of PDF documents (optimized for books and scientific papers)
-- Support for 1 and 2 column layouts
-- Removal of headers/footers/other artifacts
-- Latex conversion for most equations
-- Proper code block and table formatting
+- Removes headers/footers/other artifacts
+- Converts most equations to latex
+- Formats code blocks and tables
 - Support for multiple languages (although most testing is done in English).  See `settings.py` for a list of supported languages.
 - Works on GPU, CPU, or MPS
 
 ## How it works
 
-Marker is a pipeline of steps and deep learning models:
+Marker is a pipeline of deep learning models:
 
-- Loop through each document page, and:
-  - OCR the page if text cannot be detected
-  - Detect page layout
-  - Format blocks properly based on layout
-- Combine text from all pages
-- Postprocess extracted text
+- Extract text, OCR if necessary (heuristics, tesseract)
+- Detect page layout ([layout segmenter](https://huggingface.co/vikp/layout_segmenter), [column detector](https://huggingface.co/vikp/column_detector))
+- Clean and format each block (heuristics, [nougat](https://huggingface.co/facebook/nougat-base))
+- Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor))
 
-Marker minimizes the use of autoregressive models, which reduces the risk of hallucinations to close to zero, and improves speed.  The only parts of a document that are passed through an LLM forward pass are equation blocks.
+Relying on autoregressive forward passes to generate text is slow and prone to hallucination/repetition.  From the nougat paper `We observed [repetition] in 1.5% of pages in the test set, but the frequency increases for out-of-domain documents.`  In my anecdotal testing, repetitions happen on 5%+ of out-of-domain (non-arXiv) pages.  Nougat is an amazing model that is part of marker, it's just not a general-purpose converter.
 
-## Limitations
+Marker is 10x faster and more accurate by only passing equation blocks through an LLM forward pass.
 
-PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
+## Examples
 
-- Marker will convert fewer equations to latex that nougat.  This is because it has to first detect equations, then convert them without hallucation.
-- Marker is much faster than autoregressive methods like nougat or kosmos, but much slower than just extracting text directly from the pdf with no processing.
-- Whitespace and indentations are not always respected.
-- Images and most charts will be removed, since text can't be extracted effectively.
-- Only languages similar to English (Spanish, French, German, Russian, etc) are supported.  Languages with different character sets (Chinese, Japanese, Korean, etc) are not.
+| PDF                                                                   | Type        | Marker                                                                                                 | Nougat                                                                                            |
+|-----------------------------------------------------------------------|-------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook    | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/thinkpython.md)         | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/thinkpython.md)    |
+| [Think OS](https://greenteapress.com/thinkos/thinkos.pdf)             | Textbook    | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/thinkos.md)             | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/thinkos.md)        |
+| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf)           | arXiv paper | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/switch_transformers.md) |
+| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf)              | arXiv paper | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/multicolcnn.md)         | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/multicolcnn.md)    |
+
+
+See [below](#benchmarks) for speed and accuracy benchmarks.
 
 # Installation
 
-This has been tested on Mac and Linux (Ubuntu and Debian).  You will need python 3.9+ and [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer).
+This has been tested on Mac and Linux (Ubuntu and Debian).  You'll need python 3.9+ and [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer).
 
 First, clone the repo:
 
@@ -47,22 +46,22 @@ First, clone the repo:
 ## Linux
 
 - Install system requirements
-  - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `install/tesseract_5_install.sh`.
-  - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `install/ghostscript_install.sh`.
-  - Install other requirements with `cat install/apt-requirements.txt | xargs sudo apt-get install -y`
+  - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `scripts/install/tesseract_5_install.sh`.
+  - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
+  - Install other requirements with `cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y`
 - Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple!
+  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
-- Update pytorch as needed since poetry doesn't play nicely with it
+- Update pytorch since poetry doesn't play nicely with it
   - GPU only: run `pip install torch` to install other torch dependencies.
   - CPU only: Uninstall torch, then follow the [CPU install](https://pytorch.org/get-started/locally/) instructions.
 
 ## Mac
 
-- Install system requirements from `install/brew-requirements.txt`
+- Install system requirements from `scripts/install/brew-requirements.txt`
 - Set the tesseract data folder path
   - Find the tesseract data folder `tessdata` with `brew list tesseract`
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
@@ -126,13 +125,11 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.s
 
 # Benchmarks
 
-Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I converted the latex to text, and compare the reference to the output of text extraction methods.
+Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.
 
 Benchmarks show that marker is 10x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
 
 **Speed**
-
-The books are several hundred pages long (paip is almost 1000 pages).
 
 Method      Average Score    Time per doc
 --------  ---------------  --------------
@@ -159,12 +156,21 @@ You can benchmark the performance of marker on your machine.  First, download th
 Then run `benchmark.py` like this:
 
 ```
-python benchmark.py benchmark_data/pdfs benchmark_data/references report.json --nougat
+python benchmark.py data/pdfs data/references report.json --nougat
 ```
 
 This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each.
 
 Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
+
+# Limitations
+
+PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
+
+- Marker will convert fewer equations to latex than nougat.  This is because it has to first detect equations, then convert them without hallucation.
+- Whitespace and indentations are not always respected.
+- Not all lines/spans will be joined properly.
+- Only languages similar to English (Spanish, French, German, Russian, etc) are supported.  Languages with different character sets (Chinese, Japanese, Korean, etc) are not.
 
 # Commercial usage
 
@@ -189,4 +195,4 @@ This work would not have been possible without amazing open source models and da
 - DocLayNet from IBM
 - ByT5 from Google
 
-Thank you to the authors of these models and datasets for making them available to the community.
+Thank you to the authors of these models and datasets for making them available to the community!

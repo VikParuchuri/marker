@@ -67,6 +67,16 @@ def get_nougat_image(page, bbox, selected_bboxes):
     return img_out
 
 
+def replace_latex_fences(text):
+    # Replace block equations: \[ ... \] with $$...$$
+    text = re.sub(r'\\\[(.*?)\\\]', r'$$\1$$', text)
+
+    # Replace inline math: \( ... \) with $...$
+    text = re.sub(r'\\\((.*?)\\\)', r'$\1$', text)
+
+    return text
+
+
 def get_nougat_text_batched(images, reformat_region_lens, nougat_model, batch_size):
     if len(images) == 0:
         return []
@@ -103,7 +113,7 @@ def get_nougat_text_batched(images, reformat_region_lens, nougat_model, batch_si
 
             image_idx = idx * batch_size + j
             predictions[image_idx] = (
-                markdown_compatible(output) + disclaimer
+                replace_latex_fences(markdown_compatible(output)) + disclaimer
             )
     return predictions
 

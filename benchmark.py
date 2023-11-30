@@ -55,8 +55,8 @@ if __name__ == "__main__":
     scores = defaultdict(dict)
     benchmark_files = os.listdir(args.in_folder)
     benchmark_files = [b for b in benchmark_files if b.endswith(".pdf")]
-    times = defaultdict(int)
-    total_pages = 0
+    times = defaultdict(dict)
+    pages = defaultdict(int)
 
     for fname in tqdm(benchmark_files):
         md_filename = fname.rsplit(".", 1)[0] + ".md"
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
         pdf_filename = os.path.join(args.in_folder, fname)
         doc = pymupdf.open(pdf_filename)
-        total_pages += len(doc)
+        pages[fname] = len(doc)
 
         for method in methods:
             start = time.time()
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             else:
                 raise ValueError(f"Unknown method {method}")
 
-            times[method] += time.time() - start
+            times[method][fname] = time.time() - start
 
             score = score_text(full_text, reference)
             scores[method][fname] = score
@@ -90,14 +90,26 @@ if __name__ == "__main__":
                 with open(os.path.join(args.md_out_path, md_out_filename), "w+") as f:
                     f.write(full_text)
 
+    total_pages = sum(pages.values())
     with open(args.out_file, "w+") as f:
         write_data = defaultdict(dict)
         for method in methods:
+            total_time = sum(times[method].values())
+            file_stats = {
+                fname:
+                {
+                    "time": times[method][fname],
+                    "score": scores[method][fname],
+                    "pages": pages[fname]
+                }
+
+                for fname in benchmark_files
+            }
             write_data[method] = {
+                "files": file_stats,
                 "avg_score": sum(scores[method].values()) / len(scores[method]),
-                "scores": scores[method],
-                "time_per_page": times[method] / total_pages,
-                "time_per_doc": times[method] / len(scores[method])
+                "time_per_page": total_time / total_pages,
+                "time_per_doc": total_time / len(scores[method])
             }
 
         json.dump(write_data, f, indent=4)
@@ -113,3 +125,4 @@ if __name__ == "__main__":
     print("")
     print("Scores by file")
     print(tabulate(score_table, headers=["Method", *score_headers]))
+
