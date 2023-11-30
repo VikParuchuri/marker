@@ -80,7 +80,7 @@ def create_new_tables(blocks: List[Page]):
             if max([len("".join(r)) for r in table_rows]) > 300 or len(table_rows[0]) > 8:
                 continue
 
-            new_text = tabulate(table_rows, headers="firstrow", tablefmt="simple")
+            new_text = tabulate(table_rows, headers="firstrow", tablefmt="github")
             new_span = Span(
                 bbox=block.bbox,
                 span_id=f"{table_idx}_fix_table",

@@ -12,41 +12,41 @@ In deep learning, models typically reuse the same parameters for all inputs.
 Mixture of Experts (MoE) models defy this and instead select *different* parameters for each incoming example. The result is a sparsely-activated model—with an outrageous number of parameters—but a constant computational cost. However, despite several notable successes of MoE, widespread adoption has been hindered by complexity, communication costs, and training instability. We address these with the introduction of the Switch Transformer. We simplify the MoE routing algorithm and design intuitive improved models with reduced communication and computational costs. Our proposed training techniques mitigate the instabilities, and we show large sparse models may be trained, for the first time, with lower precision (bfloat16) formats. We design models based off T5-Base and T5-Large (Raffel et al., 2019) to obtain up to 7x increases in pre-training speed with the same computational resources. These improvements extend into multilingual settings where we measure gains over the mT5-Base version across all 101 languages. Finally, we advance the current scale of language models by pre-training up to trillion parameter models on the "Colossal Clean Crawled Corpus", and achieve a 4x speedup over the T5-XXL model.12
 Keywords: mixture-of-experts, natural language processing, sparsity, large-scale machine learning, distributed computing
 
-                                                                                                                   Contents
-------------------------------------------------------  ---------------------------------------------------------  ----------
-1                                                       Introduction                                               3
-2                                                       Switch Transformer                                         4
-2.1                                                     Simplifying Sparse Routing
-2.2                                                     Efficient Sparse Routing                                   6
-2.3                                                     Putting It All Together: The Switch Transformer            8
-2.4                                                     Improved Training and Fine-Tuning Techniques               8
-3                                                       Scaling Properties                                         11
-3.1                                                     Scaling Results on a Step-Basis                            12
-3.2                                                     Scaling Results on a Time-Basis                            13
-3.3                                                     Scaling Versus a Larger Dense Model                        13
-4                                                       Downstream Results                                         14
-4.1                                                     Fine-Tuning                                                14
-4.2                                                     Distillation
-4.3                                                     Multilingual Learning
-5                                                       Designing Models with Data, Model, and Expert-Parallelism  18
-5.1                                                     Data Parallelism
-5.2                                                     Model Parallelism
-5.3                                                     Model and Data Parallelism                                 21
-5.4                                                     Expert and Data Parallelism
-5.5                                                     Expert, Model and Data Parallelism                         22
-5.6                                                     Towards Trillion Parameter Models                          22
-6                                                       Related Work                                               24
-7                                                       Discussion                                                 25
-8                                                       Future Work                                                26
-9                                                       Conclusion                                                 27
-A Switch for Attention                                  27
-B Preventing Token Dropping with
-No-Token-Left-Behind
-29
-C Encouraging Exploration Across Experts                29
-D Switch Transformers in Lower Compute Regimes          29
-E Relation of Upstream to Downstream Model Performance  32
-F Pseudo Code for Switch Transformers                   33
+|                                                        |                                                           | Contents   |
+|--------------------------------------------------------|-----------------------------------------------------------|------------|
+| 1                                                      | Introduction                                              | 3          |
+| 2                                                      | Switch Transformer                                        | 4          |
+| 2.1                                                    | Simplifying Sparse Routing                                |            |
+| 2.2                                                    | Efficient Sparse Routing                                  | 6          |
+| 2.3                                                    | Putting It All Together: The Switch Transformer           | 8          |
+| 2.4                                                    | Improved Training and Fine-Tuning Techniques              | 8          |
+| 3                                                      | Scaling Properties                                        | 11         |
+| 3.1                                                    | Scaling Results on a Step-Basis                           | 12         |
+| 3.2                                                    | Scaling Results on a Time-Basis                           | 13         |
+| 3.3                                                    | Scaling Versus a Larger Dense Model                       | 13         |
+| 4                                                      | Downstream Results                                        | 14         |
+| 4.1                                                    | Fine-Tuning                                               | 14         |
+| 4.2                                                    | Distillation                                              |            |
+| 4.3                                                    | Multilingual Learning                                     |            |
+| 5                                                      | Designing Models with Data, Model, and Expert-Parallelism | 18         |
+| 5.1                                                    | Data Parallelism                                          |            |
+| 5.2                                                    | Model Parallelism                                         |            |
+| 5.3                                                    | Model and Data Parallelism                                | 21         |
+| 5.4                                                    | Expert and Data Parallelism                               |            |
+| 5.5                                                    | Expert, Model and Data Parallelism                        | 22         |
+| 5.6                                                    | Towards Trillion Parameter Models                         | 22         |
+| 6                                                      | Related Work                                              | 24         |
+| 7                                                      | Discussion                                                | 25         |
+| 8                                                      | Future Work                                               | 26         |
+| 9                                                      | Conclusion                                                | 27         |
+| A Switch for Attention                                 | 27                                                        |            |
+| B Preventing Token Dropping with                       |                                                           |            |
+| No-Token-Left-Behind                                   |                                                           |            |
+| 29                                                     |                                                           |            |
+| C Encouraging Exploration Across Experts               | 29                                                        |            |
+| D Switch Transformers in Lower Compute Regimes         | 29                                                        |            |
+| E Relation of Upstream to Downstream Model Performance | 32                                                        |            |
+| F Pseudo Code for Switch Transformers                  | 33                                                        |            |
 
 ## 1. Introduction
 
@@ -93,10 +93,10 @@ Switch Routing: Rethinking Mixture-of-Experts. Shazeer et al. (2017) conjectured
 The benefits for the Switch layer are three-fold: **(1)** The router computation is reduced as we are only routing a token to a single expert. **(2)** The batch size (expert capacity) of each expert can be at least halved since each token is only being routed to a single expert.3
 (3) The routing implementation is simplified and communication costs are reduced. Figure 3 shows an example of routing with different expert capacity factors.
 
-                                        (Capacity Factor: 1.0)    (Capacity Factor: 1.5)
---------  --------  --------  --------  ------------------------  ------------------------
-Expert 1  Expert 2  Expert 3  Expert 1  Expert 2                  Expert 3
-Device 0  Device 1  Device 2  Device 1  Device 0                  Device 1
+|          |          |          |          | (Capacity Factor: 1.0)   | (Capacity Factor: 1.5)   |
+|----------|----------|----------|----------|--------------------------|--------------------------|
+| Expert 1 | Expert 2 | Expert 3 | Expert 1 | Expert 2                 | Expert 3                 |
+| Device 0 | Device 1 | Device 2 | Device 1 | Device 0                 | Device 1                 |
 
 ## 2.2 Efficient Sparse Routing
 
@@ -140,27 +140,27 @@ We highlight three key findings from Table 1: **(1)** Switch Transformers outper
 
 Sparse expert models may introduce training difficulties over a vanilla Transformer. Instability can result because of the hard-switching (routing) decisions at each of these layers. Further, low precision formats like bfloat16 (Wang and Kanwar, 2019) can exacerbate issues
 
-Model             Capacity          Quality after  Time to Quality      Speed (
-----------------  --------------  ---------------  -----------------  ---------
-↑
-)
-Factor            100k steps (
-↑
-)                 Threshold (
-↓
-)                 (examples/sec)
-(Neg. Log Perp.)  (hours)
-T5-Base           -                        -1.731  Not achieved
-†
-1600
-T5-Large          -                        -1.55   131.1                    470
-MoE-Base          2.0                      -1.547  68.7                     840
-Switch-Base       2.0                      -1.554  72.8                     860
-MoE-Base          1.25                     -1.559  80.7                     790
-Switch-Base       1.25                     -1.553  65.0                     910
-MoE-Base          1.0                      -1.572  80.1                     860
-Switch-Base       1.0                      -1.561  62.8                    1000
-Switch-Base+      1.0                      -1.534  67.6                     780
+| Model            | Capacity       |   Quality after | Time to Quality   |   Speed ( |
+|------------------|----------------|-----------------|-------------------|-----------|
+| ↑                |                |                 |                   |           |
+| )                |                |                 |                   |           |
+| Factor           | 100k steps (   |                 |                   |           |
+| ↑                |                |                 |                   |           |
+| )                | Threshold (    |                 |                   |           |
+| ↓                |                |                 |                   |           |
+| )                | (examples/sec) |                 |                   |           |
+| (Neg. Log Perp.) | (hours)        |                 |                   |           |
+| T5-Base          | -              |          -1.731 | Not achieved      |           |
+| †                |                |                 |                   |           |
+| 1600             |                |                 |                   |           |
+| T5-Large         | -              |          -1.55  | 131.1             |       470 |
+| MoE-Base         | 2.0            |          -1.547 | 68.7              |       840 |
+| Switch-Base      | 2.0            |          -1.554 | 72.8              |       860 |
+| MoE-Base         | 1.25           |          -1.559 | 80.7              |       790 |
+| Switch-Base      | 1.25           |          -1.553 | 65.0              |       910 |
+| MoE-Base         | 1.0            |          -1.572 | 80.1              |       860 |
+| Switch-Base      | 1.0            |          -1.561 | 62.8              |      1000 |
+| Switch-Base+     | 1.0            |          -1.534 | 67.6              |       780 |
 
 in the softmax computation for our router. We describe training difficulties here and the methods we use to overcome them to achieve stable and scalable training.
 
@@ -170,16 +170,16 @@ To achieve this, we cast the router input to float32 precision. The router funct
 
 Because the resulting dispatch and combine tensors are recast to bfloat16 precision at the end of the function, no expensive float32 tensors
 
-Model                              Quality             Speed
----------------------------------  ------------------  --------
-(precision)                        (Neg. Log Perp.) (
-↑
-)                                  (Examples/sec) (
-↑
-)
-Switch-Base (float32)              -1.718              1160
-Switch-Base (bfloat16)             -3.780 [            diverged
-Switch-Base (Selective precision)  -1.716              1390
+| Model                             | Quality            | Speed    |
+|-----------------------------------|--------------------|----------|
+| (precision)                       | (Neg. Log Perp.) ( |          |
+| ↑                                 |                    |          |
+| )                                 | (Examples/sec) (   |          |
+| ↑                                 |                    |          |
+| )                                 |                    |          |
+| Switch-Base (float32)             | -1.718             | 1160     |
+| Switch-Base (bfloat16)            | -3.780 [           | diverged |
+| Switch-Base (Selective precision) | -1.716             | 1390     |
 
 s/n where s is a scale hyper-parameter and n is the number of input units in the weight tensor (e.g. fan-in).6
 are broadcast through all-to-all communication operations, but we still benefit from the increased stability of float32.
@@ -190,11 +190,11 @@ We initialize our weight matrices by drawing elements from a truncated normal di
 �
 As an additional remedy to the instability, we recommend reducing the default Transformer initialization scale s = 1.0 by a factor of 10. This both improves quality and reduces the likelihood of destabilized training in our experiments. Table 3 measures the improvement of the model quality and reduction of the variance early in training. We find that
 
-Model (Initialization scale)    Average Quality      Std. Dev. of Quality
-------------------------------  -----------------  ----------------------
-(Neg. Log Perp.)                (Neg. Log Perp.)
-Switch-Base (0.1x-init)         -2.72                                0.01
-Switch-Base (1.0x-init)         -3.60                                0.68
+| Model (Initialization scale)   | Average Quality   |   Std. Dev. of Quality |
+|--------------------------------|-------------------|------------------------|
+| (Neg. Log Perp.)               | (Neg. Log Perp.)  |                        |
+| Switch-Base (0.1x-init)        | -2.72             |                   0.01 |
+| Switch-Base (1.0x-init)        | -3.60             |                   0.68 |
 
 the average model quality, as measured by the Neg. Log Perp., is dramatically improved and there is a far reduced variance across runs. Further, this same initialization scheme is broadly effective for models spanning several orders of magnitude. We use the same approach to stably train models as small as our 223M parameter baseline to enormous models in excess of one trillion parameters.
 
@@ -202,13 +202,13 @@ Regularizing large sparse models. Our paper considers the common NLP approach of
 
 During fine-tuning of standard Transformers, Raffel et al. (2019) use dropout (Srivastava et al., 2014) at each layer to prevent overfitting. Our Switch Transformers have significantly more parameters than the FLOP matched dense baseline, which can lead to more severe overfitting on these smaller downstream tasks.
 
-Model (dropout)                GLUE    CNNDM    SQuAD    SuperGLUE
----------------------------  ------  -------  -------  -----------
-T5-Base (d=0.1)                82.9     19.6     83.5         72.4
-Switch-Base (d=0.1)            84.7     19.1     83.7         73
-Switch-Base (d=0.2)            84.4     19.2     83.9         73.2
-Switch-Base (d=0.3)            83.9     19.6     83.4         70.7
-Switch-Base (d=0.1, ed=0.4)    85.2     19.6     83.7         73
+| Model (dropout)             |   GLUE |   CNNDM |   SQuAD |   SuperGLUE |
+|-----------------------------|--------|---------|---------|-------------|
+| T5-Base (d=0.1)             |   82.9 |    19.6 |    83.5 |        72.4 |
+| Switch-Base (d=0.1)         |   84.7 |    19.1 |    83.7 |        73   |
+| Switch-Base (d=0.2)         |   84.4 |    19.2 |    83.9 |        73.2 |
+| Switch-Base (d=0.3)         |   83.9 |    19.6 |    83.4 |        70.7 |
+| Switch-Base (d=0.1, ed=0.4) |   85.2 |    19.6 |    83.7 |        73   |
 
 We thus propose a simple way to alleviate this issue during fine-tuning: increase the dropout inside the experts, which we name as *expert dropout*. During fine-tuning we simply increase the dropout rate by a significant amount only at the interim feed-forward computation at each expert layer. Table 4 has the results for our expert dropout protocol. We observe that simply increasing the dropout across all layers leads to worse performance. However, setting a smaller dropout rate (0.1) at non-expert layers and a much larger dropout rate (0.4) at expert layers leads to performance improvements on four smaller downstream tasks.
 
@@ -266,22 +266,22 @@ Notable improvements come from SuperGLUE, where we find FLOP-matched Switch vari
 
 data set for fair comparisons.
 
-Model         GLUE       SQuAD          SuperGLUE     Winogrande (XL)
-------------  ---------  -------------  ------------  -----------------
-T5-Base       84.3       85.5           75.1          66.6
-Switch-Base   86.7       87.2           79.5          73.3
-T5-Large      87.8       88.1           82.7          79.1
-Switch-Large  88.5       88.6           84.7          83.0
-Model         XSum       ANLI (R3)      ARC Easy      ARC Chal.
-T5-Base       18.7       51.8           56.7          35.5
-Switch-Base   20.3       54.0           61.3          32.8
-T5-Large      20.9       56.6           68.8          35.5
-Switch-Large  22.3       58.6           66.0          35.5
-Model         CB Web QA  CB Natural QA  CB Trivia QA
-T5-Base       26.6       25.8           24.5
-Switch-Base   27.4       26.8           30.7
-T5-Large      27.7       27.6           29.5
-Switch-Large  31.3       29.5           36.9
+| Model        | GLUE      | SQuAD         | SuperGLUE    | Winogrande (XL)   |
+|--------------|-----------|---------------|--------------|-------------------|
+| T5-Base      | 84.3      | 85.5          | 75.1         | 66.6              |
+| Switch-Base  | 86.7      | 87.2          | 79.5         | 73.3              |
+| T5-Large     | 87.8      | 88.1          | 82.7         | 79.1              |
+| Switch-Large | 88.5      | 88.6          | 84.7         | 83.0              |
+| Model        | XSum      | ANLI (R3)     | ARC Easy     | ARC Chal.         |
+| T5-Base      | 18.7      | 51.8          | 56.7         | 35.5              |
+| Switch-Base  | 20.3      | 54.0          | 61.3         | 32.8              |
+| T5-Large     | 20.9      | 56.6          | 68.8         | 35.5              |
+| Switch-Large | 22.3      | 58.6          | 66.0         | 35.5              |
+| Model        | CB Web QA | CB Natural QA | CB Trivia QA |                   |
+| T5-Base      | 26.6      | 25.8          | 24.5         |                   |
+| Switch-Base  | 27.4      | 26.8          | 30.7         |                   |
+| T5-Large     | 27.7      | 27.6          | 29.5         |                   |
+| Switch-Large | 31.3      | 29.5          | 36.9         |                   |
 
 ## 4.2 Distillation
 
@@ -293,17 +293,17 @@ In Table 6 we study a variety of distillation techniques.
 
 These techniques are built off of Sanh et al. (2019), who study distillation methods for BERT models. We find that initializing the dense model with the non-expert weights yields a modest improvement. This is possible since all models are FLOP matched, so non-expert layers will have the same dimensions. Since expert layers are usually only added at every or every other FFN layer in a Transformer, this allows for many of the weights to be initialized with trained parameters. Furthermore, we observe a distillation improvement using a mixture of 0.25 for the teacher probabilities and 0.75 for the ground truth label. By combining both techniques we preserve ≈ 30% of the quality gains from the larger sparse models with only ≈ 1/20th of the parameters. The quality gain refers to the percent of the quality difference between Switch-Base (Teacher) and T5-Base (Student). Therefore, a quality gain of 100% implies the Student equals the performance of the Teacher.
 
-Technique                                  Parameters    Quality (
------------------------------------------  ------------  -----------
-↑
-)
-T5-Base                                    223M          -1.636
-Switch-Base                                3,800M        -1.444
-Distillation                               223M          (3%)
-+ Init. non-expert weights from teacher    223M          (20%)
-+ 0.75 mix of hard and soft loss           223M          (29%)
-Initialization Baseline (no distillation)
-Init. non-expert weights from teacher      223M          -1.639
+| Technique                                 | Parameters   | Quality (   |
+|-------------------------------------------|--------------|-------------|
+| ↑                                         |              |             |
+| )                                         |              |             |
+| T5-Base                                   | 223M         | -1.636      |
+| Switch-Base                               | 3,800M       | -1.444      |
+| Distillation                              | 223M         | (3%)        |
+| + Init. non-expert weights from teacher   | 223M         | (20%)       |
+| + 0.75 mix of hard and soft loss          | 223M         | (29%)       |
+| Initialization Baseline (no distillation) |              |             |
+| Init. non-expert weights from teacher     | 223M         | -1.639      |
 
 Achievable compression rates. Using our best distillation technique described in Table 6, we distill a wide variety of sparse models into dense models. We distill Switch- Base versions, sweeping over an increasing number of experts, which corresponds to varying between 1.1B to 14.7B parameters. Through distillation, we can preserve 37% of the quality gain of the 1.1B parameter model while compressing 82%.
 
@@ -317,24 +317,24 @@ In our final set of downstream experiments, we measure the model quality and spe
 
 In Figure 7 we plot the quality improvement in negative log perplexity for all languages of a FLOP-matched Switch model, mSwitch-Base to the T5 base variant, mT5-Base. After
 
-                                                                Dense    Sparse
-------------------------------  ------  ------  ------  ------  -------  --------
-Parameters                      223M    1.1B    2.0B    3.8B    7.4B     14.7B
-Pre-trained Neg. Log Perp. (
-↑
-)                               -1.636  -1.505  -1.474  -1.444  -1.432   -1.427
-Distilled Neg. Log Perp. (
-↑
-)                               -       -1.587  -1.585  -1.579  -1.582   -1.578
-Percent of Teacher Performance  -       37%     32%     30 %    27 %     28 %
-Compression Percent             -       82 %    90 %    95 %    97 %     99 %
-Model              Parameters    FLOPS    SuperGLUE (
------------------  ------------  -------  -------------
-↑
-)
-T5-Base            223M          124B     74.6
-Switch-Base        7410M         124B     81.3
-Distilled T5-Base  223M          124B     (30%)
+|                                |        |        |        |        | Dense   | Sparse   |
+|--------------------------------|--------|--------|--------|--------|---------|----------|
+| Parameters                     | 223M   | 1.1B   | 2.0B   | 3.8B   | 7.4B    | 14.7B    |
+| Pre-trained Neg. Log Perp. (   |        |        |        |        |         |          |
+| ↑                              |        |        |        |        |         |          |
+| )                              | -1.636 | -1.505 | -1.474 | -1.444 | -1.432  | -1.427   |
+| Distilled Neg. Log Perp. (     |        |        |        |        |         |          |
+| ↑                              |        |        |        |        |         |          |
+| )                              | -      | -1.587 | -1.585 | -1.579 | -1.582  | -1.578   |
+| Percent of Teacher Performance | -      | 37%    | 32%    | 30 %   | 27 %    | 28 %     |
+| Compression Percent            | -      | 82 %   | 90 %   | 95 %   | 97 %    | 99 %     |
+| Model             | Parameters   | FLOPS   | SuperGLUE (   |
+|-------------------|--------------|---------|---------------|
+| ↑                 |              |         |               |
+| )                 |              |         |               |
+| T5-Base           | 223M         | 124B    | 74.6          |
+| Switch-Base       | 7410M        | 124B    | 81.3          |
+| Distilled T5-Base | 223M         | 124B    | (30%)         |
 
 pre-training both versions for 1M steps, we find that on *all* 101 languages considered, Switch Transformer increases the final negative log perplexity over the baseline. In Figure 8, we present a different view and now histogram the per step *speed-up* of using Switch Transformer over the mT5-Base.9
 We find a mean speed-up over mT5-Base of 5x and that 91% of languages achieve at least a 4x speedup. This presents evidence that Switch Transformers are effective multi-task and multi-lingual learners.
@@ -354,14 +354,14 @@ Here we create a two-dimensional logical mesh, with one dimension representing t
 
 To shard the layer across cores, the tensors containing that batch of B tokens are sharded across n data-parallel cores, so each core contains *B/n* tokens. Tensors and variables with dff are then sharded across m model-parallel cores. For the variants with experts-layers, we consider E experts, each of which can process up to C tokens.
 
-Term    Description
-------  -----------------------------------------------
-B       Number of tokens in the batch.
-N       Number of total cores.
-n       Number of ways for data-parallelism sharding.
-m       Number of ways for model-parallelism sharding.
-E       Number of experts in Switch layers.
-C       Expert capacity, the batch size of each expert.
+| Term   | Description                                     |
+|--------|-------------------------------------------------|
+| B      | Number of tokens in the batch.                  |
+| N      | Number of total cores.                          |
+| n      | Number of ways for data-parallelism sharding.   |
+| m      | Number of ways for model-parallelism sharding.  |
+| E      | Number of experts in Switch layers.             |
+| C      | Expert capacity, the batch size of each expert. |
 
 ## 5.1 Data Parallelism
 
@@ -396,47 +396,47 @@ Combining expert, model and data parallelism, we design two large Switch Transfo
 
 The Switch-C model is designed using only expert-parallelism, and no model-parallelism, as described earlier in Section 5.4. As a result, the hyper-parameters controlling the width,
 
-Model         Parameters    FLOPs/seq    d
-------------  ------------  -----------  -----------
-model
-FFN
-GEGLU
-d
-ff
-d
-kv
-Num. Heads
-T5-Base       0.2B          124B         768
-✓
-2048          64            12
-T5-Large
-0.7B          425B          1024
-✓
-2816          64            16
-T5-XXL        11B           6.3T         4096
-✓
-10240         64            64
-Switch-Base   7B            124B         768
-✓
-2048          64            12
-Switch-Large
-26B           425B          1024
-✓
-2816          64            16
-Switch-XXL    395B          6.3T         4096
-✓
-10240         64            64
-Switch-C      1571B         890B         2080
-Model         Expert Freq.  Num. Layers  Num Experts
-T5-Base       -             12           –
-T5-Large
--             24            -            -1.402
-T5-XXL        -             24           –
-Switch-Base   1             /            2
-Switch-Large
-1             /             2            24
-Switch-XXL    1             /            2
-Switch-C      1             15           2048
+| Model        | Parameters   | FLOPs/seq   | d           |
+|--------------|--------------|-------------|-------------|
+| model        |              |             |             |
+| FFN          |              |             |             |
+| GEGLU        |              |             |             |
+| d            |              |             |             |
+| ff           |              |             |             |
+| d            |              |             |             |
+| kv           |              |             |             |
+| Num. Heads   |              |             |             |
+| T5-Base      | 0.2B         | 124B        | 768         |
+| ✓            |              |             |             |
+| 2048         | 64           | 12          |             |
+| T5-Large     |              |             |             |
+| 0.7B         | 425B         | 1024        |             |
+| ✓            |              |             |             |
+| 2816         | 64           | 16          |             |
+| T5-XXL       | 11B          | 6.3T        | 4096        |
+| ✓            |              |             |             |
+| 10240        | 64           | 64          |             |
+| Switch-Base  | 7B           | 124B        | 768         |
+| ✓            |              |             |             |
+| 2048         | 64           | 12          |             |
+| Switch-Large |              |             |             |
+| 26B          | 425B         | 1024        |             |
+| ✓            |              |             |             |
+| 2816         | 64           | 16          |             |
+| Switch-XXL   | 395B         | 6.3T        | 4096        |
+| ✓            |              |             |             |
+| 10240        | 64           | 64          |             |
+| Switch-C     | 1571B        | 890B        | 2080        |
+| Model        | Expert Freq. | Num. Layers | Num Experts |
+| T5-Base      | -            | 12          | -           |
+| T5-Large     |              |             |             |
+| -            | 24           | -           | -1.402      |
+| T5-XXL       | -            | 24          | -           |
+| Switch-Base  | 1            | /           | 2           |
+| Switch-Large |              |             |             |
+| 1            | /            | 2           | 24          |
+| Switch-XXL   | 1            | /           | 2           |
+| Switch-C     | 1            | 15          | 2048        |
 
 depth, number of heads, and so on, are all much smaller than the T5-XXL model.
 
@@ -528,20 +528,20 @@ Table 10 records the quality after a fixed number of steps as well as training t
 
 However, when these layers do train stably, we believe the preliminary positive results suggests a future promising direction.
 
-Model                   Precision    Quality     Quality     Speed
-----------------------  -----------  ----------  ----------  -------
-@100k Steps (
-↑
-)                       @16H (
-↑
-)                       (ex/sec) (
-↑
-)
-Experts FF              float32      -1.548      -1.614      1480
-Expert Attention        float32      -1.524      -1.606      1330
-Expert Attention        bfloat16     [diverges]  [diverges]  –
-Experts FF + Attention  float32      -1.513      -1.607      1240
-Expert FF + Attention   bfloat16     [diverges]  [diverges]  –
+| Model                  | Precision   | Quality    | Quality    | Speed   |
+|------------------------|-------------|------------|------------|---------|
+| @100k Steps (          |             |            |            |         |
+| ↑                      |             |            |            |         |
+| )                      | @16H (      |            |            |         |
+| ↑                      |             |            |            |         |
+| )                      | (ex/sec) (  |            |            |         |
+| ↑                      |             |            |            |         |
+| )                      |             |            |            |         |
+| Experts FF             | float32     | -1.548     | -1.614     | 1480    |
+| Expert Attention       | float32     | -1.524     | -1.606     | 1330    |
+| Expert Attention       | bfloat16    | [diverges] | [diverges] | -       |
+| Experts FF + Attention | float32     | -1.513     | -1.607     | 1240    |
+| Expert FF + Attention  | bfloat16    | [diverges] | [diverges] | -       |
 
 ## B. Preventing Token Dropping With No-Token-Left-Behind
 
@@ -565,14 +565,14 @@ sampling from the softmax distribution 3) input dropout on the incoming represen
 
 Switch Transformer is also an effective architecture at small scales as well as in regimes with thousands of cores and trillions of parameters. Many of our prior experiments were
 
-Model             Quality (Neg. Log Perp.) (
---------------  ----------------------------
-↑
-)
-Argmax                                -1.471
-Sample softmax                        -1.57
-Input dropout                         -1.48
-Input jitter                          -1.468
+| Model          |   Quality (Neg. Log Perp.) ( |
+|----------------|------------------------------|
+| ↑              |                              |
+| )              |                              |
+| Argmax         |                       -1.471 |
+| Sample softmax |                       -1.57  |
+| Input dropout  |                       -1.48  |
+| Input jitter   |                       -1.468 |
 
 at the scale of 10B+ parameter models, but we show in Figure 12 as few as 2 experts produce compelling gains over a FLOP-matched counterpart. Even if a super computer is not readily available, training Switch Transformers with 2, 4, or 8 experts (as we typically recommend one expert per core) results in solid improvements over T5 dense baselines.
 

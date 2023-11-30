@@ -266,11 +266,11 @@ At the same time there are many other processes running in the **background**. M
 
 The UNIX command ps prints information about running processes. If you run it in a terminal, you might see something like this:
 
-PID TTY      TIME CMD
------------  --------------
-2687 pts/1   00:00:00 bash
-2801 pts/1   00:01:24 emacs
-24762 pts/1  00:00:00 ps
+| PID TTY     | TIME CMD       |
+|-------------|----------------|
+| 2687 pts/1  | 00:00:00 bash  |
+| 2801 pts/1  | 00:01:24 emacs |
+| 24762 pts/1 | 00:00:00 ps    |
 
 The first column is the unique numerical process ID. The second column is the terminal that created the process; "TTY" stands for teletypewriter, which was the original mechanical terminal. The third column is the total processor time used by the process, in hours, minutes, and seconds. The last column is the name of the running program.
 
@@ -279,26 +279,26 @@ type in the terminal, emacs is my text editor, and ps is the program generating 
 
 By default, ps lists only the processes associated with the current terminal. If you use the -e flag, you get every process (including processes belonging to other users, which is a security flaw, in my opinion). On my system there are currently 233 processes. Here are some of them:
 
-PID TTY    TIME CMD
----------  --------------------
-1 ?        00:00:17 init
-2 ?        00:00:00 kthreadd
-3 ?        00:00:02 ksoftirqd/0
-4 ?        00:00:00 kworker/0:0
-8 ?        00:00:00 migration/0
-9 ?        00:00:00 rcu_bh
-10 ?       00:00:16 rcu_sched
-47 ?       00:00:00 cpuset
-48 ?       00:00:00 khelper
-49 ?       00:00:00 kdevtmpfs
-50 ?       00:00:00 netns
-51 ?       00:00:00 bdi-default
-52 ?       00:00:00 kintegrityd
-53 ?       00:00:00 kblockd
-54 ?       00:00:00 ata_sff
-55 ?       00:00:00 khubd
-56 ?       00:00:00 md
-57 ?       00:00:00 devfreq_wq
+| PID TTY   | TIME CMD             |
+|-----------|----------------------|
+| 1 ?       | 00:00:17 init        |
+| 2 ?       | 00:00:00 kthreadd    |
+| 3 ?       | 00:00:02 ksoftirqd/0 |
+| 4 ?       | 00:00:00 kworker/0:0 |
+| 8 ?       | 00:00:00 migration/0 |
+| 9 ?       | 00:00:00 rcu_bh      |
+| 10 ?      | 00:00:16 rcu_sched   |
+| 47 ?      | 00:00:00 cpuset      |
+| 48 ?      | 00:00:00 khelper     |
+| 49 ?      | 00:00:00 kdevtmpfs   |
+| 50 ?      | 00:00:00 netns       |
+| 51 ?      | 00:00:00 bdi-default |
+| 52 ?      | 00:00:00 kintegrityd |
+| 53 ?      | 00:00:00 kblockd     |
+| 54 ?      | 00:00:00 ata_sff     |
+| 55 ?      | 00:00:00 khubd       |
+| 56 ?      | 00:00:00 md          |
+| 57 ?      | 00:00:00 devfreq_wq  |
 
 init is the first process created when the operating system starts. It creates many of the other processes, and then sits idle until the processes it created are done.
 
@@ -401,12 +401,12 @@ s refers to a "string literal", which is a string that appears as part of the pr
 "malloc" stands for "memory allocate."
 The format sequence %p tells printf to format each address as a "pointer", so it displays the results in hexadecimal. When I run this program, the output looks like this (I added spaces to make it easier to read):
 
-Address of main is       0x              40057d
------------------------  --------------  --------
-Address of global is 0x  60104c
-Address of local is      0x7ffe6085443c
-p points to              0x              16c3010
-s points to              0x              4006a4
+| Address of main is      | 0x             | 40057d   |
+|-------------------------|----------------|----------|
+| Address of global is 0x | 60104c         |          |
+| Address of local is     | 0x7ffe6085443c |          |
+| p points to             | 0x             | 16c3010  |
+| s points to             | 0x             | 4006a4   |
 
 As expected, the address of main is the lowest, followed by the location of the string literal. The location of global is next, then the address p points to.
 
@@ -979,11 +979,11 @@ The second loop runs the same number of iterations as the first. After each iter
 
 If you compile and run cache.c you should see output like this:
 
-Size:    4096 Stride:    8 read+write: 0.8633 ns
--------  --------------  -------------------------
-Size:    4096 Stride:    16 read+write: 0.7023 ns
-Size:    4096 Stride:    32 read+write: 0.7105 ns
-Size:    4096 Stride:    64 read+write: 0.7058 ns
+| Size:   | 4096 Stride:   | 8 read+write: 0.8633 ns   |
+|---------|----------------|---------------------------|
+| Size:   | 4096 Stride:   | 16 read+write: 0.7023 ns  |
+| Size:   | 4096 Stride:   | 32 read+write: 0.7105 ns  |
+| Size:   | 4096 Stride:   | 64 read+write: 0.7058 ns  |
 
 If you have Python and matplotlib installed, you can use graph_data.py to graph the results. Figure 7.1 shows the results when I ran it on a Dell Optiplex
 7010. Notice that the array size and stride are reported in bytes, not number of array elements.
@@ -1020,23 +1020,23 @@ Also main memory is usually packaged in a dual in-line memory module
 
 The following table shows typical access times, sizes, and costs for each of these technologies.
 
-Device      Access    Typical    Cost
-----------  --------  ---------  ------
-time        size
-Register    0.5 ns    256 B      ?
-Cache       1 ns      2 MiB      ?
-DRAM        100 ns    4 GiB
-$
-10 / GiB
-SSD         10        µ          s
-$
-1 / GiB
-HDD         5 ms      500 GiB
-$
-0.25 / GiB
-Tape        minutes   1–2 TiB
-$
-0.02 / GiB
+| Device     | Access   | Typical   | Cost   |
+|------------|----------|-----------|--------|
+| time       | size     |           |        |
+| Register   | 0.5 ns   | 256 B     | ?      |
+| Cache      | 1 ns     | 2 MiB     | ?      |
+| DRAM       | 100 ns   | 4 GiB     |        |
+| $          |          |           |        |
+| 10 / GiB   |          |           |        |
+| SSD        | 10       | µ         | s      |
+| $          |          |           |        |
+| 1 / GiB    |          |           |        |
+| HDD        | 5 ms     | 500 GiB   |        |
+| $          |          |           |        |
+| 0.25 / GiB |          |           |        |
+| Tape       | minutes  | 1–2 TiB   |        |
+| $          |          |           |        |
+| 0.02 / GiB |          |           |        |
 
 The number and size of registers depends on details of the architecture. Current computers have about 32 general-purpose registers, each storing one "word". On a 32-bit computer, a word is 32 bits or 4 B. On a 64-bit computer, a word is 64 bits or 8 B. So the total size of the register file is 100–300 B. The cost of registers and caches is hard to quantify. They contribute to the cost of the chips they are on, but consumers don't see that cost directly. For the other numbers in the table, I looked at the specifications for typical hardware for sale from online computer hardware stores. By the time you read this, these numbers will be obsolete, but they give you an idea of what the performance and cost gaps looked like at one point in time. These technologies make up the "memory hierarchy" (note that this use of "memory" also includes storage). Each level of the hierarchy is bigger and slower than the one above it. And in some sense, each level acts as a cache for the one below it. You can think of main memory as a cache for programs and data that are stored permanently on SSDs and HHDs. And if you are working with very large datasets stored on tape, you could use hard drives to cache one subset of the data at a time.
 

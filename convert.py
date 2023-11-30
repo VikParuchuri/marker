@@ -3,15 +3,11 @@ import os
 from typing import Dict
 
 import ray
-import torch
 from tqdm import tqdm
 import math
 
 from marker.convert import convert_single_pdf, get_length_of_text
 from marker.models import load_all_models
-from marker.ordering import load_ordering_model
-from marker.segmentation import load_layout_model
-from marker.cleaners.equations import load_nougat_model
 from marker.settings import settings
 from marker.logger import configure_logging
 import traceback

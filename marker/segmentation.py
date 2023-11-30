@@ -24,9 +24,10 @@ NO_CHUNK_KEYS = ["pixel_values"]
 
 
 def load_layout_model():
-    model = LayoutLMv3ForTokenClassification.from_pretrained(settings.LAYOUT_MODEL_NAME).to(settings.TORCH_DEVICE)
-    if settings.CUDA:
-        model = model.to(torch.bfloat16)
+    model = LayoutLMv3ForTokenClassification.from_pretrained(
+        settings.LAYOUT_MODEL_NAME,
+        torch_dtype=settings.MODEL_DTYPE,
+    ).to(settings.TORCH_DEVICE)
 
     model.config.id2label = {
         0: "Caption",

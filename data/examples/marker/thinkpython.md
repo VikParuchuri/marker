@@ -149,19 +149,19 @@ The single most important skill for a computer scientist is **problem solving**.
 
 The programming language you will learn is Python. Python is an example of a high-level language; other high-level languages you might have heard of are C, C++, Perl, and Java. There are also **low-level languages**, sometimes referred to as "machine languages" or "assembly languages." Loosely speaking, computers can only run programs written in lowlevel languages. So programs written in a high-level language have to be processed before they can run. This extra processing takes some time, which is a small disadvantage of high-level languages. The advantages are enormous. First, it is much easier to program in a high-level language. Programs written in a high-level language take less time to write, they are shorter and easier to read, and they are more likely to be correct. Second, high-level languages are portable, meaning that they can run on different kinds of computers with few or no modifications. Low-level programs can run on only one kind of computer and have to be rewritten to run on another.
 
-SOURCE
------------
-CODE
-INTERPRETER
-OUTPUT
-CODE
---------
-OBJECT
-EXECUTOR
-CODE
-SOURCE
-COMPILER
-OUTPUT
+| SOURCE      |
+|-------------|
+| CODE        |
+| INTERPRETER |
+| OUTPUT      |
+| CODE     |
+|----------|
+| OBJECT   |
+| EXECUTOR |
+| CODE     |
+| SOURCE   |
+| COMPILER |
+| OUTPUT   |
 
 Due to these advantages, almost all programs are written in high-level languages. Lowlevel languages are used only for a few specialized applications.
 
@@ -346,10 +346,10 @@ They're strings.
 When you type a large integer, you might be tempted to use commas between groups of
 three digits, as in 1,000,000. This is not a legal integer in Python, but it is legal:
 
-message      'And now for something completely different'
----------  ----------------------------------------------
-n                                                17
-pi                                                3.14159
+| message   |   'And now for something completely different' |
+|-----------|------------------------------------------------|
+| n         |                                       17       |
+| pi        |                                        3.14159 |
 
 >>> 1,000,000 (1, 0, 0)
 Well, that's not what we expected at all!
@@ -793,14 +793,14 @@ exception:
 >>> print cat
 NameError: name 'cat' is not defined
 
-line1        'Bing tiddle '
------------  --------------------------
-<module>
-line2        'tiddle bang.'
-part1        'Bing tiddle '
-cat_twice    part2
-cat          'Bing tiddle tiddle bang.'
-print_twice  bruce
+| line1       | 'Bing tiddle '             |
+|-------------|----------------------------|
+| <module>    |                            |
+| line2       | 'tiddle bang.'             |
+| part1       | 'Bing tiddle '             |
+| cat_twice   | part2                      |
+| cat         | 'Bing tiddle tiddle bang.' |
+| print_twice | bruce                      |
 
 Parameters are also local. For example, outside print_twice, there is no such thing as bruce.
 
@@ -1472,12 +1472,12 @@ Exercise 5.1. *Draw a stack diagram for* print_n *called with* s = 'Hello' *and*
 
 Exercise 5.2. *Write a function called* do_n that takes a function object and a number, n, as arguments, and that calls the given function n times.
 
-                 <module>
----------  --  ----------
-countdown  n            3
-countdown  n            2
-countdown  n            1
-countdown  n            0
+|           |    |   <module> |
+|-----------|----|------------|
+| countdown | n  |          3 |
+| countdown | n  |          2 |
+| countdown | n  |          1 |
+| countdown | n  |          0 |
 
 ## 5.10 Infinite Recursion
 
@@ -1861,16 +1861,16 @@ The return value (1) is multiplied by n, which is 2, and the result is returned.
 
 The return value (2) is multiplied by n, which is 3, and the result, 6, becomes the return value of the function call that started the whole process. Figure 6.1 shows what the stack diagram looks like for this sequence of function calls. The return values are shown being passed back up the stack. In each frame, the return value is the value of result, which is the product of n and recurse. In the last frame, the local variables recurse and result do not exist, because the branch that creates them does not execute.
 
-                                        6
----------  --  --  -------  --  ------  ------
-factorial  n    3  recurse   2  6       result
-2
-factorial  n    2  recurse   1  result  2
-1
-factorial  n    1  recurse   1  1       result
-factorial
-1
-n          0
+|           |    |    |         |    |        | 6      |
+|-----------|----|----|---------|----|--------|--------|
+| factorial | n  |  3 | recurse |  2 | 6      | result |
+| 2         |    |    |         |    |        |        |
+| factorial | n  |  2 | recurse |  1 | result | 2      |
+| 1         |    |    |         |    |        |        |
+| factorial | n  |  1 | recurse |  1 | 1      | result |
+| factorial |    |    |         |    |        |        |
+| 1         |    |    |         |    |        |        |
+| n         | 0  |    |         |    |        |        |
 
 ## 6.6 Leap Of Faith
 
@@ -2015,7 +2015,7 @@ Exercise 6.5. The Ackermann function, A(m, n), is defined:
 
 $$A(m,n)=\begin{cases}n+1&\text{if $m=0$}\\ A(m-1,1)&\text{if $m>0$ and $n=0$}\\ A(m-1,A(m,n-1))&\text{if $m>0$ and $n>0$.}\end{cases}$$
 
-_See [http://en.wikipedia.org/wiki/Ackermann_function](http://en.wikipedia.org/wiki/Ackermann_function). Write a function named_ack that evaluates Ackermann's function. Use your function to evaluate_ack(3, 4)_, which should be 125. What happens for larger values of_m_ and n_? Solution:_[http://thinkpython.com/code/ackermann.py._](http://thinkpython.com/code/ackermann.py._)
+_See [http://en.wikipedia.org/wiki/Ackermann_function](http://en.wikipedia.org/wiki/Ackermann_function). Write a function named_ack that evaluates Ackermann's function. Use your function to evaluate_ack(3, 4)_, which should be 125. What happens for larger values of_m _and_n_? Solution:_[http://thinkpython.com/code/ackermann.py._](http://thinkpython.com/code/ackermann.py._)
 
 **Exercise 6.6**.: _A palindrome is a word that is spelled the same backward and forward, like "noon" and "redivider". Recursively, a word is a palindrome if the first and last letters are the same and the middle is a palindrome._
 The following are functions that take a string argument and return the first, last, and middle letters:
@@ -2577,9 +2577,9 @@ but we get an IndexError:
 >>> is_reverse('pots', 'stop')
 ...
 
-word1      'pots'  word2      'stop'
--------  --------  -------  --------
-i               0  j               3
+| word1   |   'pots' | word2   |   'stop' |
+|---------|----------|---------|----------|
+| i       |        0 | j       |        3 |
 
 File "reverse.py", line 15, in is_reverse if word1[i] != word2[j]:
 IndexError: string index out of range For debugging this kind of error, my first move is to print the values of the indices immediately before the line where the error appears.
@@ -2916,17 +2916,17 @@ As you might expect, you can assign list values to variables:
 The syntax for accessing the elements of a list is the same as for accessing the characters of a string—the bracket operator. The expression inside the brackets specifies the index. Remember that the indices start at 0:
 >>> print cheeses[0] Cheddar
 
-                  list
--------  -------  ---------
-cheeses  0        'Cheddar'
-1        'Edam'
-2        'Gouda'
-list
-numbers  17       0
-1        123
-5
-list
-empty
+|         |         | list      |
+|---------|---------|-----------|
+| cheeses | 0       | 'Cheddar' |
+| 1       | 'Edam'  |           |
+| 2       | 'Gouda' |           |
+| list    |         |           |
+| numbers | 17      | 0         |
+| 1       | 123     |           |
+| 5       |         |           |
+| list    |         |           |
+| empty   |         |           |
 
 Unlike strings, lists are mutable. When the bracket operator appears on the left side of an assignment, it identifies the element of the list that will be assigned.
 
@@ -3571,15 +3571,15 @@ If val is not in inverse, that means we haven't seen it before, so we create a n
 >>> print inverse
 {1: ['a', 'p', 't', 'o'], 2: ['r']}
 
-                       dict    dict  list
-----  ---  ---  ---  ------  ------  ------
-hist  'a'  1    inv       1       0  'a'
-'p'   1    1    'p'
-'r'   2    2    't'
-'t'   1    'o'  3
-'o'   1
-list
-2     0    'r'
+|      |     |     |     |   dict |   dict | list   |
+|------|-----|-----|-----|--------|--------|--------|
+| hist | 'a' | 1   | inv |      1 |      0 | 'a'    |
+| 'p'  | 1   | 1   | 'p' |        |        |        |
+| 'r'  | 2   | 2   | 't' |        |        |        |
+| 't'  | 1   | 'o' | 3   |        |        |        |
+| 'o'  | 1   |     |     |        |        |        |
+| list |     |     |     |        |        |        |
+| 2    | 0   | 'r' |     |        |        |        |
 
 Figure 11.1 is a state diagram showing hist and inverse. A dictionary is represented as a box with the type dict above it and the key-value pairs inside. If the values are integers, floats or strings, I usually draw them inside the box, but I usually draw lists outside the box, just to keep the diagram simple. Lists can be values in a dictionary, as this example shows, but they cannot be keys. Here's what happens if you try:
 >>> t = [1, 2, 3] >>> d = dict()
@@ -4669,11 +4669,11 @@ class Point(object):
 """Represents a point in 2-D space."""
 This header indicates that the new class is a Point, which is a kind of object, which is a built-in type. The body is a docstring that explains what the class is for. You can define variables and functions inside a class definition, but we will get back to that later. Defining a class named Point creates a class object.
 
-blank
--------
-Point
-x
-y
+| blank   |
+|---------|
+| Point   |
+| x       |
+| y       |
 
 >>> print Point
 <class '__main__.Point'>
@@ -4739,14 +4739,14 @@ class Rectangle(object):
 The docstring lists the attributes: width and height are numbers; corner is a Point object that specifies the lower-left corner. To represent a rectangle, you have to instantiate a Rectangle object and assign values to the attributes:
 box = Rectangle() box.width = 100.0 box.height = 200.0
 
-                 Rectangle
-------  -----  -----------
-box     width          100
-height  200.0
-Point
-0.0     x
-corner
-y       0.0
+|        |       |   Rectangle |
+|--------|-------|-------------|
+| box    | width |         100 |
+| height | 200.0 |             |
+| Point  |       |             |
+| 0.0    | x     |             |
+| corner |       |             |
+| y      | 0.0   |             |
 
 box.corner = Point() box.corner.x = 0.0 box.corner.y = 0.0
 The expression box.corner.x means, "Go to the object box refers to and select the attribute named corner; then go to that object and select the attribute named x."
@@ -4805,12 +4805,12 @@ This behavior can be changed—we'll see how later.
 If you use copy.copy to duplicate a Rectangle, you will find that it copies the Rectangle
 object but not the embedded Point.
 
-box     100.0      width  100.0
-------  -------  -------  -------
-height  200.0        200  height
-0.0     x
-corner  corner
-y       0.0
+| box    | 100.0   |   width | 100.0   |
+|--------|---------|---------|---------|
+| height | 200.0   |     200 | height  |
+| 0.0    | x       |         |         |
+| corner | corner  |         |         |
+| y      | 0.0     |         |         |
 
 >>> box2 = copy.copy(box) >>> box2 is box False >>> box2.corner is box.corner True Figure 15.3 shows what the object diagram looks like.
 
@@ -4911,11 +4911,11 @@ statement.
 
 In the next few sections, we'll write two functions that add time values. They demonstrate two kinds of functions: pure functions and modifiers. They also demonstrate a development plan I'll call **prototype and patch**, which is a way of tackling a complex problem by starting with a simple prototype and incrementally dealing with the complications.
 
-                Time
-------  ----  ------
-time    hour      11
-minute  59
-second  30
+|        |      |   Time |
+|--------|------|--------|
+| time   | hour |     11 |
+| minute | 59   |        |
+| second | 30   |        |
 
 Here is a simple prototype of add_time:
 
@@ -5403,34 +5403,34 @@ One possibility is to use strings containing words like 'Spade' for suits and 'Q
 An alternative is to use integers to **encode** the ranks and suits. In this context, "encode"
 means that we are going to define a mapping between numbers and suits, or between numbers and ranks. This kind of encoding is not meant to be a secret (that would be "encryption"). For example, this table shows the suits and the corresponding integer codes:
 
-Spades
---------
-�→
-3
-Hearts
-�→
-2
-Diamonds
-�→
-1
-Clubs
-�→
-0
+| Spades   |
+|----------|
+| �→       |
+| 3        |
+| Hearts   |
+| �→       |
+| 2        |
+| Diamonds |
+| �→       |
+| 1        |
+| Clubs    |
+| �→       |
+| 0        |
 
 This code makes it easy to compare cards; because higher suits map to higher numbers, we can compare suits by comparing their codes.
 
 The mapping for ranks is fairly obvious; each of the numerical ranks maps to the corresponding integer, and for face cards:
 
-Jack
-------
-�→
-11
-Queen
-�→
-12
-King
-�→
-13
+| Jack   |
+|--------|
+| �→     |
+| 11     |
+| Queen  |
+| �→     |
+| 12     |
+| King   |
+| �→     |
+| 13     |
 
 I am using the �→ symbol to make it clear that these mappings are not part of the Python program. They are part of the program design, but they don't appear explicitly in the code. The class definition for Card looks like this:
 class Card(object):
@@ -5457,14 +5457,14 @@ Both kinds of attribute are accessed using dot notation. For example, in __str__
 
 Similarly, Card is a class object, and Card.rank_names is a list of strings associated with the class. Every card has its own suit and rank, but there is only one copy of suit_names and rank_names.
 
-type        list
-----------  ----------
-Card        suit_names
-list
-rank_names
-Card
-card1       suit
-rank        11
+| type       | list       |
+|------------|------------|
+| Card       | suit_names |
+| list       |            |
+| rank_names |            |
+| Card       |            |
+| card1      | suit       |
+| rank       | 11         |
 
 Putting it all together, the expression Card.rank_names[self.rank] means "use the attribute rank from the object self as an index into the list rank_names from the class Card, and select the appropriate string." The first element of rank_names is None because there is no card with rank zero. By including None as a place-keeper, we get a mapping with the nice property that the index 2 maps to the string '2', and so on. To avoid this tweak, we could have used a dictionary instead of a list. With the methods we have so far, we can create and print cards:
 >>> card1 = Card(2, 11) >>> print card1 Jack of Hearts Figure 18.1 is a diagram of the Card class object and one Card instance.
@@ -6323,16 +6323,16 @@ Suppose you have analyzed two algorithms and expressed their run times in terms 
 
 The following table shows the run time of these algorithms for different problem sizes:
 
-Input    Run time of    Run time of
--------  -------------  -------------
-size     Algorithm A    Algorithm B
-10       1 001          111
-100      10 001         10 101
-1 000    100 001        1 001 001
-10 000   1 000 001
->
-10
-10
+| Input   | Run time of   | Run time of   |
+|---------|---------------|---------------|
+| size    | Algorithm A   | Algorithm B   |
+| 10      | 1 001         | 111           |
+| 100     | 10 001        | 10 101        |
+| 1 000   | 100 001       | 1 001 001     |
+| 10 000  | 1 000 001     |               |
+| >       |               |               |
+| 10      |               |               |
+| 10      |               |               |
 
 At n = 10, Algorithm A looks pretty bad; it takes almost 10 times longer than Algorithm B. But for n = 100 they are about the same, and for larger values A is much better.
 
@@ -6351,56 +6351,56 @@ All functions with the leading term n2 belong to O(n2); they are **quadratic**, 
 
 The following table shows some of the orders of growth that appear most commonly in algorithmic analysis, in increasing order of badness.
 
-Order of
---------------------
-growth
-O
-(
-1
-)
-constant
-O
-(
-log
-b
-n
-)
-logarithmic (for any
-b
-)
-O
-(
-n
-)
-linear
-O
-(
-n
-log
-b
-n
-)
-"en log en"
-O
-(
-n
-2
-)
-quadratic
-O
-(
-n
-3
-)
-cubic
-O
-(
-c
-n
-)
-exponential (for any
-c
-)
+| Order of             |
+|----------------------|
+| growth               |
+| O                    |
+| (                    |
+| 1                    |
+| )                    |
+| constant             |
+| O                    |
+| (                    |
+| log                  |
+| b                    |
+| n                    |
+| )                    |
+| logarithmic (for any |
+| b                    |
+| )                    |
+| O                    |
+| (                    |
+| n                    |
+| )                    |
+| linear               |
+| O                    |
+| (                    |
+| n                    |
+| log                  |
+| b                    |
+| n                    |
+| )                    |
+| "en log en"          |
+| O                    |
+| (                    |
+| n                    |
+| 2                    |
+| )                    |
+| quadratic            |
+| O                    |
+| (                    |
+| n                    |
+| 3                    |
+| )                    |
+| cubic                |
+| O                    |
+| (                    |
+| c                    |
+| n                    |
+| )                    |
+| exponential (for any |
+| c                    |
+| )                    |
 
 For the logarithmic terms, the base of the logarithm doesn't matter; changing bases is the equivalent of multiplying by a constant, which doesn't change the order of growth. Similarly, all exponential functions belong to the same order of growth regardless of the base of the exponent. Exponential functions grow very quickly, so exponential algorithms are only useful for small problems.
 

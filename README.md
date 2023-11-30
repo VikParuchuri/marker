@@ -1,12 +1,12 @@
 # Marker
 
-Marker converts PDF, EPUB, and MOBI to markdown.  It's 10x faster than nougat, more accurate on most documents, and has near-zero hallucination risk.
+Marker converts PDF, EPUB, and MOBI to markdown.  It's 10x faster than nougat, more accurate on most documents, and has low hallucination risk.
 
 - Support for a range of PDF documents (optimized for books and scientific papers)
 - Removes headers/footers/other artifacts
 - Converts most equations to latex
 - Formats code blocks and tables
-- Support for multiple languages (although most testing is done in English).  See `settings.py` for a list of supported languages.
+- Support for multiple languages (although most testing is done in English).  See `settings.py` for a language list.
 - Works on GPU, CPU, or MPS
 
 ## How it works
@@ -16,23 +16,29 @@ Marker is a pipeline of deep learning models:
 - Extract text, OCR if necessary (heuristics, tesseract)
 - Detect page layout ([layout segmenter](https://huggingface.co/vikp/layout_segmenter), [column detector](https://huggingface.co/vikp/column_detector))
 - Clean and format each block (heuristics, [nougat](https://huggingface.co/facebook/nougat-base))
-- Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor))
+- Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor_t5))
 
-Relying on autoregressive forward passes to generate text is slow and prone to hallucination/repetition.  From the nougat paper `We observed [repetition] in 1.5% of pages in the test set, but the frequency increases for out-of-domain documents.`  In my anecdotal testing, repetitions happen on 5%+ of out-of-domain (non-arXiv) pages.  Nougat is an amazing model that is part of marker, it's just not a general-purpose converter.
+Relying on autoregressive forward passes to generate text is slow and prone to hallucination/repetition.  From the nougat paper: `We observed [repetition] in 1.5% of pages in the test set, but the frequency increases for out-of-domain documents.`  In my anecdotal testing, repetitions happen on 5%+ of out-of-domain (non-arXiv) pages.  
 
-Marker is 10x faster and more accurate by only passing equation blocks through an LLM forward pass.
+Nougat is an amazing model, but I wanted a faster and more general purpose solution. Marker is 10x faster and has low hallucination risk because it only passes equation blocks through an LLM forward pass.
 
 ## Examples
 
-| PDF                                                                   | Type        | Marker                                                                                                 | Nougat                                                                                            |
-|-----------------------------------------------------------------------|-------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook    | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/thinkpython.md)         | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/thinkpython.md)    |
-| [Think OS](https://greenteapress.com/thinkos/thinkos.pdf)             | Textbook    | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/thinkos.md)             | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/thinkos.md)        |
-| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf)           | arXiv paper | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/switch_transformers.md) |
-| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf)              | arXiv paper | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/marker/multicolcnn.md)         | [View file](https://github.com/VikParuchuri/marker/blob/master/examples/nougat/multicolcnn.md)    |
+| PDF                                                                   | Type        | Marker                                                                                                 | Nougat                                                                                                 |
+|-----------------------------------------------------------------------|-------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook    | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/thinkpython.md)         | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/thinkpython.md)         |
+| [Think OS](https://greenteapress.com/thinkos/thinkos.pdf)             | Textbook    | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/thinkos.md)             | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/thinkos.md)             |
+| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf)           | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/switch_transformers.md) |
+| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf)              | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/multicolcnn.md)         | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/multicolcnn.md)         |
 
 
-See [below](#benchmarks) for speed and accuracy benchmarks.
+## Performance
+
+![Benchmark overall](data/images/overall.png)
+
+The above results are with marker and nougat setup so they each take ~3GB of VRAM on an A6000.
+
+See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
 # Installation
 
@@ -71,11 +77,12 @@ First, clone the repo:
 
 # Usage
 
-**Configuration**
+First, some configuration:
 
 - Set your torch device in the `local.env` file.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`.  `cpu` is the default.
   - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
   - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
+- By default, the final editor model is off.  Turn it on with `ENABLE_EDITOR_MODEL`.
 - Inspect the settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
 
 ## Convert a single file
@@ -96,7 +103,7 @@ Make sure the `DEFAULT_LANG` setting is set appropriately for your document.
 Run `convert.py`, like this:
 
 ```
-python convert.py /path/to/input/folder /path/to/output/folder --workers 4 --max 10 --metadata_file /path/to/metadata.json
+python convert.py /path/to/input/folder /path/to/output/folder --workers 10 --max 10 --metadata_file /path/to/metadata.json
 ```
 
 - `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage. Parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK` if you're using GPU.
@@ -116,7 +123,7 @@ python convert.py /path/to/input/folder /path/to/output/folder --workers 4 --max
 Run `chunk_convert.sh`, like this:
 
 ```
-METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.sh ../pdf_in ../md_out
+METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 bash chunk_convert.sh ../pdf_in ../md_out
 ```
 
 - `METADATA_FILE` is an optional path to a json file with metadata about the pdfs.  See above for the format.
@@ -127,27 +134,33 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=35 bash chunk_convert.s
 
 Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.
 
-Benchmarks show that marker is 10x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
+Benchmarks show that marker is 10x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).  We show naive text extraction (pulling text out of the pdf with no processing) for comparison.
 
 **Speed**
 
-Method      Average Score    Time per doc
---------  ---------------  --------------
-naive            0.351585        0.328931
-marker           0.636839       78.1468
-nougat           0.614548      810.756
+| Method | Average Score | Time per page | Time per document |
+|--------|---------------|---------------|-------------------|
+| naive  | 0.350727      | 0.00152378    | 0.326524          |
+| marker | 0.641062      | 0.360622      | 77.2762           |
+| nougat | 0.629211      | 3.77259       | 808.413           |
 
 **Accuracy**
 
 First 3 are non-arXiv books, last 3 are arXiv papers.
 
-Method      thinkos.pdf    thinkdsp.pdf    thinkpython.pdf   switch_trans.pdf    crowd.pdf    multicolcnn.pdf
---------  -------------  --------------  -----------------  ------------------  -----------  -----------------
-naive          0.366817        0.412014           0.468147            0.244739     0.14489          0.0890217
-marker         0.753291        0.787938           0.779262            0.478387     0.446068          0.533737
-nougat         0.638434        0.632723           0.637626            0.690028     0.540994          0.699539
+| Method | switch_trans.pdf | crowd.pdf | multicolcnn.pdf | thinkos.pdf | thinkdsp.pdf | thinkpython.pdf |
+|--------|------------------|-----------|-----------------|-------------|--------------|-----------------|
+| naive  | 0.244114         | 0.140669  | 0.0868221       | 0.366856    | 0.412521     | 0.468281        |
+| marker | 0.482091         | 0.466882  | 0.537062        | 0.754347    | 0.78825      | 0.779536        |
+| nougat | 0.696458         | 0.552337  | 0.735099        | 0.655002    | 0.645704     | 0.650282        |
 
 Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `3.1GB` for marker.  Benchmarks were run on an A6000.
+
+**Throughput**
+
+Marker takes about 2GB of VRAM on average per task, so you can convert 24 documents in parallel on an A6000.
+
+![Benchmark results](data/images/per_doc.png)
 
 ## Running your own benchmarks
 

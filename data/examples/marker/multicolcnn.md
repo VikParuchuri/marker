@@ -42,7 +42,7 @@ In a traditional 2D convolution, we define a real valued function F : Z2 → R, 
 
 operation as defined in [25] is given by
 
-$$(F*k)(p)=\sum_{i=1}^{N}F(s)k(t). \tag{1}$$
+$$(F*k)(p)=\sum_{\bf s+t=p}F({\bf s})k({\bf t}). \tag{1}$$
 A dilated convolution is essentially a generalization of the traditional 2D convolution that allows the operation to skip some inputs. This enables an increase in the size of the filter (i.e. the size of the receptive field) without losing resolution. Formally, we define from [25] the dilated convolution as
 
 $$(F*_{l}k)({\bf p})=\sum_{l}F({\bf s})k({\bf t}) \tag{2}$$
@@ -131,15 +131,15 @@ When perspective maps are used, however, we follow the procedure as described in
 $$D_{\bf x}=\frac{1}{||Z||}({\cal N}_{h}({\bf x},\sigma_{h})+{\cal N}_{b}({\bf x}_{ b},\Sigma_{b})) \tag{5}$$
 where xb is the center of the body, which is 0.875 meters down from the head on average, and can be determined from the perspective map M and the head center x [27]. We sum these Gaussians for each person to pro-
 
-Method           MAE
-------------  ------
-AMDCN
-290.82
-Hydra2s [18]  333.73
-MCNN [28]     377.6
-[27]          467
-[23]          295.8
-[3]           318.1
+| Method       |    MAE |
+|--------------|--------|
+| AMDCN        |        |
+| 290.82       |        |
+| Hydra2s [18] | 333.73 |
+| MCNN [28]    | 377.6  |
+| [27]         | 467    |
+| [23]         | 295.8  |
+| [3]          | 318.1  |
 
 duce the final density map. We set σ = 0.2M(x) for Nh and σx = 0.2M(x), σy = 0.5M(x) for Σb in Nb.
 
@@ -161,25 +161,25 @@ Indeed, as confirmed by the GAME score, AMDCN produces the most accurate count a
 
 Results are shown in Table 3 and Figure 3. We see that the "original" split as defined by the creators of the dataset in [5] and used in [28] gives us somewhat worse results for counting on this dataset. Results were consistent over multiple trainings. Again, including the perspective map does not seem to increase performance on this dataset. Despite this, we see in Table 3 and Figure 3 that the results are comparable to the state of the art. In fact, for two of the splits, our proposed network beats the state of the art. For the upscale split, the AMDCN is the state of the art by a large relative margin. This is compelling because it shows that accurate perspective-free counting can be achieved without
 
-Method            GAME
---------------  ------
-(L=0)
-GAME
-(L=1)
-GAME
-(L=2)
-GAME
-(L=3)
-AMDCN
-9.77             13.16
-[18]             10.99
-13.76            16.72
-from [14]
-17.68            19.97
-Norm + Filters
-from [14]
-13.29            18.05
-from [14]
+| Method         |   GAME |
+|----------------|--------|
+| (L=0)          |        |
+| GAME           |        |
+| (L=1)          |        |
+| GAME           |        |
+| (L=2)          |        |
+| GAME           |        |
+| (L=3)          |        |
+| AMDCN          |        |
+| 9.77           |  13.16 |
+| [18]           |  10.99 |
+| 13.76          |  16.72 |
+| from [14]      |        |
+| 17.68          |  19.97 |
+| Norm + Filters |        |
+| from [14]      |        |
+| 13.29          |  18.05 |
+| from [14]      |        |
 
 creating image pyramids or requiring perspective maps as labels using the techniques presented by the AMDCN.
 
@@ -192,33 +192,33 @@ Our network performs reasonably well on the more challenging WorldExpo dataset. 
 We report the results of the ablation studies in Figure
 4. We note from these plots that while there is variation in performance, a few trends stand out. Most importantly, the lowest errors are consistently with a combination of a larger number of columns and including the aggregator module. Notably for the TRANCOS dataset, including the aggregator consistently improves performance. Generally, the aggregator tends to decrease the variance in performance of the network. Some of the variance that we see in the plots can be explained by: (1) for lower numbers of columns, including an aggregator is not as likely to help as there is not much separation of multiscale information across columns and (2) for the UCSD dataset, there is less of a perspective effect than TRANCOS and WorldExpo so a simpler network is more likely to perform comparably to a larger network. These results verify the notion that using more columns increases accuracy, and also support our justification for the use of the aggregator module.
 
-Method                                  maximal    downscale    upscale    minimal    original
---------------------------------------  ---------  -----------  ---------  ---------  ----------
-AMDCN
-(without perspective information)
-1.63                                    1.43
-0.63
-1.71                                    1.74
-AMDCN (with perspective information)    1.60
-1.24
-1.37                                    1.59       1.72
-[18] (with perspective information)     1.65       1.79         1.11       1.50       -
-[18] (without perspective information)  2.22       1.93         1.37       2.38       -
-[15]                                    1.70       1.28         1.59       2.02       -
-[13]                                    1.70       2.16         1.61       2.20       -
-[19]                                    1.43       1.30         1.59       1.62       -
-[2]
-1.24
-1.31                                    1.69
-1.49
--
-[27]                                    1.70       1.26         1.59       1.52       1.60
-[28]                                    -          -            -          -
-1.07
-[1,28]                                  -          -            -          -          2.16
-[7]                                     -          -            -          -          2.25
-[5]                                     -          -            -          -          2.24
-[6]                                     -          -            -          -          2.07
+| Method                                 | maximal   | downscale   | upscale   | minimal   | original   |
+|----------------------------------------|-----------|-------------|-----------|-----------|------------|
+| AMDCN                                  |           |             |           |           |            |
+| (without perspective information)      |           |             |           |           |            |
+| 1.63                                   | 1.43      |             |           |           |            |
+| 0.63                                   |           |             |           |           |            |
+| 1.71                                   | 1.74      |             |           |           |            |
+| AMDCN (with perspective information)   | 1.60      |             |           |           |            |
+| 1.24                                   |           |             |           |           |            |
+| 1.37                                   | 1.59      | 1.72        |           |           |            |
+| [18] (with perspective information)    | 1.65      | 1.79        | 1.11      | 1.50      | -          |
+| [18] (without perspective information) | 2.22      | 1.93        | 1.37      | 2.38      | -          |
+| [15]                                   | 1.70      | 1.28        | 1.59      | 2.02      | -          |
+| [13]                                   | 1.70      | 2.16        | 1.61      | 2.20      | -          |
+| [19]                                   | 1.43      | 1.30        | 1.59      | 1.62      | -          |
+| [2]                                    |           |             |           |           |            |
+| 1.24                                   |           |             |           |           |            |
+| 1.31                                   | 1.69      |             |           |           |            |
+| 1.49                                   |           |             |           |           |            |
+| -                                      |           |             |           |           |            |
+| [27]                                   | 1.70      | 1.26        | 1.59      | 1.52      | 1.60       |
+| [28]                                   | -         | -           | -         | -         |            |
+| 1.07                                   |           |             |           |           |            |
+| [1,28]                                 | -         | -           | -         | -         | 2.16       |
+| [7]                                    | -         | -           | -         | -         | 2.25       |
+| [5]                                    | -         | -           | -         | -         | 2.24       |
+| [6]                                    | -         | -           | -         | -         | 2.07       |
 
 ## 5. Conclusion 5.1. Summary
 
@@ -226,21 +226,21 @@ then aggregate this multiscale information using another series of dilated convo
 
 We have proposed the use of aggregated multicolumn dilated convolutions, the AMDCN, as an alternative to the HydraCNN [18] or multicolumn CNN [28] for the vision task of counting objects in images. Inspired by the multicolumn approach to multiscale problems, we also employ dilations to increase the receptive field of our columns. We
 
-(a) WorldExpo    (b) TRANCOS    (c) UCSD original split
----------------  -------------  -------------------------
-Method                                MAE
-------------------------------------  ------------------------------------
-16.6                                  AMDCN
-(without perspective infor-
-mation)
-14.9                                  AMDCN (with perspective informa-
-tion)
-31.0                                  LBP+RR [28] (with perspective infor-
-mation)
-11.6
-MCNN [28] (with perspective informa-
-tion)
-[27] (with perspective information)   12.9
+| (a) WorldExpo   | (b) TRANCOS   | (c) UCSD original split   |
+|-----------------|---------------|---------------------------|
+| Method                               | MAE                                  |
+|--------------------------------------|--------------------------------------|
+| 16.6                                 | AMDCN                                |
+| (without perspective infor-          |                                      |
+| mation)                              |                                      |
+| 14.9                                 | AMDCN (with perspective informa-     |
+| tion)                                |                                      |
+| 31.0                                 | LBP+RR [28] (with perspective infor- |
+| mation)                              |                                      |
+| 11.6                                 |                                      |
+| MCNN [28] (with perspective informa- |                                      |
+| tion)                                |                                      |
+| [27] (with perspective information)  | 12.9                                 |
 
 We obtain superior or comparable results in most of these datasets. The AMDCN is capable of outperforming these approaches completely especially when perspective information is not provided, as in UCF and TRANCOS. These results show that the AMDCN performs surprisingly well and is also robust to scale effects. Further, our ablation study of removing the aggregator network shows that using more columns and an aggregator provides the best accuracy for counting - especially so when there is no perspective information.
 

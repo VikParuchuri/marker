@@ -1,7 +1,6 @@
 from collections import defaultdict, Counter
 from itertools import chain
 from typing import Optional
-import re
 
 from transformers import AutoTokenizer
 from marker.settings import settings
@@ -17,11 +16,10 @@ def load_editing_model():
         return None
 
     model = T5ForTokenClassification.from_pretrained(
-            settings.EDITOR_MODEL_NAME
+            settings.EDITOR_MODEL_NAME,
+            torch_dtype=settings.MODEL_DTYPE,
         ).to(settings.TORCH_DEVICE)
-
-    if settings.CUDA:
-        model = model.to(torch.bfloat16)
+    model.eval()
 
     model.config.label2id = {
         "equal": 0,
@@ -41,15 +39,6 @@ def edit_full_text(text: str, model: Optional[T5ForTokenClassification], batch_s
     input_ids = tokenized["input_ids"]
     char_token_lengths = tokenized["char_token_lengths"]
 
-    # Tokenize, and make sure reverse tokenization works
-    model_tokens = [tokenizer.convert_ids_to_tokens(t, skip_special_tokens=True) for t in input_ids]
-    model_tokens_str = [tokenizer.convert_tokens_to_string(t) for t in model_tokens]
-    full_text = "".join(model_tokens_str)
-    assert full_text == text
-
-    # List of characters in the text
-    flat_input_ids = list(chain.from_iterable(input_ids))
-
     # Run model
     token_masks = []
     for i in range(0, len(input_ids), batch_size):
@@ -67,13 +56,16 @@ def edit_full_text(text: str, model: Optional[T5ForTokenClassification], batch_s
         probs = F.softmax(logits, dim=-1)
         max_prob = torch.max(probs, dim=-1)
         cutoff_prob = max_prob.values < settings.EDITOR_CUTOFF_THRESH
-        labels = logits.argmax(-1).squeeze()
+        labels = logits.argmax(-1)
         labels[cutoff_prob] = model.config.label2id["equal"]
-        labels = labels.tolist()
+        labels = labels.squeeze().tolist()
         if len(labels) == settings.EDITOR_MAX_LENGTH:
             labels = [labels]
         labels = list(chain.from_iterable(labels))
         token_masks.extend(labels)
+
+    # List of characters in the text
+    flat_input_ids = list(chain.from_iterable(input_ids))
 
     # Strip special tokens 0,1.  Keep unknown token, although it should never be used
     assert len(token_masks) == len(flat_input_ids)

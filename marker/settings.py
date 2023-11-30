@@ -5,13 +5,14 @@ from dotenv import find_dotenv
 from pydantic import computed_field
 from pydantic_settings import BaseSettings
 import fitz as pymupdf
+import torch
 
 
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: str = "cpu"
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
-    VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3GB, but avg across workers is lower.
+    VRAM_PER_TASK: float = 2 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3GB, but avg across workers is lower.
     DEBUG: bool = False # Enable debug logging
     DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
@@ -73,10 +74,10 @@ class Settings(BaseSettings):
 
     # Final editing model
     EDITOR_BATCH_SIZE: int = 4
-    EDITOR_MAX_LENGTH: int = 2048
+    EDITOR_MAX_LENGTH: int = 1024
     EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor_t5"
-    ENABLE_EDITOR_MODEL: bool = True # The editor model can create false positives
-    EDITOR_CUTOFF_THRESH: float = 0.75 # Ignore predictions below this probability
+    ENABLE_EDITOR_MODEL: bool = False # The editor model can create false positives
+    EDITOR_CUTOFF_THRESH: float = 0.9 # Ignore predictions below this probability
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
@@ -87,6 +88,11 @@ class Settings(BaseSettings):
     @property
     def CUDA(self) -> bool:
         return "cuda" in self.TORCH_DEVICE
+
+    @computed_field
+    @property
+    def MODEL_DTYPE(self) -> torch.dtype:
+        return torch.bfloat16 if self.CUDA else torch.float32
 
     class Config:
         env_file = find_dotenv("local.env")

@@ -16,9 +16,11 @@ processor = LayoutLMv3Processor.from_pretrained(settings.ORDERER_MODEL_NAME)
 
 
 def load_ordering_model():
-    model = LayoutLMv3ForSequenceClassification.from_pretrained(settings.ORDERER_MODEL_NAME).to(settings.TORCH_DEVICE)
-    if settings.CUDA:
-        model = model.to(torch.bfloat16)
+    model = LayoutLMv3ForSequenceClassification.from_pretrained(
+        settings.ORDERER_MODEL_NAME,
+        torch_dtype=settings.MODEL_DTYPE,
+    ).to(settings.TORCH_DEVICE)
+    model.eval()
     return model
 
 
