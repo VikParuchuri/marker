@@ -3,11 +3,11 @@ from itertools import chain
 from typing import Optional
 import re
 
-from transformers import BloomForTokenClassification, AutoTokenizer
+from transformers import AutoTokenizer
 from marker.settings import settings
 import torch
 import torch.nn.functional as F
-from marker.postprocessors.t5 import T5ForTokenClassification
+from marker.postprocessors.t5 import T5ForTokenClassification, byt5_tokenize
 
 tokenizer = AutoTokenizer.from_pretrained(settings.EDITOR_MODEL_NAME)
 
@@ -37,24 +37,18 @@ def edit_full_text(text: str, model: Optional[T5ForTokenClassification], batch_s
     if not model:
         return text, {}
 
-    tokenized = tokenizer(
-        text,
-        truncation=True,
-        max_length=settings.EDITOR_MAX_LENGTH,
-        return_overflowing_tokens=True,
-        padding="max_length",
-    )
+    tokenized = byt5_tokenize(text, settings.EDITOR_MAX_LENGTH)
     input_ids = tokenized["input_ids"]
+    char_token_lengths = tokenized["char_token_lengths"]
 
     # Tokenize, and make sure reverse tokenization works
     model_tokens = [tokenizer.convert_ids_to_tokens(t, skip_special_tokens=True) for t in input_ids]
-    full_text = "".join(model_tokens)
+    model_tokens_str = [tokenizer.convert_tokens_to_string(t) for t in model_tokens]
+    full_text = "".join(model_tokens_str)
     assert full_text == text
 
     # List of characters in the text
-    model_tokens = [tokenizer.convert_ids_to_tokens(t) for t in input_ids]
-    flat_model_tokens = list(chain.from_iterable(model_tokens))
-    flat_str_tokens = list(text)
+    flat_input_ids = list(chain.from_iterable(input_ids))
 
     # Run model
     token_masks = []
@@ -72,47 +66,50 @@ def edit_full_text(text: str, model: Optional[T5ForTokenClassification], batch_s
         # We want to be conservative to not edit the text too much
         probs = F.softmax(logits, dim=-1)
         max_prob = torch.max(probs, dim=-1)
-        cutoff_prob = max_prob.values < 0.9
+        cutoff_prob = max_prob.values < settings.EDITOR_CUTOFF_THRESH
         labels = logits.argmax(-1).squeeze()
         labels[cutoff_prob] = model.config.label2id["equal"]
-
         labels = labels.tolist()
         if len(labels) == settings.EDITOR_MAX_LENGTH:
             labels = [labels]
         labels = list(chain.from_iterable(labels))
         token_masks.extend(labels)
 
-    # Strip special tokens
-    assert len(token_masks) == len(flat_model_tokens)
-    token_masks = [mask for mask, token in zip(token_masks, flat_model_tokens) if token not in ["<pad>", "<s>", "</s>"]]
+    # Strip special tokens 0,1.  Keep unknown token, although it should never be used
+    assert len(token_masks) == len(flat_input_ids)
+    token_masks = [mask for mask, token in zip(token_masks, flat_input_ids) if token >= 2]
 
-    assert len(token_masks) == len(flat_str_tokens)
+    assert len(token_masks) == len(list(text.encode("utf-8")))
 
     edit_stats = defaultdict(int)
-    out_tokens = []
-    for i, (str_token, mask) in enumerate(zip(flat_str_tokens, token_masks)):
-        label = model.config.id2label[mask]
+    out_text = []
+    start = 0
+    for i, char in enumerate(text):
+        char_token_length = char_token_lengths[i]
+        masks = token_masks[start: start + char_token_length]
+        labels = [model.config.id2label[mask] for mask in masks]
+        if all(l == "delete" for l in labels):
+            # If we delete whitespace, roll with it, otherwise ignore
+            if char.strip():
+                out_text.append(char)
+            else:
+                edit_stats["delete"] += 1
+        elif labels[0] == "newline-1":
+            out_text.append("\n")
+            out_text.append(char)
+            edit_stats["newline-1"] += 1
+        elif labels[0] == "space-1":
+            out_text.append(" ")
+            out_text.append(char)
+            edit_stats["space-1"] += 1
+        else:
+            out_text.append(char)
+            edit_stats["equal"] += 1
 
-        match label:
-            case "equal":
-                out_tokens.append(str_token)
-                edit_stats[label] += 1
-            case "delete":
-                # If we delete whitespace, roll with it, otherwise ignore
-                if str_token.strip():
-                    out_tokens.append(str_token)
-                else:
-                    edit_stats[label] += 1
-            case "newline-1":
-                out_tokens.append("\n")
-                out_tokens.append(str_token)
-                edit_stats[label] += 1
-            case "space-1":
-                out_tokens.append(" ")
-                out_tokens.append(str_token)
-                edit_stats[label] += 1
+        start += char_token_length
 
-    return "".join(out_tokens), edit_stats
+    out_text = "".join(out_text)
+    return out_text, edit_stats
 
 
 

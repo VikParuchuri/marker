@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat
     NOUGAT_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for nougat
     NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
-                                  "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]", "### "]
+                                  "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]", "### ", "effective field strength", "\Phi_{\rm eff}"]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
     NOUGAT_MODEL_NAME: str = "0.1.0-small" # Name of the model to use
     NOUGAT_BATCH_SIZE: int = 6 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu
@@ -74,8 +74,9 @@ class Settings(BaseSettings):
     # Final editing model
     EDITOR_BATCH_SIZE: int = 4
     EDITOR_MAX_LENGTH: int = 2048
-    EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor"
-    ENABLE_EDITOR_MODEL: bool = False # The editor model can create false positives
+    EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor_t5"
+    ENABLE_EDITOR_MODEL: bool = True # The editor model can create false positives
+    EDITOR_CUTOFF_THRESH: float = 0.75 # Ignore predictions below this probability
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache

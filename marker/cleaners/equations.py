@@ -108,7 +108,7 @@ def get_nougat_text_batched(images, reformat_region_lens, nougat_model, batch_si
         for j, output in enumerate(model_output["predictions"]):
             disclaimer = ""
             token_count = get_total_nougat_tokens(output, nougat_model)
-            if token_count >= max_length:
+            if token_count >= max_length - 1:
                 disclaimer = "[TRUNCATED]"
 
             image_idx = idx * batch_size + j

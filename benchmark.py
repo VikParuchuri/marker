@@ -119,7 +119,7 @@ if __name__ == "__main__":
     score_headers = benchmark_files
     for method in methods:
         summary_table.append([method, write_data[method]["avg_score"], write_data[method]["time_per_page"], write_data[method]["time_per_doc"]])
-        score_table.append([method, *[write_data[method]["scores"][h] for h in score_headers]])
+        score_table.append([method, *[write_data[method]["files"][h]["score"] for h in score_headers]])
 
     print(tabulate(summary_table, headers=["Method", "Average Score", "Time per page", "Time per document"]))
     print("")
