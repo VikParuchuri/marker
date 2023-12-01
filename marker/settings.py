@@ -29,8 +29,7 @@ class Settings(BaseSettings):
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "�"]
-    DPI: int = 800
-    SEGMENT_DPI: int = 1200
+    OCR_DPI: int = 400
     TESSDATA_PREFIX: str = ""
     TESSERACT_LANGUAGES: Dict = {
         "English": "eng",

@@ -3,7 +3,7 @@ from typing import Tuple, List
 
 from spellchecker import SpellChecker
 
-from marker.ocr.page import ocr_entire_page_ocrmp
+from marker.ocr.page import ocr_entire_page_ocrmp, ocr_entire_page_tess
 from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
 from marker.settings import settings
 from marker.schema import Span, Line, Block, Page
