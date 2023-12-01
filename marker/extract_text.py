@@ -1,9 +1,9 @@
 import os
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from spellchecker import SpellChecker
 
-from marker.ocr.page import ocr_entire_page_ocrmp, ocr_entire_page_tess
+from marker.ocr.page import ocr_entire_page
 from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
 from marker.settings import settings
 from marker.schema import Span, Line, Block, Page
@@ -12,10 +12,10 @@ from concurrent.futures import ThreadPoolExecutor
 os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 
 
-def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: SpellChecker | None = None, ocr=False) -> Tuple[List[Block], int]:
+def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optional[SpellChecker] = None, ocr=False) -> Tuple[List[Block], int]:
     page = doc[pnum]
     if ocr:
-        blocks = ocr_entire_page_ocrmp(page, tess_lang, spellchecker)
+        blocks = ocr_entire_page(page, tess_lang, spellchecker)
     else:
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS)["blocks"]
 
@@ -57,7 +57,7 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: SpellCh
     return page_blocks
 
 
-def convert_single_page(doc, pnum, tess_lang: str, spell_lang: str, no_text: bool, disable_ocr: bool = False, min_ocr_page: int = 2):
+def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no_text: bool, disable_ocr: bool = False, min_ocr_page: int = 2):
     ocr_pages = 0
     ocr_success = 0
     ocr_failed = 0
@@ -90,7 +90,7 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: str, no_text: boo
     return page_obj, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
 
 
-def get_text_blocks(doc, tess_lang: str, spell_lang: str, max_pages: int | None = None, parallel: int = settings.OCR_PARALLEL_WORKERS):
+def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: Optional[int] = None, parallel: int = settings.OCR_PARALLEL_WORKERS):
     all_blocks = []
     toc = doc.get_toc()
     ocr_pages = 0

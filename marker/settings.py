@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     }
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
+    OCR_ENGINE: str = "ocrmypdf" # Which OCR engine to use, either "tesseract" or "ocrmypdf".  Ocrmypdf is higher quality, but slower.
 
     # Nougat model
     NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat

@@ -139,6 +139,65 @@ errors.
 - Ishwar Bhat corrected my statement of Fermat's last theorem. - Brian McGhie suggested a clarification. - Andrea Zanella translated the book into Italian, and sent a number of corrections along the
 way.
 
+## Contents
+
+|      | Preface                               | v   |
+|------|---------------------------------------|-----|
+| 1    | The way of the program                | 1   |
+| 1.1  | The Python programming language       |     |
+| 1.2  | What is a program?                    | 3   |
+| 1.3  | What is debugging?                    | 3   |
+| 1.4  | Formal and natural languages          | 5   |
+| 1.5  | The first program                     | 6   |
+| 1.6  | Debugging                             | 7   |
+| 1.7  | Glossary                              |     |
+| 1.8  | Exercises                             | 9   |
+| 2    | Variables, expressions and statements | 11  |
+| 2.1  | Values and types                      |     |
+| 2.2  | Variables                             | 12  |
+| 2.3  | Variable names and keywords           | 12  |
+| 2.4  | Operators and operands                | 13  |
+| 2.5  | Expressions and statements            | 14  |
+| 2.6  | Interactive mode and script mode      | 14  |
+| 2.7  | Order of operations                   | 15  |
+| 2.8  | String operations                     |     |
+| 2.9  | Comments                              | 16  |
+| 2.1  | Debugging                             | 16  |
+| 2.11 | Glossary                              |     |
+| 2.12 | Exercises                             | 18  |
+| xviii                                   | Contents                        |
+|-----------------------------------------|---------------------------------|
+| 12 Tuples                               | 113                             |
+| 12.1                                    | Tuples are immutable            |
+| 12.2                                    | Tuple assignment                |
+| 12.3                                    | Tuples as return values         |
+| 12.4                                    | Variable-length argument tuples |
+| 12.5                                    | Lists and tuples                |
+| 12.6                                    | Dictionaries and tuples         |
+| 12.7                                    | Comparing tuples                |
+| 12.8                                    | Sequences of sequences          |
+| 12.9                                    | Debugging                       |
+| 12.10 Glossary                          |                                 |
+| 12.11 Exercises                         | 121                             |
+| 13 Case study: data structure selection | 123                             |
+| 13.1                                    | Word frequency analysis         |
+| 13.2                                    | Random numbers                  |
+| 13.3                                    | Word histogram                  |
+| 13.4                                    | Most common words               |
+| 13.5                                    | Optional parameters             |
+| 13.6                                    | Dictionary subtraction          |
+| 13.7                                    | Random words                    |
+| 13.8                                    | Markov analysis                 |
+| 13.9                                    | Data structures                 |
+| 13.10 Debugging                         | 131                             |
+| 13.11 Glossary                          |                                 |
+| 13.12 Exercises                         | 132                             |
+| 14 Files                                | 133                             |
+| 14.1                                    | Persistence                     |
+| 14.2                                    | Reading and writing             |
+| 14.3                                    | Format operator                 |
+| 14.4                                    | Filenames and paths             |
+
 ## Chapter 1 The Way Of The Program
 
 The goal of this book is to teach you to think like a computer scientist. This way of thinking combines some of the best features of mathematics, engineering, and natural science. Like mathematicians, computer scientists use formal languages to denote ideas (specifically computations). Like engineers, they design things, assembling components into systems and evaluating tradeoffs among alternatives. Like scientists, they observe the behavior of complex systems, form hypotheses, and test predictions.
@@ -149,19 +208,14 @@ The single most important skill for a computer scientist is **problem solving**.
 
 The programming language you will learn is Python. Python is an example of a high-level language; other high-level languages you might have heard of are C, C++, Perl, and Java. There are also **low-level languages**, sometimes referred to as "machine languages" or "assembly languages." Loosely speaking, computers can only run programs written in lowlevel languages. So programs written in a high-level language have to be processed before they can run. This extra processing takes some time, which is a small disadvantage of high-level languages. The advantages are enormous. First, it is much easier to program in a high-level language. Programs written in a high-level language take less time to write, they are shorter and easier to read, and they are more likely to be correct. Second, high-level languages are portable, meaning that they can run on different kinds of computers with few or no modifications. Low-level programs can run on only one kind of computer and have to be rewritten to run on another.
 
-| SOURCE      |
-|-------------|
-| CODE        |
-| INTERPRETER |
-| OUTPUT      |
-| CODE     |
-|----------|
-| OBJECT   |
-| EXECUTOR |
-| CODE     |
-| SOURCE   |
-| COMPILER |
-| OUTPUT   |
+SOURCE CODE
+INTERPRETER
+OUTPUT
+CODE OBJECT
+EXECUTOR
+CODE SOURCE
+COMPILER
+OUTPUT
 
 Due to these advantages, almost all programs are written in high-level languages. Lowlevel languages are used only for a few specialized applications.
 
@@ -934,6 +988,8 @@ values they refer to.
 frame: A box in a stack diagram that represents a function call. It contains the local variables and parameters of the function.
 traceback: A list of the functions that are executing, printed when an exception occurs.
 
+## 3.16 Exercises
+
 Exercise 3.3. *Python provides a built-in function called* len that returns the length of a string, so the value of len('allen') is 5.
 
 Write a function named right_justify that takes a string named s as a parameter and prints the string with enough leading spaces so that the last letter of the string is in column 70 of the display.
@@ -1472,12 +1528,19 @@ Exercise 5.1. *Draw a stack diagram for* print_n *called with* s = 'Hello' *and*
 
 Exercise 5.2. *Write a function called* do_n that takes a function object and a number, n, as arguments, and that calls the given function n times.
 
-|           |    |   <module> |
-|-----------|----|------------|
-| countdown | n  |          3 |
-| countdown | n  |          2 |
-| countdown | n  |          1 |
-| countdown | n  |          0 |
+<module>
+countdown
+n
+3
+countdown
+n
+2
+countdown
+n
+1
+countdown
+n
+0
 
 ## 5.10 Infinite Recursion
 
@@ -1597,6 +1660,9 @@ branch: One of the alternative sequences of statements in a conditional statemen
 nested conditional: A conditional statement that appears in one of the branches of another
 conditional statement.
 recursion: The process of calling the function that is currently executing. base case: A conditional branch in a recursive function that does not make a recursive call. infinite recursion: A recursion that doesn't have a base case, or never reaches it. Eventually, an infinite recursion causes a runtime error.
+
+## 5.14 Exercises
+
 Exercise 5.3. Fermat's Last Theorem says that there are no positive integers a, b, and c such that
 
 an + bn = cn
@@ -1861,16 +1927,34 @@ The return value (1) is multiplied by n, which is 2, and the result is returned.
 
 The return value (2) is multiplied by n, which is 3, and the result, 6, becomes the return value of the function call that started the whole process. Figure 6.1 shows what the stack diagram looks like for this sequence of function calls. The return values are shown being passed back up the stack. In each frame, the return value is the value of result, which is the product of n and recurse. In the last frame, the local variables recurse and result do not exist, because the branch that creates them does not execute.
 
-|           |    |    |         |    |        | 6      |
-|-----------|----|----|---------|----|--------|--------|
-| factorial | n  |  3 | recurse |  2 | 6      | result |
-| 2         |    |    |         |    |        |        |
-| factorial | n  |  2 | recurse |  1 | result | 2      |
-| 1         |    |    |         |    |        |        |
-| factorial | n  |  1 | recurse |  1 | 1      | result |
-| factorial |    |    |         |    |        |        |
-| 1         |    |    |         |    |        |        |
-| n         | 0  |    |         |    |        |        |
+6
+factorial
+n
+3
+recurse
+2
+6
+result
+2
+factorial
+n
+2
+recurse
+1
+result
+2
+1
+factorial
+n
+1
+recurse
+1
+1
+result
+factorial
+1
+n
+0
 
 ## 6.6 Leap Of Faith
 
@@ -1992,6 +2076,9 @@ adding and testing only a small amount of code at a time.
 scaffolding: Code that is used during program development but is not part of the final
 version.
 guardian: A programming pattern that uses a conditional statement to check for and handle circumstances that might cause an error.
+
+## 6.11 Exercises
+
 Exercise 6.4. Draw a stack diagram for the following program. What does the program print? Solution: http: // thinkpython. com/ code/ stack_ diagram. py .
 
 def b(z):
@@ -2916,17 +3003,21 @@ As you might expect, you can assign list values to variables:
 The syntax for accessing the elements of a list is the same as for accessing the characters of a string—the bracket operator. The expression inside the brackets specifies the index. Remember that the indices start at 0:
 >>> print cheeses[0] Cheddar
 
-|         |         | list      |
-|---------|---------|-----------|
-| cheeses | 0       | 'Cheddar' |
-| 1       | 'Edam'  |           |
-| 2       | 'Gouda' |           |
-| list    |         |           |
-| numbers | 17      | 0         |
-| 1       | 123     |           |
-| 5       |         |           |
-| list    |         |           |
-| empty   |         |           |
+list
+cheeses
+0
+'Cheddar'
+1
+'Edam'
+2
+'Gouda'
+list
+numbers
+17
+0 1
+123 5
+list
+empty
 
 Unlike strings, lists are mutable. When the bracket operator appears on the left side of an assignment, it identifies the element of the list that will be assigned.
 
@@ -3340,6 +3431,8 @@ identical: Being the same object (which implies equivalence).
 
 reference: The association between a variable and its value. aliasing: A circumstance where two or more variables refer to the same object. delimiter: A character or string used to indicate where a string should be split.
 
+## 10.15 Exercises
+
 Exercise 10.6. *Write a function called* is_sorted *that takes a list as a parameter and returns* True if the list is sorted in ascending order and False otherwise. You can assume (as a precondition) that the elements of the list can be compared with the relational operators <, >, etc.
 
 For example, is_sorted([1,2,2]) *should return* True *and* is_sorted(['b','a']) should return False. Exercise 10.7. Two words are anagrams if you can rearrange the letters from one to spell the other. Write a function called is_anagram *that takes two strings and returns* True if they are anagrams.
@@ -3704,6 +3797,8 @@ global variable: A variable defined outside a function. Global variables can be 
 
 flag: A boolean variable used to indicate whether a condition is true. declaration: A statement like global that tells the interpreter something about a variable.
 
+## 11.10 Exercises
+
 Exercise 11.9. *If you did Exercise 10.8, you already have a function named* has_duplicates that takes a list as a parameter and returns True if there is any object that appears more than once in the list.
 
 Use a dictionary to write a faster, simpler version of has_duplicates.
@@ -4011,6 +4106,8 @@ of tuples, sorting, and extracting part of the result.
 data structure: A collection of related values, often organized in lists, dictionaries, tuples, etc.
 
 shape (of a data structure): A summary of the type, size and composition of a data structure.
+
+## 12.11 Exercises
 
 Exercise 12.3. *Write a function called* most_frequent that takes a string and prints the letters in decreasing order of frequency. Find text samples from several different languages and see how letter frequency varies between languages. Compare your results with the tables at http: //
 en. wikipedia. org/ wiki/ Letter_ frequencies *. Solution:* http: // thinkpython. com/
@@ -4669,11 +4766,12 @@ class Point(object):
 """Represents a point in 2-D space."""
 This header indicates that the new class is a Point, which is a kind of object, which is a built-in type. The body is a docstring that explains what the class is for. You can define variables and functions inside a class definition, but we will get back to that later. Defining a class named Point creates a class object.
 
-| blank   |
-|---------|
-| Point   |
-| x       |
-| y       |
+blank
+Point
+x
+3.0
+y
+4.0
 
 >>> print Point
 <class '__main__.Point'>
@@ -4739,14 +4837,18 @@ class Rectangle(object):
 The docstring lists the attributes: width and height are numbers; corner is a Point object that specifies the lower-left corner. To represent a rectangle, you have to instantiate a Rectangle object and assign values to the attributes:
 box = Rectangle() box.width = 100.0 box.height = 200.0
 
-|        |       |   Rectangle |
-|--------|-------|-------------|
-| box    | width |         100 |
-| height | 200.0 |             |
-| Point  |       |             |
-| 0.0    | x     |             |
-| corner |       |             |
-| y      | 0.0   |             |
+Rectangle
+box
+width
+100.0
+height
+200.0
+Point
+0.0
+x
+corner
+y
+0.0
 
 box.corner = Point() box.corner.x = 0.0 box.corner.y = 0.0
 The expression box.corner.x means, "Go to the object box refers to and select the attribute named corner; then go to that object and select the attribute named x."
@@ -4911,11 +5013,14 @@ statement.
 
 In the next few sections, we'll write two functions that add time values. They demonstrate two kinds of functions: pure functions and modifiers. They also demonstrate a development plan I'll call **prototype and patch**, which is a way of tackling a complex problem by starting with a simple prototype and incrementally dealing with the complications.
 
-|        |      |   Time |
-|--------|------|--------|
-| time   | hour |     11 |
-| minute | 59   |        |
-| second | 30   |        |
+Time
+time
+hour
+11
+minute
+59
+second
+30
 
 Here is a simple prototype of add_time:
 
@@ -5403,34 +5508,32 @@ One possibility is to use strings containing words like 'Spade' for suits and 'Q
 An alternative is to use integers to **encode** the ranks and suits. In this context, "encode"
 means that we are going to define a mapping between numbers and suits, or between numbers and ranks. This kind of encoding is not meant to be a secret (that would be "encryption"). For example, this table shows the suits and the corresponding integer codes:
 
-| Spades   |
-|----------|
-| �→       |
-| 3        |
-| Hearts   |
-| �→       |
-| 2        |
-| Diamonds |
-| �→       |
-| 1        |
-| Clubs    |
-| �→       |
-| 0        |
+Spades
+�→
+3
+Hearts
+�→
+2
+Diamonds
+�→
+1
+Clubs
+�→
+0
 
 This code makes it easy to compare cards; because higher suits map to higher numbers, we can compare suits by comparing their codes.
 
 The mapping for ranks is fairly obvious; each of the numerical ranks maps to the corresponding integer, and for face cards:
 
-| Jack   |
-|--------|
-| �→     |
-| 11     |
-| Queen  |
-| �→     |
-| 12     |
-| King   |
-| �→     |
-| 13     |
+Jack
+�→
+11
+Queen
+�→
+12
+King
+�→
+13
 
 I am using the �→ symbol to make it clear that these mappings are not part of the Python program. They are part of the program design, but they don't appear explicitly in the code. The class definition for Card looks like this:
 class Card(object):
@@ -6070,6 +6173,9 @@ corners.
 pack: To arrange and display the elements of a GUI. geometry manager: A system for packing widgets.
 binding: An association between a widget, an event, and an event handler. The event
 handler is called when the event occurs in the widget.
+
+## 19.11 Exercises
+
 Exercise 19.4. For this exercise, you will write an image viewer. Here is a simple example:
 
 g = Gui()

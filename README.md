@@ -40,6 +40,16 @@ The above results are with marker and nougat setup so they each take ~3GB of VRA
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
+# Limitations
+
+PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
+
+- Marker will convert fewer equations to latex than nougat.  This is because it has to first detect equations, then convert them without hallucation.
+- Whitespace and indentations are not always respected.
+- Not all lines/spans will be joined properly.
+- Only languages similar to English (Spanish, French, German, Russian, etc) are supported.  Languages with different character sets (Chinese, Japanese, Korean, etc) are not.
+- This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
+
 # Installation
 
 This has been tested on Mac and Linux (Ubuntu and Debian).  You'll need python 3.9+ and [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer).
@@ -82,8 +92,9 @@ First, some configuration:
 - Set your torch device in the `local.env` file.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`.  `cpu` is the default.
   - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
   - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
-- By default, the final editor model is off.  Turn it on with `ENABLE_EDITOR_MODEL`.
-- Inspect the settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
+- Inspect the other settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
+  - By default, the final editor model is off.  Turn it on with `ENABLE_EDITOR_MODEL`.
+  - By default, marker will use ocrmypdf for OCR, which is slower than base tesseract, but higher quality.  You can change this with the `OCR_ENGINE` setting.
 
 ## Convert a single file
 
@@ -177,16 +188,6 @@ python benchmark.py data/pdfs data/references report.json --nougat
 This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each.
 
 Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
-
-# Limitations
-
-PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
-
-- Marker will convert fewer equations to latex than nougat.  This is because it has to first detect equations, then convert them without hallucation.
-- Whitespace and indentations are not always respected.
-- Not all lines/spans will be joined properly.
-- Only languages similar to English (Spanish, French, German, Russian, etc) are supported.  Languages with different character sets (Chinese, Japanese, Korean, etc) are not.
-- This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
 
 # Commercial usage
 
