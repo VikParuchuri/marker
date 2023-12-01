@@ -65,21 +65,18 @@ def merge_spans(blocks):
 
 
 def block_surround(text, block_type):
-    match block_type:
-        case "Section-header":
-            if not text.startswith("#"):
-                text = "\n## " + text.strip().title() + "\n"
-        case "Title":
-            if not text.startswith("#"):
-                text = "# " + text.strip().title() + "\n"
-        case "Table":
-            text = "\n" + text + "\n"
-        case "List-item":
-            pass
-        case "Code":
-            text = "\n" + text + "\n"
-        case _:
-            pass
+    if block_type == "Section-header":
+        if not text.startswith("#"):
+            text = "\n## " + text.strip().title() + "\n"
+    elif block_type == "Title":
+        if not text.startswith("#"):
+            text = "# " + text.strip().title() + "\n"
+    elif block_type == "Table":
+        text = "\n" + text + "\n"
+    elif block_type == "List-item":
+        pass
+    elif block_type == "Code":
+        text = "\n" + text + "\n"
     return text
 
 
