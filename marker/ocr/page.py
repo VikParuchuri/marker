@@ -1,5 +1,5 @@
 import io
-from typing import List
+from typing import List, Optional
 
 import fitz as pymupdf
 import ocrmypdf
@@ -12,7 +12,17 @@ from marker.settings import settings
 ocrmypdf.configure_logging(verbosity=ocrmypdf.Verbosity.quiet)
 
 
-def ocr_entire_page_tess(page, lang: str, spellchecker: SpellChecker | None = None) -> List[Block]:
+def ocr_entire_page(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
+    match settings.OCR_ENGINE:
+        case "tesseract":
+            return ocr_entire_page_tess(page, lang, spellchecker)
+        case "ocrmypdf":
+            return ocr_entire_page_ocrmp(page, lang, spellchecker)
+        case _:
+            raise ValueError(f"Unknown OCR engine {settings.OCR_ENGINE}")
+
+
+def ocr_entire_page_tess(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
     try:
         full_tp = page.get_textpage_ocr(flags=settings.TEXT_FLAGS, dpi=settings.OCR_DPI, full=True, language=lang)
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp)["blocks"]
@@ -30,7 +40,7 @@ def ocr_entire_page_tess(page, lang: str, spellchecker: SpellChecker | None = No
     return blocks
 
 
-def ocr_entire_page_ocrmp(page, lang: str, spellchecker: SpellChecker | None = None) -> List[Block]:
+def ocr_entire_page_ocrmp(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
     # Use ocrmypdf to get OCR text for the whole page
     src = page.parent  # the page's document
     blank_doc = pymupdf.open()  # make temporary 1-pager
@@ -46,6 +56,7 @@ def ocr_entire_page_ocrmp(page, lang: str, spellchecker: SpellChecker | None = N
         redo_ocr=True,
         progress_bar=False,
         optimize=False,
+        fast_web_view=1e6,
         skip_big=15, # skip images larger than 15 megapixels
         tesseract_timeout=settings.TESSERACT_TIMEOUT,
         tesseract_non_ocr_timeout=settings.TESSERACT_TIMEOUT,

@@ -58,9 +58,9 @@ class Span(BboxElement):
     span_id: str
     font: str
     color: int
-    ascender: float | None = None
-    descender: float | None = None
-    block_type: str | None = None
+    ascender: Optional[float] = None
+    descender: Optional[float] = None
+    block_type: Optional[str] = None
     selected: bool = True
 
 

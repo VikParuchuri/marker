@@ -11,7 +11,7 @@ from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
 from marker.markdown import merge_spans, merge_lines, get_full_text
 from marker.schema import Page, BlockType
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from copy import deepcopy
 import re
 import magic
@@ -59,7 +59,7 @@ def convert_single_pdf(
         fname: str,
         model_lst: List,
         max_pages=None,
-        metadata: Dict | None=None,
+        metadata: Optional[Dict]=None,
         parallel_factor: int = 1
 ) -> Tuple[str, Dict]:
     lang = settings.DEFAULT_LANG
@@ -68,7 +68,7 @@ def convert_single_pdf(
 
     # Use tesseract language if available
     tess_lang = settings.TESSERACT_LANGUAGES.get(lang, "eng")
-    spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang, "en")
+    spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang, None)
     if "eng" not in tess_lang:
         tess_lang = f"eng+{tess_lang}"
 

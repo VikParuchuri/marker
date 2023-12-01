@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 import ray
 from tqdm import tqdm
@@ -17,7 +17,7 @@ configure_logging()
 
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Dict | None=None, min_length: int | None = None):
+def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Optional[Dict] = None, min_length: Optional[int] = None):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
     out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"

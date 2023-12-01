@@ -1,9 +1,12 @@
+from typing import Optional
+
 from nltk import wordpunct_tokenize
 from spellchecker import SpellChecker
 from marker.settings import settings
+import re
 
 
-def detect_bad_ocr(text, spellchecker: SpellChecker | None, misspell_threshold=.6, space_threshold=.5, newline_threshold=.4, alphanum_threshold=.4):
+def detect_bad_ocr(text, spellchecker: Optional[SpellChecker], misspell_threshold=.7, space_threshold=.6, newline_threshold=.5, alphanum_threshold=.4):
     if len(text) == 0:
         # Assume OCR failed if we have no text
         return True
@@ -17,21 +20,21 @@ def detect_bad_ocr(text, spellchecker: SpellChecker | None, misspell_threshold=.
         if len(misspelled) > len(alpha_words) * misspell_threshold:
             return True
 
-    spaces = text.count(" ")
-    # More than 50% of chars are spaces
-    if spaces / len(text) > space_threshold:
+    spaces = len(re.findall(r'\s+', text))
+    alpha_chars = len(re.sub(r'\s+', '', text))
+    if spaces / (alpha_chars + spaces) > space_threshold:
         return True
 
-    newlines = text.count("\n")
-    # More than 40% of chars are newlines
-    if newlines / len(text) > newline_threshold:
+    newlines = len(re.findall(r'\n+', text))
+    non_newlines = len(re.sub(r'\n+', '', text))
+    if newlines / (newlines + non_newlines) > newline_threshold:
         return True
 
     if alphanum_ratio(text) < alphanum_threshold: # Garbled text
         return True
 
     invalid_chars = len([c for c in text if c in settings.INVALID_CHARS])
-    if invalid_chars > max(3.0, len(text) * .03):
+    if invalid_chars > max(3.0, len(text) * .02):
         return True
 
     return False
@@ -58,13 +61,12 @@ def font_flags_decomposer(flags):
 
 
 def alphanum_ratio(text):
+    text = text.replace(" ", "")
+    text = text.replace("\n", "")
     alphanumeric_count = sum([1 for c in text if c.isalnum()])
 
     if len(text) == 0:
-        if alphanumeric_count == 0:
-            return 1
-        else:
-            return 0
+        return 1
 
     ratio = alphanumeric_count / len(text)
     return ratio
