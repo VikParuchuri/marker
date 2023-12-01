@@ -27,7 +27,10 @@ def ocr_entire_page_ocrmp(page, lang: str, spellchecker: SpellChecker | None = N
         output_type="pdf",
         redo_ocr=True,
         progress_bar=False,
-        oversample=400
+        optimize=False,
+        skip_big=15, # skip images larger than 15 megapixels
+        tesseract_timeout=settings.TESSERACT_TIMEOUT,
+        tesseract_non_ocr_timeout=settings.TESSERACT_TIMEOUT,
     )
     ocr_pdf = pymupdf.open("pdf", outbytes.getvalue())  # read output as fitz PDF
     blocks = ocr_pdf[0].get_text("dict", sort=True, flags=settings.TEXT_FLAGS)["blocks"]
