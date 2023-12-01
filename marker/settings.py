@@ -38,6 +38,7 @@ class Settings(BaseSettings):
         "French": "fra",
         "German": "deu",
         "Russian": "rus",
+        "Chinese": "chi",  # 添加中文支持，这里使用"chi"表示中文
     }
     TESSERACT_TIMEOUT: int = 20 # When to give up on OCR
     SPELLCHECK_LANGUAGES: Dict = {
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
         "French": "fr",
         "German": "de",
         "Russian": "ru",
+        "Chinese": "ch",  # 添加中文支持，这里使用"chi"表示中文
     }
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
