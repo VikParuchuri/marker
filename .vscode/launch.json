@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // pytest: https://stackoverflow.com/questions/70259564/how-to-debug-the-current-python-test-file-with-pytest-in-vs-code
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",
+            "pythonArgs": [
+                "-Xfrozen_modules=off"
+            ],
+            "env": {
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
+            },
+            "args": [
+                "--max_pages", "3",
+                "~/Downloads/LICENSE.pdf",
+                "~/Downloads/LICENSE.md",
+                "--parallel_factor", "8"
+            ],
+        },
+        {
+            "name": "Python: Debug Tests",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}"
+            ],
+            "console": "integratedTerminal"
+        },
+    ],
+    "ansible.python.interpreterPath": "${workspaceFolder}/.venv/bin/python"
+}

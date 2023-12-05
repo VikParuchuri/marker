@@ -77,10 +77,24 @@ First, clone the repo:
 
 ## Mac
 
-- Install system requirements from `scripts/install/brew-requirements.txt`
+- Install system requirements via [Homebrew](https://brew.sh/) from `scripts/install/Brewfile`
+    ```bash
+    cd scripts/install
+    brew bundle install
+    ```
 - Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata` with `brew list tesseract`
+  - Find the tesseract data folder `tessdata`
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+    ```bash
+    # find tessdata dir and cut '/pdf.ttf' from the end
+    tessdata=$(brew list tesseract | awk '/\/share\/tessdata/ {print $0; exit}' | cut -d'/' -f1-8)
+
+    # top level git dir
+    tld=$(git rev-parse --show-toplevel)
+
+    # create a local.env file
+    echo "TESSDATA_PREFIX=${tessdata}" > "${tld}/local.env"
+    ```
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
