@@ -1,19 +1,18 @@
 import io
-from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from functools import partial
 from typing import List
 
 import torch
 from nougat import NougatModel
-from nougat.postprocessing import close_envs, markdown_compatible
+from nougat.postprocessing import markdown_compatible
 from nougat.utils.checkpoint import get_checkpoint
 import re
 from PIL import Image, ImageDraw
-import fitz as pymupdf
 from nougat.utils.dataset import ImageDataset
 
-from marker.bbox import should_merge_blocks, merge_boxes, multiple_boxes_intersect
+from marker.bbox import should_merge_blocks, merge_boxes
+from marker.debug.data import dump_nougat_debug_data
 from marker.settings import settings
 from marker.schema import Page, Span, Line, Block, BlockType
 from nougat.utils.device import move_to_device
@@ -209,6 +208,7 @@ def get_bboxes_for_region(page, region):
 
 def replace_blocks_with_nougat_predictions(page_blocks: Page, merged_boxes, reformat_regions, predictions, pnum, nougat_model):
     new_blocks = []
+    converted_spans = []
     current_region = 0
     idx = 0
     success_count = 0
@@ -233,6 +233,7 @@ def replace_blocks_with_nougat_predictions(page_blocks: Page, merged_boxes, refo
         idx = reformat_regions[current_region][-1] + 1
         if not all(conditions):
             fail_count += 1
+            converted_spans.append(None)
             for i in reformat_regions[current_region]:
                 new_blocks.append(page_blocks.blocks[i])
         else:
@@ -250,13 +251,14 @@ def replace_blocks_with_nougat_predictions(page_blocks: Page, merged_boxes, refo
                 ],
                 bbox=merged_boxes[current_region]
             )
+            converted_spans.append(deepcopy(block_line.spans[0]))
             new_blocks.append(Block(
                 lines=[block_line],
                 bbox=merged_boxes[current_region],
                 pnum=pnum
             ))
         current_region += 1
-    return new_blocks, success_count, fail_count
+    return new_blocks, success_count, fail_count, converted_spans
 
 
 def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], nougat_model, batch_size=settings.NOUGAT_BATCH_SIZE):
@@ -290,10 +292,11 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
 
     # Replace blocks with predictions
     page_start = 0
+    converted_spans = []
     for page_idx, reformat_regions_page in enumerate(reformat_regions):
         page_predictions = predictions[page_start:page_start + len(reformat_regions_page)]
         page_boxes = merged_boxes[page_start:page_start + len(reformat_regions_page)]
-        new_page_blocks, success_count, fail_count = replace_blocks_with_nougat_predictions(
+        new_page_blocks, success_count, fail_count, converted_span = replace_blocks_with_nougat_predictions(
             blocks[page_idx],
             page_boxes,
             reformat_regions_page,
@@ -301,9 +304,13 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
             page_idx,
             nougat_model
         )
+        converted_spans.extend(converted_span)
         blocks[page_idx].blocks = new_page_blocks
         page_start += len(reformat_regions_page)
         successful_ocr += success_count
         unsuccessful_ocr += fail_count
+
+    # If debug mode is on, dump out conversions for comparison
+    dump_nougat_debug_data(doc, images, converted_spans)
 
     return blocks, {"successful_ocr": successful_ocr, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}

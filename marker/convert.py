@@ -1,6 +1,7 @@
 import fitz as pymupdf
 
 from marker.cleaners.table import merge_table_blocks, create_new_tables
+from marker.debug.data import dump_bbox_debug_data
 from marker.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.cleaners.equations import replace_equations
@@ -116,6 +117,9 @@ def convert_single_pdf(
     out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
     annotate_spans(blocks, block_types)
+
+    # Dump debug data if flags are set
+    dump_bbox_debug_data(doc, blocks)
 
     blocks = order_blocks(
         doc,
