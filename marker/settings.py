@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     TORCH_DEVICE: str = "cpu"
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
     VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3GB, but avg across workers is lower.
-    DEBUG: bool = False # Enable debug logging
     DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
     SUPPORTED_FILETYPES: Dict = {
@@ -84,6 +83,10 @@ class Settings(BaseSettings):
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
     RAY_DASHBOARD_HOST: str = "127.0.0.1"
     RAY_CORES_PER_WORKER: int = 1 # How many cpu cores to allocate per worker
+
+    # Debug
+    DEBUG: bool = False # Enable debug logging
+    DEBUG_DATA_FOLDER: Optional[str] = None
 
     @computed_field
     @property
