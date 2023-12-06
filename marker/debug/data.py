@@ -11,7 +11,7 @@ import io
 
 
 def dump_nougat_debug_data(doc, images, converted_spans):
-    if not settings.DEBUG or not settings.DEBUG_DATA_FOLDER:
+    if not settings.DEBUG_DATA_FOLDER:
         return
 
     # We attempted one conversion per image
@@ -41,7 +41,7 @@ def dump_nougat_debug_data(doc, images, converted_spans):
 
 
 def dump_bbox_debug_data(doc, blocks: List[Page]):
-    if not settings.DEBUG or not settings.DEBUG_DATA_FOLDER:
+    if not settings.DEBUG_DATA_FOLDER:
         return
 
     # Remove extension from doc name
