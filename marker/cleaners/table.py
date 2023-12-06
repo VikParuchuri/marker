@@ -8,17 +8,17 @@ import textwrap
 
 
 def merge_table_blocks(blocks: List[Page]):
-    last_block = None
     current_lines = []
     current_bbox = None
     for page in blocks:
         new_page_blocks = []
+        pnum = page.pnum
         for block in page.blocks:
             if block.most_common_block_type() != "Table":
                 if len(current_lines) > 0:
                     new_block = Block(
                         lines=deepcopy(current_lines),
-                        pnum=last_block.pnum,
+                        pnum=pnum,
                         bbox=current_bbox
                     )
                     new_page_blocks.append(new_block)
@@ -26,7 +26,6 @@ def merge_table_blocks(blocks: List[Page]):
                     current_bbox = None
 
                 new_page_blocks.append(block)
-                last_block = block
                 continue
 
             current_lines.extend(block.lines)
@@ -38,7 +37,7 @@ def merge_table_blocks(blocks: List[Page]):
         if len(current_lines) > 0:
             new_block = Block(
                 lines=deepcopy(current_lines),
-                pnum=last_block.pnum,
+                pnum=pnum,
                 bbox=current_bbox
             )
             new_page_blocks.append(new_block)

@@ -73,7 +73,7 @@ First, clone the repo:
   - `poetry shell` to activate your poetry venv
 - Update pytorch since poetry doesn't play nicely with it
   - GPU only: run `pip install torch` to install other torch dependencies.
-  - CPU only: Uninstall torch, then follow the [CPU install](https://pytorch.org/get-started/locally/) instructions.
+  - CPU only: Uninstall torch with `poetry remove torch`, then follow the [CPU install](https://pytorch.org/get-started/locally/) instructions.
 
 ## Mac
 
