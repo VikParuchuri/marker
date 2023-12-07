@@ -54,8 +54,22 @@ class Settings(BaseSettings):
     # Nougat model
     NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat
     NOUGAT_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for nougat
-    NOUGAT_HALLUCINATION_WORDS: List[str] = ["[MISSING_PAGE_POST]", "## References\n", "**Figure Captions**\n", "Footnote",
-                                  "\par\par\par", "## Chapter", "Fig.", "particle", "[REPEATS]", "[TRUNCATED]", "### ", "effective field strength", "\Phi_{\rm eff}"]
+    NOUGAT_HALLUCINATION_WORDS: List[str] = [
+        "[MISSING_PAGE_POST]",
+        "## References\n",
+        "**Figure Captions**\n",
+        "Footnote",
+        "\par\par\par",
+        "## Chapter",
+        "Fig.",
+        "particle",
+        "[REPEATS]",
+        "[TRUNCATED]",
+        "### ",
+        "effective field strength",
+        "\Phi_{\rm eff}",
+        "\mathbf{\mathbf"
+    ]
     NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
     NOUGAT_MODEL_NAME: str = "0.1.0-small" # Name of the model to use
     NOUGAT_BATCH_SIZE: int = 6 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu

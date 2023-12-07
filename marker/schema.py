@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from pydantic import BaseModel, field_validator
 import ftfy
@@ -19,7 +19,6 @@ def find_span_type(span, page_blocks):
 
 class BboxElement(BaseModel):
     bbox: List[float]
-
 
     @field_validator('bbox')
     @classmethod
@@ -134,6 +133,7 @@ class Page(BboxElement):
     blocks: List[Block]
     pnum: int
     column_count: Optional[int] = None
+    rotation: Optional[int] = None # Rotation degrees of the page
 
     def get_nonblank_lines(self):
         lines = self.get_all_lines()

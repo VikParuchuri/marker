@@ -40,6 +40,10 @@ The above results are with marker and nougat setup so they each take ~3GB of VRA
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
+# Community
+
+[Discord](https://discord.gg//KuZwXNGnfH) is where we discuss future development.
+
 # Limitations
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
