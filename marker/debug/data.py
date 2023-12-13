@@ -14,6 +14,9 @@ def dump_nougat_debug_data(doc, images, converted_spans):
     if not settings.DEBUG_DATA_FOLDER:
         return
 
+    if len(images) == 0:
+        return
+
     # We attempted one conversion per image
     assert len(converted_spans) == len(images)
 
@@ -37,7 +40,7 @@ def dump_nougat_debug_data(doc, images, converted_spans):
 
     debug_file = os.path.join(settings.DEBUG_DATA_FOLDER, f"{doc_base}_equations.json")
     with open(debug_file, "w+") as f:
-        json.dump(data_lines, f, indent=4)
+        json.dump(data_lines, f)
 
 
 def dump_bbox_debug_data(doc, blocks: List[Page]):
@@ -70,7 +73,7 @@ def dump_bbox_debug_data(doc, blocks: List[Page]):
         debug_data.append(page_data)
 
     with open(debug_file, "w+") as f:
-        json.dump(debug_data, f, indent=4)
+        json.dump(debug_data, f)
 
 
 

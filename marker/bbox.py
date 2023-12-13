@@ -1,3 +1,5 @@
+import fitz as pymupdf
+
 def should_merge_blocks(box1, box2, tol=5):
     # Within tol y px, and to the right within tol px
     merge = [
@@ -59,3 +61,21 @@ def unnormalize_box(bbox, width, height):
         width * (bbox[2] / 1000),
         height * (bbox[3] / 1000),
     ]
+
+
+def correct_rotation(bbox, page):
+    #bbox base is (x0, y0, x1, y1)
+    rotation = page.rotation
+    if rotation == 0:
+        return bbox
+
+    tl = pymupdf.Point(bbox[0], bbox[1]) * page.rotation_matrix
+    br = pymupdf.Point(bbox[2], bbox[3]) * page.rotation_matrix
+    if rotation == 90:
+        bbox = [br[0], tl[1], tl[0], br[1]]
+    elif rotation == 180:
+        bbox = [br[0], br[1], tl[0], tl[1]]
+    elif rotation == 270:
+        bbox = [tl[0], br[1], br[0], tl[1]]
+
+    return bbox

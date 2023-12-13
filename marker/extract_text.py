@@ -3,6 +3,7 @@ from typing import Tuple, List, Optional
 
 from spellchecker import SpellChecker
 
+from marker.bbox import correct_rotation
 from marker.ocr.page import ocr_entire_page
 from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
 from marker.settings import settings
@@ -12,8 +13,27 @@ from concurrent.futures import ThreadPoolExecutor
 os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 
 
+def sort_rotated_text(page_blocks, tolerance=1.25):
+    vertical_groups = {}
+    for block in page_blocks:
+        group_key = round(block.bbox[1] / tolerance) * tolerance
+        if group_key not in vertical_groups:
+            vertical_groups[group_key] = []
+        vertical_groups[group_key].append(block)
+
+    # Sort each group horizontally and flatten the groups into a single list
+    sorted_page_blocks = []
+    for _, group in sorted(vertical_groups.items()):
+        sorted_group = sorted(group, key=lambda x: x.bbox[0])
+        sorted_page_blocks.extend(sorted_group)
+
+    return sorted_page_blocks
+
+
 def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optional[SpellChecker] = None, ocr=False) -> Tuple[List[Block], int]:
     page = doc[pnum]
+    rotation = page.rotation
+
     if ocr:
         blocks = ocr_entire_page(page, tess_lang, spellchecker)
     else:
@@ -30,7 +50,7 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
                 bbox = s["bbox"]
                 span_obj = Span(
                     text=block_text,
-                    bbox=bbox,
+                    bbox=correct_rotation(bbox, page),
                     span_id=f"{pnum}_{span_id}",
                     font=f"{s['font']}_{font_flags_decomposer(s['flags'])}", # Add font flags to end of font
                     color=s["color"],
@@ -41,19 +61,23 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
                 span_id += 1
             line_obj = Line(
                 spans=spans,
-                bbox=l["bbox"]
+                bbox=correct_rotation(l["bbox"], page),
             )
             # Only select valid lines, with positive bboxes
             if line_obj.area > 0:
                 block_lines.append(line_obj)
         block_obj = Block(
             lines=block_lines,
-            bbox=block["bbox"],
+            bbox=correct_rotation(block["bbox"], page),
             pnum=pnum
         )
         # Only select blocks with multiple lines
         if len(block_lines) > 0:
             page_blocks.append(block_obj)
+
+    # If the page was rotated, sort the text again
+    if rotation > 0:
+        page_blocks = sort_rotated_text(page_blocks)
     return page_blocks
 
 
@@ -80,8 +104,9 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no
         not disable_ocr
     ]
     if all(conditions) or settings.OCR_ALL_PAGES:
+        page = doc[pnum]
         blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker, ocr=True)
-        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
+        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox, rotation=page.rotation)
         ocr_pages = 1
         if len(blocks) == 0:
             ocr_failed = 1
