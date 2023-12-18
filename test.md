@@ -8,7 +8,8 @@ tags: []
 
 For further approvals, see page 6
 
-## Applications Working And Control Pressure Measurement In:
+## Applications 
+Working And Control Pressure Measurement In:
 
  
 - Construction equipment
@@ -42,7 +43,8 @@ WIKA data sheet PE 83.02
 
 ## Oem Pressure Sensor, Model Mh-4-Can
 
-Highest reliability over the entire life cycle Whether dust, humidity, heat or mechanical stress: The MH-4-CAN pressure sensor is optimised for mobile use, particularly safe in operation and thus continuously dependable. The maintenance-free instrument design ensures a particularly low total cost of ownership. Even after more than 100 million load cycles, the long-term drift is still less than 0.1 % FS. Think big - with WIKA as an OEM supplier Secure supply chains, high quality standards and a comprehensive range of services worldwide make WIKA a reliable OEM supplier - especially for large volume orders. MH-4 pressure sensors are available directly, in high quantities, with commonly used electrical connections and pressure connections. Customer-specific interfaces and adaptations can be realised together - including an option for brand labelling.
+## Highest reliability over the entire life cycle 
+Whether dust, humidity, heat or mechanical stress: The MH-4-CAN pressure sensor is optimised for mobile use, particularly safe in operation and thus continuously dependable. The maintenance-free instrument design ensures a particularly low total cost of ownership. Even after more than 100 million load cycles, the long-term drift is still less than 0.1 % FS. Think big - with WIKA as an OEM supplier Secure supply chains, high quality standards and a comprehensive range of services worldwide make WIKA a reliable OEM supplier - especially for large volume orders. MH-4 pressure sensors are available directly, in high quantities, with commonly used electrical connections and pressure connections. Customer-specific interfaces and adaptations can be realised together - including an option for brand labelling.
 
 ## Specifications Overview Of Versions
 
