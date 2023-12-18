@@ -1,4 +1,0 @@
-ocrmypdf
-libmagic
-tesseract
-tesseract-lang

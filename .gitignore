@@ -1,3 +1,4 @@
+# ETC
 private.py
 .DS_Store
 local.env
@@ -5,6 +6,7 @@ experiments
 test_data
 training
 wandb
+Brewfile.lock.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

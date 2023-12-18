@@ -1,0 +1,4 @@
+brew "ocrmypdf"
+brew "libmagic"
+brew "tesseract"
+brew "tesseract-lang"
