@@ -8,3 +8,7 @@ tesseract-ocr-por
 tesseract-ocr-spa
 tesseract-ocr-rus
 tesseract-ocr-fra
+tesseract-ocr-chi-sim
+tesseract-ocr-jpn
+tesseract-ocr-kor
+tesseract-ocr-hin

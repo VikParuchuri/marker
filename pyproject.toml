@@ -1,9 +1,12 @@
 [tool.poetry]
 name = "marker"
 version = "0.1.0"
-description = ""
-authors = ["Vik Paruchuri <vik.paruchuri@gmail.com>"]
+description = "Convert PDF to markdown with high speed and accuracy."
+authors = ["Vik Paruchuri <github@vikas.sh>"]
 readme = "README.md"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/VikParuchuri/marker"
+keywords = ["pdf", "markdown", "ocr", "nlp"]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
@@ -29,6 +32,7 @@ ftfy = "^6.1.1"
 nltk = "^3.8.1"
 ocrmypdf = "^15.4.0"
 bitsandbytes = "^0.41.2.post2"
+grpcio = "^1.60.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

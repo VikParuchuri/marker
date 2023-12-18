@@ -92,7 +92,7 @@ def convert_single_pdf(
         tess_lang,
         spell_lang,
         max_pages=max_pages,
-        parallel=parallel_factor * settings.OCR_PARALLEL_WORKERS
+        parallel=int(parallel_factor * settings.OCR_PARALLEL_WORKERS)
     )
 
     out_meta["toc"] = toc
@@ -109,7 +109,7 @@ def convert_single_pdf(
         doc,
         blocks,
         layoutlm_model,
-        batch_size=settings.LAYOUT_BATCH_SIZE * parallel_factor
+        batch_size=int(settings.LAYOUT_BATCH_SIZE * parallel_factor)
     )
 
     # Find headers and footers
@@ -125,7 +125,7 @@ def convert_single_pdf(
         doc,
         blocks,
         order_model,
-        batch_size=settings.ORDERER_BATCH_SIZE * parallel_factor
+        batch_size=int(settings.ORDERER_BATCH_SIZE * parallel_factor)
     )
 
     # Fix code blocks
@@ -148,7 +148,7 @@ def convert_single_pdf(
         blocks,
         block_types,
         nougat_model,
-        batch_size=settings.NOUGAT_BATCH_SIZE * parallel_factor
+        batch_size=int(settings.NOUGAT_BATCH_SIZE * parallel_factor)
     )
     out_meta["block_stats"]["equations"] = eq_stats
 

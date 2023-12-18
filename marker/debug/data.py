@@ -11,7 +11,7 @@ import io
 
 
 def dump_nougat_debug_data(doc, images, converted_spans):
-    if not settings.DEBUG_DATA_FOLDER:
+    if not settings.DEBUG_DATA_FOLDER or settings.DEBUG_LEVEL == 0:
         return
 
     if len(images) == 0:
@@ -44,7 +44,7 @@ def dump_nougat_debug_data(doc, images, converted_spans):
 
 
 def dump_bbox_debug_data(doc, blocks: List[Page]):
-    if not settings.DEBUG_DATA_FOLDER:
+    if not settings.DEBUG_DATA_FOLDER or settings.DEBUG_LEVEL < 2:
         return
 
     # Remove extension from doc name

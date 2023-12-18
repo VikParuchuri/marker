@@ -17,7 +17,9 @@ jobs:
         with:
           python-version: 3.11
       - name: Install system dependencies
-        run: cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y
+        run: |
+          sudo apt-get update
+          cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y
       - name: Show tessdata folders
         run: ls /usr/share/tesseract-ocr/
       - name: Install python dependencies

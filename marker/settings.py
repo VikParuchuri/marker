@@ -37,6 +37,10 @@ class Settings(BaseSettings):
         "French": "fra",
         "German": "deu",
         "Russian": "rus",
+        "Chinese": "chi_sim",
+        "Japanese": "jpn",
+        "Korean": "kor",
+        "Hindi": "hin",
     }
     TESSERACT_TIMEOUT: int = 20 # When to give up on OCR
     SPELLCHECK_LANGUAGES: Dict = {
@@ -46,6 +50,10 @@ class Settings(BaseSettings):
         "French": "fr",
         "German": "de",
         "Russian": "ru",
+        "Chinese": None,
+        "Japanese": None,
+        "Korean": None,
+        "Hindi": None,
     }
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
@@ -101,6 +109,7 @@ class Settings(BaseSettings):
     # Debug
     DEBUG: bool = False # Enable debug logging
     DEBUG_DATA_FOLDER: Optional[str] = None
+    DEBUG_LEVEL: int = 0 # 0 to 2, 2 means log everything
 
     @computed_field
     @property

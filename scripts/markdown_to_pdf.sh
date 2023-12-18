@@ -7,4 +7,4 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-pandoc $1 $2 --pdf-engine=xelatex --include-in-header=header.tex
+pandoc $1 -o $2 --pdf-engine=xelatex --include-in-header=header.tex
