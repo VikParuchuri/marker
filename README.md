@@ -51,7 +51,7 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 - Marker will convert fewer equations to latex than nougat.  This is because it has to first detect equations, then convert them without hallucation.
 - Whitespace and indentations are not always respected.
 - Not all lines/spans will be joined properly.
-- Only languages similar to English (Spanish, French, German, Russian, etc) are supported.  Languages with different character sets (Chinese, Japanese, Korean, etc) are not.
+- Languages similar to English (Spanish, French, German, Russian, etc) have the best support. There is provisional support for Chinese, Japanese, Korean, and Hindi, but it may not work as well.
 - This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
 
 # Installation
@@ -88,6 +88,7 @@ First, clone the repo:
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
+- On ARM macs (M1+), make sure to set the `TORCH_DEVICE` setting to `mps` (more details below) for a speedup
 
 # Usage
 
