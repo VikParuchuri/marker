@@ -13,7 +13,6 @@ from marker.cleaners.bullets import replace_bullets
 from marker.markdown import merge_spans, merge_lines, get_full_text
 from marker.schema import Page, BlockType
 from typing import List, Dict, Tuple, Optional
-from copy import deepcopy
 import re
 import magic
 from marker.settings import settings

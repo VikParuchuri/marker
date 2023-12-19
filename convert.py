@@ -45,7 +45,7 @@ def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Option
         print(traceback.format_exc())
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Convert multiple pdfs to markdown.")
     parser.add_argument("in_folder", help="Input folder with pdfs.")
     parser.add_argument("out_folder", help="Output folder")
@@ -122,3 +122,7 @@ if __name__ == "__main__":
 
     # Shutdown ray to free resources
     ray.shutdown()
+
+
+if __name__ == "__main__":
+    main()
