@@ -3,13 +3,12 @@ import argparse
 from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
 from marker.models import load_all_models
-from marker.settings import settings
 import json
 
 configure_logging()
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", help="PDF file to parse")
     parser.add_argument("output", help="Output file name")
@@ -27,3 +26,7 @@ if __name__ == "__main__":
     out_meta_filename = args.output.rsplit(".", 1)[0] + "_meta.json"
     with open(out_meta_filename, "w+") as f:
         f.write(json.dumps(out_meta, indent=4))
+
+
+if __name__ == "__main__":
+    main()
