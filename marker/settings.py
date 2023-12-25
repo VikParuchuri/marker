@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     TORCH_DEVICE: str = "cpu"
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
     VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3GB, but avg across workers is lower.
-    DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
+    DEFAULT_LANG: str = "Chinese" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     }
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
-    OCR_ENGINE: str = "ocrmypdf" # Which OCR engine to use, either "tesseract" or "ocrmypdf".  Ocrmypdf is higher quality, but slower.
+    OCR_ENGINE: str = "tesseract" # Which OCR engine to use, either "tesseract" or "ocrmypdf".  Ocrmypdf is higher quality, but slower.
 
     # Nougat model
     NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat
