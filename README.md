@@ -48,7 +48,7 @@ See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instruc
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
-- Marker will convert fewer equations to latex than nougat.  This is because it has to first detect equations, then convert them without hallucation.
+- Marker will convert fewer equations to latex than nougat.  This is because it has to first detect equations, then convert them without hallucinations.
 - Whitespace and indentations are not always respected.
 - Not all lines/spans will be joined properly.
 - Languages similar to English (Spanish, French, German, Russian, etc) have the best support. There is provisional support for Chinese, Japanese, Korean, and Hindi, but it may not work as well.
