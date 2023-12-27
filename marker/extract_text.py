@@ -98,13 +98,11 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
         # bytes_io = BytesIO(img["image"])
         img_byte_base64_encoded =base64.b64encode(img["image"]).decode('utf-8')
         # image = Image.open(bytes_io)
-        img_meta[img_name] = img_byte_base64_encoded
         img_save_path = os.path.join(pics_folder, img_name)
+        img_meta[img_save_path] = img_byte_base64_encoded
         # image.save(img_save_path)
         img_label_text = img_rename_tmpl.format(img_name, img_save_path)
-        # print(img_label_text)
         img_span = Span(
-            # text=IMAGE_LABEL_TEMP.format(img_name),
             text = img_label_text,
             bbox=img_bbox,
             span_id=f"{pnum}_{span_id}",
