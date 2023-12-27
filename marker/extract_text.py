@@ -1,4 +1,8 @@
 import os
+from PIL import Image
+from io import BytesIO
+import base64
+import os
 from typing import Tuple, List, Optional
 
 from spellchecker import SpellChecker
@@ -9,6 +13,8 @@ from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
 from marker.settings import settings
 from marker.schema import Span, Line, Block, Page
 from concurrent.futures import ThreadPoolExecutor
+
+# IMAGE_LABEL_TEMP_MD = '![{}]({})'
 
 os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 
@@ -32,14 +38,13 @@ def sort_rotated_text(page_blocks, tolerance=1.25):
 
 def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optional[SpellChecker] = None, ocr=False) -> Tuple[List[Block], int]:
     page = doc[pnum]
-    rotation = page.rotation
-
     if ocr:
         blocks = ocr_entire_page(page, tess_lang, spellchecker)
     else:
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS)["blocks"]
 
     page_blocks = []
+    img_meta = {}
     span_id = 0
     for block_idx, block in enumerate(blocks):
         block_lines = []
@@ -74,11 +79,51 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
         # Only select blocks with multiple lines
         if len(block_lines) > 0:
             page_blocks.append(block_obj)
+    
+    # adding image label
+    img_list = page.get_images(full=True)
+    pics_folder = settings.IMG_SAVE_POSITION
+    img_rename_tmpl = settings.IMAGE_LABEL_TEMP_MD
 
-    # If the page was rotated, sort the text again
-    if rotation > 0:
-        page_blocks = sort_rotated_text(page_blocks)
-    return page_blocks
+    for img_data in img_list:
+        # print(img_data)
+        xref = img_data[0]
+        img = doc.extract_image(xref)
+        img_name = f"IM{xref}.{img['ext']}"
+        # print(len(img))
+        img_bbox = page.get_image_bbox(img_data)
+        
+        # save image
+        img = doc.extract_image(xref)
+        # bytes_io = BytesIO(img["image"])
+        img_byte_base64_encoded =base64.b64encode(img["image"]).decode('utf-8')
+        # image = Image.open(bytes_io)
+        img_save_path = os.path.join(pics_folder, img_name)
+        img_meta[img_save_path] = img_byte_base64_encoded
+        # image.save(img_save_path)
+        img_label_text = img_rename_tmpl.format(img_name, img_save_path)
+        img_span = Span(
+            text = img_label_text,
+            bbox=img_bbox,
+            span_id=f"{pnum}_{span_id}",
+            font=f"{s['font']}_{font_flags_decomposer(s['flags'])}",  # Add font flags to end of font
+            color=0,
+            ascender=0.89111328125,
+            descender=-0.21630859375,
+        )
+        
+        line_obj = Line(
+            spans=[img_span],
+            bbox=img_bbox
+        )
+        block_obj = Block(
+            lines=[line_obj], bbox=img_bbox, pnum=pnum
+        )
+        # print(block_obj)
+        page_blocks.append(block_obj)
+        span_id += 1
+    page_blocks.sort(key=lambda x: x.bbox[1])
+    return page_blocks, img_meta
 
 
 def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no_text: bool, disable_ocr: bool = False, min_ocr_page: int = 2):
@@ -90,7 +135,7 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no
     if spell_lang:
         spellchecker = SpellChecker(language=spell_lang)
 
-    blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker)
+    blocks, img_data = get_single_page_blocks(doc, pnum, tess_lang, spellchecker)
     page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
 
     # OCR page if we got minimal text, or if we got too many spaces
@@ -104,20 +149,20 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no
         not disable_ocr
     ]
     if all(conditions) or settings.OCR_ALL_PAGES:
-        page = doc[pnum]
-        blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker, ocr=True)
-        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox, rotation=page.rotation)
+        blocks, img_data = get_single_page_blocks(doc, pnum, tess_lang, spellchecker, ocr=True)
+        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
         ocr_pages = 1
         if len(blocks) == 0:
             ocr_failed = 1
         else:
             ocr_success = 1
-    return page_obj, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+    return page_obj, img_data, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
 
 
 def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: Optional[int] = None, parallel: int = settings.OCR_PARALLEL_WORKERS):
     all_blocks = []
     toc = doc.get_toc()
+    all_images = {}
     ocr_pages = 0
     ocr_failed = 0
     ocr_success = 0
@@ -135,13 +180,14 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: O
         results = func(lambda a: convert_single_page(*a), args_list)
 
         for result in results:
-            page_obj, ocr_stats = result
+            page_obj, img_data, ocr_stats = result
             all_blocks.append(page_obj)
+            all_images.update(img_data)
             ocr_pages += ocr_stats["ocr_pages"]
             ocr_failed += ocr_stats["ocr_failed"]
             ocr_success += ocr_stats["ocr_success"]
 
-    return all_blocks, toc, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+    return all_blocks, toc, all_images, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
 
 
 def naive_get_text(doc):

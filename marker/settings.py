@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     # PyMuPDF
     TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
 
+    # Get image labels
+    IMG_SAVE_POSITION: str = "temp files"
+    IMAGE_LABEL_TEMP_MD: str = '![{}]({})'
+        
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "�"]
     OCR_DPI: int = 400

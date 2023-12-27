@@ -4,6 +4,9 @@ from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
 from marker.models import load_all_models
 import json
+from io import BytesIO
+import base64
+from PIL import Image
 
 configure_logging()
 
@@ -26,6 +29,12 @@ def main():
     out_meta_filename = args.output.rsplit(".", 1)[0] + "_meta.json"
     with open(out_meta_filename, "w+") as f:
         f.write(json.dumps(out_meta, indent=4))
+
+    # 保存图片
+    for img_path, img_data in out_meta["images"].items():
+        bytesio_data = BytesIO(base64.b64decode(img_data))
+        image = Image.open(bytesio_data)
+        image.save(img_path)
 
 
 if __name__ == "__main__":

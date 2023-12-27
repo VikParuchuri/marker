@@ -86,7 +86,7 @@ def convert_single_pdf(
         conv = doc.convert_to_pdf()
         doc = pymupdf.open("pdf", conv)
 
-    blocks, toc, ocr_stats = get_text_blocks(
+    blocks, toc, img_data, ocr_stats = get_text_blocks(
         doc,
         tess_lang,
         spell_lang,
@@ -97,6 +97,7 @@ def convert_single_pdf(
     out_meta["toc"] = toc
     out_meta["pages"] = len(blocks)
     out_meta["ocr_stats"] = ocr_stats
+    out_meta["images"] = img_data
     if len([b for p in blocks for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
         return "", out_meta
