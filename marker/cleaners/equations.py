@@ -22,7 +22,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def load_nougat_model():
-    ckpt = get_checkpoint(None, model_tag=settings.NOUGAT_MODEL_NAME)
+    ckpt = get_checkpoint(settings.NOUGAT_CHECKPOINT, model_tag=settings.NOUGAT_MODEL_NAME)
     nougat_model = NougatModel.from_pretrained(ckpt)
     if settings.TORCH_DEVICE != "cpu":
         move_to_device(nougat_model, bf16=settings.CUDA, cuda=settings.CUDA)
