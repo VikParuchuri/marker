@@ -90,6 +90,19 @@ First, clone the repo:
   - `poetry shell` to activate your poetry venv
 - On ARM macs (M1+), make sure to set the `TORCH_DEVICE` setting to `mps` (more details below) for a speedup
 
+## Windows
+- Ensure that you have already installed poetry 
+- Create a poetry virtual environment
+- Add python-magic-bin dependency run: `poetry add python-magic-bin`
+  -(default version: ^0.4.14)
+- (Optional) Ensure compatibility of dependencies run: `poetry update`
+- Download the relevant dependencies run: `poetry install`
+- Configure the local.env file
+  - Create a new local.env file in the project root directory
+  - Write some relevant configurations, especially the `DEFAULT_LANG`
+- Now, run the program, and the steps can be found in the `Usage`
+- Additionally,if you want to use GPU, you need to modify the version of PyTorch
+
 # Usage
 
 First, some configuration:
