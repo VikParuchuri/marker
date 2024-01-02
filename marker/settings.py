@@ -120,8 +120,6 @@ class Settings(BaseSettings):
     def MODEL_DTYPE(self) -> torch.dtype:
         if self.TORCH_DEVICE_MODEL == "cuda":
             return torch.bfloat16
-        elif self.TORCH_DEVICE_MODEL == "mps":
-            return torch.float16
         else:
             return torch.float32
 
