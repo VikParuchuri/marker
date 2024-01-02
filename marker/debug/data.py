@@ -10,7 +10,7 @@ from PIL import Image
 import io
 
 
-def dump_nougat_debug_data(doc, images, converted_spans):
+def dump_equation_debug_data(doc, images, converted_spans):
     if not settings.DEBUG_DATA_FOLDER or settings.DEBUG_LEVEL == 0:
         return
 
@@ -55,7 +55,7 @@ def dump_bbox_debug_data(doc, blocks: List[Page]):
     for idx, page_blocks in enumerate(blocks):
         page = doc[idx]
 
-        pix = page.get_pixmap(dpi=settings.NOUGAT_DPI, annots=False, clip=page_blocks.bbox)
+        pix = page.get_pixmap(dpi=settings.TEXIFY_DPI, annots=False, clip=page_blocks.bbox)
         png = pix.pil_tobytes(format="PNG")
         png_image = Image.open(io.BytesIO(png))
         width, height = png_image.size

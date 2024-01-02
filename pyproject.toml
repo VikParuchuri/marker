@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "marker-pdf"
-version = "0.1.1"
+version = "0.1.3"
 description = "Convert PDF to markdown with high speed and accuracy."
 authors = ["Vik Paruchuri <github@vikas.sh>"]
 readme = "README.md"
@@ -19,7 +19,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.9,<3.13,!=3.9.7"
 scikit-learn = "^1.3.2"
 Pillow = "^10.1.0"
 pytesseract = "^0.3.10"
@@ -27,7 +27,6 @@ PyMuPDF = "^1.23.5"
 pymupdf-fonts = "^1.0.5"
 pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
-nougat-ocr = "^0.1.17"
 transformers = "^4.34.1"
 numpy = "^1.26.1"
 python-dotenv = "^1.0.0"
@@ -43,6 +42,7 @@ nltk = "^3.8.1"
 ocrmypdf = "^15.4.0"
 bitsandbytes = "^0.41.2.post2"
 grpcio = "^1.60.0"
+texify = "^0.1.8"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

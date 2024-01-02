@@ -6,7 +6,7 @@ Marker converts PDF, EPUB, and MOBI to markdown.  It's 10x faster than nougat, m
 - Removes headers/footers/other artifacts
 - Converts most equations to latex
 - Formats code blocks and tables
-- Support for multiple languages (although most testing is done in English).  See `settings.py` for a language list.
+- Support for multiple languages (although most testing is done in English).  See `settings.py` for a language list, or to add your own.
 - Works on GPU, CPU, or MPS
 
 ## How it works
@@ -15,7 +15,7 @@ Marker is a pipeline of deep learning models:
 
 - Extract text, OCR if necessary (heuristics, tesseract)
 - Detect page layout ([layout segmenter](https://huggingface.co/vikp/layout_segmenter), [column detector](https://huggingface.co/vikp/column_detector))
-- Clean and format each block (heuristics, [nougat](https://huggingface.co/facebook/nougat-base))
+- Clean and format each block (heuristics, [texify](https://huggingface.co/vikp/texify))
 - Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor_t5))
 
 Relying on autoregressive forward passes to generate text is slow and prone to hallucination/repetition.  From the nougat paper: `We observed [repetition] in 1.5% of pages in the test set, but the frequency increases for out-of-domain documents.`  In my anecdotal testing, repetitions happen on 5%+ of out-of-domain (non-arXiv) pages.  
@@ -48,10 +48,10 @@ See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instruc
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
-- Marker will convert fewer equations to latex than nougat.  This is because it has to first detect equations, then convert them without hallucation.
+- Marker will not convert 100% of equations to LaTeX.  This is because it has to first detect equations, then convert them.
 - Whitespace and indentations are not always respected.
 - Not all lines/spans will be joined properly.
-- Languages similar to English (Spanish, French, German, Russian, etc) have the best support. There is provisional support for Chinese, Japanese, Korean, and Hindi, but it may not work as well.
+- Languages similar to English (Spanish, French, German, Russian, etc) have the best support. There is provisional support for Chinese, Japanese, Korean, and Hindi, but it may not work as well.  You can add other languages by adding them to the `TESSERACT_LANGUAGES` and `SPELLCHECK_LANGUAGES` settings in `settings.py`.
 - This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
 
 # Installation
@@ -88,17 +88,16 @@ First, clone the repo:
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
-- On ARM macs (M1+), make sure to set the `TORCH_DEVICE` setting to `mps` (more details below) for a speedup
 
 # Usage
 
-First, some configuration:
+First, some configuration.  Note that settings can be overridden with env vars, or in a `local.env` file in the root `marker` folder.
 
-- Set your torch device in the `local.env` file.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`.  `cpu` is the default.
+- Your torch device will be automatically detected, but you can manually set it also.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`. `cpu` is the default.
   - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
   - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
 - Inspect the other settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
-  - By default, the final editor model is off.  Turn it on with `ENABLE_EDITOR_MODEL`.
+  - By default, the final editor model is off.  Turn it on with `ENABLE_EDITOR_MODEL=true`.
   - By default, marker will use ocrmypdf for OCR, which is slower than base tesseract, but higher quality.  You can change this with the `OCR_ENGINE` setting.
 
 ## Convert a single file
@@ -147,6 +146,8 @@ MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 bas
 - `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
 - `NUM_WORKERS` is the number of parallel processes to run on each GPU.  Per-GPU parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK`.
 - `MIN_LENGTH` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
+
+Note that the env variables above are specific to this script, and cannot be set in `local.env`.
 
 # Benchmarks
 
@@ -203,7 +204,6 @@ I'm building a version that can be used commercially, by stripping out the depen
 Here are the non-commercial/restrictive dependencies:
 
 - LayoutLMv3: CC BY-NC-SA 4.0 .  [Source](https://huggingface.co/microsoft/layoutlmv3-base)
-- Nougat: CC-BY-NC . [Source](https://github.com/facebookresearch/nougat)
 - PyMuPDF - GPL . [Source](https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright)
 
 Other dependencies/datasets are openly licensed (doclaynet, byt5), or used in a way that is compatible with commercial usage (ghostscript).

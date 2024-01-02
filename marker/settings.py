@@ -10,7 +10,22 @@ import torch
 
 class Settings(BaseSettings):
     # General
-    TORCH_DEVICE: str = "cpu"
+    TORCH_DEVICE: Optional[str] = None
+
+    @computed_field
+    @property
+    def TORCH_DEVICE_MODEL(self) -> str:
+        if self.TORCH_DEVICE is not None:
+            return self.TORCH_DEVICE
+
+        if torch.cuda.is_available():
+            return "cuda"
+
+        if torch.backends.mps.is_available():
+            return "mps"
+
+        return "cpu"
+
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
     VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3GB, but avg across workers is lower.
     DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
@@ -59,28 +74,12 @@ class Settings(BaseSettings):
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
     OCR_ENGINE: str = "ocrmypdf" # Which OCR engine to use, either "tesseract" or "ocrmypdf".  Ocrmypdf is higher quality, but slower.
 
-    # Nougat model
-    NOUGAT_MODEL_MAX: int = 512 # Max inference length for nougat
-    NOUGAT_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for nougat
-    NOUGAT_HALLUCINATION_WORDS: List[str] = [
-        "[MISSING_PAGE_POST]",
-        "## References\n",
-        "**Figure Captions**\n",
-        "Footnote",
-        "\par\par\par",
-        "## Chapter",
-        "Fig.",
-        "particle",
-        "[REPEATS]",
-        "[TRUNCATED]",
-        "### ",
-        "effective field strength",
-        "\Phi_{\rm eff}",
-        "\mathbf{\mathbf"
-    ]
-    NOUGAT_DPI: int = 96 # DPI to render images at, matches default settings for nougat
-    NOUGAT_MODEL_NAME: str = "0.1.0-small" # Name of the model to use
-    NOUGAT_BATCH_SIZE: int = 6 if TORCH_DEVICE == "cuda" else 1 # Batch size for nougat, don't batch on cpu
+    # Texify model
+    TEXIFY_MODEL_MAX: int = 384 # Max inference length for texify
+    TEXIFY_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for texify
+    TEXIFY_DPI: int = 96 # DPI to render images at
+    TEXIFY_BATCH_SIZE: int = 1 if TORCH_DEVICE_MODEL == "cpu" else 6 # Batch size for texify, don't batch on cpu
+    TEXIFY_MODEL_NAME: str = "vikp/texify"
 
     # Layout model
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
@@ -119,7 +118,15 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def MODEL_DTYPE(self) -> torch.dtype:
-        return torch.bfloat16 if self.CUDA else torch.float32
+        if self.TORCH_DEVICE_MODEL == "cuda":
+            return torch.bfloat16
+        else:
+            return torch.float32
+
+    @computed_field
+    @property
+    def TEXIFY_DTYPE(self) -> torch.dtype:
+        return torch.float32 if self.TORCH_DEVICE_MODEL == "cpu" else torch.float16
 
     class Config:
         env_file = find_dotenv("local.env")

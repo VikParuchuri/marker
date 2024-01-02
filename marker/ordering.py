@@ -19,7 +19,7 @@ def load_ordering_model():
     model = LayoutLMv3ForSequenceClassification.from_pretrained(
         settings.ORDERER_MODEL_NAME,
         torch_dtype=settings.MODEL_DTYPE,
-    ).to(settings.TORCH_DEVICE)
+    ).to(settings.TORCH_DEVICE_MODEL)
     model.eval()
     return model
 
@@ -65,12 +65,11 @@ def batch_inference(rgb_images, bboxes, words, model):
         max_length=128
     )
 
-    if settings.CUDA:
-        encoding["pixel_values"] = encoding["pixel_values"].to(torch.bfloat16)
+    encoding["pixel_values"] = encoding["pixel_values"].to(model.dtype)
 
     with torch.inference_mode():
         for k in ["bbox", "input_ids", "pixel_values", "attention_mask"]:
-            encoding[k] = encoding[k].to(settings.TORCH_DEVICE)
+            encoding[k] = encoding[k].to(model.device)
         outputs = model(**encoding)
         logits = outputs.logits
 
