@@ -102,7 +102,7 @@ def convert_single_pdf(
         return "", out_meta
 
     # Unpack models from list
-    nougat_model, layoutlm_model, order_model, edit_model = model_lst
+    texify_model, layoutlm_model, order_model, edit_model = model_lst
 
     block_types = detect_document_block_types(
         doc,
@@ -146,8 +146,8 @@ def convert_single_pdf(
         doc,
         blocks,
         block_types,
-        nougat_model,
-        batch_size=int(settings.NOUGAT_BATCH_SIZE * parallel_factor)
+        texify_model,
+        batch_size=int(settings.TEXIFY_BATCH_SIZE * parallel_factor)
     )
     out_meta["block_stats"]["equations"] = eq_stats
 

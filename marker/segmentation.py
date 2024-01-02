@@ -27,7 +27,7 @@ def load_layout_model():
     model = LayoutLMv3ForTokenClassification.from_pretrained(
         settings.LAYOUT_MODEL_NAME,
         torch_dtype=settings.MODEL_DTYPE,
-    ).to(settings.TORCH_DEVICE)
+    ).to(settings.TORCH_DEVICE_MODEL)
 
     model.config.id2label = {
         0: "Caption",
@@ -173,10 +173,9 @@ def predict_block_types(encodings, layoutlm_model, batch_size):
 
         model_in = {}
         for k in ["bbox", "input_ids", "attention_mask", "pixel_values"]:
-            model_in[k] = torch.stack([b[k] for b in batch]).to(settings.TORCH_DEVICE)
+            model_in[k] = torch.stack([b[k] for b in batch]).to(layoutlm_model.device)
 
-        if settings.CUDA:
-            model_in["pixel_values"] = model_in["pixel_values"].to(torch.bfloat16)
+        model_in["pixel_values"] = model_in["pixel_values"].to(layoutlm_model.dtype)
 
         with torch.inference_mode():
             outputs = layoutlm_model(**model_in)
