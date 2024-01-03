@@ -21,11 +21,10 @@ def dump_equation_debug_data(doc, images, converted_spans):
     assert len(converted_spans) == len(images)
 
     data_lines = []
-    for idx, (image, converted_span) in enumerate(zip(images, converted_spans)):
+    for idx, (pil_image, converted_span) in enumerate(zip(images, converted_spans)):
         if converted_span is None:
             continue
         # Image is a BytesIO object
-        pil_image = Image.open(image)
         img_bytes = io.BytesIO()
         pil_image.save(img_bytes, format="WEBP", lossless=True)
         b64_image = base64.b64encode(img_bytes.getvalue()).decode("utf-8")
