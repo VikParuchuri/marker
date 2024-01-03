@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     TEXIFY_MODEL_MAX: int = 384 # Max inference length for texify
     TEXIFY_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for texify
     TEXIFY_DPI: int = 96 # DPI to render images at
-    TEXIFY_BATCH_SIZE: int = 1 if TORCH_DEVICE_MODEL == "cpu" else 6 # Batch size for texify, don't batch on cpu
+    TEXIFY_BATCH_SIZE: int = 2 if TORCH_DEVICE_MODEL == "cpu" else 6 # Batch size for texify, lower on cpu due to float32
     TEXIFY_MODEL_NAME: str = "vikp/texify"
 
     # Layout model
@@ -102,7 +102,6 @@ class Settings(BaseSettings):
 
     # Ray
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
-    RAY_DASHBOARD_HOST: str = "127.0.0.1"
     RAY_CORES_PER_WORKER: int = 1 # How many cpu cores to allocate per worker
 
     # Debug
