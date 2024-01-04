@@ -18,7 +18,7 @@ Marker is a pipeline of deep learning models:
 - Clean and format each block (heuristics, [texify](https://huggingface.co/vikp/texify))
 - Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor_t5))
 
-Relying on autoregressive forward passes to generate text is slow and prone to hallucination/repetition.  From the nougat paper: `We observed [repetition] in 1.5% of pages in the test set, but the frequency increases for out-of-domain documents.`  In my anecdotal testing, repetitions happen on 5%+ of out-of-domain (non-arXiv) pages.  
+Relying on autoregressive forward passes to generate text is slow and prone to hallucination/repetition.  From the nougat paper: `We observed [repetition] in 1.5% of pages in the test set, but the frequency increases for out-of-domain documents.`  In my anecdotal testing, repetitions happen on 5%+ of out-of-domain (non-arXiv) pages.
 
 Nougat is an amazing model, but I wanted a faster and more general purpose solution. Marker is 10x faster and has low hallucination risk because it only passes equation blocks through an LLM forward pass.
 
@@ -88,6 +88,40 @@ First, clone the repo:
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
+
+## Docker (nvidia)
+
+
+### Requirements
+
+* Linux Host (WSL might work. See [here](https://www.docker.com/blog/wsl-2-gpu-support-for-docker-desktop-on-nvidia-gpus/).)
+* [Docker](https://docs.docker.com/engine/install/)
+* [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+
+
+### Convert single file
+
+See https://github.com/VikParuchuri/marker#convert-a-single-file
+
+#### docker compose
+```bash
+mkdir -p {input,output}
+# Copy source PDF files into ./input directory
+# wget -P input https://greenteapress.com/thinkpython/thinkpython.pdf
+docker compose run marker
+```
+
+#### docker run
+```bash
+mkdir -p {input,output}
+# wget -P input https://greenteapress.com/thinkpython/thinkpython.pdf
+
+# Copy source PDF files into ./input directory
+# Change shm-size to be the size of your VRAM if possible
+
+docker build -t marker .
+docker run --shm-size 12gb -v $PWD/input:/input -v $PWD/output:/output --gpus=all -it marker python convert_single.py /input/thinkpython.pdf /output/thinkpython.md --parallel_factor 2 --max_pages 10
+```
 
 # Usage
 
@@ -197,7 +231,7 @@ Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running
 
 # Commercial usage
 
-Due to the licensing of the underlying models like layoutlmv3 and nougat, this is only suitable for noncommercial usage.  
+Due to the licensing of the underlying models like layoutlmv3 and nougat, this is only suitable for noncommercial usage.
 
 I'm building a version that can be used commercially, by stripping out the dependencies below. If you would like to get early access, email me at marker@vikas.sh.
 

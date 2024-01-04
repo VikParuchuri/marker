@@ -1,10 +1,18 @@
 #!/bin/bash
 
-wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10012/ghostscript-10.01.2.tar.gz
-tar -xvf ghostscript-10.01.2.tar.gz
-cd ghostscript-10.01.2
+GS_VERSION="10.01.2"
+
+wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10012/ghostscript-$GS_VERSION.tar.gz
+tar -xvf ghostscript-$GS_VERSION.tar.gz
+cd ghostscript-$GS_VERSION
 ./configure
-sudo make install
+
+if [[ $EUID -ne 0 ]]; then
+    sudo make install
+else
+    make install
+fi
+
 cd ..
-sudo rm -rf ghostscript-10.01.2
-rm ghostscript-10.01.2.tar.gz
+rm -rf ghostscript-$GS_VERSION
+rm -f ghostscript-$GS_VERSION.tar.gz

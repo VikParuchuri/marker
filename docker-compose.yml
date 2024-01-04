@@ -1,0 +1,26 @@
+services:
+  marker:
+    build: .
+    image: marker
+    # command: python convert.py /input /output --workers 10 --max 10 --min_length 10000
+    command: python convert_single.py /input/thinkpython.pdf /output/thinkpython.md --parallel_factor 2 --max_pages 10
+    shm_size: '12gb' # set this to the size of VRAM if possible
+    volumes:
+      - ./input:/input
+      - ./output:/output
+      - xdg_cache:/root/.cache
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TORCH_DEVICE=cuda
+      - INFERENCE_RAM=12
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  xdg_cache:

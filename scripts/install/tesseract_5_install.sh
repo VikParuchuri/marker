@@ -1,9 +1,14 @@
 #!/bin/bash
 
-sudo apt-get install apt-transport-https
+## Check if the script is running as root
+if [[ $EUID -ne 0 ]]; then
+    exec sudo /bin/bash "$0" "$@"
+fi
+
+apt-get install apt-transport-https lsb-release -y
 echo "deb https://notesalexp.org/tesseract-ocr5/$(lsb_release -cs)/ $(lsb_release -cs) main" \
-| sudo tee /etc/apt/sources.list.d/notesalexp.list > /dev/null
-sudo apt-get update -oAcquire::AllowInsecureRepositories=true
-sudo apt-get install notesalexp-keyring -oAcquire::AllowInsecureRepositories=true
-sudo apt-get update
-sudo apt-get install tesseract-ocr
+| tee /etc/apt/sources.list.d/notesalexp.list > /dev/null
+apt-get update -oAcquire::AllowInsecureRepositories=true
+apt-get install notesalexp-keyring -oAcquire::AllowInsecureRepositories=true -y
+apt-get update
+apt-get install tesseract-ocr -y
