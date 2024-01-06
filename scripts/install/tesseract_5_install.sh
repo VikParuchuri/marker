@@ -40,6 +40,9 @@ install_mac() {
             exit 1;;
       esac
   fi
+
+  #install tesseract
+  brew install tesseract
 }
 
 # Main "Function"
