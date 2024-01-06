@@ -33,7 +33,7 @@ install_mac() {
     read -r -p "Do you want to install Homebrew? (y/n) " choice
 
     case "$choice" in
-      y|Y ) echo "Now I should run an install script for Homebrew. I am not implemented yet.";;
+      y|Y ) /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)";;
       n|N ) echo "Exiting. Please install Homebrew and re-run the script."
             exit 1;;
         * ) echo "Invalid choice. Exiting. Please install Homebrew and re-run the script."
