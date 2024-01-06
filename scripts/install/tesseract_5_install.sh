@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Functions to install Tesseract on Debian-based systems
+# Will this function work on linux-mint, ubuntu and debian?
 install_debian() {
 sudo apt-get install apt-transport-https
 echo "deb https://notesalexp.org/tesseract-ocr5/$(lsb_release -cs)/ $(lsb_release -cs) main" \
@@ -12,18 +13,33 @@ sudo apt-get install tesseract-ocr
 }
 
 # Functions to install Tesseract on Fedora-based systems
+# DELETE THIS LINE WHEN YOU TEST THIS ON FEDORA. I DIDN'T!!!
 install_fedora() {
-  echo "Automatic install not implemented yet on this distribution (Fedora)"
+  sudo dnf install tesseract
 }
 
 # Functions to install Tesseract on Arch-based systems
+# Tested on Archlinux, Not Manjaro.
 install_arch() {
-  echo "Automatic install not implemented yet on this distribution (Arch Linux)"
+  sudo pacman -S tesseract tesseract-data-eng
 }
 
 # Functions to install Tesseract on macOS
+# DELETE THIS LINE WHEN YOU TEST THIS ON MAC. I DIDN'T!!!
 install_mac() {
-  echo "Automatic install not implemented yet on this distribution (macOS)"
+  if ! command -v brew &> /dev/null;
+  then
+    echo "Homebrew is not installed."
+    read -r -p "Do you want to install Homebrew? (y/n) " choice
+
+    case "$choice" in
+      y|Y ) echo "Now I should run an install script for Homebrew. I am not implemented yet.";;
+      n|N ) echo "Exiting. Please install Homebrew and re-run the script."
+            exit 1;;
+        * ) echo "Invalid choice. Exiting. Please install Homebrew and re-run the script."
+            exit 1;;
+      esac
+  fi
 }
 
 # Main "Function"
