@@ -10,6 +10,7 @@ def merge_list_blocks(blocks: List[Page]):
 
     current_lines = []
     current_bbox = None
+    debug = False
 
     ## do these loops infer the structure is
     ## blocks > pages > blocks > lines > spans
@@ -24,6 +25,14 @@ def merge_list_blocks(blocks: List[Page]):
 
             ## pass through the data that isn't list-items
             if block.most_common_block_type() != "List-item":
+
+                ## handle the case of starting a new non-list item block with a dangling list item present
+                ## close it out and clear the reference
+                if current_list_item_span is not None:
+                    current_lines.append(Line(spans=[current_list_item_span], bbox=current_list_item_span.bbox))
+                    current_list_item_span = None
+
+
                 if len(current_lines) > 0:
                     new_block = Block(
                         lines=deepcopy(current_lines),
@@ -36,12 +45,12 @@ def merge_list_blocks(blocks: List[Page]):
 
                 new_page_blocks.append(block)
 
-                for line in block.lines:
-                    for span in line.spans:
-                        if span.text.strip():
-                            print(f"[ypos: {str(span.bbox[1])[:3]},{str(span.bbox[3])[:3]}], Text: {span.text}")
+                if debug:
+                    for line in block.lines:
+                        for span in line.spans:
+                            if span.text.strip():
+                                print(f"[ypos: {str(span.bbox[1])[:3]},{str(span.bbox[3])[:3]}], Text: {span.text}")
 
-                
                 continue
 
             ## begin working on data that are list items
@@ -72,7 +81,8 @@ def merge_list_blocks(blocks: List[Page]):
                             ## but i dont' know where to put it or how to get it to interleave with
                             ## the rest of the items on the page
                             ## print("\n\nTODO: add this span to the output")
-                            print(current_list_item_span.text)
+                            if debug:
+                                print(current_list_item_span.text)
                             
                             ## appending the lines here using various bboxes creates mangled output
                             ## the items do not appear on new lines, even though they new lines and their bbox is assigned the same
@@ -83,7 +93,10 @@ def merge_list_blocks(blocks: List[Page]):
 
 
                         ind = "\t" * indent
-                        text = f" {ind}[ypos: {ypos},{ypos2}]{span.text.strip()}"
+                        text = f" {ind}{span.text.strip()}"
+                        if debug: 
+                            text = f" {ind}[ypos: {ypos},{ypos2}]{span.text.strip()}"
+
                         current_list_item_span = Span(
                                                     bbox=span.bbox,
                                                     span_id=span.span_id,
