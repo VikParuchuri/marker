@@ -19,6 +19,8 @@ def merge_list_blocks(blocks: List[Page]):
         new_page_blocks = []
         pnum = page.pnum
 
+        current_list_item_span = None
+
         for block in page.blocks:
             if block.most_common_block_type() != "List-item":
                 if len(current_lines) > 0:
@@ -40,6 +42,8 @@ def merge_list_blocks(blocks: List[Page]):
             else:
                 current_bbox = merge_boxes(current_bbox, block.bbox)
             
+            
+
             for line in block.lines:
                 for span in line.spans:
                     trimmed_text = span.text.strip()
@@ -47,13 +51,32 @@ def merge_list_blocks(blocks: List[Page]):
                     indent = math.floor((xpos - 48) / 18)
                     
                     if is_list_item_indicator(trimmed_text):
+                        if current_list_item_span is not None:
+                            ## since we're starting a new list item
+                            ## and we already have on in the loop
+                            ## write it out to whereever it will get to the output
+                            ## then make a new one
+
+
                         ind = "\t" * indent
                         text = f" {ind}[{xpos}-{indent}]{span.text}"
+                        current_list_item_span = Span(
+                                                    bbox=span.bbox,
+                                                    span_id=span.span_id,
+                                                    font="List-item",
+                                                    color=span.color,
+                                                    block_type="List-item",
+                                                    text=text
+                                                )
+                        span.text = ""
                     else:
-                        text = span.text.strip()
-                    
-                    span.text = text
-                        
+                        if current_list_item_span is not None:
+                            # Append text to the current list item span
+                            current_list_item_span.text += " " + span.text.strip()
+                            span.text = ""
+
+
+            #note, the current_list_item spans blocks                        
 
         if len(current_lines) > 0:
             new_block = Block(
