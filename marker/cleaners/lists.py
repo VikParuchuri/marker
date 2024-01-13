@@ -42,8 +42,6 @@ def merge_list_blocks(blocks: List[Page]):
             else:
                 current_bbox = merge_boxes(current_bbox, block.bbox)
             
-            
-
             for line in block.lines:
                 for span in line.spans:
                     trimmed_text = span.text.strip()
@@ -56,6 +54,8 @@ def merge_list_blocks(blocks: List[Page]):
                             ## and we already have on in the loop
                             ## write it out to whereever it will get to the output
                             ## then make a new one
+                            print("TODO: add this span to the output")
+                            ##print(current_list_item_span)
 
 
                         ind = "\t" * indent
@@ -74,7 +74,6 @@ def merge_list_blocks(blocks: List[Page]):
                             # Append text to the current list item span
                             current_list_item_span.text += " " + span.text.strip()
                             span.text = ""
-
 
             #note, the current_list_item spans blocks                        
 
