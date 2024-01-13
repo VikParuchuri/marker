@@ -71,6 +71,9 @@ def dump_bbox_debug_data(doc, blocks: List[Page]):
         page_data["image"] = b64_image
         debug_data.append(page_data)
 
+    # Create the directories if they don't exist
+    os.makedirs(os.path.dirname(debug_file), exist_ok=True)
+    
     with open(debug_file, "w+") as f:
         json.dump(debug_data, f)
 
