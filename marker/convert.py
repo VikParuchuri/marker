@@ -1,6 +1,7 @@
 import fitz as pymupdf
 
 from marker.cleaners.table import merge_table_blocks, create_new_tables
+from marker.cleaners.lists import merge_list_blocks, create_new_lists
 from marker.debug.data import dump_bbox_debug_data
 from marker.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
@@ -136,6 +137,11 @@ def convert_single_pdf(
     merge_table_blocks(blocks)
     table_count = create_new_tables(blocks)
     out_meta["block_stats"]["table"] = table_count
+
+    # Fix List blocks
+    merge_list_blocks(blocks)
+    #list_count = create_new_lists(blocks)
+    #out_meta["block_stats"]["lists"] = list_count
 
     for page in blocks:
         for block in page.blocks:
