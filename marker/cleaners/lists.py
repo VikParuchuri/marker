@@ -2,12 +2,7 @@ from marker.bbox import merge_boxes
 from marker.schema import Line, Span, Block, Page
 from typing import List
 import re
-import textwrap
-from marker.bbox import merge_boxes
-from marker.schema import Line, Span, Block, Page
 from copy import deepcopy
-from tabulate import tabulate
-from typing import List
 import math
 
 
@@ -15,6 +10,10 @@ def merge_list_blocks(blocks: List[Page]):
 
     current_lines = []
     current_bbox = None
+
+    ## do these loops infer the structure is
+    ## blocks > pages > blocks > lines > spans
+
     for page in blocks:
         new_page_blocks = []
         pnum = page.pnum
@@ -22,6 +21,8 @@ def merge_list_blocks(blocks: List[Page]):
         current_list_item_span = None
 
         for block in page.blocks:
+
+            ## pass through the data that isn't list-items
             if block.most_common_block_type() != "List-item":
                 if len(current_lines) > 0:
                     new_block = Block(
@@ -36,12 +37,16 @@ def merge_list_blocks(blocks: List[Page]):
                 new_page_blocks.append(block)
                 continue
 
-            current_lines.extend(block.lines)
+            ## begin working on data that are list items
+            ##current_lines.extend(block.lines)
+
+            ## i have no idea what this does
             if current_bbox is None:
                 current_bbox = block.bbox
             else:
                 current_bbox = merge_boxes(current_bbox, block.bbox)
             
+            ## extend creates a reference so this is also updating current_lines
             for line in block.lines:
                 for span in line.spans:
                     trimmed_text = span.text.strip()
@@ -54,12 +59,22 @@ def merge_list_blocks(blocks: List[Page]):
                             ## and we already have on in the loop
                             ## write it out to whereever it will get to the output
                             ## then make a new one
-                            print("TODO: add this span to the output")
-                            ##print(current_list_item_span)
+                            ## Probably this means adding a new block with new lines with this span
+                            ## but i dont' know where to put it or how to get it to interleave with
+                            ## the rest of the items on the page
+                            ## print("\n\nTODO: add this span to the output")
+                            print(current_list_item_span.text)
+                            
+                            ## appending the lines here using various bboxes creates mangled output
+                            ## the items do not appear on new lines, even though they new lines and their bbox is assigned the same
+                            ## as the start of the list-item 
+                            ## printing the output looks perfect, but there's some magical something that occurs after this
+                            ## that reorders the items on the page mysteriously
+                            ##current_lines.append(Line(spans=[current_list_item_span], bbox=current_list_item_span.bbox))
 
 
                         ind = "\t" * indent
-                        text = f" {ind}[{xpos}-{indent}]{span.text}"
+                        text = f" {ind}[{xpos}-{indent}]{span.text.strip()}"
                         current_list_item_span = Span(
                                                     bbox=span.bbox,
                                                     span_id=span.span_id,
@@ -68,14 +83,14 @@ def merge_list_blocks(blocks: List[Page]):
                                                     block_type="List-item",
                                                     text=text
                                                 )
-                        span.text = ""
+                        span.text = ""  #preferably delete this but i don't know what that will do to the schema
                     else:
                         if current_list_item_span is not None:
                             # Append text to the current list item span
                             current_list_item_span.text += " " + span.text.strip()
-                            span.text = ""
-
-            #note, the current_list_item spans blocks                        
+                            span.text = "" #preferably delete this but i don't know what that will do to the schema
+                #perferably delete empty lines but i don't know what that will do to the schema
+            #note, the current_list_item spans blocks, and probably needs to span pages so this whole loop nesting process might need another layer                        
 
         if len(current_lines) > 0:
             new_block = Block(
