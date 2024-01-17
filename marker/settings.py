@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     }
     OCR_ALL_PAGES: bool = False  # Run OCR on every page even if text can be extracted
     OCR_PARALLEL_WORKERS: int = 2  # How many CPU workers to use for OCR
-    OCR_ENGINE: str = "ocrmypdf"  # Which OCR engine to use, either "tesseract" or "ocrmypdf".  Ocrmypdf is higher quality, but slower.
+    OCR_ENGINE: str = "tesseract"  # Which OCR engine to use, either "tesseract" or "ocrmypdf".  Ocrmypdf is higher quality, but slower.
 
     # Texify model
     TEXIFY_MODEL_MAX: int = 384  # Max inference length for texify

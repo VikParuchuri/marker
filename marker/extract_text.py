@@ -12,6 +12,29 @@ from concurrent.futures import ThreadPoolExecutor
 
 os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 
+from spellchecker import SpellChecker
+import pkg_resources
+import json
+import gzip
+
+
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
+
+
+class CustomSpellChecker(SpellChecker):
+    def __init__(self, language="en", local_dictionary=None):
+        super().__init__(language="en")  # Initialize with a default language
+        if language == "hi":
+            self.language = language
+            custom_dict_path = "/content/hi.json.gz"
+            # Manually load the custom dictionary
+            with gzip.open(custom_dict_path, "rt", encoding="utf-8") as f:
+                hi_dict = json.load(f)
+            for word in hi_dict:
+                self.word_frequency.load_words([word])
+
 
 def sort_rotated_text(page_blocks, tolerance=1.25):
     vertical_groups = {}
@@ -40,7 +63,10 @@ def get_single_page_blocks(
     page = doc[pnum]
     rotation = page.rotation
 
-    if ocr:
+    logger.info(f"Processing page {pnum}")
+    logger.info(f"tess_lang: {tess_lang}")
+    logger.info(f"spellchecker: {spellchecker}")
+    if tess_lang == "hin" or ocr:
         blocks = ocr_entire_page(page, tess_lang, spellchecker)
     else:
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS)["blocks"]
