@@ -17,9 +17,7 @@ def merge_table_blocks(blocks: List[Page]):
             if block.most_common_block_type() != "Table":
                 if len(current_lines) > 0:
                     new_block = Block(
-                        lines=deepcopy(current_lines),
-                        pnum=pnum,
-                        bbox=current_bbox
+                        lines=deepcopy(current_lines), pnum=pnum, bbox=current_bbox
                     )
                     new_page_blocks.append(new_block)
                     current_lines = []
@@ -36,9 +34,7 @@ def merge_table_blocks(blocks: List[Page]):
 
         if len(current_lines) > 0:
             new_block = Block(
-                lines=deepcopy(current_lines),
-                pnum=pnum,
-                bbox=current_bbox
+                lines=deepcopy(current_lines), pnum=pnum, bbox=current_bbox
             )
             new_page_blocks.append(new_block)
             current_lines = []
@@ -49,8 +45,8 @@ def merge_table_blocks(blocks: List[Page]):
 
 def create_new_tables(blocks: List[Page]):
     table_idx = 0
-    dot_pattern = re.compile(r'(\s*\.\s*){4,}')
-    dot_multiline_pattern = re.compile(r'.*(\s*\.\s*){4,}.*', re.DOTALL)
+    dot_pattern = re.compile(r"(\s*\.\s*){4,}")
+    dot_multiline_pattern = re.compile(r".*(\s*\.\s*){4,}.*", re.DOTALL)
 
     for page in blocks:
         for block in page.blocks:
@@ -70,13 +66,17 @@ def create_new_tables(blocks: List[Page]):
 
                     text = span.text
                     if dot_multiline_pattern.match(text):
-                        text = dot_pattern.sub(' ', text)
+                        text = dot_pattern.sub(" ", text)
                     row.append(text)
             if len(row) > 0:
                 table_rows.append(row)
 
             # Don't render tables if they will be too large
-            if max([len("".join(r)) for r in table_rows]) > 300 or len(table_rows[0]) > 8 or len(table_rows[0]) < 2:
+            if (
+                max([len("".join(r)) for r in table_rows]) > 300
+                or len(table_rows[0]) > 8
+                or len(table_rows[0]) < 2
+            ):
                 continue
 
             new_text = tabulate(table_rows, headers="firstrow", tablefmt="github")
@@ -86,12 +86,9 @@ def create_new_tables(blocks: List[Page]):
                 font="Table",
                 color=0,
                 block_type="Table",
-                text=new_text
+                text=new_text,
             )
-            new_line = Line(
-                bbox=block.bbox,
-                spans=[new_span]
-            )
+            new_line = Line(bbox=block.bbox, spans=[new_span])
             block.lines = [new_line]
             table_idx += 1
     return table_idx

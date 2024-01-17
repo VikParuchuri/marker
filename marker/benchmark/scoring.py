@@ -8,7 +8,7 @@ CHUNK_MIN_CHARS = 25
 
 def tokenize(text):
     # Combined pattern
-    pattern = r'([^\w\s\d\'])|([\w\']+)|(\d+)|(\n+)|( +)'
+    pattern = r"([^\w\s\d\'])|([\w\']+)|(\d+)|(\n+)|( +)"
     result = re.findall(pattern, text)
     # Flatten the result and filter out empty strings
     flattened_result = [item for sublist in result for item in sublist if item]
@@ -30,7 +30,10 @@ def overlap_score(hypothesis_chunks, reference_chunks):
         max_score = 0
         chunk_weight = 1
         i_offset = int(i * length_modifier)
-        chunk_range = range(max(0, i_offset-search_distance), min(len(reference_chunks), i_offset+search_distance))
+        chunk_range = range(
+            max(0, i_offset - search_distance),
+            min(len(reference_chunks), i_offset + search_distance),
+        )
         for j in chunk_range:
             ref_chunk = reference_chunks[j]
             score = fuzz.ratio(hyp_chunk, ref_chunk, score_cutoff=30) / 100
@@ -39,7 +42,9 @@ def overlap_score(hypothesis_chunks, reference_chunks):
                 chunk_weight = math.sqrt(len(ref_chunk))
         chunk_scores.append(max_score)
         chunk_weights.append(chunk_weight)
-    chunk_scores = [chunk_scores[i] * chunk_weights[i] for i in range(len(chunk_scores))]
+    chunk_scores = [
+        chunk_scores[i] * chunk_weights[i] for i in range(len(chunk_scores))
+    ]
     return chunk_scores, chunk_weights
 
 

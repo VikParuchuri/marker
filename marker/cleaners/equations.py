@@ -22,12 +22,16 @@ processor = load_processor()
 
 
 def load_texify_model():
-    texify_model = load_model(checkpoint=settings.TEXIFY_MODEL_NAME, device=settings.TORCH_DEVICE_MODEL, dtype=settings.TEXIFY_DTYPE)
+    texify_model = load_model(
+        checkpoint=settings.TEXIFY_MODEL_NAME,
+        device=settings.TORCH_DEVICE_MODEL,
+        dtype=settings.TEXIFY_DTYPE,
+    )
     return texify_model
 
 
 def mask_bbox(png_image, bbox, selected_bboxes):
-    mask = Image.new('L', png_image.size, 0)  # 'L' mode for grayscale
+    mask = Image.new("L", png_image.size, 0)  # 'L' mode for grayscale
     draw = ImageDraw.Draw(mask)
     first_x = bbox[0]
     first_y = bbox[1]
@@ -36,17 +40,24 @@ def mask_bbox(png_image, bbox, selected_bboxes):
 
     for box in selected_bboxes:
         # Fit the box to the selected region
-        new_box = (box[0] - first_x, box[1] - first_y, box[2] - first_x, box[3] - first_y)
+        new_box = (
+            box[0] - first_x,
+            box[1] - first_y,
+            box[2] - first_x,
+            box[3] - first_y,
+        )
         # Fit mask to image bounds versus the pdf bounds
         resized = (
-           new_box[0] / bbox_width * png_image.size[0],
-           new_box[1] / bbox_height * png_image.size[1],
-           new_box[2] / bbox_width * png_image.size[0],
-           new_box[3] / bbox_height * png_image.size[1]
+            new_box[0] / bbox_width * png_image.size[0],
+            new_box[1] / bbox_height * png_image.size[1],
+            new_box[2] / bbox_width * png_image.size[0],
+            new_box[3] / bbox_height * png_image.size[1],
         )
         draw.rectangle(resized, fill=255)
 
-    result = Image.composite(png_image, Image.new('RGBA', png_image.size, 'white'), mask)
+    result = Image.composite(
+        png_image, Image.new("RGBA", png_image.size, "white"), mask
+    )
     return result
 
 
@@ -73,7 +84,9 @@ def get_latex_batched(images, reformat_region_lens, texify_model, batch_size):
         max_length = min(max_length, settings.TEXIFY_MODEL_MAX)
         max_length += settings.TEXIFY_TOKEN_BUFFER
 
-        model_output = batch_inference(images[min_idx:max_idx], texify_model, processor, max_tokens=max_length)
+        model_output = batch_inference(
+            images[min_idx:max_idx], texify_model, processor, max_tokens=max_length
+        )
 
         for j, output in enumerate(model_output):
             token_count = get_total_texify_tokens(output)
@@ -112,14 +125,22 @@ def find_page_equation_regions(pnum, page, block_types):
             j = i - 1
             prev_block = page.blocks[j]
             prev_bbox = prev_block.bbox
-            while (should_merge_blocks(prev_bbox, bbox) or prev_block.contains_equation(equation_boxes)) \
-                    and j >= 0 \
-                    and j not in reformatted_blocks:
+            while (
+                (
+                    should_merge_blocks(prev_bbox, bbox)
+                    or prev_block.contains_equation(equation_boxes)
+                )
+                and j >= 0
+                and j not in reformatted_blocks
+            ):
                 bbox = merge_boxes(prev_bbox, bbox)
                 prev_block = page.blocks[j]
                 prev_bbox = prev_block.bbox
                 prelim_block_text = prev_block.prelim_text + " " + block_text
-                if get_total_texify_tokens(prelim_block_text) >= settings.TEXIFY_MODEL_MAX:
+                if (
+                    get_total_texify_tokens(prelim_block_text)
+                    >= settings.TEXIFY_MODEL_MAX
+                ):
                     break
 
                 block_text = prelim_block_text
@@ -130,11 +151,16 @@ def find_page_equation_regions(pnum, page, block_types):
             # Merge subsequent boxes
             next_block = page.blocks[i + 1]
             next_bbox = next_block.bbox
-            while (should_merge_blocks(bbox, next_bbox) or next_block.contains_equation(
-                    equation_boxes)) and i + 1 < len(page.blocks):
+            while (
+                should_merge_blocks(bbox, next_bbox)
+                or next_block.contains_equation(equation_boxes)
+            ) and i + 1 < len(page.blocks):
                 bbox = merge_boxes(bbox, next_bbox)
                 prelim_block_text = block_text + " " + next_block.prelim_text
-                if get_total_texify_tokens(prelim_block_text) >= settings.TEXIFY_MODEL_MAX:
+                if (
+                    get_total_texify_tokens(prelim_block_text)
+                    >= settings.TEXIFY_MODEL_MAX
+                ):
                     break
 
                 block_text = prelim_block_text
@@ -174,7 +200,9 @@ def get_bboxes_for_region(page, region):
     return bboxes, merged_box
 
 
-def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions, predictions, pnum):
+def replace_blocks_with_latex(
+    page_blocks: Page, merged_boxes, reformat_regions, predictions, pnum
+):
     new_blocks = []
     converted_spans = []
     current_region = 0
@@ -183,18 +211,27 @@ def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions,
     fail_count = 0
     while idx < len(page_blocks.blocks):
         block = page_blocks.blocks[idx]
-        if current_region >= len(reformat_regions) or idx < reformat_regions[current_region][0]:
+        if (
+            current_region >= len(reformat_regions)
+            or idx < reformat_regions[current_region][0]
+        ):
             new_blocks.append(block)
             idx += 1
             continue
 
-        orig_block_text = " ".join([page_blocks.blocks[i].prelim_text for i in reformat_regions[current_region]])
+        orig_block_text = " ".join(
+            [
+                page_blocks.blocks[i].prelim_text
+                for i in reformat_regions[current_region]
+            ]
+        )
         latex_text = predictions[current_region]
         conditions = [
             len(latex_text) > 0,
-            get_total_texify_tokens(latex_text) < settings.TEXIFY_MODEL_MAX,  # Make sure we didn't run to the overall token max
-            len(latex_text) > len(orig_block_text) * .8,
-            len(latex_text.strip()) > 0
+            get_total_texify_tokens(latex_text)
+            < settings.TEXIFY_MODEL_MAX,  # Make sure we didn't run to the overall token max
+            len(latex_text) > len(orig_block_text) * 0.8,
+            len(latex_text.strip()) > 0,
         ]
 
         idx = reformat_regions[current_region][-1] + 1
@@ -213,22 +250,26 @@ def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions,
                         span_id=f"{pnum}_{idx}_fixeq",
                         font="Latex",
                         color=0,
-                        block_type="Formula"
+                        block_type="Formula",
                     )
                 ],
-                bbox=merged_boxes[current_region]
+                bbox=merged_boxes[current_region],
             )
             converted_spans.append(deepcopy(block_line.spans[0]))
-            new_blocks.append(Block(
-                lines=[block_line],
-                bbox=merged_boxes[current_region],
-                pnum=pnum
-            ))
+            new_blocks.append(
+                Block(lines=[block_line], bbox=merged_boxes[current_region], pnum=pnum)
+            )
         current_region += 1
     return new_blocks, success_count, fail_count, converted_spans
 
 
-def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], texify_model, batch_size=settings.TEXIFY_BATCH_SIZE):
+def replace_equations(
+    doc,
+    blocks: List[Page],
+    block_types: List[List[BlockType]],
+    texify_model,
+    batch_size=settings.TEXIFY_BATCH_SIZE,
+):
     unsuccessful_ocr = 0
     successful_ocr = 0
 
@@ -243,32 +284,45 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
     eq_count = sum([len(x) for x in reformat_regions])
 
     # Get images for each region
-    flat_reformat_region_lens = [item for sublist in reformat_region_lens for item in sublist]
+    flat_reformat_region_lens = [
+        item for sublist in reformat_region_lens for item in sublist
+    ]
     images = []
     merged_boxes = []
     for page_idx, reformat_regions_page in enumerate(reformat_regions):
         page_obj = doc[page_idx]
         for reformat_region in reformat_regions_page:
-            bboxes, merged_box = get_bboxes_for_region(blocks[page_idx], reformat_region)
+            bboxes, merged_box = get_bboxes_for_region(
+                blocks[page_idx], reformat_region
+            )
             png_image = get_masked_image(page_obj, merged_box, bboxes)
             images.append(png_image)
             merged_boxes.append(merged_box)
 
     # Make batched predictions
-    predictions = get_latex_batched(images, flat_reformat_region_lens, texify_model, batch_size)
+    predictions = get_latex_batched(
+        images, flat_reformat_region_lens, texify_model, batch_size
+    )
 
     # Replace blocks with predictions
     page_start = 0
     converted_spans = []
     for page_idx, reformat_regions_page in enumerate(reformat_regions):
-        page_predictions = predictions[page_start:page_start + len(reformat_regions_page)]
-        page_boxes = merged_boxes[page_start:page_start + len(reformat_regions_page)]
-        new_page_blocks, success_count, fail_count, converted_span = replace_blocks_with_latex(
+        page_predictions = predictions[
+            page_start : page_start + len(reformat_regions_page)
+        ]
+        page_boxes = merged_boxes[page_start : page_start + len(reformat_regions_page)]
+        (
+            new_page_blocks,
+            success_count,
+            fail_count,
+            converted_span,
+        ) = replace_blocks_with_latex(
             blocks[page_idx],
             page_boxes,
             reformat_regions_page,
             page_predictions,
-            page_idx
+            page_idx,
         )
         converted_spans.extend(converted_span)
         blocks[page_idx].blocks = new_page_blocks
@@ -279,4 +333,8 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
     # If debug mode is on, dump out conversions for comparison
     dump_equation_debug_data(doc, images, converted_spans)
 
-    return blocks, {"successful_ocr": successful_ocr, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}
+    return blocks, {
+        "successful_ocr": successful_ocr,
+        "unsuccessful_ocr": unsuccessful_ocr,
+        "equations": eq_count,
+    }

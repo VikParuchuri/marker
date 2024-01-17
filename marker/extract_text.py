@@ -30,7 +30,13 @@ def sort_rotated_text(page_blocks, tolerance=1.25):
     return sorted_page_blocks
 
 
-def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optional[SpellChecker] = None, ocr=False) -> Tuple[List[Block], int]:
+def get_single_page_blocks(
+    doc,
+    pnum: int,
+    tess_lang: str,
+    spellchecker: Optional[SpellChecker] = None,
+    ocr=False,
+) -> Tuple[List[Block], int]:
     page = doc[pnum]
     rotation = page.rotation
 
@@ -52,7 +58,7 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
                     text=block_text,
                     bbox=correct_rotation(bbox, page),
                     span_id=f"{pnum}_{span_id}",
-                    font=f"{s['font']}_{font_flags_decomposer(s['flags'])}", # Add font flags to end of font
+                    font=f"{s['font']}_{font_flags_decomposer(s['flags'])}",  # Add font flags to end of font
                     color=s["color"],
                     ascender=s["ascender"],
                     descender=s["descender"],
@@ -67,9 +73,7 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
             if line_obj.area > 0:
                 block_lines.append(line_obj)
         block_obj = Block(
-            lines=block_lines,
-            bbox=correct_rotation(block["bbox"], page),
-            pnum=pnum
+            lines=block_lines, bbox=correct_rotation(block["bbox"], page), pnum=pnum
         )
         # Only select blocks with multiple lines
         if len(block_lines) > 0:
@@ -81,7 +85,15 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
     return page_blocks
 
 
-def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no_text: bool, disable_ocr: bool = False, min_ocr_page: int = 2):
+def convert_single_page(
+    doc,
+    pnum,
+    tess_lang: str,
+    spell_lang: Optional[str],
+    no_text: bool,
+    disable_ocr: bool = False,
+    min_ocr_page: int = 2,
+):
     ocr_pages = 0
     ocr_success = 0
     ocr_failed = 0
@@ -97,25 +109,39 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no
     conditions = [
         (
             no_text  # Full doc has no text, and needs full OCR
-            or
-            (len(page_obj.prelim_text) > 0 and detect_bad_ocr(page_obj.prelim_text, spellchecker))  # Bad OCR
+            or (
+                len(page_obj.prelim_text) > 0
+                and detect_bad_ocr(page_obj.prelim_text, spellchecker)
+            )  # Bad OCR
         ),
         min_ocr_page < pnum < len(doc) - 1,
-        not disable_ocr
+        not disable_ocr,
     ]
     if all(conditions) or settings.OCR_ALL_PAGES:
         page = doc[pnum]
         blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker, ocr=True)
-        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox, rotation=page.rotation)
+        page_obj = Page(
+            blocks=blocks, pnum=pnum, bbox=page_bbox, rotation=page.rotation
+        )
         ocr_pages = 1
         if len(blocks) == 0:
             ocr_failed = 1
         else:
             ocr_success = 1
-    return page_obj, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+    return page_obj, {
+        "ocr_pages": ocr_pages,
+        "ocr_failed": ocr_failed,
+        "ocr_success": ocr_success,
+    }
 
 
-def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: Optional[int] = None, parallel: int = settings.OCR_PARALLEL_WORKERS):
+def get_text_blocks(
+    doc,
+    tess_lang: str,
+    spell_lang: Optional[str],
+    max_pages: Optional[int] = None,
+    parallel: int = settings.OCR_PARALLEL_WORKERS,
+):
     all_blocks = []
     toc = doc.get_toc()
     ocr_pages = 0
@@ -127,7 +153,9 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: O
     if max_pages:
         range_end = min(max_pages, len(doc))
     with ThreadPoolExecutor(max_workers=parallel) as pool:
-        args_list = [(doc, pnum, tess_lang, spell_lang, no_text) for pnum in range(range_end)]
+        args_list = [
+            (doc, pnum, tess_lang, spell_lang, no_text) for pnum in range(range_end)
+        ]
         if parallel == 1:
             func = map
         else:
@@ -141,7 +169,11 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: O
             ocr_failed += ocr_stats["ocr_failed"]
             ocr_success += ocr_stats["ocr_success"]
 
-    return all_blocks, toc, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+    return (
+        all_blocks,
+        toc,
+        {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success},
+    )
 
 
 def naive_get_text(doc):

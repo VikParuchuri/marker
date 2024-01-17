@@ -62,7 +62,7 @@ def batch_inference(rgb_images, bboxes, words, model):
         return_tensors="pt",
         truncation=True,
         padding="max_length",
-        max_length=128
+        max_length=128,
     )
 
     encoding["pixel_values"] = encoding["pixel_values"].to(model.dtype)
@@ -88,7 +88,9 @@ def add_column_counts(doc, doc_blocks, model, batch_size):
         words = []
         for pnum in batch:
             page = doc[pnum]
-            rgb_image, page_bboxes, page_words = get_inference_data(page, doc_blocks[pnum])
+            rgb_image, page_bboxes, page_words = get_inference_data(
+                page, doc_blocks[pnum]
+            )
             rgb_images.append(rgb_image)
             bboxes.append(page_bboxes)
             words.append(page_words)
@@ -98,7 +100,9 @@ def add_column_counts(doc, doc_blocks, model, batch_size):
             doc_blocks[pnum].column_count = prediction
 
 
-def order_blocks(doc, doc_blocks: List[Page], model, batch_size=settings.ORDERER_BATCH_SIZE):
+def order_blocks(
+    doc, doc_blocks: List[Page], model, batch_size=settings.ORDERER_BATCH_SIZE
+):
     add_column_counts(doc, doc_blocks, model, batch_size)
 
     for page_blocks in doc_blocks:
@@ -114,6 +118,3 @@ def order_blocks(doc, doc_blocks: List[Page], model, batch_size=settings.ORDERER
                     right_blocks.append(block)
             page_blocks.blocks = left_blocks + right_blocks
     return doc_blocks
-
-
-

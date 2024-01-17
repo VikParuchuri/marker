@@ -12,7 +12,9 @@ from marker.settings import settings
 ocrmypdf.configure_logging(verbosity=ocrmypdf.Verbosity.quiet)
 
 
-def ocr_entire_page(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
+def ocr_entire_page(
+    page, lang: str, spellchecker: Optional[SpellChecker] = None
+) -> List[Block]:
     if settings.OCR_ENGINE == "tesseract":
         return ocr_entire_page_tess(page, lang, spellchecker)
     elif settings.OCR_ENGINE == "ocrmypdf":
@@ -21,11 +23,19 @@ def ocr_entire_page(page, lang: str, spellchecker: Optional[SpellChecker] = None
         raise ValueError(f"Unknown OCR engine {settings.OCR_ENGINE}")
 
 
-def ocr_entire_page_tess(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
+def ocr_entire_page_tess(
+    page, lang: str, spellchecker: Optional[SpellChecker] = None
+) -> List[Block]:
     try:
-        full_tp = page.get_textpage_ocr(flags=settings.TEXT_FLAGS, dpi=settings.OCR_DPI, full=True, language=lang)
-        blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp)["blocks"]
-        full_text = page.get_text("text", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp)
+        full_tp = page.get_textpage_ocr(
+            flags=settings.TEXT_FLAGS, dpi=settings.OCR_DPI, full=True, language=lang
+        )
+        blocks = page.get_text(
+            "dict", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp
+        )["blocks"]
+        full_text = page.get_text(
+            "text", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp
+        )
 
         if len(full_text) == 0:
             return []
@@ -39,11 +49,15 @@ def ocr_entire_page_tess(page, lang: str, spellchecker: Optional[SpellChecker] =
     return blocks
 
 
-def ocr_entire_page_ocrmp(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
+def ocr_entire_page_ocrmp(
+    page, lang: str, spellchecker: Optional[SpellChecker] = None
+) -> List[Block]:
     # Use ocrmypdf to get OCR text for the whole page
     src = page.parent  # the page's document
     blank_doc = pymupdf.open()  # make temporary 1-pager
-    blank_doc.insert_pdf(src, from_page=page.number, to_page=page.number, annots=False, links=False)
+    blank_doc.insert_pdf(
+        src, from_page=page.number, to_page=page.number, annots=False, links=False
+    )
     pdfbytes = blank_doc.tobytes()
     inbytes = io.BytesIO(pdfbytes)  # transform to BytesIO object
     outbytes = io.BytesIO()  # let ocrmypdf store its result pdf here
@@ -57,7 +71,7 @@ def ocr_entire_page_ocrmp(page, lang: str, spellchecker: Optional[SpellChecker] 
         progress_bar=False,
         optimize=False,
         fast_web_view=1e6,
-        skip_big=15, # skip images larger than 15 megapixels
+        skip_big=15,  # skip images larger than 15 megapixels
         tesseract_timeout=settings.TESSERACT_TIMEOUT,
         tesseract_non_ocr_timeout=settings.TESSERACT_TIMEOUT,
     )

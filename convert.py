@@ -16,8 +16,16 @@ import json
 configure_logging()
 
 
-@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Optional[Dict] = None, min_length: Optional[int] = None):
+@ray.remote(
+    num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=0.05 if settings.CUDA else 0
+)
+def process_single_pdf(
+    fname: str,
+    out_folder: str,
+    model_refs,
+    metadata: Optional[Dict] = None,
+    min_length: Optional[int] = None,
+):
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     out_filename = os.path.join(out_folder, os.path.basename(out_filename))
     out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"
@@ -32,9 +40,11 @@ def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Option
             if length < min_length:
                 return
 
-        full_text, out_metadata = convert_single_pdf(fname, model_refs, metadata=metadata)
+        full_text, out_metadata = convert_single_pdf(
+            fname, model_refs, metadata=metadata
+        )
         if len(full_text.strip()) > 0:
-            with open(out_filename, "w+", encoding='utf-8') as f:
+            with open(out_filename, "w+", encoding="utf-8") as f:
                 f.write(full_text)
             with open(out_meta_filename, "w+") as f:
                 f.write(json.dumps(out_metadata, indent=4))
@@ -49,12 +59,30 @@ def main():
     parser = argparse.ArgumentParser(description="Convert multiple pdfs to markdown.")
     parser.add_argument("in_folder", help="Input folder with pdfs.")
     parser.add_argument("out_folder", help="Output folder")
-    parser.add_argument("--chunk_idx", type=int, default=0, help="Chunk index to convert")
-    parser.add_argument("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
-    parser.add_argument("--max", type=int, default=None, help="Maximum number of pdfs to convert")
-    parser.add_argument("--workers", type=int, default=5, help="Number of worker processes to use")
-    parser.add_argument("--metadata_file", type=str, default=None, help="Metadata json file to use for filtering")
-    parser.add_argument("--min_length", type=int, default=None, help="Minimum length of pdf to convert")
+    parser.add_argument(
+        "--chunk_idx", type=int, default=0, help="Chunk index to convert"
+    )
+    parser.add_argument(
+        "--num_chunks",
+        type=int,
+        default=1,
+        help="Number of chunks being processed in parallel",
+    )
+    parser.add_argument(
+        "--max", type=int, default=None, help="Maximum number of pdfs to convert"
+    )
+    parser.add_argument(
+        "--workers", type=int, default=5, help="Number of worker processes to use"
+    )
+    parser.add_argument(
+        "--metadata_file",
+        type=str,
+        default=None,
+        help="Metadata json file to use for filtering",
+    )
+    parser.add_argument(
+        "--min_length", type=int, default=None, help="Minimum length of pdf to convert"
+    )
 
     args = parser.parse_args()
 
@@ -72,7 +100,7 @@ def main():
 
     # Limit files converted if needed
     if args.max:
-        files_to_convert = files_to_convert[:args.max]
+        files_to_convert = files_to_convert[: args.max]
 
     metadata = {}
     if args.metadata_file:
@@ -87,7 +115,7 @@ def main():
         num_gpus=1 if settings.CUDA else 0,
         storage=settings.RAY_CACHE_PATH,
         _temp_dir=settings.RAY_CACHE_PATH,
-        log_to_driver=settings.DEBUG
+        log_to_driver=settings.DEBUG,
     )
 
     model_lst = load_all_models()
@@ -96,23 +124,24 @@ def main():
     # Dynamically set GPU allocation per task based on GPU ram
     gpu_frac = settings.VRAM_PER_TASK / settings.INFERENCE_RAM if settings.CUDA else 0
 
-    print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
+    print(
+        f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}"
+    )
     futures = [
         process_single_pdf.options(num_gpus=gpu_frac).remote(
             filename,
             out_folder,
             model_refs,
             metadata=metadata.get(os.path.basename(filename)),
-            min_length=args.min_length
-        ) for filename in files_to_convert
+            min_length=args.min_length,
+        )
+        for filename in files_to_convert
     ]
 
     # Run all ray conversion tasks
     progress_bar = tqdm(total=len(futures))
     while len(futures) > 0:
-        finished, futures = ray.wait(
-            futures, timeout=7.0
-        )
+        finished, futures = ray.wait(futures, timeout=7.0)
         finished_lst = ray.get(finished)
         if isinstance(finished_lst, list):
             progress_bar.update(len(finished_lst))

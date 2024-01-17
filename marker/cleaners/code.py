@@ -6,7 +6,7 @@ import fitz as pymupdf
 
 def is_code_linelen(lines, thresh=60):
     # Decide based on chars per newline threshold
-    total_alnum_chars = sum(len(re.findall(r'\w', line.prelim_text)) for line in lines)
+    total_alnum_chars = sum(len(re.findall(r"\w", line.prelim_text)) for line in lines)
     total_newlines = max(len(lines) - 1, 1)
 
     if total_alnum_chars == 0:
@@ -61,19 +61,20 @@ def identify_code_blocks(blocks: List[Page]):
             comment_lines = comment_count([line.prelim_text for line in block.lines])
             is_code = [
                 len(block.lines) > 3,
-                sum([f != most_common_font for f in line_fonts]) > len(line_fonts) * .8,  # At least 80% of the fonts are not the most common, since code usually uses a different font from the main body text
+                sum([f != most_common_font for f in line_fonts])
+                > len(line_fonts)
+                * 0.8,  # At least 80% of the fonts are not the most common, since code usually uses a different font from the main body text
                 is_code_linelen(block.lines),
                 (
-                    sum(is_indent) > len(block.lines) * .2
-                    or
-                    comment_lines > len(block.lines) * .2
-                 ), # 20% lines indented or 20% of the lines are comments
+                    sum(is_indent) > len(block.lines) * 0.2
+                    or comment_lines > len(block.lines) * 0.2
+                ),  # 20% lines indented or 20% of the lines are comments
             ]
 
             # Check if previous block is code, and this block is indented
             is_code_prev = [
                 last_block and last_block.most_common_block_type() == "Code",
-                sum(is_indent) >= len(block.lines) * .8 # At least 80% indented
+                sum(is_indent) >= len(block.lines) * 0.8,  # At least 80% indented
             ]
 
             if all(is_code) or all(is_code_prev):
@@ -88,7 +89,9 @@ def indent_blocks(blocks: List[Page]):
     span_counter = 0
     for page in blocks:
         for block in page.blocks:
-            block_types = [span.block_type for line in block.lines for span in line.spans]
+            block_types = [
+                span.block_type for line in block.lines for span in line.spans
+            ]
             if "Code" not in block_types:
                 continue
 
@@ -123,7 +126,7 @@ def indent_blocks(blocks: List[Page]):
                 color=block.lines[0].spans[0].color,
                 span_id=f"{span_counter}_fix_code",
                 font=block.lines[0].spans[0].font,
-                block_type="Code"
+                block_type="Code",
             )
             span_counter += 1
             block.lines = [Line(spans=[new_span], bbox=block.bbox)]

@@ -13,7 +13,7 @@ from typing import List, Tuple
 def filter_common_elements(lines, page_count):
     text = [s.text for line in lines for s in line.spans if len(s.text) > 4]
     counter = Counter(text)
-    common = [k for k, v in counter.items() if v > page_count * .6]
+    common = [k for k, v in counter.items() if v > page_count * 0.6]
     bad_span_ids = [s.span_id for line in lines for s in line.spans if s.text in common]
     return bad_span_ids
 
@@ -33,11 +33,9 @@ def filter_header_footer(all_page_blocks, max_selected_lines=2):
 
 def categorize_blocks(all_page_blocks: List[Page]):
     spans = list(chain.from_iterable([p.get_nonblank_spans() for p in all_page_blocks]))
-    X = np.array(
-        [(*s.bbox, len(s.text)) for s in spans]
-    )
+    X = np.array([(*s.bbox, len(s.text)) for s in spans])
 
-    dbscan = DBSCAN(eps=.1, min_samples=5)
+    dbscan = DBSCAN(eps=0.1, min_samples=5)
     dbscan.fit(X)
     labels = dbscan.labels_
     label_chars = defaultdict(int)
@@ -58,12 +56,14 @@ def categorize_blocks(all_page_blocks: List[Page]):
 
 
 def replace_leading_trailing_digits(string, replacement):
-    string = re.sub(r'^\d+', replacement, string)
-    string = re.sub(r'\d+$', replacement, string)
+    string = re.sub(r"^\d+", replacement, string)
+    string = re.sub(r"\d+$", replacement, string)
     return string
 
 
-def find_overlap_elements(lst: List[Tuple[str, int]], string_match_thresh=.9, min_overlap=.05) -> List[int]:
+def find_overlap_elements(
+    lst: List[Tuple[str, int]], string_match_thresh=0.9, min_overlap=0.05
+) -> List[int]:
     # Initialize a list to store the elements that meet the criteria
     result = []
     titles = [l[0] for l in lst]
@@ -82,13 +82,15 @@ def find_overlap_elements(lst: List[Tuple[str, int]], string_match_thresh=.9, mi
     return result
 
 
-def filter_common_titles(merged_blocks: List[FullyMergedBlock]) -> List[FullyMergedBlock]:
+def filter_common_titles(
+    merged_blocks: List[FullyMergedBlock],
+) -> List[FullyMergedBlock]:
     titles = []
     for i, block in enumerate(merged_blocks):
         if block.block_type in ["Title", "Section-header"]:
             text = block.text
             if text.strip().startswith("#"):
-                text = re.sub(r'#+', '', text)
+                text = re.sub(r"#+", "", text)
             text = text.strip()
             # Remove page numbers from start/end
             text = replace_leading_trailing_digits(text, "").strip()
@@ -103,7 +105,3 @@ def filter_common_titles(merged_blocks: List[FullyMergedBlock]) -> List[FullyMer
         new_blocks.append(block)
 
     return new_blocks
-
-
-
-
