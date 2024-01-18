@@ -73,9 +73,7 @@ def convert_single_pdf(
         except Exception as e:
             logger.error(f"Error getting settings from metadata: {e}")
 
-        logger.info(f"this is settings {settings}")
         lang = metadata.get("language", settings.DEFAULT_LANG)
-    logger.info("fuck off nigga")
 
     lang = settings.DEFAULT_LANG
     # Use tesseract language if available

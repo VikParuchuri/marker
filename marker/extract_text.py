@@ -65,7 +65,6 @@ def get_single_page_blocks(
 
     logger.info(f"Processing page {pnum}")
     logger.info(f"tess_lang: {tess_lang}")
-    logger.info(f"spellchecker: {spellchecker}")
     if tess_lang == "hin" or ocr:
         blocks = ocr_entire_page(page, tess_lang, spellchecker)
     else:
