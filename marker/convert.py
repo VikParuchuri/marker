@@ -76,6 +76,7 @@ def convert_single_pdf(
         lang = metadata.get("language", settings.DEFAULT_LANG)
 
     lang = settings.DEFAULT_LANG
+    logger.info(f"this is settings {settings}")
     # Use tesseract language if available
     tess_lang = settings.TESSERACT_LANGUAGES.get(lang, "eng")
     spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang, None)
