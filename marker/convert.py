@@ -17,6 +17,10 @@ import re
 import magic
 from marker.settings import settings
 
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
+
 
 def find_filetype(fpath):
     mimetype = magic.from_file(fpath).lower()
@@ -62,9 +66,13 @@ def convert_single_pdf(
     metadata: Optional[Dict] = None,
     parallel_factor: int = 1,
 ) -> Tuple[str, Dict]:
-    lang = settings.DEFAULT_LANG
+    logger.info(f"this is metadata {metadata}")
     if metadata:
         lang = metadata.get("language", settings.DEFAULT_LANG)
+        if metadata.get("settings"):
+            settings = metadata.get("settings")
+
+    lang = settings.DEFAULT_LANG
 
     # Use tesseract language if available
     tess_lang = settings.TESSERACT_LANGUAGES.get(lang, "eng")
