@@ -66,14 +66,18 @@ def convert_single_pdf(
     metadata: Optional[Dict] = None,
     parallel_factor: int = 1,
 ) -> Tuple[str, Dict]:
-    logger.info(f"this is metadata {metadata}")
     if metadata:
+        try:
+            if metadata.get("settings"):
+                settings = metadata.get("settings")
+        except Exception as e:
+            logger.error(f"Error getting settings from metadata: {e}")
+
+        logger.info(f"this is settings {settings}")
         lang = metadata.get("language", settings.DEFAULT_LANG)
-        if metadata.get("settings"):
-            settings = metadata.get("settings")
+    logger.info("fuck off nigga")
 
     lang = settings.DEFAULT_LANG
-
     # Use tesseract language if available
     tess_lang = settings.TESSERACT_LANGUAGES.get(lang, "eng")
     spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang, None)
