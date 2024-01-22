@@ -112,7 +112,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def CUDA(self) -> bool:
-        return "cuda" in self.TORCH_DEVICE
+        return self.TORCH_DEVICE is not None and "cuda" in self.TORCH_DEVICE
 
     @computed_field
     @property
