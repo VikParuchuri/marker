@@ -185,10 +185,10 @@ Marker takes about 2GB of VRAM on average per task, so you can convert 24 docume
 
 You can benchmark the performance of marker on your machine.  First, download the benchmark data [here](https://drive.google.com/file/d/1WiN4K2-jQfwyQMe4wSSurbpz3hxo2fG9/view?usp=drive_link) and unzip.
 
-Then run `benchmark.py` like this:
+Then run `marker_benchmark.py` like this:
 
 ```
-python benchmark.py data/pdfs data/references report.json --nougat
+python marker_benchmark.py data/pdfs data/references report.json --nougat
 ```
 
 This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each.
