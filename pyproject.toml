@@ -14,7 +14,7 @@ include = [
     "convert.py",
     "convert_single.py",
     "chunk_convert.sh",
-    "benchmark.py",
+    "marker_benchmark.py",
     "chunk_convert.py",
 ]
 
