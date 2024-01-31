@@ -16,7 +16,7 @@ def load_editing_model():
     model = T5ForTokenClassification.from_pretrained(
             settings.EDITOR_MODEL_NAME,
             torch_dtype=settings.MODEL_DTYPE,
-        ).to(settings.TORCH_DEVICE)
+        ).to(settings.TORCH_DEVICE_MODEL)
     model.eval()
 
     model.config.label2id = {

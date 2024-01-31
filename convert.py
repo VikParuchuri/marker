@@ -87,7 +87,6 @@ def main():
         num_gpus=1 if settings.CUDA else 0,
         storage=settings.RAY_CACHE_PATH,
         _temp_dir=settings.RAY_CACHE_PATH,
-        dashboard_host=settings.RAY_DASHBOARD_HOST,
         log_to_driver=settings.DEBUG
     )
 
