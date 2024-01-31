@@ -6,11 +6,8 @@ from spellchecker import SpellChecker
 from marker.bbox import correct_rotation
 from marker.ocr.page import ocr_entire_page
 from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
-from marker.settings import settings
 from marker.schema import Span, Line, Block, Page
 from concurrent.futures import ThreadPoolExecutor
-
-os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 
 
 from celery.utils.log import get_task_logger
@@ -45,10 +42,9 @@ def get_single_page_blocks(
     page = doc[pnum]
     rotation = page.rotation
 
-    logger.info(f"Processing page {pnum}")
-    logger.info(f"tess_lang: {tess_lang}")
+    logger.info(f"extracting blocks for page number {pnum}")
     if tess_lang == "hin" or ocr:
-        blocks = ocr_entire_page(page, tess_lang, spellchecker)
+        blocks = ocr_entire_page(page, tess_lang, settings, pnum, spellchecker)
     else:
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS)["blocks"]
 
@@ -149,9 +145,14 @@ def get_text_blocks(
     doc,
     tess_lang: str,
     spell_lang: Optional[str],
+    parallel: int,
+    user_settings,
     max_pages: Optional[int] = None,
-    parallel: int = settings.OCR_PARALLEL_WORKERS,
 ):
+    global settings
+    settings = user_settings
+    os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
+
     all_blocks = []
     toc = doc.get_toc()
     ocr_pages = 0

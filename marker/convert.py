@@ -15,7 +15,7 @@ from marker.schema import Page, BlockType
 from typing import List, Dict, Tuple, Optional
 import re
 import magic
-from marker.settings import settings
+import os
 
 from celery.utils.log import get_task_logger
 
@@ -69,14 +69,15 @@ def convert_single_pdf(
     if metadata:
         try:
             if metadata.get("settings"):
+                global settings
                 settings = metadata.get("settings")
         except Exception as e:
             logger.error(f"Error getting settings from metadata: {e}")
 
         lang = metadata.get("language", settings.DEFAULT_LANG)
 
+    os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
     lang = settings.DEFAULT_LANG
-    logger.info(f"this is settings {settings}")
     # Use tesseract language if available
     tess_lang = settings.TESSERACT_LANGUAGES.get(lang, "eng")
     spell_lang = settings.SPELLCHECK_LANGUAGES.get(lang, None)
@@ -101,8 +102,9 @@ def convert_single_pdf(
         doc,
         tess_lang,
         spell_lang,
-        max_pages=max_pages,
         parallel=int(parallel_factor * settings.OCR_PARALLEL_WORKERS),
+        user_settings=settings,
+        max_pages=max_pages,
     )
 
     out_meta["toc"] = toc
