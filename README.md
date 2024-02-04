@@ -89,6 +89,17 @@ First, clone the repo:
   - `poetry install`
   - `poetry shell` to activate your poetry venv
 
+## Windows
+- Download ghostscript in `https://ghostscript.com/releases/gsdnld.html`
+- Download tesseract in `https://github.com/UB-Mannheim/tesseract/wiki`
+- Ensure that you have already installed poetry 
+- Create a poetry virtual environment
+- run: `poetry update`
+- Configure the local.env file
+  - Create a new local.env file in the project root directory
+  - Write some relevant configurations, especially the `DEFAULT_LANG`
+- eg: For convert a single file use `poetry run python /path/to/file.pdf /path/to/output.md --parallel_factor 2 --max_pages 10`
+
 # Usage
 
 First, some configuration.  Note that settings can be overridden with env vars, or in a `local.env` file in the root `marker` folder.
