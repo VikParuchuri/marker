@@ -94,7 +94,7 @@ First, clone the repo:
 - Download tesseract in `https://github.com/UB-Mannheim/tesseract/wiki`
 - Ensure that you have already installed poetry 
 - Create a poetry virtual environment
-- Add python-magic-bin dependency run: `poetry update`
+- run: `poetry update`
 - Configure the local.env file
   - Create a new local.env file in the project root directory
   - Write some relevant configurations, especially the `DEFAULT_LANG`
