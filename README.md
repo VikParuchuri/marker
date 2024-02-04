@@ -90,17 +90,15 @@ First, clone the repo:
   - `poetry shell` to activate your poetry venv
 
 ## Windows
+- Download ghostscript in `https://ghostscript.com/releases/gsdnld.html`
+- Download tesseract in `https://github.com/UB-Mannheim/tesseract/wiki`
 - Ensure that you have already installed poetry 
 - Create a poetry virtual environment
-- Add python-magic-bin dependency run: `poetry add python-magic-bin`
-  -(default version: ^0.4.14)
-- (Optional) Ensure compatibility of dependencies run: `poetry update`
-- Download the relevant dependencies run: `poetry install`
+- Add python-magic-bin dependency run: `poetry update`
 - Configure the local.env file
   - Create a new local.env file in the project root directory
   - Write some relevant configurations, especially the `DEFAULT_LANG`
-- Now, run the program, and the steps can be found in the `Usage`
-- Additionally,if you want to use GPU, you need to modify the version of PyTorch
+- eg: For convert a single file use `poetry run python /path/to/file.pdf /path/to/output.md --parallel_factor 2 --max_pages 10`
 
 # Usage
 
