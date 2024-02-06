@@ -3,9 +3,6 @@ from marker.schema import (
     MergedBlock,
     FullyMergedBlock,
     Page,
-    Block,
-    Line,
-    Span,
 )
 import re
 from typing import List
@@ -26,34 +23,12 @@ def surround_text(s, char_to_insert):
 
 def merge_spans(blocks):
     merged_blocks = []
-    for page_num, page in enumerate(blocks):
-        page_number_span = Span(
-            bbox=[10, 10, 10, 10],
-            text=f"PAGE NUMBER {page_num + 1}",
-            span_id="0_0",
-            font="Times-New-Roman_bold",
-            color=0,
-            ascender=0.93896484375,
-            descender=-0.23583984375,
-            block_type="Title",
-            selected=True,
-        )
-
-        page_number_line = Line(bbox=[10, 10, 10, 10], spans=[page_number_span])
-
-        page_number_block = Block(
-            bbox=[10, 10, 10, 10], lines=[page_number_line], pnum=page_num + 1
-        )
-
-        page.blocks.insert(0, page_number_block)
-
-        logger.info("updated the page with the page number")
-
+    for page in blocks:
         page_blocks = []
-        for blocknum, block in enumerate(page.blocks):
+        for block in page.blocks:
             block_lines = []
             block_types = []
-            for linenum, line in enumerate(block.lines):
+            for line in block.lines:
                 line_text = ""
                 if len(line.spans) == 0:
                     continue

@@ -87,6 +87,8 @@ def filter_common_titles(
 ) -> List[FullyMergedBlock]:
     titles = []
     for i, block in enumerate(merged_blocks):
+        if block.block_type == "PAGE_NUMBER":
+            block.text = f"<header> {block.text} </header>\n"
         if block.block_type in ["Title", "Section-header"]:
             text = block.text
             if text.strip().startswith("#"):

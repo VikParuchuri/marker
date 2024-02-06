@@ -150,7 +150,28 @@ def convert_single_pdf(
     table_count = create_new_tables(blocks)
     out_meta["block_stats"]["table"] = table_count
 
-    for page in blocks:
+    from marker.schema import Line, Block, Span
+
+    for page_num, page in enumerate(blocks):
+        page_number_span = Span(
+            bbox=[10, 10, 10, 10],
+            text=f"PAGE NUMBER {page_num + 1}",
+            span_id="0_0",
+            font="Times-New-Roman_bold",
+            color=0,
+            ascender=0.93896484375,
+            descender=-0.23583984375,
+            block_type="PAGE_NUMBER",
+            selected=True,
+        )
+
+        page_number_line = Line(bbox=[10, 10, 10, 10], spans=[page_number_span])
+
+        page_number_block = Block(
+            bbox=[10, 10, 10, 10], lines=[page_number_line], pnum=page_num + 1
+        )
+
+        page.blocks.insert(0, page_number_block)
         for block in page.blocks:
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
@@ -164,15 +185,14 @@ def convert_single_pdf(
     )
     out_meta["block_stats"]["equations"] = eq_stats
 
-    # Copy to avoid changing original data
     merged_lines = merge_spans(filtered)
     text_blocks = merge_lines(merged_lines, filtered)
     text_blocks = filter_common_titles(text_blocks)
     full_text = get_full_text(text_blocks)
 
     # Handle empty blocks being joined
-    full_text = re.sub(r"\n{3,}", "\n\n", full_text)
-    full_text = re.sub(r"(\n\s){3,}", "\n\n", full_text)
+    # full_text = re.sub(r"\n{3,}", "\n\n", full_text)
+    # full_text = re.sub(r"(\n\s){3,}", "\n\n", full_text)
 
     # Replace bullet characters with a -
     full_text = replace_bullets(full_text)
