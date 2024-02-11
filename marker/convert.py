@@ -92,7 +92,7 @@ def convert_single_pdf(
         return "", out_meta
 
     out_meta["filetype"] = filetype
-
+    print("checkpoint 1")
     doc = pymupdf.open(fname, filetype=filetype)
     if filetype != "pdf":
         conv = doc.convert_to_pdf()
@@ -107,6 +107,8 @@ def convert_single_pdf(
         max_pages=max_pages,
     )
 
+    print("checkpoint 2")
+
     out_meta["toc"] = toc
     out_meta["pages"] = len(blocks)
     out_meta["ocr_stats"] = ocr_stats
@@ -114,8 +116,15 @@ def convert_single_pdf(
         print(f"Could not extract any text blocks for {fname}")
         return "", out_meta
 
+    # print(model_lst)
+
     # Unpack models from list
     texify_model, layoutlm_model, order_model, edit_model = model_lst
+
+    # print(texify_model)
+    # print(f"this is layout model \n{layoutlm_model}")
+    # print(order_model)
+    # print(edit_model)
 
     block_types = detect_document_block_types(
         doc,
@@ -124,14 +133,20 @@ def convert_single_pdf(
         batch_size=int(settings.LAYOUT_BATCH_SIZE * parallel_factor),
     )
 
+    print("checkpoint 3")
+
     # Find headers and footers
     bad_span_ids = filter_header_footer(blocks)
     out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
     annotate_spans(blocks, block_types)
 
+    print("checkpoint 4")
+
     # Dump debug data if flags are set
     dump_bbox_debug_data(doc, blocks)
+
+    print("checkpoint 5")
 
     blocks = order_blocks(
         doc,
@@ -140,10 +155,18 @@ def convert_single_pdf(
         batch_size=int(settings.ORDERER_BATCH_SIZE * parallel_factor),
     )
 
+    print("checkpoint 6")
+
     # Fix code blocks
     code_block_count = identify_code_blocks(blocks)
+
+    print("identified code blocks")
+
     out_meta["block_stats"]["code"] = code_block_count
+
     indent_blocks(blocks)
+
+    print("checkpioint 7")
 
     # Fix table blocks
     merge_table_blocks(blocks)
@@ -153,6 +176,10 @@ def convert_single_pdf(
     from marker.schema import Line, Block, Span
 
     for page_num, page in enumerate(blocks):
+        for block in page.blocks:
+            block.filter_spans(bad_span_ids)
+            block.filter_bad_span_types()
+
         page_number_span = Span(
             bbox=[10, 10, 10, 10],
             text=f"PAGE NUMBER {page_num + 1}",
@@ -172,9 +199,13 @@ def convert_single_pdf(
         )
 
         page.blocks.insert(0, page_number_block)
-        for block in page.blocks:
-            block.filter_spans(bad_span_ids)
-            block.filter_bad_span_types()
+
+        print(f"added page number {page_num}")
+
+    # print("blocks after adding page number")
+    # print(blocks)
+
+    print("checkpoint 8")
 
     filtered, eq_stats = replace_equations(
         doc,
