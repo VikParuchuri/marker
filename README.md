@@ -56,7 +56,7 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 
 # Installation
 
-This has been tested on Mac and Linux (Ubuntu and Debian).  You'll need python 3.9+ and [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer).
+This has been tested on Mac, Linux (Ubuntu and Debian) and Windows 11.  You'll need python 3.9+ and [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer).
 
 First, clone the repo:
 
@@ -90,15 +90,15 @@ First, clone the repo:
   - `poetry shell` to activate your poetry venv
 
 ## Windows
-- Download ghostscript in `https://ghostscript.com/releases/gsdnld.html`
-- Download tesseract in `https://github.com/UB-Mannheim/tesseract/wiki`
-- Ensure that you have already installed poetry 
-- Create a poetry virtual environment
-- run: `poetry update`
-- Configure the local.env file
-  - Create a new local.env file in the project root directory
-  - Write some relevant configurations, especially the `DEFAULT_LANG`
-- eg: For convert a single file use `poetry run python /path/to/file.pdf /path/to/output.md --parallel_factor 2 --max_pages 10`
+- Optional: Install `tesseract` by following [these instructions](https://github.com/UB-Mannheim/tesseract/wiki) or running `winget install -e --id UB-Mannheim.TesseractOCR`.
+- Install `ghostscript` > 9.55 by downloading it [here](https://ghostscript.com/releases/gsdnld.html).
+- Install `poetry` by following [these instructions](https://python-poetry.org/docs/#installing-with-pipx) or by running `pipx install poetry` (if you don't already have `pipx` installed, you may follow [these instructions](https://github.com/pypa/pipx) or run `pip install pipx` followed by `pipx ensurepath`).
+- Install `poetry` dependencies by running `poetry update`.
+- Enter your new `poetry` environment by running `poetry shell`.
+- Install `libmagic` by running `pip install python-magic-bin==0.4.14`.
+- If you wish to use a GPU, uninstall `torch` by running `pip uninstall torch` and then reinstall `torch` for your version of CUDA as described [here](https://pytorch.org/get-started/locally/).
+- Install `setuptools` by running `pip install setuptools`.
+- Create a file in the root `marker` directory named `local.env` which contains environment variables on each line in the following format: `FOO_ENV_VAR=BAR_VALUE` (for example, to set the default language to English, add the following line: `DEFAULT_LANG=English`).
 
 # Usage
 
