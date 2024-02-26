@@ -23,7 +23,6 @@ def comment_count(lines):
 
 def identify_code_blocks(blocks: List[Page]):
     try:
-        print("trying to identify code blocks")
         code_block_count = 0
         font_info = None
         for p in blocks:
@@ -101,10 +100,8 @@ def indent_blocks(blocks: List[Page]):
                 block_types = [
                     span.block_type for line in block.lines for span in line.spans
                 ]
-                print("indent checkpoint 1")
                 if "Code" not in block_types:
                     continue
-                print("indent checkpoint 2")
                 lines = []
                 min_left = 1000  # will contain x- coord of column 0
                 col_width = 0  # width of 1 char
@@ -116,7 +113,6 @@ def indent_blocks(blocks: List[Page]):
                             col_width = (span.bbox[2] - span.bbox[0]) / len(span.text)
                         text += span.text
                     lines.append((pymupdf.Rect(line.bbox), text))
-                print("indent checkpoint 3")
                 block_text = ""
                 blank_line = False
                 for line in lines:
@@ -129,7 +125,6 @@ def indent_blocks(blocks: List[Page]):
 
                     block_text += prefix + text + "\n"
                     blank_line = current_line_blank
-                print("indent checkpoint 4")
                 new_span = Span(
                     text=block_text,
                     bbox=block.bbox,
@@ -138,7 +133,6 @@ def indent_blocks(blocks: List[Page]):
                     font=block.lines[0].spans[0].font,
                     block_type="Code",
                 )
-                print("indent checkpoint 5")
                 span_counter += 1
                 block.lines = [Line(spans=[new_span], bbox=block.bbox)]
     except Exception as e:

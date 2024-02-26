@@ -52,16 +52,12 @@ def load_layout_model():
 def detect_document_block_types(
     doc, blocks: List[Page], layoutlm_model, batch_size=settings.LAYOUT_BATCH_SIZE
 ):
-    print("document checkpoint 1")
     encodings, metadata, sample_lengths = get_features(doc, blocks)
-    print("document checkpoint 2")
 
     predictions = predict_block_types(encodings, layoutlm_model, batch_size)
-    print("document checkpoint 3")
     block_types = match_predictions_to_boxes(
         encodings, predictions, metadata, sample_lengths, layoutlm_model
     )
-    print("document checkpoint 4")
     assert len(block_types) == len(blocks)
     return block_types
 
@@ -189,22 +185,16 @@ def get_features(doc, blocks):
 
 def predict_block_types(encodings, layoutlm_model, batch_size):
     all_predictions = []
-    print("prediction checkpoint 1")
     for i in range(0, len(encodings), batch_size):
-        print("prediction checkpoint 2")
         batch_start = i
         batch_end = min(i + batch_size, len(encodings))
-        print("prediction checkpoint 3")
         batch = encodings[batch_start:batch_end]
-        print("prediction checkpoint 4")
 
         model_in = {}
         for k in ["bbox", "input_ids", "attention_mask", "pixel_values"]:
             model_in[k] = torch.stack([b[k] for b in batch]).to(layoutlm_model.device)
-        print("prediction checkpoint 5")
 
         model_in["pixel_values"] = model_in["pixel_values"].to(layoutlm_model.dtype)
-        print("prediction checkpoint 6")
         try:
             with torch.inference_mode():
                 outputs = layoutlm_model(**model_in)
@@ -212,15 +202,12 @@ def predict_block_types(encodings, layoutlm_model, batch_size):
         except Exception as e:
             print(f"Error in model inference: {str(e)}")
             raise
-        print("prediction checkpoint 7")
 
         predictions = logits.argmax(-1).squeeze().tolist()
-        print("prediction checkpoint 8")
+
         if len(predictions) == settings.LAYOUT_MODEL_MAX:
             predictions = [predictions]
-        print("prediction checkpoint 9")
         all_predictions.extend(predictions)
-        print("prediction checkpoint 10")
     return all_predictions
 
 

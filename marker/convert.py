@@ -92,7 +92,6 @@ def convert_single_pdf(
         return "", out_meta
 
     out_meta["filetype"] = filetype
-    print("checkpoint 1")
     doc = pymupdf.open(fname, filetype=filetype)
     if filetype != "pdf":
         conv = doc.convert_to_pdf()
@@ -106,8 +105,6 @@ def convert_single_pdf(
         user_settings=settings,
         max_pages=max_pages,
     )
-
-    print("checkpoint 2")
 
     out_meta["toc"] = toc
     out_meta["pages"] = len(blocks)
@@ -133,20 +130,14 @@ def convert_single_pdf(
         batch_size=int(settings.LAYOUT_BATCH_SIZE * parallel_factor),
     )
 
-    print("checkpoint 3")
-
     # Find headers and footers
     bad_span_ids = filter_header_footer(blocks)
     out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
     annotate_spans(blocks, block_types)
 
-    print("checkpoint 4")
-
     # Dump debug data if flags are set
     dump_bbox_debug_data(doc, blocks)
-
-    print("checkpoint 5")
 
     blocks = order_blocks(
         doc,
@@ -155,18 +146,12 @@ def convert_single_pdf(
         batch_size=int(settings.ORDERER_BATCH_SIZE * parallel_factor),
     )
 
-    print("checkpoint 6")
-
     # Fix code blocks
     code_block_count = identify_code_blocks(blocks)
-
-    print("identified code blocks")
 
     out_meta["block_stats"]["code"] = code_block_count
 
     indent_blocks(blocks)
-
-    print("checkpioint 7")
 
     # Fix table blocks
     merge_table_blocks(blocks)
@@ -199,13 +184,6 @@ def convert_single_pdf(
         )
 
         page.blocks.insert(0, page_number_block)
-
-        print(f"added page number {page_num}")
-
-    # print("blocks after adding page number")
-    # print(blocks)
-
-    print("checkpoint 8")
 
     filtered, eq_stats = replace_equations(
         doc,
