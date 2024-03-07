@@ -48,11 +48,11 @@ def get_length_of_text(fname: str) -> int:
         return 0
 
     doc = pymupdf.open(fname, filetype=filetype)
-    full_text = ""
+    count = 0
     for page in doc:
-        full_text += page.get_text("text", sort=True, flags=settings.TEXT_FLAGS)
+        count += len(page.get_text("text", sort=True, flags=settings.TEXT_FLAGS))
 
-    return len(full_text)
+    return count
 
 
 def convert_single_pdf(
