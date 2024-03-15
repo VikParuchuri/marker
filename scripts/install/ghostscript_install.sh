@@ -4,7 +4,7 @@ wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs1
 tar -xvf ghostscript-10.01.2.tar.gz
 cd ghostscript-10.01.2
 ./configure
-sudo make install
+make install
 cd ..
-sudo rm -rf ghostscript-10.01.2
+rm -rf ghostscript-10.01.2
 rm ghostscript-10.01.2.tar.gz
