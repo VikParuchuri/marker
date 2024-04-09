@@ -40,6 +40,48 @@ The above results are with marker and nougat setup so they each take ~3GB of VRA
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
+# Quickstart with Docker
+
+The easiest way to get started with Marker is to build the Docker images. There are two options available:
+
+```bash
+./build-docker-containers.sh --build
+
+## Prerequisites
+
+- Docker installed on your system.
+
+
+## Running Marker with Docker
+
+### Convert a single file
+
+To convert a single PDF file to Markdown using Marker with Docker, run the following command:
+
+```bash
+docker run -v /path/to/input:/input -v /path/to/output:/output -v /path/to/cache:/app/.cache speeddemonau/marker-gpu single /input/file.pdf /output/file.md [--parallel_factor N] [--max_pages N]
+```
+
+- Replace `/path/to/input` with the path to the directory containing your input PDF file.
+- Replace `/path/to/output` with the path to the directory where you want the output Markdown file to be saved.
+- Replace `/path/to/cache` with the path to a directory for caching.
+- Adjust the `--parallel_factor` and `--max_pages` options as needed (see [Convert a single file](#convert-a-single-file) section for details).
+
+### Convert multiple files
+
+To convert multiple PDF files to Markdown using Marker with Docker, run the following command:
+
+```bash
+docker run -v /path/to/input:/input -v /path/to/output:/output -v /path/to/cache:/app/.cache speeddemonau/marker-gpu multi /input /output [--workers N] [--max N] [--metadata_file FILE] [--min_length N]
+```
+
+- Replace `/path/to/input` with the path to the directory containing your input PDF files.
+- Replace `/path/to/output` with the path to the directory where you want the output Markdown files to be saved.
+- Replace `/path/to/cache` with the path to a directory for caching.
+- Adjust the `--workers`, `--max`, `--metadata_file`, and `--min_length` options as needed (see [Convert multiple files](#convert-multiple-files) section for details).
+
+Make sure to use the appropriate Docker image tag (`speeddemonau/marker-cpu` or `speeddemonau/marker-gpu`) depending on whether you want to run Marker on CPU or GPU.
+
 # Community
 
 [Discord](https://discord.gg//KuZwXNGnfH) is where we discuss future development.
@@ -148,6 +190,12 @@ MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 bas
 - `MIN_LENGTH` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
 
 Note that the env variables above are specific to this script, and cannot be set in `local.env`.
+
+# Additional Notes
+
+- The Docker images are built with support for multiple languages. See the `TESSERACT_LANGUAGES` setting in `settings.py` for the list of supported languages or to add your own.
+- The GPU image requires a NVIDIA GPU with CUDA support. Make sure you have the NVIDIA Docker runtime installed to use the GPU image.
+- The cache directory mounted at `/app/.cache` inside the container is used to store cached data and models. This can help speed up subsequent runs.
 
 # Benchmarks
 
