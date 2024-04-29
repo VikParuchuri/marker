@@ -1,7 +1,6 @@
 from marker.schema import Span, Line, Page
 import re
 from typing import List
-import fitz as pymupdf
 
 
 def is_code_linelen(lines, thresh=60):
@@ -102,13 +101,13 @@ def indent_blocks(blocks: List[Page]):
                     if col_width == 0 and len(span.text) > 0:
                         col_width = (span.bbox[2] - span.bbox[0]) / len(span.text)
                     text += span.text
-                lines.append((pymupdf.Rect(line.bbox), text))
+                lines.append((line.bbox, text))
 
             block_text = ""
             blank_line = False
             for line in lines:
                 text = line[1]
-                prefix = " " * int((line[0].x0 - min_left) / col_width)
+                prefix = " " * int((line[0][0] - min_left) / col_width)
                 current_line_blank = len(text.strip()) == 0
                 if blank_line and current_line_blank:
                     # Don't put multiple blank lines in a row
@@ -120,9 +119,10 @@ def indent_blocks(blocks: List[Page]):
             new_span = Span(
                 text=block_text,
                 bbox=block.bbox,
-                color=block.lines[0].spans[0].color,
                 span_id=f"{span_counter}_fix_code",
                 font=block.lines[0].spans[0].font,
+                font_weight=block.lines[0].spans[0].font_weight,
+                font_size=block.lines[0].spans[0].font_size,
                 block_type="Code"
             )
             span_counter += 1

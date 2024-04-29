@@ -4,6 +4,7 @@ import os
 import zlib
 from typing import List
 
+from marker.pdf.images import render_image
 from marker.schema import Page
 from marker.settings import settings
 from PIL import Image
@@ -54,9 +55,7 @@ def dump_bbox_debug_data(doc, blocks: List[Page]):
     for idx, page_blocks in enumerate(blocks):
         page = doc[idx]
 
-        pix = page.get_pixmap(dpi=settings.TEXIFY_DPI, annots=False, clip=page_blocks.bbox)
-        png = pix.pil_tobytes(format="PNG")
-        png_image = Image.open(io.BytesIO(png))
+        png_image = render_image(page, dpi=settings.TEXIFY_DPI)
         width, height = png_image.size
         max_dimension = 6000
         if width > max_dimension or height > max_dimension:

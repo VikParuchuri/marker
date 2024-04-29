@@ -4,7 +4,6 @@ from copy import deepcopy
 from tabulate import tabulate
 from typing import List
 import re
-import textwrap
 
 
 def merge_table_blocks(blocks: List[Page]):
@@ -84,7 +83,8 @@ def create_new_tables(blocks: List[Page]):
                 bbox=block.bbox,
                 span_id=f"{table_idx}_fix_table",
                 font="Table",
-                color=0,
+                font_size=0,
+                font_weight=0,
                 block_type="Table",
                 text=new_text
             )

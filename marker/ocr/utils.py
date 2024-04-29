@@ -1,12 +1,11 @@
 from typing import Optional
 
 from nltk import wordpunct_tokenize
-from spellchecker import SpellChecker
 from marker.settings import settings
 import re
 
 
-def detect_bad_ocr(text, spellchecker: Optional[SpellChecker], misspell_threshold=.7, space_threshold=.6, newline_threshold=.5, alphanum_threshold=.4):
+def detect_bad_ocr(text, space_threshold=.6, newline_threshold=.5, alphanum_threshold=.4):
     if len(text) == 0:
         # Assume OCR failed if we have no text
         return True
@@ -14,11 +13,6 @@ def detect_bad_ocr(text, spellchecker: Optional[SpellChecker], misspell_threshol
     words = wordpunct_tokenize(text)
     words = [w for w in words if w.strip()]
     alpha_words = [word for word in words if word.isalnum()]
-
-    if spellchecker:
-        misspelled = spellchecker.unknown(alpha_words)
-        if len(misspelled) > len(alpha_words) * misspell_threshold:
-            return True
 
     spaces = len(re.findall(r'\s+', text))
     alpha_chars = len(re.sub(r'\s+', '', text))
@@ -41,7 +35,8 @@ def detect_bad_ocr(text, spellchecker: Optional[SpellChecker], misspell_threshol
 
 
 def font_flags_decomposer(flags):
-    """Make font flags human readable."""
+    flags = int(flags)
+
     l = []
     if flags & 2 ** 0:
         l.append("superscript")

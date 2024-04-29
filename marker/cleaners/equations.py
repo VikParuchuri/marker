@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw
 
 from marker.bbox import should_merge_blocks, merge_boxes
 from marker.debug.data import dump_equation_debug_data
+from marker.pdf.images import render_image
 from marker.settings import settings
 from marker.schema import Page, Span, Line, Block, BlockType
 import os
@@ -51,9 +52,7 @@ def mask_bbox(png_image, bbox, selected_bboxes):
 
 
 def get_masked_image(page, bbox, selected_bboxes):
-    pix = page.get_pixmap(dpi=settings.TEXIFY_DPI, clip=bbox)
-    png = pix.pil_tobytes(format="PNG")
-    png_image = Image.open(io.BytesIO(png))
+    png_image = render_image(page, settings.TEXIFY_DPI)
     png_image = mask_bbox(png_image, bbox, selected_bboxes)
     png_image = png_image.convert("RGB")
     return png_image
@@ -212,7 +211,8 @@ def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions,
                         bbox=merged_boxes[current_region],
                         span_id=f"{pnum}_{idx}_fixeq",
                         font="Latex",
-                        color=0,
+                        font_weight=0,
+                        font_size=0,
                         block_type="Formula"
                     )
                 ],

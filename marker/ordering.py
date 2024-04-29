@@ -4,11 +4,11 @@ from typing import List
 import torch
 import sys, os
 
-from marker.extract_text import convert_single_page
 from transformers import LayoutLMv3ForSequenceClassification, LayoutLMv3Processor
 from PIL import Image
 import io
 
+from marker.pdf.images import render_image
 from marker.schema import Page
 from marker.settings import settings
 
@@ -28,9 +28,7 @@ def get_inference_data(page, page_blocks: Page):
     bboxes = deepcopy([block.bbox for block in page_blocks.blocks])
     words = ["."] * len(bboxes)
 
-    pix = page.get_pixmap(dpi=settings.LAYOUT_DPI, annots=False, clip=page_blocks.bbox)
-    png = pix.pil_tobytes(format="PNG")
-    rgb_image = Image.open(io.BytesIO(png)).convert("RGB")
+    rgb_image = render_image(page, dpi=settings.LAYOUT_DPI)
 
     page_box = page_blocks.bbox
     pwidth = page_blocks.width

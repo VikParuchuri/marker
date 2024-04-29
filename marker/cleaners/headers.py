@@ -1,7 +1,7 @@
 import re
 from collections import Counter, defaultdict
 from itertools import chain
-from thefuzz import fuzz
+from rapidfuzz import fuzz
 
 from sklearn.cluster import DBSCAN
 import numpy as np

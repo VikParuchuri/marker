@@ -9,6 +9,8 @@ import io
 from PIL import Image
 from transformers import LayoutLMv3Processor
 import numpy as np
+
+from marker.pdf.images import render_image
 from marker.settings import settings
 from marker.schema import Page, BlockType
 import torch
@@ -69,11 +71,7 @@ def get_page_encoding(page, page_blocks: Page):
     pwidth = page_blocks.width
     pheight = page_blocks.height
 
-    pix = page.get_pixmap(dpi=settings.LAYOUT_DPI, annots=False, clip=page_blocks.bbox)
-    png = pix.pil_tobytes(format="PNG")
-    png_image = Image.open(io.BytesIO(png))
-    # If it is too large, make it smaller for the model
-    rgb_image = png_image.convert('RGB')
+    rgb_image = render_image(page, dpi=settings.LAYOUT_DPI)
     rgb_width, rgb_height = rgb_image.size
 
     # Image is correct size wrt the pdf page

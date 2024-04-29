@@ -1,9 +1,7 @@
 import io
 from typing import List, Optional
 
-import fitz as pymupdf
 import ocrmypdf
-from spellchecker import SpellChecker
 
 from marker.ocr.utils import detect_bad_ocr
 from marker.schema import Block
@@ -12,16 +10,16 @@ from marker.settings import settings
 ocrmypdf.configure_logging(verbosity=ocrmypdf.Verbosity.quiet)
 
 
-def ocr_entire_page(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
+def ocr_entire_page(page, lang: str) -> List[Block]:
     if settings.OCR_ENGINE == "tesseract":
-        return ocr_entire_page_tess(page, lang, spellchecker)
+        return ocr_entire_page_tess(page, lang)
     elif settings.OCR_ENGINE == "ocrmypdf":
-        return ocr_entire_page_ocrmp(page, lang, spellchecker)
+        return ocr_entire_page_ocrmp(page, lang)
     else:
         raise ValueError(f"Unknown OCR engine {settings.OCR_ENGINE}")
 
 
-def ocr_entire_page_tess(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
+def ocr_entire_page_tess(page, lang: str) -> List[Block]:
     try:
         full_tp = page.get_textpage_ocr(flags=settings.TEXT_FLAGS, dpi=settings.OCR_DPI, full=True, language=lang)
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS, textpage=full_tp)["blocks"]
@@ -32,14 +30,14 @@ def ocr_entire_page_tess(page, lang: str, spellchecker: Optional[SpellChecker] =
 
         # Check if OCR worked. If it didn't, return empty list
         # OCR can fail if there is a scanned blank page with some faint text impressions, for example
-        if detect_bad_ocr(full_text, spellchecker):
+        if detect_bad_ocr(full_text):
             return []
     except RuntimeError:
         return []
     return blocks
 
 
-def ocr_entire_page_ocrmp(page, lang: str, spellchecker: Optional[SpellChecker] = None) -> List[Block]:
+def ocr_entire_page_ocrmp(page, lang: str) -> List[Block]:
     # Use ocrmypdf to get OCR text for the whole page
     src = page.parent  # the page's document
     blank_doc = pymupdf.open()  # make temporary 1-pager
@@ -71,7 +69,7 @@ def ocr_entire_page_ocrmp(page, lang: str, spellchecker: Optional[SpellChecker] 
     if len(full_text) == 0:
         return []
 
-    if detect_bad_ocr(full_text, spellchecker):
+    if detect_bad_ocr(full_text):
         return []
 
     return blocks

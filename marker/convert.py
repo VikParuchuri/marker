@@ -1,4 +1,4 @@
-import fitz as pymupdf
+import pypdfium2 as pdfium
 
 from marker.cleaners.table import merge_table_blocks, create_new_tables
 from marker.debug.data import dump_bbox_debug_data
@@ -25,10 +25,10 @@ def find_filetype(fpath):
     # The mimetype is not always consistent, so use in to check the most common formats
     if "pdf" in mimetype:
         return "pdf"
-    elif "epub" in mimetype:
-        return "epub"
-    elif "mobi" in mimetype:
-        return "mobi"
+    #elif "epub" in mimetype:
+    #    return "epub"
+    #elif "mobi" in mimetype:
+    #    return "mobi"
     elif mimetype in settings.SUPPORTED_FILETYPES:
         return settings.SUPPORTED_FILETYPES[mimetype]
     else:
@@ -47,10 +47,12 @@ def get_length_of_text(fname: str) -> int:
     if filetype == "other":
         return 0
 
-    doc = pymupdf.open(fname, filetype=filetype)
+    doc = pdfium.PdfDocument(fname)
     full_text = ""
-    for page in doc:
-        full_text += page.get_text("text", sort=True, flags=settings.TEXT_FLAGS)
+    for page_idx in range(len(doc)):
+        page = doc.get_page(page_idx)
+        text_page = page.get_textpage()
+        full_text += text_page.get_text_bounded()
 
     return len(full_text)
 
@@ -81,11 +83,7 @@ def convert_single_pdf(
 
     out_meta["filetype"] = filetype
 
-    doc = pymupdf.open(fname, filetype=filetype)
-    if filetype != "pdf":
-        conv = doc.convert_to_pdf()
-        doc = pymupdf.open("pdf", conv)
-
+    doc = pdfium.PdfDocument(fname)
     blocks, toc, ocr_stats = get_text_blocks(
         doc,
         tess_lang,
