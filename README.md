@@ -134,7 +134,7 @@ python convert.py /path/to/input/folder /path/to/output/folder --workers 10 --ma
 }
 ```
 
-You can use language names or codes.  See [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py) for a full list.
+You can use language names or codes.  The exact codes depend on the OCR engine.  See [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py) for a full list for surya codes, and [here](https://tesseract-ocr.github.io/tessdoc/Data-Files#data-files-for-version-400-november-29-2016) for tesseract.
 
 ## Convert multiple files on multiple GPUs
 

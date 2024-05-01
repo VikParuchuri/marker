@@ -70,21 +70,12 @@ class Block(BboxElement):
         for line in self.lines:
             new_spans = []
             for span in line.spans:
-                if span.block_type not in settings.BAD_SPAN_TYPES:
+                if self.block_type not in settings.BAD_SPAN_TYPES:
                     new_spans.append(span)
             line.spans = new_spans
             if len(new_spans) > 0:
                 new_lines.append(line)
         self.lines = new_lines
-
-    def most_common_block_type(self):
-        counter = Counter([s.block_type for l in self.lines for s in l.spans])
-        return counter.most_common(1)[0][0]
-
-    def set_block_type(self, block_type):
-        for line in self.lines:
-            for span in line.spans:
-                span.block_type = block_type
 
 
 class MergedLine(BboxElement):
@@ -99,11 +90,7 @@ class MergedLine(BboxElement):
 class MergedBlock(BboxElement):
     lines: List[MergedLine]
     pnum: int
-    block_types: List[str]
-
-    def most_common_block_type(self):
-        counter = Counter(self.block_types)
-        return counter.most_common(1)[0][0]
+    block_type: Optional[str]
 
 
 class FullyMergedBlock(BaseModel):

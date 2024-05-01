@@ -21,11 +21,11 @@ def comment_count(lines):
     return sum([1 for line in lines if pattern.match(line)])
 
 
-def identify_code_blocks(blocks: List[Page]):
+def identify_code_blocks(pages: List[Page]):
     code_block_count = 0
     font_info = None
-    for p in blocks:
-        stats = p.get_font_stats()
+    for page in pages:
+        stats = page.get_font_stats()
         if font_info is None:
             font_info = stats
         else:
@@ -37,14 +37,14 @@ def identify_code_blocks(blocks: List[Page]):
         most_common_font = None
 
     last_block = None
-    for page in blocks:
+    for page in pages:
         try:
             min_start = page.get_min_line_start()
         except IndexError:
             continue
 
         for block in page.blocks:
-            if block.most_common_block_type() != "Text":
+            if block.block_type != "Text":
                 last_block = block
                 continue
 
@@ -72,24 +72,23 @@ def identify_code_blocks(blocks: List[Page]):
 
             # Check if previous block is code, and this block is indented
             is_code_prev = [
-                last_block and last_block.most_common_block_type() == "Code",
+                last_block and last_block.block_type == "Code",
                 sum(is_indent) >= len(block.lines) * .8 # At least 80% indented
             ]
 
             if all(is_code) or all(is_code_prev):
                 code_block_count += 1
-                block.set_block_type("Code")
+                block.block_type = "Code"
 
             last_block = block
     return code_block_count
 
 
-def indent_blocks(blocks: List[Page]):
+def indent_blocks(pages: List[Page]):
     span_counter = 0
-    for page in blocks:
+    for page in pages:
         for block in page.blocks:
-            block_types = [span.block_type for line in block.lines for span in line.spans]
-            if "Code" not in block_types:
+            if block.block_type != "Code":
                 continue
 
             lines = []
@@ -124,7 +123,6 @@ def indent_blocks(blocks: List[Page]):
                 font=block.lines[0].spans[0].font,
                 font_weight=block.lines[0].spans[0].font_weight,
                 font_size=block.lines[0].spans[0].font_size,
-                block_type="Code"
             )
             span_counter += 1
             block.lines = [Line(spans=[new_span], bbox=block.bbox)]

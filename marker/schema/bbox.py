@@ -87,4 +87,6 @@ class BboxElement(BaseModel):
         return self.width * self.height
 
     def intersection_pct(self, other_bbox: List[float]):
+        if self.area == 0:
+            return 0.0
         return box_intersection_pct(self.bbox, other_bbox)

@@ -3,6 +3,7 @@ from typing import List
 from surya.layout import batch_layout_detection
 
 from marker.pdf.images import render_image
+from marker.pdf.utils import rescale_bbox
 from marker.schema.page import Page
 from marker.settings import settings
 
@@ -17,23 +18,23 @@ def surya_layout(doc, pages: List[Page], layout_model):
         page.layout = layout_result
 
 
-def annotate_block_types(page):
-    max_intersections = {}
-    for i, block in enumerate(page.blocks):
-        bbox = block.bbox
-        for j, layout_block in enumerate(page.layout.bboxes):
-            layout_bbox = layout_block.bbox
-            intersection_pct = bbox.intersection_pct(layout_bbox)
-            if i not in max_intersections:
-                max_intersections[i] = (intersection_pct, j)
-            elif intersection_pct > max_intersections[i][0]:
-                max_intersections[i] = (intersection_pct, j)
+def annotate_block_types(pages: List[Page]):
+    for page in pages:
+        max_intersections = {}
+        for i, block in enumerate(page.blocks):
+            for j, layout_block in enumerate(page.layout.bboxes):
+                layout_bbox = layout_block.bbox
+                layout_bbox = rescale_bbox(page.layout.image_bbox, page.bbox, layout_bbox)
+                intersection_pct = block.intersection_pct(layout_bbox)
+                if i not in max_intersections:
+                    max_intersections[i] = (intersection_pct, j)
+                elif intersection_pct > max_intersections[i][0]:
+                    max_intersections[i] = (intersection_pct, j)
 
-    for i, block in enumerate(page.blocks):
-        block = page.blocks[i]
-        if i in max_intersections:
-            j = max_intersections[i][1]
-            block_type = page.layout.bboxes[j].label
-        else:
+        for i, block in enumerate(page.blocks):
+            block = page.blocks[i]
             block_type = "Text"
-        block.block_type = block_type
+            if i in max_intersections:
+                j = max_intersections[i][1]
+                block_type = page.layout.bboxes[j].label
+            block.block_type = block_type

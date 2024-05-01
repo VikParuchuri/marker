@@ -13,13 +13,12 @@ def surround_text(s, char_to_insert):
     return final_string
 
 
-def merge_spans(blocks):
+def merge_spans(pages: List[Page]) -> List[List[MergedBlock]]:
     merged_blocks = []
-    for page in blocks:
+    for page in pages:
         page_blocks = []
         for blocknum, block in enumerate(page.blocks):
             block_lines = []
-            block_types = []
             for linenum, line in enumerate(block.lines):
                 line_text = ""
                 if len(line.spans) == 0:
@@ -37,7 +36,6 @@ def merge_spans(blocks):
                             break
 
                     fonts.append(font)
-                    block_types.append(span.block_type)
                     span_text = span.text
 
                     # Don't bold or italicize very short sequences
@@ -58,7 +56,7 @@ def merge_spans(blocks):
                     lines=block_lines,
                     pnum=block.pnum,
                     bbox=block.bbox,
-                    block_types=block_types
+                    block_type=block.block_type
                 ))
         merged_blocks.append(page_blocks)
 
@@ -118,16 +116,16 @@ def block_separator(line1, line2, block_type1, block_type2):
     return sep + line2
 
 
-def merge_lines(blocks, page_blocks: List[Page]):
+def merge_lines(blocks: List[List[MergedBlock]]):
     text_blocks = []
     prev_type = None
     prev_line = None
     block_text = ""
     block_type = ""
-    common_line_heights = [p.get_line_height_stats() for p in page_blocks]
+
     for page in blocks:
         for block in page:
-            block_type = block.most_common_block_type()
+            block_type = block.block_type
             if block_type != prev_type and prev_type:
                 text_blocks.append(
                     FullyMergedBlock(

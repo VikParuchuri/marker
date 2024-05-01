@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
+
 import pypdfium2 as pdfium
 
 from marker.cleaners.table import merge_table_blocks, create_new_tables
@@ -113,7 +116,7 @@ def convert_single_pdf(
 
     # Copy to avoid changing original data
     merged_lines = merge_spans(filtered)
-    text_blocks = merge_lines(merged_lines, filtered)
+    text_blocks = merge_lines(merged_lines)
     text_blocks = filter_common_titles(text_blocks)
     full_text = get_full_text(text_blocks)
 

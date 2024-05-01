@@ -44,7 +44,11 @@ class Page(BboxElement):
         return start_counts
 
     def get_min_line_start(self):
-        starts = [l.bbox[0] for l in self.get_nonblank_lines() if l.spans[0].block_type == "Text"]
+        starts = []
+        for block in self.blocks:
+            for line in block.lines:
+                if line.spans and block.block_type == "Text":
+                    starts.append(line.bbox[0])
         if len(starts) == 0:
             raise IndexError("No lines found")
         return min(starts)

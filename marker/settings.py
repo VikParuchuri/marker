@@ -80,6 +80,7 @@ class Settings(BaseSettings):
     LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout2"
 
     # Ordering model
+    SURYA_ORDER_DPI: int = 96
     ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 4 for CPU/MPS, 32 otherwise
 
     # Final editing model

@@ -25,7 +25,7 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
             for i, s in enumerate(l["spans"]):
                 block_text = s["text"]
                 span_obj = Span(
-                    text=block_text,
+                    text=block_text.rstrip("\n"), # Remove end of line newlines, not spaces
                     bbox=s["bbox"],
                     span_id=f"{pnum}_{span_id}",
                     font=f"{s['font']['name']}_{font_flags_decomposer(s['font']['flags'])}", # Add font flags to end of font

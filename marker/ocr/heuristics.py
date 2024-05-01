@@ -4,6 +4,7 @@ from typing import List
 from nltk import wordpunct_tokenize
 
 from marker.ocr.utils import alphanum_ratio
+from marker.pdf.utils import rescale_bbox
 from marker.schema.page import Page
 from marker.settings import settings
 
@@ -54,18 +55,25 @@ def no_text_found(pages: List[Page]):
     full_text = ""
     for page in pages:
         full_text += page.prelim_text
-    return len(full_text.strip()) < 10
+    return len(full_text.strip()) == 0
 
 
-def detected_line_coverage(page: Page, intersect_thresh=.6, detection_thresh=.5):
+def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.5):
     found_lines = 0
-    total_lines = 0
     for detected_line in page.text_lines.bboxes:
+
+        # Get bbox and rescale to match dimensions of original page
         detected_bbox = detected_line.bbox
+        detected_bbox = rescale_bbox(page.text_lines.image_bbox, page.bbox, detected_bbox)
+
         for block in page.blocks:
             for line in block.lines:
                 intersection_pct = line.intersection_pct(detected_bbox)
                 if intersection_pct > intersect_thresh:
                     found_lines += 1
-                total_lines += 1
+                    break
+
+    total_lines = len(page.text_lines.bboxes)
+    if total_lines == 0:
+        return False
     return found_lines / total_lines > detection_thresh

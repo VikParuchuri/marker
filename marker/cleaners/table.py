@@ -14,12 +14,13 @@ def merge_table_blocks(blocks: List[Page]):
         new_page_blocks = []
         pnum = page.pnum
         for block in page.blocks:
-            if block.most_common_block_type() != "Table":
+            if block.block_type != "Table":
                 if len(current_lines) > 0:
                     new_block = Block(
                         lines=deepcopy(current_lines),
                         pnum=pnum,
-                        bbox=current_bbox
+                        bbox=current_bbox,
+                        block_type="Table"
                     )
                     new_page_blocks.append(new_block)
                     current_lines = []
@@ -38,7 +39,8 @@ def merge_table_blocks(blocks: List[Page]):
             new_block = Block(
                 lines=deepcopy(current_lines),
                 pnum=pnum,
-                bbox=current_bbox
+                bbox=current_bbox,
+                block_type="Table"
             )
             new_page_blocks.append(new_block)
             current_lines = []
@@ -54,7 +56,7 @@ def create_new_tables(blocks: List[Page]):
 
     for page in blocks:
         for block in page.blocks:
-            if block.most_common_block_type() != "Table" or len(block.lines) < 3:
+            if block.block_type != "Table" or len(block.lines) < 3:
                 continue
 
             table_rows = []

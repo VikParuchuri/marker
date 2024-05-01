@@ -4,6 +4,7 @@ from typing import List
 from surya.ordering import batch_ordering
 
 from marker.pdf.images import render_image
+from marker.pdf.utils import rescale_bbox
 from marker.schema.page import Page
 from marker.settings import settings
 
@@ -32,6 +33,7 @@ def sort_blocks_in_reading_order(pages: List[Page]):
             for order_box in order.bboxes:
                 order_bbox = order_box.bbox
                 position = order_box.position
+                order_bbox = rescale_bbox(order.image_bbox, page.bbox, order_bbox)
                 block_intersection = block.intersection_pct(order_bbox)
                 if i not in block_positions:
                     block_positions[i] = (block_intersection, position)

@@ -9,7 +9,7 @@ from marker.schema.bbox import should_merge_blocks, merge_boxes
 from marker.debug.data import dump_equation_debug_data
 from marker.pdf.images import render_image
 from marker.settings import settings
-from marker.schema.schema import Span, Line, Block, BlockType
+from marker.schema.schema import Span, Line, Block
 from marker.schema.page import Page
 import os
 
@@ -79,7 +79,7 @@ def get_total_texify_tokens(text, processor):
     return len(tokens["input_ids"])
 
 
-def find_page_equation_regions(page):
+def find_page_equation_regions(page, processor):
     i = 0
     reformatted_blocks = set()
     reformat_regions = []
@@ -106,7 +106,7 @@ def find_page_equation_regions(page):
                 prev_block = page.blocks[j]
                 prev_bbox = prev_block.bbox
                 prelim_block_text = prev_block.prelim_text + " " + block_text
-                if get_total_texify_tokens(prelim_block_text) >= settings.TEXIFY_MODEL_MAX:
+                if get_total_texify_tokens(prelim_block_text, processor) >= settings.TEXIFY_MODEL_MAX:
                     break
 
                 block_text = prelim_block_text
@@ -120,7 +120,7 @@ def find_page_equation_regions(page):
             while (should_merge_blocks(bbox, next_bbox) or next_block.block_type in ["Formula"]) and i + 1 < len(page.blocks):
                 bbox = merge_boxes(bbox, next_bbox)
                 prelim_block_text = block_text + " " + next_block.prelim_text
-                if get_total_texify_tokens(prelim_block_text) >= settings.TEXIFY_MODEL_MAX:
+                if get_total_texify_tokens(prelim_block_text, processor) >= settings.TEXIFY_MODEL_MAX:
                     break
 
                 block_text = prelim_block_text
@@ -130,7 +130,7 @@ def find_page_equation_regions(page):
                     next_block = page.blocks[i + 1]
                     next_bbox = next_block.bbox
 
-        total_tokens = get_total_texify_tokens(block_text)
+        total_tokens = get_total_texify_tokens(block_text, processor)
         ordered_blocks = sorted(([sb[0] for sb in selected_blocks]))
         if total_tokens < settings.TEXIFY_MODEL_MAX:
             # Get indices of all blocks to merge
@@ -160,7 +160,7 @@ def get_bboxes_for_region(page, region):
     return bboxes, merged_box
 
 
-def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions, predictions, pnum):
+def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions, predictions, pnum, processor):
     new_blocks = []
     converted_spans = []
     current_region = 0
@@ -178,7 +178,7 @@ def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions,
         latex_text = predictions[current_region]
         conditions = [
             len(latex_text) > 0,
-            get_total_texify_tokens(latex_text) < settings.TEXIFY_MODEL_MAX,  # Make sure we didn't run to the overall token max
+            get_total_texify_tokens(latex_text, processor) < settings.TEXIFY_MODEL_MAX,  # Make sure we didn't run to the overall token max
             len(latex_text) > len(orig_block_text) * .8,
             len(latex_text.strip()) > 0
         ]
@@ -209,21 +209,22 @@ def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions,
             new_blocks.append(Block(
                 lines=[block_line],
                 bbox=merged_boxes[current_region],
-                pnum=pnum
+                pnum=pnum,
+                block_type="Formula"
             ))
         current_region += 1
     return new_blocks, success_count, fail_count, converted_spans
 
 
-def replace_equations(doc, blocks: List[Page], texify_model, batch_size=settings.TEXIFY_BATCH_SIZE):
+def replace_equations(doc, pages: List[Page], texify_model, batch_size=settings.TEXIFY_BATCH_SIZE):
     unsuccessful_ocr = 0
     successful_ocr = 0
 
     # Find potential equation regions, and length of text in each region
     reformat_regions = []
     reformat_region_lens = []
-    for pnum, page in enumerate(blocks):
-        regions, region_lens = find_page_equation_regions(page)
+    for pnum, page in enumerate(pages):
+        regions, region_lens = find_page_equation_regions(page, texify_model.processor)
         reformat_regions.append(regions)
         reformat_region_lens.append(region_lens)
 
@@ -236,7 +237,7 @@ def replace_equations(doc, blocks: List[Page], texify_model, batch_size=settings
     for page_idx, reformat_regions_page in enumerate(reformat_regions):
         page_obj = doc[page_idx]
         for reformat_region in reformat_regions_page:
-            bboxes, merged_box = get_bboxes_for_region(blocks[page_idx], reformat_region)
+            bboxes, merged_box = get_bboxes_for_region(pages[page_idx], reformat_region)
             png_image = get_masked_image(page_obj, merged_box, bboxes)
             images.append(png_image)
             merged_boxes.append(merged_box)
@@ -251,14 +252,15 @@ def replace_equations(doc, blocks: List[Page], texify_model, batch_size=settings
         page_predictions = predictions[page_start:page_start + len(reformat_regions_page)]
         page_boxes = merged_boxes[page_start:page_start + len(reformat_regions_page)]
         new_page_blocks, success_count, fail_count, converted_span = replace_blocks_with_latex(
-            blocks[page_idx],
+            pages[page_idx],
             page_boxes,
             reformat_regions_page,
             page_predictions,
-            page_idx
+            page_idx,
+            texify_model.processor
         )
         converted_spans.extend(converted_span)
-        blocks[page_idx].blocks = new_page_blocks
+        pages[page_idx].blocks = new_page_blocks
         page_start += len(reformat_regions_page)
         successful_ocr += success_count
         unsuccessful_ocr += fail_count
@@ -266,4 +268,4 @@ def replace_equations(doc, blocks: List[Page], texify_model, batch_size=settings
     # If debug mode is on, dump out conversions for comparison
     dump_equation_debug_data(doc, images, converted_spans)
 
-    return blocks, {"successful_ocr": successful_ocr, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}
+    return pages, {"successful_ocr": successful_ocr, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}
