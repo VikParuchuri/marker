@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     TEXIFY_MODEL_NAME: str = "vikp/texify"
 
     # Layout model
+    SURYA_LAYOUT_DPI: int = 96
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
     LAYOUT_MODEL_MAX: int = 512
     LAYOUT_CHUNK_OVERLAP: int = 64

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from marker.schema.bbox import BboxElement
 from marker.schema.schema import Block, Span
-from surya.schema import TextDetectionResult
+from surya.schema import TextDetectionResult, LayoutResult
 
 
 class Page(BboxElement):
@@ -12,6 +12,7 @@ class Page(BboxElement):
     column_count: Optional[int] = None
     rotation: Optional[int] = None # Rotation degrees of the page
     text_lines: Optional[TextDetectionResult] = None
+    layout: Optional[LayoutResult] = None
 
     def get_nonblank_lines(self):
         lines = self.get_all_lines()
@@ -26,21 +27,6 @@ class Page(BboxElement):
         lines = [l for b in self.blocks for l in b.lines]
         spans = [s for l in lines for s in l.spans if s.text.strip()]
         return spans
-
-    def add_block_types(self, page_block_types):
-        if len(page_block_types) != len(self.get_all_lines()):
-            print(f"Warning: Number of detected lines {len(page_block_types)} does not match number of lines {len(self.get_all_lines())}")
-
-        i = 0
-        for block in self.blocks:
-            for line in block.lines:
-                if i < len(page_block_types):
-                    line_block_type = page_block_types[i].block_type
-                else:
-                    line_block_type = "Text"
-                i += 1
-                for span in line.spans:
-                    span.block_type = line_block_type
 
     def get_font_stats(self):
         fonts = [s.font for s in self.get_nonblank_spans()]

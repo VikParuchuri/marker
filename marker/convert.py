@@ -2,6 +2,7 @@ import pypdfium2 as pdfium
 
 from marker.cleaners.table import merge_table_blocks, create_new_tables
 from marker.debug.data import dump_bbox_debug_data
+from marker.layout.layout import surya_layout, annotate_block_types
 from marker.ocr.lang import replace_langs_with_codes, validate_langs
 from marker.ocr.detection import surya_detection
 from marker.ocr.recognition import run_ocr
@@ -20,12 +21,6 @@ from marker.schema.page import Page
 from typing import List, Dict, Tuple, Optional
 import re
 from marker.settings import settings
-
-
-def annotate_spans(blocks: List[Page], block_types: List[BlockType]):
-    for i, page in enumerate(blocks):
-        page_block_types = block_types[i]
-        page.add_block_types(page_block_types)
 
 
 def convert_single_pdf(
@@ -79,18 +74,14 @@ def convert_single_pdf(
         print(f"Could not extract any text blocks for {fname}")
         return "", out_meta
 
-    block_types = detect_document_block_types(
-        doc,
-        pages,
-        layoutlm_model,
-        batch_size=int(settings.LAYOUT_BATCH_SIZE * parallel_factor)
-    )
+    surya_layout(doc, pages, layout_model)
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(pages)
     out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
-    annotate_spans(pages, block_types)
+    # Add block types in
+    annotate_block_types(pages)
 
     # Dump debug data if flags are set
     dump_bbox_debug_data(doc, pages)

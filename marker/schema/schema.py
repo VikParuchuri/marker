@@ -18,7 +18,6 @@ class Span(BboxElement):
     font: str
     font_weight: float
     font_size: float
-    block_type: Optional[str] = None
 
 
     @field_validator('text')
@@ -42,6 +41,7 @@ class Line(BboxElement):
 class Block(BboxElement):
     lines: List[Line]
     pnum: int
+    block_type: Optional[str] = None
 
     @property
     def prelim_text(self):
