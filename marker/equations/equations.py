@@ -3,48 +3,15 @@ from typing import List
 
 from texify.inference import batch_inference
 
-from PIL import Image, ImageDraw
-
+from marker.equations.images import get_masked_image
 from marker.schema.bbox import should_merge_blocks, merge_boxes
 from marker.debug.data import dump_equation_debug_data
-from marker.pdf.images import render_image
 from marker.settings import settings
 from marker.schema.schema import Span, Line, Block
 from marker.schema.page import Page
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-
-def mask_bbox(png_image, bbox, selected_bboxes):
-    mask = Image.new('L', png_image.size, 0)  # 'L' mode for grayscale
-    draw = ImageDraw.Draw(mask)
-    first_x = bbox[0]
-    first_y = bbox[1]
-    bbox_height = bbox[3] - bbox[1]
-    bbox_width = bbox[2] - bbox[0]
-
-    for box in selected_bboxes:
-        # Fit the box to the selected region
-        new_box = (box[0] - first_x, box[1] - first_y, box[2] - first_x, box[3] - first_y)
-        # Fit mask to image bounds versus the pdf bounds
-        resized = (
-           new_box[0] / bbox_width * png_image.size[0],
-           new_box[1] / bbox_height * png_image.size[1],
-           new_box[2] / bbox_width * png_image.size[0],
-           new_box[3] / bbox_height * png_image.size[1]
-        )
-        draw.rectangle(resized, fill=255)
-
-    result = Image.composite(png_image, Image.new('RGBA', png_image.size, 'white'), mask)
-    return result
-
-
-def get_masked_image(page, bbox, selected_bboxes):
-    png_image = render_image(page, settings.TEXIFY_DPI)
-    png_image = mask_bbox(png_image, bbox, selected_bboxes)
-    png_image = png_image.convert("RGB")
-    return png_image
 
 
 def get_latex_batched(images, reformat_region_lens, texify_model, batch_size):
@@ -199,8 +166,7 @@ def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions,
                         span_id=f"{pnum}_{idx}_fixeq",
                         font="Latex",
                         font_weight=0,
-                        font_size=0,
-                        block_type="Formula"
+                        font_size=0
                     )
                 ],
                 bbox=merged_boxes[current_region]
@@ -236,9 +202,10 @@ def replace_equations(doc, pages: List[Page], texify_model, batch_size=settings.
     merged_boxes = []
     for page_idx, reformat_regions_page in enumerate(reformat_regions):
         page_obj = doc[page_idx]
-        for reformat_region in reformat_regions_page:
+        for format_idx, reformat_region in enumerate(reformat_regions_page):
             bboxes, merged_box = get_bboxes_for_region(pages[page_idx], reformat_region)
-            png_image = get_masked_image(page_obj, merged_box, bboxes)
+            png_image = get_masked_image(page_obj, pages[page_idx], merged_box, bboxes)
+
             images.append(png_image)
             merged_boxes.append(merged_box)
 

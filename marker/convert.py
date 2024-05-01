@@ -12,7 +12,7 @@ from marker.ocr.detection import surya_detection
 from marker.ocr.recognition import run_ocr
 from marker.pdf.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
-from marker.cleaners.equations import replace_equations
+from marker.equations.equations import replace_equations
 from marker.pdf.filetype import find_filetype
 from marker.postprocessors.editor import edit_full_text
 from marker.cleaners.code import identify_code_blocks, indent_blocks

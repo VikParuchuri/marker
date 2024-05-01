@@ -4,7 +4,7 @@ from typing import List
 from nltk import wordpunct_tokenize
 
 from marker.ocr.utils import alphanum_ratio
-from marker.pdf.utils import rescale_bbox
+from marker.schema.bbox import rescale_bbox
 from marker.schema.page import Page
 from marker.settings import settings
 

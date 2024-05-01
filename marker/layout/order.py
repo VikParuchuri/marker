@@ -4,7 +4,7 @@ from typing import List
 from surya.ordering import batch_ordering
 
 from marker.pdf.images import render_image
-from marker.pdf.utils import rescale_bbox
+from marker.schema.bbox import rescale_bbox
 from marker.schema.page import Page
 from marker.settings import settings
 
