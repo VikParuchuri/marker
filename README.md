@@ -123,16 +123,18 @@ python convert.py /path/to/input/folder /path/to/output/folder --workers 10 --ma
 
 - `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage. Parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK` if you're using GPU.
 - `--max` is the maximum number of pdfs to convert.  Omit this to convert all pdfs in the folder.
-- `--metadata_file` is an optional path to a json file with metadata about the pdfs.  If you provide it, it will be used to set the language for each pdf.  If not, `DEFAULT_LANG` will be used. The format is:
 - `--min_length` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
+- `--metadata_file` is an optional path to a json file with metadata about the pdfs.  If you provide it, it will be used to set the language for each pdf.  If not, `DEFAULT_LANG` will be used. The format is:
 
 ```
 {
-  "pdf1.pdf": {"language": "English"},
-  "pdf2.pdf": {"language": "Spanish"},
+  "pdf1.pdf": {"languages": ["English"]},
+  "pdf2.pdf": {"languages": ["Spanish", "Russian"]},
   ...
 }
 ```
+
+You can use language names or codes.  See [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py) for a full list.
 
 ## Convert multiple files on multiple GPUs
 

@@ -1,18 +1,17 @@
-from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
 from transformers import LayoutLMv3ForTokenClassification
 
-from marker.bbox import unnormalize_box
+from marker.schema.bbox import unnormalize_box
 from transformers.models.layoutlmv3.image_processing_layoutlmv3 import normalize_box
-import io
 from PIL import Image
 from transformers import LayoutLMv3Processor
 import numpy as np
 
 from marker.pdf.images import render_image
 from marker.settings import settings
-from marker.schema import Page, BlockType
+from marker.schema.schema import BlockType
+from marker.schema.page import Page
 import torch
 from math import isclose
 

@@ -1,5 +1,6 @@
-from marker.bbox import merge_boxes
-from marker.schema import Line, Span, Block, Page
+from marker.schema.bbox import merge_boxes
+from marker.schema.schema import Line, Span, Block
+from marker.schema.page import Page
 from copy import deepcopy
 from tabulate import tabulate
 from typing import List

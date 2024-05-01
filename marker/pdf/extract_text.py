@@ -1,17 +1,21 @@
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict
 
+import pypdfium2 as pdfium
 import pypdfium2.internal as pdfium_i
 
-from marker.ocr.utils import detect_bad_ocr, font_flags_decomposer
+from marker.pdf.filetype import find_filetype
+from marker.ocr.utils import font_flags_decomposer
+from marker.ocr.heuristics import detect_bad_ocr
 from marker.settings import settings
-from marker.schema import Span, Line, Block, Page
+from marker.schema.schema import Span, Line, Block
+from marker.schema.page import Page
 from pdftext.extraction import dictionary_output
 
 os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 
 
-def pdftext_format_to_blocks(page, pnum: int) -> List[Block]:
+def pdftext_format_to_blocks(page, pnum: int) -> Page:
     page_blocks = []
     span_id = 0
     for block_idx, block in enumerate(page["blocks"]):
@@ -54,42 +58,8 @@ def pdftext_format_to_blocks(page, pnum: int) -> List[Block]:
     return out_page
 
 
-def ocr_page(doc, pnum, page: Page, tess_lang: str):
-    ocr_pages = 0
-    ocr_success = 0
-    ocr_failed = 0
-    page_bbox = doc[pnum].bound()
-
-    blocks = get_single_page_blocks(doc, pnum, tess_lang)
-    page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
-
-    # OCR page if we got minimal text, or if we got too many spaces
-    conditions = [
-        (
-            no_text  # Full doc has no text, and needs full OCR
-            or
-            (len(page_obj.prelim_text) > 0 and detect_bad_ocr(page_obj.prelim_text))  # Bad OCR
-        ),
-        min_ocr_page < pnum < len(doc) - 1,
-        not disable_ocr
-    ]
-    if all(conditions) or settings.OCR_ALL_PAGES:
-        page = doc[pnum]
-        blocks = get_single_page_blocks(doc, pnum, tess_lang, ocr=True)
-        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox, rotation=page.rotation)
-        ocr_pages = 1
-        if len(blocks) == 0:
-            ocr_failed = 1
-        else:
-            ocr_success = 1
-    return page_obj, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
-
-
-def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: Optional[int] = None, parallel: int = settings.OCR_PARALLEL_WORKERS):
+def get_text_blocks(doc, max_pages: Optional[int] = None) -> (List[Page], Dict):
     toc = get_toc(doc)
-    ocr_pages = 0
-    ocr_failed = 0
-    ocr_success = 0
 
     page_range = range(len(doc))
     if max_pages:
@@ -99,7 +69,7 @@ def get_text_blocks(doc, tess_lang: str, spell_lang: Optional[str], max_pages: O
     all_blocks = dictionary_output(doc, page_range=page_range)
     all_blocks = [pdftext_format_to_blocks(page, pnum) for pnum, page in enumerate(all_blocks)]
 
-    return all_blocks, toc, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+    return all_blocks, toc
 
 
 def naive_get_text(doc):
@@ -126,3 +96,10 @@ def get_toc(doc, max_depth=15):
         }
         toc_list.append(list_item)
     return toc_list
+
+
+def get_length_of_text(fname: str) -> int:
+    doc = pdfium.PdfDocument(fname)
+    text = naive_get_text(doc).strip()
+
+    return len(text)

@@ -1,11 +1,10 @@
 import base64
 import json
 import os
-import zlib
 from typing import List
 
 from marker.pdf.images import render_image
-from marker.schema import Page
+from marker.schema.page import Page
 from marker.settings import settings
 from PIL import Image
 import io

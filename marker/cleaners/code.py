@@ -1,4 +1,5 @@
-from marker.schema import Span, Line, Page
+from marker.schema.schema import Span, Line
+from marker.schema.page import Page
 import re
 from typing import List
 

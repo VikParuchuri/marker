@@ -1,3 +1,8 @@
+from typing import List
+
+from pydantic import BaseModel, field_validator
+
+
 def should_merge_blocks(box1, box2, tol=5):
     # Within tol y px, and to the right within tol px
     merge = [
@@ -18,7 +23,7 @@ def boxes_intersect(box1, box2):
     return box1[0] < box2[2] and box1[2] > box2[0] and box1[1] < box2[3] and box1[3] > box2[1]
 
 
-def boxes_intersect_pct(box1, box2, pct=.9):
+def box_intersection_pct(box1, box2):
     # determine the coordinates of the intersection rectangle
     x_left = max(box1[0], box2[0])
     y_top = max(box1[1], box2[1])
@@ -28,16 +33,11 @@ def boxes_intersect_pct(box1, box2, pct=.9):
     if x_right < x_left or y_bottom < y_top:
         return 0.0
 
-    # The intersection of two axis-aligned bounding boxes is always an
-    # axis-aligned bounding box
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
-
-    # compute the area of both AABBs
     bb1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
-    bb2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
 
-    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
-    return iou > pct
+    iou = intersection_area / bb1_area
+    return iou
 
 
 def multiple_boxes_intersect(box1, boxes):
@@ -47,11 +47,6 @@ def multiple_boxes_intersect(box1, boxes):
     return False
 
 
-def box_contained(box1, box2):
-    # Box1 inside box2
-    return box1[0] > box2[0] and box1[1] > box2[1] and box1[2] < box2[2] and box1[3] < box2[3]
-
-
 def unnormalize_box(bbox, width, height):
     return [
         width * (bbox[0] / 1000),
@@ -59,3 +54,37 @@ def unnormalize_box(bbox, width, height):
         width * (bbox[2] / 1000),
         height * (bbox[3] / 1000),
     ]
+
+
+class BboxElement(BaseModel):
+    bbox: List[float]
+
+    @field_validator('bbox')
+    @classmethod
+    def check_4_elements(cls, v: List[float]) -> List[float]:
+        if len(v) != 4:
+            raise ValueError('bbox must have 4 elements')
+        return v
+
+    @property
+    def height(self):
+        return self.bbox[3] - self.bbox[1]
+
+    @property
+    def width(self):
+        return self.bbox[2] - self.bbox[0]
+
+    @property
+    def x_start(self):
+        return self.bbox[0]
+
+    @property
+    def y_start(self):
+        return self.bbox[1]
+
+    @property
+    def area(self):
+        return self.width * self.height
+
+    def intersection_pct(self, other_bbox: List[float]):
+        return box_intersection_pct(self.bbox, other_bbox)

@@ -2,14 +2,11 @@ from copy import deepcopy
 from typing import List
 
 import torch
-import sys, os
 
 from transformers import LayoutLMv3ForSequenceClassification, LayoutLMv3Processor
-from PIL import Image
-import io
 
 from marker.pdf.images import render_image
-from marker.schema import Page
+from marker.schema.page import Page
 from marker.settings import settings
 
 processor = LayoutLMv3Processor.from_pretrained(settings.ORDERER_MODEL_NAME)

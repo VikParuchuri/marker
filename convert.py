@@ -6,7 +6,9 @@ import ray
 from tqdm import tqdm
 import math
 
-from marker.convert import convert_single_pdf, get_length_of_text
+from marker.convert import convert_single_pdf
+from marker.pdf.filetype import find_filetype
+from marker.pdf.extract_text import get_length_of_text
 from marker.models import load_all_models
 from marker.settings import settings
 from marker.logger import configure_logging
@@ -28,6 +30,10 @@ def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Option
         # This can indicate that they were scanned, and not OCRed properly
         # Usually these files are not recent/high-quality
         if min_length:
+            filetype = find_filetype(fname)
+            if filetype == "other":
+                return 0
+
             length = get_length_of_text(fname)
             if length < min_length:
                 return

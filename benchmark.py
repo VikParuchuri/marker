@@ -9,7 +9,7 @@ from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
 from marker.models import load_all_models
 from marker.benchmark.scoring import score_text
-from marker.extract_text import naive_get_text
+from marker.pdf.extract_text import naive_get_text
 import json
 import os
 import subprocess

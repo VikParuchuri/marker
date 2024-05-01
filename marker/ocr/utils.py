@@ -1,39 +1,3 @@
-from typing import Optional
-
-from nltk import wordpunct_tokenize
-from marker.settings import settings
-import re
-
-
-def detect_bad_ocr(text, space_threshold=.6, newline_threshold=.5, alphanum_threshold=.4):
-    if len(text) == 0:
-        # Assume OCR failed if we have no text
-        return True
-
-    words = wordpunct_tokenize(text)
-    words = [w for w in words if w.strip()]
-    alpha_words = [word for word in words if word.isalnum()]
-
-    spaces = len(re.findall(r'\s+', text))
-    alpha_chars = len(re.sub(r'\s+', '', text))
-    if spaces / (alpha_chars + spaces) > space_threshold:
-        return True
-
-    newlines = len(re.findall(r'\n+', text))
-    non_newlines = len(re.sub(r'\n+', '', text))
-    if newlines / (newlines + non_newlines) > newline_threshold:
-        return True
-
-    if alphanum_ratio(text) < alphanum_threshold: # Garbled text
-        return True
-
-    invalid_chars = len([c for c in text if c in settings.INVALID_CHARS])
-    if invalid_chars > max(3.0, len(text) * .02):
-        return True
-
-    return False
-
-
 def font_flags_decomposer(flags):
     flags = int(flags)
 

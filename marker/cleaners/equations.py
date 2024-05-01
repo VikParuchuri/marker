@@ -1,30 +1,19 @@
-import io
 from copy import deepcopy
-from functools import partial
 from typing import List
 
-import torch
 from texify.inference import batch_inference
-from texify.model.model import load_model
-from texify.model.processor import load_processor
-import re
+
 from PIL import Image, ImageDraw
 
-from marker.bbox import should_merge_blocks, merge_boxes
+from marker.schema.bbox import should_merge_blocks, merge_boxes
 from marker.debug.data import dump_equation_debug_data
 from marker.pdf.images import render_image
 from marker.settings import settings
-from marker.schema import Page, Span, Line, Block, BlockType
+from marker.schema.schema import Span, Line, Block, BlockType
+from marker.schema.page import Page
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-processor = load_processor()
-
-
-def load_texify_model():
-    texify_model = load_model(checkpoint=settings.TEXIFY_MODEL_NAME, device=settings.TORCH_DEVICE_MODEL, dtype=settings.TEXIFY_DTYPE)
-    return texify_model
 
 
 def mask_bbox(png_image, bbox, selected_bboxes):
@@ -72,10 +61,10 @@ def get_latex_batched(images, reformat_region_lens, texify_model, batch_size):
         max_length = min(max_length, settings.TEXIFY_MODEL_MAX)
         max_length += settings.TEXIFY_TOKEN_BUFFER
 
-        model_output = batch_inference(images[min_idx:max_idx], texify_model, processor, max_tokens=max_length)
+        model_output = batch_inference(images[min_idx:max_idx], texify_model, texify_model.processor, max_tokens=max_length)
 
         for j, output in enumerate(model_output):
-            token_count = get_total_texify_tokens(output)
+            token_count = get_total_texify_tokens(output, texify_model.processor)
             if token_count >= max_length - 1:
                 output = ""
 
@@ -84,7 +73,7 @@ def get_latex_batched(images, reformat_region_lens, texify_model, batch_size):
     return predictions
 
 
-def get_total_texify_tokens(text):
+def get_total_texify_tokens(text, processor):
     tokenizer = processor.tokenizer
     tokens = tokenizer(text)
     return len(tokens["input_ids"])
