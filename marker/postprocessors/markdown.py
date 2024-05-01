@@ -85,7 +85,7 @@ def line_separator(line1, line2, block_type, is_continuation=False):
     uppercase_letters = "A-ZÀ-ÖØ-ßА-ЯŞĆĂÂĐÊÔƠƯÞÐÆØÅ"
     # Remove hyphen in current line if next line and current line appear to be joined
     hyphen_pattern = re.compile(rf'.*[{lowercase_letters}][-]\s?$', re.DOTALL)
-    if line1 and hyphen_pattern.match(line1) and re.match(rf"^[{lowercase_letters}]", line2):
+    if line1 and hyphen_pattern.match(line1) and re.match(rf"^\s?[{lowercase_letters}]", line2):
         # Split on — or - from the right
         line1 = re.split(r"[-—]\s?$", line1)[0]
         return line1.rstrip() + line2.lstrip()
