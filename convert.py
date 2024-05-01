@@ -7,7 +7,7 @@ from tqdm import tqdm
 import math
 
 from marker.convert import convert_single_pdf
-from marker.pdf.filetype import find_filetype
+from marker.pdf.utils import find_filetype
 from marker.pdf.extract_text import get_length_of_text
 from marker.models import load_all_models
 from marker.settings import settings

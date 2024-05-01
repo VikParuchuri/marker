@@ -13,7 +13,7 @@ from marker.ocr.recognition import run_ocr
 from marker.pdf.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.equations.texify import replace_equations
-from marker.pdf.filetype import find_filetype
+from marker.pdf.utils import find_filetype
 from marker.postprocessors.editor import edit_full_text
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
@@ -28,10 +28,13 @@ def convert_single_pdf(
         model_lst: List,
         max_pages=None,
         metadata: Optional[Dict]=None,
-        parallel_factor: int = 1
+        parallel_factor: int = 1,
+        langs: Optional[List[str]] = None
 ) -> Tuple[str, Dict]:
     # Set language needed for OCR
-    langs = [settings.DEFAULT_LANG]
+    if langs is None:
+        langs = [settings.DEFAULT_LANG]
+
     if metadata:
         langs = metadata.get("languages", langs)
 

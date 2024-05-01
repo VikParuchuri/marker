@@ -1,10 +1,12 @@
-import magic
+import filetype
 
 from marker.settings import settings
 
 
 def find_filetype(fpath):
-    mimetype = magic.from_file(fpath).lower()
+    kind = filetype.guess(fpath)
+
+    mimetype = kind.mime
 
     # Get extensions from mimetype
     # The mimetype is not always consistent, so use in to check the most common formats

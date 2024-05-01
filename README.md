@@ -65,13 +65,13 @@ First, clone the repo:
 
 ## Linux
 
-- Install system requirements
+- Optional: Install system requirements, only needed if using `ocrmypdf` as the ocr backend
   - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `scripts/install/tesseract_5_install.sh`.
   - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
   - Install other requirements with `cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y`
-- Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
-  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+  - Set the tesseract data folder path
+    - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
+    - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
@@ -81,10 +81,10 @@ First, clone the repo:
 
 ## Mac
 
-- Install system requirements from `scripts/install/brew-requirements.txt`
-- Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata` with `brew list tesseract`
-  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+- Optional: Install system requirements from `scripts/install/brew-requirements.txt`, only needed if using `ocrmypdf` for OCR
+  - Set the tesseract data folder path
+    - Find the tesseract data folder `tessdata` with `brew list tesseract`
+    - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
@@ -96,20 +96,21 @@ First, some configuration.  Note that settings can be overridden with env vars, 
 - Your torch device will be automatically detected, but you can manually set it also.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`. `cpu` is the default.
   - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
   - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
+- By default, marker will use `ocrmypdf` for OCR on CPU, and `surya` on GPU.  Surya is slower on CPU, but more accurate. `ocrmypdf` also requires external dependencies (see above). You can override the default with the `OCR_ENGINE` setting.
 - Inspect the other settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
-  - By default, the final editor model is off.  Turn it on with `ENABLE_EDITOR_MODEL=true`.
-  - By default, marker will use ocrmypdf for OCR, which is slower than base tesseract, but higher quality.  You can change this with the `OCR_ENGINE` setting.
+
 
 ## Convert a single file
 
 Run `convert_single.py`, like this:
 
 ```
-python convert_single.py /path/to/file.pdf /path/to/output.md --parallel_factor 2 --max_pages 10
+python convert_single.py /path/to/file.pdf /path/to/output.md --parallel_factor 2 --max_pages 10 --langs English
 ```
 
 - `--parallel_factor` is how much to increase batch size and parallel OCR workers by.  Higher numbers will take more VRAM and CPU, but process faster.  Set to 1 by default.
 - `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
+- `--langs` is a comma separated list of the languages in the document, for OCR
 
 Make sure the `DEFAULT_LANG` setting is set appropriately for your document.
 
@@ -199,23 +200,18 @@ Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running
 
 # Commercial usage
 
-Due to the licensing of the underlying models like layoutlmv3 and nougat, this is only suitable for noncommercial usage.  
+All models were trained from scratch, so they're okay for commercial usage.  The weights for the models are licensed cc-by-nc-sa-4.0, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period.
 
-I'm building a version that can be used commercially, by stripping out the dependencies below. If you would like to get early access, email me at marker@vikas.sh.
+If you want to remove the GPL license requirements for inference or use the weights commercially over the revenue limit, please contact me at marker@vikas.sh for dual licensing.
 
-Here are the non-commercial/restrictive dependencies:
-
-- LayoutLMv3: CC BY-NC-SA 4.0 .  [Source](https://huggingface.co/microsoft/layoutlmv3-base)
-- PyMuPDF - GPL . [Source](https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright)
-
-Other dependencies/datasets are openly licensed (doclaynet, byt5), or used in a way that is compatible with commercial usage (ghostscript).
+Note that the `ocrmypdf` OCR option will use ocrmypdf, which includes Ghostscript, an AGPL dependency, but calls it via CLI, so it does not trigger the license provisions.  If you want to avoid this completely, just use `surya` as the OCR option.  (ocrmypdf is faster on CPU, but less accurate)
 
 # Thanks
 
 This work would not have been possible without amazing open source models and datasets, including (but not limited to):
 
 - Nougat from Meta
-- Layoutlmv3 from Microsoft
+- Pypdfium2/pdfium
 - DocLayNet from IBM
 - ByT5 from Google
 
