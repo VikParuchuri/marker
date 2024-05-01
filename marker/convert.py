@@ -3,21 +3,18 @@ import pypdfium2 as pdfium
 from marker.cleaners.table import merge_table_blocks, create_new_tables
 from marker.debug.data import dump_bbox_debug_data
 from marker.layout.layout import surya_layout, annotate_block_types
+from marker.layout.order import surya_order, sort_blocks_in_reading_order
 from marker.ocr.lang import replace_langs_with_codes, validate_langs
 from marker.ocr.detection import surya_detection
 from marker.ocr.recognition import run_ocr
 from marker.pdf.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.cleaners.equations import replace_equations
-from marker.ordering import order_blocks
 from marker.pdf.filetype import find_filetype
 from marker.postprocessors.editor import edit_full_text
-from marker.segmentation import detect_document_block_types
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
 from marker.markdown import merge_spans, merge_lines, get_full_text
-from marker.schema.schema import BlockType
-from marker.schema.page import Page
 from typing import List, Dict, Tuple, Optional
 import re
 from marker.settings import settings
@@ -86,32 +83,29 @@ def convert_single_pdf(
     # Dump debug data if flags are set
     dump_bbox_debug_data(doc, pages)
 
-    blocks = order_blocks(
-        doc,
-        pages,
-        order_model,
-        batch_size=int(settings.ORDERER_BATCH_SIZE * parallel_factor)
-    )
+    # Find reading order for blocks
+    # Sort blocks by reading order
+    surya_order(doc, pages, order_model)
+    sort_blocks_in_reading_order(pages)
 
     # Fix code blocks
-    code_block_count = identify_code_blocks(blocks)
+    code_block_count = identify_code_blocks(pages)
     out_meta["block_stats"]["code"] = code_block_count
-    indent_blocks(blocks)
+    indent_blocks(pages)
 
     # Fix table blocks
-    merge_table_blocks(blocks)
-    table_count = create_new_tables(blocks)
+    merge_table_blocks(pages)
+    table_count = create_new_tables(pages)
     out_meta["block_stats"]["table"] = table_count
 
-    for page in blocks:
+    for page in pages:
         for block in page.blocks:
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
 
     filtered, eq_stats = replace_equations(
         doc,
-        blocks,
-        block_types,
+        pages,
         texify_model,
         batch_size=int(settings.TEXIFY_BATCH_SIZE * parallel_factor)
     )

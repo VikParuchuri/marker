@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     }
 
     # Text line Detection
-    DETECTOR_BATCH_SIZE: Optional[int] = None
+    DETECTOR_BATCH_SIZE: Optional[int] = None # Defaults to 2 for CPU, 32 otherwise
     SURYA_DETECTOR_DPI: int = 96
     DETECTOR_POSTPROCESSING_CPU_WORKERS: int = 4
 
@@ -49,11 +49,12 @@ class Settings(BaseSettings):
 
     ## Surya
     SURYA_OCR_DPI: int = 96
-    RECOGNITION_BATCH_SIZE: Optional[int] = None # Batch size for surya OCR
+    RECOGNITION_BATCH_SIZE: Optional[int] = None # Batch size for surya OCR defaults to 8 for CPU/MPS, 256 otherwise
 
     ## Tesseract
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
     TESSERACT_TIMEOUT: int = 20 # When to give up on OCR
+    TESSDATA_PREFIX: str = ""
 
     @computed_field
     def OCR_ENGINE_INTERNAL(self) -> str:
@@ -76,15 +77,10 @@ class Settings(BaseSettings):
     # Layout model
     SURYA_LAYOUT_DPI: int = 96
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
-    LAYOUT_MODEL_MAX: int = 512
-    LAYOUT_CHUNK_OVERLAP: int = 64
-    LAYOUT_DPI: int = 96
-    LAYOUT_MODEL_CHECKPOINT: str = "vikp/layout_segmenter"
-    LAYOUT_BATCH_SIZE: int = 8 # Max 512 tokens means high batch size
+    LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout2"
 
     # Ordering model
-    ORDERER_BATCH_SIZE: int = 32 # This can be high, because max token count is 128
-    ORDERER_MODEL_NAME: str = "vikp/column_detector"
+    ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 4 for CPU/MPS, 32 otherwise
 
     # Final editing model
     EDITOR_BATCH_SIZE: int = 4

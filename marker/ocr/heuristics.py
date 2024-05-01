@@ -53,7 +53,7 @@ def detect_bad_ocr(text, space_threshold=.6, newline_threshold=.5, alphanum_thre
 def no_text_found(pages: List[Page]):
     full_text = ""
     for page in pages:
-        full_text += page.text
+        full_text += page.prelim_text
     return len(full_text.strip()) < 10
 
 

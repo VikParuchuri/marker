@@ -79,9 +79,8 @@ def get_total_texify_tokens(text, processor):
     return len(tokens["input_ids"])
 
 
-def find_page_equation_regions(pnum, page, block_types):
+def find_page_equation_regions(page):
     i = 0
-    equation_boxes = [b.bbox for b in block_types[pnum] if b.block_type == "Formula"]
     reformatted_blocks = set()
     reformat_regions = []
     block_lens = []
@@ -90,7 +89,7 @@ def find_page_equation_regions(pnum, page, block_types):
         block_text = block.prelim_text
         bbox = block.bbox
         # Check if the block contains an equation
-        if not block.contains_equation(equation_boxes):
+        if not block.block_type in ["Formula"]:
             i += 1
             continue
 
@@ -100,7 +99,7 @@ def find_page_equation_regions(pnum, page, block_types):
             j = i - 1
             prev_block = page.blocks[j]
             prev_bbox = prev_block.bbox
-            while (should_merge_blocks(prev_bbox, bbox) or prev_block.contains_equation(equation_boxes)) \
+            while (should_merge_blocks(prev_bbox, bbox) or prev_block.block_type in ["Formula"]) \
                     and j >= 0 \
                     and j not in reformatted_blocks:
                 bbox = merge_boxes(prev_bbox, bbox)
@@ -118,8 +117,7 @@ def find_page_equation_regions(pnum, page, block_types):
             # Merge subsequent boxes
             next_block = page.blocks[i + 1]
             next_bbox = next_block.bbox
-            while (should_merge_blocks(bbox, next_bbox) or next_block.contains_equation(
-                    equation_boxes)) and i + 1 < len(page.blocks):
+            while (should_merge_blocks(bbox, next_bbox) or next_block.block_type in ["Formula"]) and i + 1 < len(page.blocks):
                 bbox = merge_boxes(bbox, next_bbox)
                 prelim_block_text = block_text + " " + next_block.prelim_text
                 if get_total_texify_tokens(prelim_block_text) >= settings.TEXIFY_MODEL_MAX:
@@ -217,7 +215,7 @@ def replace_blocks_with_latex(page_blocks: Page, merged_boxes, reformat_regions,
     return new_blocks, success_count, fail_count, converted_spans
 
 
-def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]], texify_model, batch_size=settings.TEXIFY_BATCH_SIZE):
+def replace_equations(doc, blocks: List[Page], texify_model, batch_size=settings.TEXIFY_BATCH_SIZE):
     unsuccessful_ocr = 0
     successful_ocr = 0
 
@@ -225,7 +223,7 @@ def replace_equations(doc, blocks: List[Page], block_types: List[List[BlockType]
     reformat_regions = []
     reformat_region_lens = []
     for pnum, page in enumerate(blocks):
-        regions, region_lens = find_page_equation_regions(pnum, page, block_types)
+        regions, region_lens = find_page_equation_regions(page)
         reformat_regions.append(regions)
         reformat_region_lens.append(region_lens)
 

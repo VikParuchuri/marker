@@ -3,16 +3,16 @@ from typing import List, Optional
 
 from marker.schema.bbox import BboxElement
 from marker.schema.schema import Block, Span
-from surya.schema import TextDetectionResult, LayoutResult
+from surya.schema import TextDetectionResult, LayoutResult, OrderResult
 
 
 class Page(BboxElement):
     blocks: List[Block]
     pnum: int
-    column_count: Optional[int] = None
     rotation: Optional[int] = None # Rotation degrees of the page
     text_lines: Optional[TextDetectionResult] = None
     layout: Optional[LayoutResult] = None
+    order: Optional[OrderResult] = None
 
     def get_nonblank_lines(self):
         lines = self.get_all_lines()
