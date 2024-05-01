@@ -78,7 +78,7 @@ def create_new_tables(blocks: List[Page]):
                 table_rows.append(row)
 
             # Don't render tables if they will be too large
-            if max([len("".join(r)) for r in table_rows]) > 300 or len(table_rows[0]) > 8 or len(table_rows[0]) < 2:
+            if max([len("".join(r)) for r in table_rows]) > 300 or len(table_rows[0]) > 8:
                 continue
 
             new_text = tabulate(table_rows, headers="firstrow", tablefmt="github")
