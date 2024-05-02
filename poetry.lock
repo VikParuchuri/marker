@@ -2548,13 +2548,13 @@ image = ["Pillow"]
 
 [[package]]
 name = "pdftext"
-version = "0.3.1"
+version = "0.3.3"
 description = "Extract structured text from pdfs quickly"
 optional = false
 python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,!=3.8.*,>=3.9"
 files = [
-    {file = "pdftext-0.3.1-py3-none-any.whl", hash = "sha256:e08fd0d320ab7174aa1cc745893db7e6e3b14dc2c42c00be5f077ac7891fa27c"},
-    {file = "pdftext-0.3.1.tar.gz", hash = "sha256:f76ddca254aa39b91d190af4e8b903cf2d1a1bf3ddfe3188b8e94a9368b0c243"},
+    {file = "pdftext-0.3.3-py3-none-any.whl", hash = "sha256:1106d30ed05defc955cf388a649c90feb5469f380fac4c63d03294289ea867b9"},
+    {file = "pdftext-0.3.3.tar.gz", hash = "sha256:e6ccd2efb8d8eee769106fb614d2fc2001ed9402ddd21c36188defd9ea355c45"},
 ]
 
 [package.dependencies]
@@ -5027,4 +5027,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13,!=3.9.7"
-content-hash = "ebb4634738a76a764739f9c4221aa666b3ef9b3c2439d11a9362799a5749f3e1"
+content-hash = "353c643e8751f09a0ec8a89d9ed6dc62f9f1c6eefa0ff3b651bec92c1943988d"

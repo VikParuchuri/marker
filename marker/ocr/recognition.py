@@ -131,6 +131,6 @@ def _tesseract_recognition(in_pdf, langs: List[str]) -> Optional[Page]:
 
     new_doc = pdfium.PdfDocument(out_pdf.getvalue())
 
-    blocks, _ = get_text_blocks(new_doc, max_pages=1)
+    blocks, _, _ = get_text_blocks(new_doc, max_pages=1)
     page = blocks[0]
     return page

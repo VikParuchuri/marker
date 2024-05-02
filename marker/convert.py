@@ -3,7 +3,7 @@ warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree us
 
 import pypdfium2 as pdfium
 
-from marker.cleaners.table import merge_table_blocks, create_new_tables
+from marker.cleaners.table import arrange_table_rows
 from marker.debug.data import dump_bbox_debug_data
 from marker.layout.layout import surya_layout, annotate_block_types
 from marker.layout.order import surya_order, sort_blocks_in_reading_order
@@ -55,7 +55,7 @@ def convert_single_pdf(
 
     # Get initial text blocks from the pdf
     doc = pdfium.PdfDocument(fname)
-    pages, toc = get_text_blocks(
+    pages, char_blocks, toc = get_text_blocks(
         doc,
         max_pages=max_pages,
     )
@@ -100,8 +100,7 @@ def convert_single_pdf(
     indent_blocks(pages)
 
     # Fix table blocks
-    merge_table_blocks(pages)
-    table_count = create_new_tables(pages)
+    table_count = arrange_table_rows(pages, char_blocks)
     out_meta["block_stats"]["table"] = table_count
 
     for page in pages:

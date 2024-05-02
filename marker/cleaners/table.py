@@ -1,100 +1,111 @@
-from marker.schema.bbox import merge_boxes
+from marker.schema.bbox import merge_boxes, box_intersection_pct, rescale_bbox
 from marker.schema.schema import Line, Span, Block
 from marker.schema.page import Page
-from copy import deepcopy
 from tabulate import tabulate
-from typing import List
+from typing import List, Dict
 import re
 
 
-def merge_table_blocks(blocks: List[Page]):
-    current_lines = []
-    current_bbox = None
-    for page in blocks:
-        new_page_blocks = []
-        pnum = page.pnum
-        for block in page.blocks:
-            if block.block_type != "Table":
-                if len(current_lines) > 0:
-                    new_block = Block(
-                        lines=deepcopy(current_lines),
-                        pnum=pnum,
-                        bbox=current_bbox,
-                        block_type="Table"
-                    )
-                    new_page_blocks.append(new_block)
-                    current_lines = []
-                    current_bbox = None
-
-                new_page_blocks.append(block)
-                continue
-
-            current_lines.extend(block.lines)
-            if current_bbox is None:
-                current_bbox = block.bbox
-            else:
-                current_bbox = merge_boxes(current_bbox, block.bbox)
-
-        if len(current_lines) > 0:
-            new_block = Block(
-                lines=deepcopy(current_lines),
-                pnum=pnum,
-                bbox=current_bbox,
-                block_type="Table"
-            )
-            new_page_blocks.append(new_block)
-            current_lines = []
-            current_bbox = None
-
-        page.blocks = new_page_blocks
-
-
-def create_new_tables(blocks: List[Page]):
-    table_idx = 0
+def replace_dots(text):
     dot_pattern = re.compile(r'(\s*\.\s*){4,}')
     dot_multiline_pattern = re.compile(r'.*(\s*\.\s*){4,}.*', re.DOTALL)
 
-    for page in blocks:
-        for block in page.blocks:
-            if block.block_type != "Table" or len(block.lines) < 3:
-                continue
+    if dot_multiline_pattern.match(text):
+        text = dot_pattern.sub(' ', text)
+    return text
 
+
+def arrange_table_rows(pages: List[Page], char_pages: List[Dict]):
+    # Formats tables nicely into github flavored markdown
+    table_count = 0
+    for page, char_page in zip(pages, char_pages):
+        table_insert_points = {}
+        blocks_to_remove = set()
+        pnum = page.pnum
+        page_width = char_page["bbox"][2] - char_page["bbox"][0]
+
+        page_table_boxes = [b for b in page.layout.bboxes if b.label == "Table"]
+        page_table_boxes = [rescale_bbox(page.layout.image_bbox, page.bbox, b.bbox) for b in page_table_boxes]
+        for table_idx, table_box in enumerate(page_table_boxes):
+            for block_idx, block in enumerate(page.blocks):
+                intersect_pct = block.intersection_pct(table_box)
+                if intersect_pct > .7 and block.block_type == "Table":
+                    if table_idx not in table_insert_points:
+                        table_insert_points[table_idx] = block_idx - len(blocks_to_remove) + table_idx # Where to insert the new table
+                    blocks_to_remove.add(block_idx)
+
+        new_page_blocks = []
+        for block_idx, block in enumerate(page.blocks):
+            if block_idx in blocks_to_remove:
+                continue
+            new_page_blocks.append(block)
+
+        for table_idx, table_box in enumerate(page_table_boxes):
+            if table_idx not in table_insert_points:
+                continue
             table_rows = []
-            y_coord = None
-            row = []
-            for line in block.lines:
-                for span in line.spans:
-                    if y_coord != span.y_start:
-                        if len(row) > 0:
-                            table_rows.append(row)
-                            row = []
-                        y_coord = span.y_start
+            for block_idx, block in enumerate(char_page["blocks"]):
+                for line_idx, line in enumerate(block["lines"]):
+                    line_bbox = line["bbox"]
+                    intersect_pct = box_intersection_pct(line_bbox, table_box)
+                    if intersect_pct < .5:
+                        continue
+                    prev_end = None
+                    table_row = []
+                    table_cell = ""
+                    cell_bbox = None
+                    for span in line["spans"]:
+                        for char in span["chars"]:
+                            x_start, y_start, x_end, y_end = char["bbox"]
+                            if cell_bbox is None:
+                                cell_bbox = char["bbox"]
+                            else:
+                                cell_bbox = merge_boxes(cell_bbox, char["bbox"])
 
-                    text = span.text
-                    if dot_multiline_pattern.match(text):
-                        text = dot_pattern.sub(' ', text)
-                    row.append(text)
-            if len(row) > 0:
-                table_rows.append(row)
+                            x_start /= page_width
+                            x_end /= page_width
+                            if prev_end is None or x_start - prev_end < .01:
+                                table_cell += char["char"]
+                            else:
+                                table_row.append(replace_dots(table_cell.strip()))
+                                table_cell = char["char"]
+                                cell_bbox = char["bbox"]
+                            prev_end = x_end
+                        if len(table_cell) > 0:
+                            table_row.append(replace_dots(table_cell.strip()))
+                            table_cell = ""
+                    if len(table_row) > 0:
+                        table_rows.append(table_row)
 
-            # Don't render tables if they will be too large
-            if max([len("".join(r)) for r in table_rows]) > 300 or len(table_rows[0]) > 8:
+            # Skip empty tables
+            if len(table_rows) == 0:
                 continue
 
-            new_text = tabulate(table_rows, headers="firstrow", tablefmt="github")
-            new_span = Span(
-                bbox=block.bbox,
-                span_id=f"{table_idx}_fix_table",
-                font="Table",
-                font_size=0,
-                font_weight=0,
+            max_row_len = max([len(r) for r in table_rows])
+            for row in table_rows:
+                while len(row) < max_row_len:
+                    row.append("")
+
+            table_text = tabulate(table_rows, headers="firstrow", tablefmt="github")
+            table_block = Block(
+                bbox=table_box,
                 block_type="Table",
-                text=new_text
+                pnum=pnum,
+                lines=[Line(
+                    bbox=table_box,
+                    spans=[Span(
+                        bbox=table_box,
+                        span_id=f"{table_idx}_table",
+                        font="Table",
+                        font_size=0,
+                        font_weight=0,
+                        block_type="Table",
+                        text=table_text
+                    )]
+                )]
             )
-            new_line = Line(
-                bbox=block.bbox,
-                spans=[new_span]
-            )
-            block.lines = [new_line]
-            table_idx += 1
-    return table_idx
+            insert_point = table_insert_points[table_idx]
+            new_page_blocks.insert(insert_point, table_block)
+            table_count += 1
+        page.blocks = new_page_blocks
+    return table_count
