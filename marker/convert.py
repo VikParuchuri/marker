@@ -12,7 +12,7 @@ from marker.ocr.detection import surya_detection
 from marker.ocr.recognition import run_ocr
 from marker.pdf.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
-from marker.equations.texify import replace_equations
+from marker.equations.equations import replace_equations
 from marker.pdf.utils import find_filetype
 from marker.postprocessors.editor import edit_full_text
 from marker.cleaners.code import identify_code_blocks, indent_blocks
@@ -55,7 +55,7 @@ def convert_single_pdf(
 
     # Get initial text blocks from the pdf
     doc = pdfium.PdfDocument(fname)
-    pages, char_blocks, toc = get_text_blocks(
+    pages, toc = get_text_blocks(
         doc,
         max_pages=max_pages,
     )
@@ -100,7 +100,7 @@ def convert_single_pdf(
     indent_blocks(pages)
 
     # Fix table blocks
-    table_count = arrange_table_rows(pages, char_blocks)
+    table_count = arrange_table_rows(pages)
     out_meta["block_stats"]["table"] = table_count
 
     for page in pages:

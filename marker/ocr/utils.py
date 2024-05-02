@@ -1,4 +1,10 @@
-def font_flags_decomposer(flags):
+from typing import Optional
+
+
+def font_flags_decomposer(flags: Optional[int]):
+    if flags is None:
+        return ""
+
     flags = int(flags)
 
     l = []

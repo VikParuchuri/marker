@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from marker.schema.bbox import BboxElement
 from marker.schema.schema import Block, Span
@@ -13,6 +13,8 @@ class Page(BboxElement):
     text_lines: Optional[TextDetectionResult] = None
     layout: Optional[LayoutResult] = None
     order: Optional[OrderResult] = None
+    ocr_method: Optional[str] = None # One of "surya" or "tesseract"
+    char_blocks: Optional[List[Dict]] = None # Blocks with character-level data from pdftext
 
     def get_nonblank_lines(self):
         lines = self.get_all_lines()

@@ -83,7 +83,8 @@ def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[P
             pnum=page_idx,
             bbox=old_page.bbox,
             rotation=old_page.rotation,
-            text_lines=text_lines
+            text_lines=text_lines,
+            ocr_method="surya"
         )
         new_pages.append(page)
     return new_pages
@@ -131,6 +132,7 @@ def _tesseract_recognition(in_pdf, langs: List[str]) -> Optional[Page]:
 
     new_doc = pdfium.PdfDocument(out_pdf.getvalue())
 
-    blocks, _, _ = get_text_blocks(new_doc, max_pages=1)
+    blocks, _ = get_text_blocks(new_doc, max_pages=1)
     page = blocks[0]
+    page.ocr_method = "tesseract"
     return page

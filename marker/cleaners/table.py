@@ -15,14 +15,63 @@ def replace_dots(text):
     return text
 
 
-def arrange_table_rows(pages: List[Page], char_pages: List[Dict]):
+def get_table_surya(page, table_box) -> List[List[str]]:
+    table_rows = []
+    for block_idx, block in enumerate(page.blocks):
+        for line_idx, line in enumerate(block.lines):
+            line_bbox = line.bbox
+            intersect_pct = box_intersection_pct(line_bbox, table_box)
+            if intersect_pct < .5 or len(line.spans) == 0:
+                continue
+            table_rows.append([s.text for s in line.spans])
+    return table_rows
+
+
+def get_table_pdftext(page: Page, table_box) -> List[List[str]]:
+    page_width = page.width
+    table_rows = []
+    for block_idx, block in enumerate(page.char_blocks):
+        for line_idx, line in enumerate(block["lines"]):
+            line_bbox = line["bbox"]
+            intersect_pct = box_intersection_pct(line_bbox, table_box)
+            if intersect_pct < .5:
+                continue
+            prev_end = None
+            table_row = []
+            table_cell = ""
+            cell_bbox = None
+            for span in line["spans"]:
+                for char in span["chars"]:
+                    x_start, y_start, x_end, y_end = char["bbox"]
+                    if cell_bbox is None:
+                        cell_bbox = char["bbox"]
+                    else:
+                        cell_bbox = merge_boxes(cell_bbox, char["bbox"])
+
+                    x_start /= page_width
+                    x_end /= page_width
+                    if prev_end is None or x_start - prev_end < .01:
+                        table_cell += char["char"]
+                    else:
+                        table_row.append(replace_dots(table_cell.strip()))
+                        table_cell = char["char"]
+                        cell_bbox = char["bbox"]
+                    prev_end = x_end
+                if len(table_cell) > 0:
+                    table_row.append(replace_dots(table_cell.strip()))
+                    table_cell = ""
+            if len(table_row) > 0:
+                table_rows.append(table_row)
+    return table_rows
+
+
+def arrange_table_rows(pages: List[Page]):
     # Formats tables nicely into github flavored markdown
     table_count = 0
-    for page, char_page in zip(pages, char_pages):
+    for page in pages:
         table_insert_points = {}
         blocks_to_remove = set()
         pnum = page.pnum
-        page_width = char_page["bbox"][2] - char_page["bbox"][0]
 
         page_table_boxes = [b for b in page.layout.bboxes if b.label == "Table"]
         page_table_boxes = [rescale_bbox(page.layout.image_bbox, page.bbox, b.bbox) for b in page_table_boxes]
@@ -43,40 +92,11 @@ def arrange_table_rows(pages: List[Page], char_pages: List[Dict]):
         for table_idx, table_box in enumerate(page_table_boxes):
             if table_idx not in table_insert_points:
                 continue
-            table_rows = []
-            for block_idx, block in enumerate(char_page["blocks"]):
-                for line_idx, line in enumerate(block["lines"]):
-                    line_bbox = line["bbox"]
-                    intersect_pct = box_intersection_pct(line_bbox, table_box)
-                    if intersect_pct < .5:
-                        continue
-                    prev_end = None
-                    table_row = []
-                    table_cell = ""
-                    cell_bbox = None
-                    for span in line["spans"]:
-                        for char in span["chars"]:
-                            x_start, y_start, x_end, y_end = char["bbox"]
-                            if cell_bbox is None:
-                                cell_bbox = char["bbox"]
-                            else:
-                                cell_bbox = merge_boxes(cell_bbox, char["bbox"])
 
-                            x_start /= page_width
-                            x_end /= page_width
-                            if prev_end is None or x_start - prev_end < .01:
-                                table_cell += char["char"]
-                            else:
-                                table_row.append(replace_dots(table_cell.strip()))
-                                table_cell = char["char"]
-                                cell_bbox = char["bbox"]
-                            prev_end = x_end
-                        if len(table_cell) > 0:
-                            table_row.append(replace_dots(table_cell.strip()))
-                            table_cell = ""
-                    if len(table_row) > 0:
-                        table_rows.append(table_row)
-
+            if page.ocr_method == "surya":
+                table_rows = get_table_surya(page, table_box)
+            else:
+                table_rows = get_table_pdftext(page, table_box)
             # Skip empty tables
             if len(table_rows) == 0:
                 continue

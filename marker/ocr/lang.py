@@ -17,7 +17,7 @@ def replace_langs_with_codes(langs):
 
 
 def validate_langs(langs):
-    if settings.OCR_ENGINE == "surya":
+    if settings.OCR_ENGINE_INTERNAL == "surya":
         for lang in langs:
             if lang not in CODE_TO_LANGUAGE:
                 raise ValueError(f"Invalid language code {lang} for Surya OCR")

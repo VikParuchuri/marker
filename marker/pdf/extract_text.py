@@ -55,6 +55,7 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
         pnum=page["page"],
         bbox=page["bbox"],
         rotation=page["rotation"],
+        char_blocks=page["blocks"]
     )
     return out_page
 
@@ -70,7 +71,7 @@ def get_text_blocks(doc, max_pages: Optional[int] = None) -> (List[Page], Dict):
     char_blocks = dictionary_output(doc, page_range=page_range, keep_chars=True)
     marker_blocks = [pdftext_format_to_blocks(page, pnum) for pnum, page in enumerate(char_blocks)]
 
-    return marker_blocks, char_blocks, toc
+    return marker_blocks, toc
 
 
 def naive_get_text(doc):
