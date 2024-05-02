@@ -27,9 +27,7 @@ def find_equation_blocks(page, processor):
 
 
 def replace_blocks_with_latex(page_blocks: Page, page_equation_blocks, predictions, pnum, processor):
-    new_blocks = []
     converted_spans = []
-    current_region = 0
     idx = 0
     success_count = 0
     fail_count = 0

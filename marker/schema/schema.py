@@ -1,10 +1,9 @@
-from collections import Counter
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 import ftfy
 
-from marker.schema.bbox import multiple_boxes_intersect, BboxElement
+from marker.schema.bbox import BboxElement
 from marker.settings import settings
 
 
@@ -47,12 +46,6 @@ class Block(BboxElement):
     def prelim_text(self):
         return "\n".join([l.prelim_text for l in self.lines])
 
-    def contains_equation(self, equation_boxes=None):
-        conditions = [s.block_type == "Formula" for l in self.lines for s in l.spans]
-        if equation_boxes:
-            conditions += [multiple_boxes_intersect(self.bbox, equation_boxes)]
-        return any(conditions)
-
     def filter_spans(self, bad_span_ids):
         new_lines = []
         for line in self.lines:
@@ -77,22 +70,11 @@ class Block(BboxElement):
                 new_lines.append(line)
         self.lines = new_lines
 
-
-class MergedLine(BboxElement):
-    text: str
-    fonts: List[str]
-
-    def most_common_font(self):
-        counter = Counter(self.fonts)
-        return counter.most_common(1)[0][0]
+    def font_info(self, prop="font"):
+        font_info = []
+        for line in self.lines:
+            for span in line.spans:
+                font_info.append(getattr(span, prop))
+        return font_info
 
 
-class MergedBlock(BboxElement):
-    lines: List[MergedLine]
-    pnum: int
-    block_type: Optional[str]
-
-
-class FullyMergedBlock(BaseModel):
-    text: str
-    block_type: str

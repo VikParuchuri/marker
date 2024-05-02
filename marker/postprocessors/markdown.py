@@ -1,4 +1,4 @@
-from marker.schema.schema import MergedLine, MergedBlock, FullyMergedBlock
+from marker.schema.merged import MergedLine, MergedBlock, FullyMergedBlock
 from marker.schema.page import Page
 import re
 from typing import List

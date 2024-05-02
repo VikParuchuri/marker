@@ -1,10 +1,8 @@
 import re
 from typing import List
 
-from nltk import wordpunct_tokenize
-
 from marker.ocr.utils import alphanum_ratio
-from marker.schema.bbox import rescale_bbox
+from marker.schema.bbox import rescale_bbox, box_intersection_pct
 from marker.schema.page import Page
 from marker.settings import settings
 
@@ -22,14 +20,10 @@ def should_ocr_page(page: Page, no_text: bool):
     return any(conditions) or settings.OCR_ALL_PAGES
 
 
-def detect_bad_ocr(text, space_threshold=.6, newline_threshold=.5, alphanum_threshold=.4):
+def detect_bad_ocr(text, space_threshold=.7, newline_threshold=.6, alphanum_threshold=.3):
     if len(text) == 0:
         # Assume OCR failed if we have no text
         return True
-
-    words = wordpunct_tokenize(text)
-    words = [w for w in words if w.strip()]
-    alpha_words = [word for word in words if word.isalnum()]
 
     spaces = len(re.findall(r'\s+', text))
     alpha_chars = len(re.sub(r'\s+', '', text))
@@ -45,7 +39,7 @@ def detect_bad_ocr(text, space_threshold=.6, newline_threshold=.5, alphanum_thre
         return True
 
     invalid_chars = len([c for c in text if c in settings.INVALID_CHARS])
-    if invalid_chars > max(3.0, len(text) * .02):
+    if invalid_chars > max(4.0, len(text) * .03):
         return True
 
     return False
@@ -58,7 +52,7 @@ def no_text_found(pages: List[Page]):
     return len(full_text.strip()) == 0
 
 
-def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.5):
+def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.6):
     found_lines = 0
     for detected_line in page.text_lines.bboxes:
 
@@ -66,12 +60,13 @@ def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.5)
         detected_bbox = detected_line.bbox
         detected_bbox = rescale_bbox(page.text_lines.image_bbox, page.bbox, detected_bbox)
 
+        total_intersection = 0
         for block in page.blocks:
             for line in block.lines:
-                intersection_pct = line.intersection_pct(detected_bbox)
-                if intersection_pct > intersect_thresh:
-                    found_lines += 1
-                    break
+                intersection_pct = box_intersection_pct(detected_bbox, line.bbox)
+                total_intersection += intersection_pct
+        if total_intersection > intersect_thresh:
+            found_lines += 1
 
     total_lines = len(page.text_lines.bboxes)
     if total_lines == 0:

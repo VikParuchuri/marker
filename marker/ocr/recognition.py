@@ -81,8 +81,8 @@ def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[P
         page = Page(
             blocks=blocks,
             pnum=page_idx,
-            bbox=old_page.bbox,
-            rotation=old_page.rotation,
+            bbox=result.image_bbox,
+            rotation=0,
             text_lines=text_lines,
             ocr_method="surya"
         )

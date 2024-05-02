@@ -15,15 +15,25 @@ def replace_dots(text):
     return text
 
 
-def get_table_surya(page, table_box) -> List[List[str]]:
+def get_table_surya(page, table_box, y_tol=.005) -> List[List[str]]:
     table_rows = []
+    row_y_coord = None
+    table_row = []
     for block_idx, block in enumerate(page.blocks):
         for line_idx, line in enumerate(block.lines):
             line_bbox = line.bbox
             intersect_pct = box_intersection_pct(line_bbox, table_box)
             if intersect_pct < .5 or len(line.spans) == 0:
                 continue
-            table_rows.append([s.text for s in line.spans])
+            normed_y_start = line_bbox[1] / page.height
+            if row_y_coord is None or abs(normed_y_start - row_y_coord) < y_tol:
+                table_row.extend([s.text for s in line.spans])
+            else:
+                table_rows.append(table_row)
+                table_row = [s.text for s in line.spans]
+            row_y_coord = normed_y_start
+    if len(table_row) > 0:
+        table_rows.append(table_row)
     return table_rows
 
 

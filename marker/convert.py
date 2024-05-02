@@ -73,6 +73,7 @@ def convert_single_pdf(
     # OCR pages as needed
     pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, parallel_factor)
 
+    out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
         return "", out_meta
