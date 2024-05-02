@@ -5,7 +5,7 @@ from marker.debug.data import dump_equation_debug_data
 from marker.equations.images import get_equation_image
 from marker.equations.inference import get_total_texify_tokens, get_latex_batched
 from marker.schema.page import Page
-from marker.schema.schema import Line, Span, Block
+from marker.schema.block import Line, Span, Block
 from marker.settings import settings
 
 

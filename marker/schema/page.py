@@ -2,7 +2,7 @@ from collections import Counter
 from typing import List, Optional, Dict
 
 from marker.schema.bbox import BboxElement
-from marker.schema.schema import Block, Span
+from marker.schema.block import Block, Span
 from surya.schema import TextDetectionResult, LayoutResult, OrderResult
 
 

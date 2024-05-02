@@ -17,6 +17,8 @@ class Span(BboxElement):
     font: str
     font_weight: float
     font_size: float
+    bold: Optional[bool] = None
+    italic: Optional[bool] = None
 
 
     @field_validator('text')

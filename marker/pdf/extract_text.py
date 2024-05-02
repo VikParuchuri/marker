@@ -8,7 +8,7 @@ from marker.pdf.utils import find_filetype
 from marker.ocr.utils import font_flags_decomposer
 from marker.ocr.heuristics import detect_bad_ocr
 from marker.settings import settings
-from marker.schema.schema import Span, Line, Block
+from marker.schema.block import Span, Line, Block
 from marker.schema.page import Page
 from pdftext.extraction import dictionary_output
 

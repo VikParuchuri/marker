@@ -13,14 +13,12 @@ Marker converts PDF, EPUB, and MOBI to markdown.  It's 10x faster than nougat, m
 
 Marker is a pipeline of deep learning models:
 
-- Extract text, OCR if necessary (heuristics, tesseract)
-- Detect page layout ([layout segmenter](https://huggingface.co/vikp/layout_segmenter), [column detector](https://huggingface.co/vikp/column_detector))
-- Clean and format each block (heuristics, [texify](https://huggingface.co/vikp/texify))
+- Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya), tesseract)
+- Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
+- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify)
 - Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor_t5))
 
-Relying on autoregressive forward passes to generate text is slow and prone to hallucination/repetition.  From the nougat paper: `We observed [repetition] in 1.5% of pages in the test set, but the frequency increases for out-of-domain documents.`  In my anecdotal testing, repetitions happen on 5%+ of out-of-domain (non-arXiv) pages.  
-
-Nougat is an amazing model, but I wanted a faster and more general purpose solution. Marker is 10x faster and has low hallucination risk because it only passes equation blocks through an LLM forward pass.
+It only uses models where necessary, which improves speed and accuracy.
 
 ## Examples
 
@@ -51,7 +49,6 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 - Marker will not convert 100% of equations to LaTeX.  This is because it has to first detect equations, then convert them.
 - Whitespace and indentations are not always respected.
 - Not all lines/spans will be joined properly.
-- Languages similar to English (Spanish, French, German, Russian, etc) have the best support. There is provisional support for Chinese, Japanese, Korean, and Hindi, but it may not work as well.  You can add other languages by adding them to the `TESSERACT_LANGUAGES` and `SPELLCHECK_LANGUAGES` settings in `settings.py`.
 - This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
 
 # Installation
@@ -65,13 +62,6 @@ First, clone the repo:
 
 ## Linux
 
-- Optional: Install system requirements, only needed if using `ocrmypdf` as the ocr backend
-  - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `scripts/install/tesseract_5_install.sh`.
-  - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
-  - Install other requirements with `cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y`
-  - Set the tesseract data folder path
-    - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
-    - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 - Install python requirements
   - `poetry install`
   - `poetry shell` to activate your poetry venv
@@ -79,15 +69,24 @@ First, clone the repo:
   - GPU only: run `pip install torch` to install other torch dependencies.
   - CPU only: Uninstall torch with `poetry remove torch`, then follow the [CPU install](https://pytorch.org/get-started/locally/) instructions.
 
+- Optional: Install system requirements, only needed if using `ocrmypdf` as the ocr backend
+  - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `scripts/install/tesseract_5_install.sh`.
+  - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
+  - Install other requirements with `cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y`
+  - Set the tesseract data folder path
+    - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
+    - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+
 ## Mac
+
+- Install python requirements
+  - `poetry install`
+  - `poetry shell` to activate your poetry venv
 
 - Optional: Install system requirements from `scripts/install/brew-requirements.txt`, only needed if using `ocrmypdf` for OCR
   - Set the tesseract data folder path
     - Find the tesseract data folder `tessdata` with `brew list tesseract`
     - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
-- Install python requirements
-  - `poetry install`
-  - `poetry shell` to activate your poetry venv
 
 # Usage
 

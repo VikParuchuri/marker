@@ -1,28 +1,33 @@
 from typing import Optional
 
 
-def font_flags_decomposer(flags: Optional[int]):
+def font_flags_decomposer(flags: Optional[int]) -> str:
     if flags is None:
         return ""
 
-    flags = int(flags)
+    flag_descriptions = []
+    if flags & (1 << 0):  # PDFFONT_FIXEDPITCH
+        flag_descriptions.append("fixed_pitch")
+    if flags & (1 << 1):  # PDFFONT_SERIF
+        flag_descriptions.append("serif")
+    if flags & (1 << 2):  # PDFFONT_SYMBOLIC
+        flag_descriptions.append("symbolic")
+    if flags & (1 << 3):  # PDFFONT_SCRIPT
+        flag_descriptions.append("script")
+    if flags & (1 << 5):  # PDFFONT_NONSYMBOLIC
+        flag_descriptions.append("non_symbolic")
+    if flags & (1 << 6):  # PDFFONT_ITALIC
+        flag_descriptions.append("italic")
+    if flags & (1 << 16): # PDFFONT_ALLCAP
+        flag_descriptions.append("all_cap")
+    if flags & (1 << 17): # PDFFONT_SMALLCAP
+        flag_descriptions.append("small_cap")
+    if flags & (1 << 18): # PDFFONT_FORCEBOLD
+        flag_descriptions.append("bold")
+    if flags & (1 << 19): # PDFFONT_USEEXTERNATTR
+        flag_descriptions.append("use_extern_attr")
 
-    l = []
-    if flags & 2 ** 0:
-        l.append("superscript")
-    if flags & 2 ** 1:
-        l.append("italic")
-    if flags & 2 ** 2:
-        l.append("serifed")
-    else:
-        l.append("sans")
-    if flags & 2 ** 3:
-        l.append("monospaced")
-    else:
-        l.append("proportional")
-    if flags & 2 ** 4:
-        l.append("bold")
-    return "_".join(l)
+    return "_".join(flag_descriptions)
 
 
 def alphanum_ratio(text):

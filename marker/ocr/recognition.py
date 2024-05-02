@@ -11,7 +11,7 @@ from surya.ocr import run_recognition
 from marker.ocr.heuristics import should_ocr_page, no_text_found, detect_bad_ocr
 from marker.pdf.images import render_image
 from marker.schema.page import Page
-from marker.schema.schema import Block, Line, Span
+from marker.schema.block import Block, Line, Span
 from marker.settings import settings
 from marker.pdf.extract_text import get_text_blocks
 

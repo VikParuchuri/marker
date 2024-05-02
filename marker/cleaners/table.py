@@ -1,5 +1,5 @@
 from marker.schema.bbox import merge_boxes, box_intersection_pct, rescale_bbox
-from marker.schema.schema import Line, Span, Block
+from marker.schema.block import Line, Span, Block
 from marker.schema.page import Page
 from tabulate import tabulate
 from typing import List, Dict
