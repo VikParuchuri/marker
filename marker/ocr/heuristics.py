@@ -63,7 +63,7 @@ def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.6)
         total_intersection = 0
         for block in page.blocks:
             for line in block.lines:
-                intersection_pct = box_intersection_pct(detected_bbox, line.bbox)
+                intersection_pct = box_intersection_pct(line.bbox, detected_bbox)
                 total_intersection += intersection_pct
         if total_intersection > intersect_thresh:
             found_lines += 1

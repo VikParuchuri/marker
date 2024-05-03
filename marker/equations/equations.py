@@ -7,7 +7,7 @@ from marker.equations.images import get_equation_image
 from marker.equations.inference import get_total_texify_tokens, get_latex_batched
 from marker.schema.bbox import rescale_bbox
 from marker.schema.page import Page
-from marker.schema.block import Line, Span, Block, bbox_from_lines
+from marker.schema.block import Line, Span, Block, bbox_from_lines, split_block_lines
 from marker.settings import settings
 
 
@@ -28,11 +28,7 @@ def find_equation_blocks(page, processor):
                     equation_lines[region_idx].append(line)
 
                     if region_idx not in insert_points:
-                        # Insert before the block if line is at the beginning of the block, otherwise after the block
-                        if line_idx <= len(block.lines) // 2:
-                            insert_points[region_idx] = block_idx
-                        else:
-                            insert_points[region_idx] = block_idx + 1
+                        insert_points[region_idx] = (block_idx, line_idx)
 
     block_lines_to_remove = defaultdict(set)
     for region_idx, equation_region in enumerate(equation_regions):
@@ -44,8 +40,13 @@ def find_equation_blocks(page, processor):
         equation_bbox = bbox_from_lines(equation_block)
 
         total_tokens = get_total_texify_tokens(block_text, processor)
-        selected_blocks = (equation_insert, total_tokens, block_text, equation_bbox)
+        equation_insert_line_idx = equation_insert[1]
+        equation_insert_line_idx -= len(
+            [x for x in lines_to_remove[region_idx] if x[0] == equation_insert[0] and x[1] < equation_insert[1]])
+
+        selected_blocks = [equation_insert[0], equation_insert_line_idx, total_tokens, block_text, equation_bbox]
         if total_tokens < settings.TEXIFY_MODEL_MAX:
+            # Account for the lines we're about to remove
             for item in lines_to_remove[region_idx]:
                 block_lines_to_remove[item[0]].add(item[1])
             equation_blocks.append(selected_blocks)
@@ -58,12 +59,19 @@ def find_equation_blocks(page, processor):
     return equation_blocks
 
 
+def increment_insert_points(page_equation_blocks, insert_block_idx, insert_count):
+    for idx, (block_idx, line_idx, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
+        if block_idx >= insert_block_idx:
+            page_equation_blocks[idx][0] += insert_count
+
+
 def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnum, processor):
     converted_spans = []
     idx = 0
     success_count = 0
     fail_count = 0
-    for block_number, (insert_point, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
+    total_inserted = 0
+    for block_number, (insert_block_idx, insert_line_idx, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
         latex_text = predictions[block_number]
         conditions = [
             get_total_texify_tokens(latex_text, processor) < settings.TEXIFY_MODEL_MAX,  # Make sure we didn't get to the overall token max, indicates run-on
@@ -97,7 +105,25 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
             new_block.lines[0].spans[0].text = latex_text
             converted_spans.append(deepcopy(new_block.lines[0].spans[0]))
 
-        page_blocks.blocks.insert(insert_point, new_block)
+        # Add in the new LaTeX block
+        if insert_line_idx == 0:
+            page_blocks.blocks.insert(insert_block_idx, new_block)
+            increment_insert_points(page_equation_blocks, insert_block_idx, 1)
+        elif insert_line_idx >= len(page_blocks.blocks[insert_block_idx].lines):
+            page_blocks.blocks.insert(insert_block_idx + 1, new_block)
+            increment_insert_points(page_equation_blocks, insert_block_idx + 1, 1)
+        else:
+            new_blocks = []
+            for block_idx, block in enumerate(page_blocks.blocks):
+                if block_idx == insert_block_idx:
+                    split_block = split_block_lines(block, insert_line_idx)
+                    new_blocks.append(split_block[0])
+                    new_blocks.append(new_block)
+                    new_blocks.append(split_block[1])
+                    increment_insert_points(page_equation_blocks, insert_block_idx, 2)
+                else:
+                    new_blocks.append(block)
+            page_blocks.blocks = new_blocks
 
     return success_count, fail_count, converted_spans
 
@@ -117,7 +143,7 @@ def replace_equations(doc, pages: List[Page], texify_model, batch_size=settings.
     token_counts = []
     for page_idx, page_equation_blocks in enumerate(equation_blocks):
         page_obj = doc[page_idx]
-        for equation_idx, (insert_idx, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
+        for equation_idx, (insert_block_idx, insert_line_idx, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
             png_image = get_equation_image(page_obj, pages[page_idx], equation_bbox)
 
             images.append(png_image)

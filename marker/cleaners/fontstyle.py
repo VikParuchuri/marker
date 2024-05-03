@@ -20,6 +20,10 @@ def find_bold_italic(pages: List[Page], bold_min_weight=550):
                         span.italic = True
 
                     font_weights.append(span.font_weight)
+
+    if len(font_weights) == 0:
+        return
+
     font_weights = np.array(font_weights)
     bold_thresh = np.percentile(font_weights, 90)
     bold_thresh_lower = np.percentile(font_weights, 75)
