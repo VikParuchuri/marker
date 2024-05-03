@@ -32,7 +32,7 @@ def setup_texify_model():
 
 def setup_layout_model():
     model = segformer.load_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
-    processor = segformer.load_processor()
+    processor = segformer.load_processor(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
     model.processor = processor
     return model
 

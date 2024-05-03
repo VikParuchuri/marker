@@ -199,7 +199,7 @@ Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running
 
 # Commercial usage
 
-All models were trained from scratch, so they're okay for commercial usage.  The weights for the models are licensed cc-by-nc-sa-4.0, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period.
+All models were trained from scratch, so they're okay for commercial usage.  The weights for the models are licensed cc-by-nc-sa-4.0, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised.
 
 If you want to remove the GPL license requirements for inference or use the weights commercially over the revenue limit, please contact me at marker@vikas.sh for dual licensing.
 

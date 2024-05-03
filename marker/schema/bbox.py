@@ -100,5 +100,5 @@ def rescale_bbox(orig_dim, new_dim, bbox):
     width_scaler = detected_width / page_width
     height_scaler = detected_height / page_height
 
-    bbox = [bbox[0] / width_scaler, bbox[1] / height_scaler, bbox[2] / width_scaler, bbox[3] / height_scaler]
-    return bbox
+    new_bbox = [bbox[0] / width_scaler, bbox[1] / height_scaler, bbox[2] / width_scaler, bbox[3] / height_scaler]
+    return new_bbox
