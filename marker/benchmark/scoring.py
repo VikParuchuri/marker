@@ -1,6 +1,6 @@
 import math
 
-from rapidfuzz import fuzz, distance
+from rapidfuzz import fuzz
 import re
 
 CHUNK_MIN_CHARS = 25

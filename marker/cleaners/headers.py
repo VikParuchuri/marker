@@ -1,12 +1,13 @@
 import re
 from collections import Counter, defaultdict
 from itertools import chain
-from thefuzz import fuzz
+from rapidfuzz import fuzz
 
 from sklearn.cluster import DBSCAN
 import numpy as np
 
-from marker.schema import Page, FullyMergedBlock
+from marker.schema.merged import FullyMergedBlock
+from marker.schema.page import Page
 from typing import List, Tuple
 
 
@@ -28,32 +29,6 @@ def filter_header_footer(all_page_blocks, max_selected_lines=2):
 
     bad_span_ids = filter_common_elements(first_lines, len(all_page_blocks))
     bad_span_ids += filter_common_elements(last_lines, len(all_page_blocks))
-    return bad_span_ids
-
-
-def categorize_blocks(all_page_blocks: List[Page]):
-    spans = list(chain.from_iterable([p.get_nonblank_spans() for p in all_page_blocks]))
-    X = np.array(
-        [(*s.bbox, len(s.text)) for s in spans]
-    )
-
-    dbscan = DBSCAN(eps=.1, min_samples=5)
-    dbscan.fit(X)
-    labels = dbscan.labels_
-    label_chars = defaultdict(int)
-    for i, label in enumerate(labels):
-        label_chars[label] += len(spans[i].text)
-
-    most_common_label = None
-    most_chars = 0
-    for i in label_chars.keys():
-        if label_chars[i] > most_chars:
-            most_common_label = i
-            most_chars = label_chars[i]
-
-    labels = [0 if label == most_common_label else 1 for label in labels]
-    bad_span_ids = [spans[i].span_id for i in range(len(spans)) if labels[i] == 1]
-
     return bad_span_ids
 
 

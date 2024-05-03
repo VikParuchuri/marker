@@ -4,17 +4,17 @@ import time
 from collections import defaultdict
 
 from tqdm import tqdm
+import pypdfium2 as pdfium
 
 from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
 from marker.models import load_all_models
 from marker.benchmark.scoring import score_text
-from marker.extract_text import naive_get_text
+from marker.pdf.extract_text import naive_get_text
 import json
 import os
 import subprocess
 import shutil
-import fitz as pymupdf
 from tabulate import tabulate
 
 configure_logging()
@@ -62,7 +62,7 @@ def main():
             reference = f.read()
 
         pdf_filename = os.path.join(args.in_folder, fname)
-        doc = pymupdf.open(pdf_filename)
+        doc = pdfium.PdfDocument(pdf_filename)
         pages[fname] = len(doc)
 
         for method in methods:

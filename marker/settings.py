@@ -4,7 +4,6 @@ from typing import Optional, List, Dict
 from dotenv import find_dotenv
 from pydantic import computed_field
 from pydantic_settings import BaseSettings
-import fitz as pymupdf
 import torch
 
 
@@ -32,47 +31,41 @@ class Settings(BaseSettings):
 
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
-        "application/epub+zip": "epub",
-        "application/x-mobipocket-ebook": "mobi",
-        "application/vnd.ms-xpsdocument": "xps",
-        "application/x-fictionbook+xml": "fb2"
+        #"application/epub+zip": "epub",
+        #"application/x-mobipocket-ebook": "mobi",
+        #"application/vnd.ms-xpsdocument": "xps",
+        #"application/x-fictionbook+xml": "fb2"
     }
 
-    # PyMuPDF
-    TEXT_FLAGS: int = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_LIGATURES & ~pymupdf.TEXT_PRESERVE_IMAGES
+    # Text line Detection
+    DETECTOR_BATCH_SIZE: Optional[int] = None # Defaults to 2 for CPU, 32 otherwise
+    SURYA_DETECTOR_DPI: int = 96
+    DETECTOR_POSTPROCESSING_CPU_WORKERS: int = 4
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "�"]
-    OCR_DPI: int = 400
-    TESSDATA_PREFIX: str = ""
-    TESSERACT_LANGUAGES: Dict = {
-        "English": "eng",
-        "Spanish": "spa",
-        "Portuguese": "por",
-        "French": "fra",
-        "German": "deu",
-        "Russian": "rus",
-        "Chinese": "chi_sim",
-        "Japanese": "jpn",
-        "Korean": "kor",
-        "Hindi": "hin",
-    }
-    TESSERACT_TIMEOUT: int = 20 # When to give up on OCR
-    SPELLCHECK_LANGUAGES: Dict = {
-        "English": "en",
-        "Spanish": "es",
-        "Portuguese": "pt",
-        "French": "fr",
-        "German": "de",
-        "Russian": "ru",
-        "Chinese": None,
-        "Japanese": None,
-        "Korean": None,
-        "Hindi": None,
-    }
+    OCR_ENGINE: Optional[str] = None # Which OCR engine to use, either "surya" or "ocrmypdf".  Defaults to "ocrmypdf" on CPU, "surya" on GPU.
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
+
+    ## Surya
+    SURYA_OCR_DPI: int = 96
+    RECOGNITION_BATCH_SIZE: Optional[int] = None # Batch size for surya OCR defaults to 8 for CPU/MPS, 256 otherwise
+
+    ## Tesseract
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
-    OCR_ENGINE: str = "ocrmypdf" # Which OCR engine to use, either "tesseract" or "ocrmypdf".  Ocrmypdf is higher quality, but slower.
+    TESSERACT_TIMEOUT: int = 20 # When to give up on OCR
+    TESSDATA_PREFIX: str = ""
+
+    @computed_field
+    def OCR_ENGINE_INTERNAL(self) -> str:
+        if self.OCR_ENGINE is not None:
+            return self.OCR_ENGINE
+
+        # Does not work with mps
+        if torch.cuda.is_available():
+            return "surya"
+
+        return "ocrmypdf"
 
     # Texify model
     TEXIFY_MODEL_MAX: int = 384 # Max inference length for texify
@@ -82,16 +75,13 @@ class Settings(BaseSettings):
     TEXIFY_MODEL_NAME: str = "vikp/texify"
 
     # Layout model
+    SURYA_LAYOUT_DPI: int = 96
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
-    LAYOUT_MODEL_MAX: int = 512
-    LAYOUT_CHUNK_OVERLAP: int = 64
-    LAYOUT_DPI: int = 96
-    LAYOUT_MODEL_NAME: str = "vikp/layout_segmenter"
-    LAYOUT_BATCH_SIZE: int = 8 # Max 512 tokens means high batch size
+    LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout2"
 
     # Ordering model
-    ORDERER_BATCH_SIZE: int = 32 # This can be high, because max token count is 128
-    ORDERER_MODEL_NAME: str = "vikp/column_detector"
+    SURYA_ORDER_DPI: int = 96
+    ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 4 for CPU/MPS, 32 otherwise
 
     # Final editing model
     EDITOR_BATCH_SIZE: int = 4
