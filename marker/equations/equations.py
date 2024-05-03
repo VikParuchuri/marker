@@ -30,7 +30,7 @@ def find_equation_blocks(page, processor):
                     if region_idx not in insert_points:
                         # Insert before the block if line is at the beginning of the block, otherwise after the block
                         if line_idx <= len(block.lines) // 2:
-                            insert_points[region_idx] = (block_idx, line_idx)
+                            insert_points[region_idx] = block_idx
                         else:
                             insert_points[region_idx] = block_idx + 1
 
