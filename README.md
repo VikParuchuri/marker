@@ -95,7 +95,7 @@ First, some configuration.  Note that settings can be overridden with env vars, 
 - Your torch device will be automatically detected, but you can manually set it also.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`. `cpu` is the default.
   - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
   - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
-- By default, marker will use `ocrmypdf` for OCR on CPU, and `surya` on GPU.  Surya is slower on CPU, but more accurate. `ocrmypdf` also requires external dependencies (see above). You can override the default with the `OCR_ENGINE` setting.
+- By default, marker will use `surya` for OCR.  Surya is slower on CPU, but more accurate than tesseract.  If you want faster OCR, set `OCR_ENGINE` to `ocrmypdf`. This also requires external dependencies (see above).
 - Inspect the other settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
 
 

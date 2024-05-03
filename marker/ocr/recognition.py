@@ -41,7 +41,7 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, parallel_factor
             ocr_success += 1
             pages[orig_idx] = page
 
-    return pages, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+    return pages, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success, "ocr_engine": ocr_method}
 
 
 def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[Page]) -> List[Optional[Page]]:

@@ -22,7 +22,11 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
         for l in block["lines"]:
             spans = []
             for i, s in enumerate(l["spans"]):
-                block_text = s["text"].rstrip("\n")
+                block_text = s["text"]
+                # Remove trailing newlines and carriage returns (tesseract)
+                while len(block_text) > 0 and block_text[-1] in ["\n", "\r"]:
+                    block_text = block_text[:-1]
+
                 block_text = block_text.replace("-\n", "") # Remove hyphenated line breaks
                 span_obj = Span(
                     text=block_text, # Remove end of line newlines, not spaces
