@@ -103,6 +103,8 @@ def line_separator(line1, line2, block_type, is_continuation=False):
         return line1 + "\n\n" + line2
     elif block_type == "Formula":
         return line1 + " " + line2
+    elif block_type == "Table":
+        return line1 + "\n\n" + line2
     else:
         return line1 + "\n" + line2
 

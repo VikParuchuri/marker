@@ -6,6 +6,23 @@ from typing import List, Dict
 import re
 
 
+def sort_char_blocks(blocks, tolerance=1.25):
+    vertical_groups = {}
+    for block in blocks:
+        group_key = round(block["bbox"][1] / tolerance) * tolerance
+        if group_key not in vertical_groups:
+            vertical_groups[group_key] = []
+        vertical_groups[group_key].append(block)
+
+    # Sort each group horizontally and flatten the groups into a single list
+    sorted_blocks = []
+    for _, group in sorted(vertical_groups.items()):
+        sorted_group = sorted(group, key=lambda x: x["bbox"][0])
+        sorted_blocks.extend(sorted_group)
+
+    return sorted_blocks
+
+
 def replace_dots(text):
     dot_pattern = re.compile(r'(\s*\.\s*){4,}')
     dot_multiline_pattern = re.compile(r'.*(\s*\.\s*){4,}.*', re.DOTALL)
@@ -21,23 +38,21 @@ def replace_newlines(text):
     return newline_pattern.sub(' ', text.strip())
 
 
-def get_table_surya(page, table_box, y_tol=.005) -> List[List[str]]:
+def get_table_surya(page, table_box, space_tol=.01) -> List[List[str]]:
     table_rows = []
     table_row = []
     x_position = None
-    y_position = None
     for block_idx, block in enumerate(page.blocks):
         for line_idx, line in enumerate(block.lines):
             line_bbox = line.bbox
             intersect_pct = box_intersection_pct(line_bbox, table_box)
             if intersect_pct < .5 or len(line.spans) == 0:
                 continue
-            normed_y_start = line_bbox[1] / page.height
             normed_x_start = line_bbox[0] / page.width
             normed_x_end = line_bbox[2] / page.width
 
             cells = [[s.bbox, s.text] for s in line.spans]
-            if x_position is None or (normed_x_start > x_position and abs(normed_y_start - y_position) < y_tol):
+            if x_position is None or normed_x_start > x_position - space_tol:
                 # Same row
                 table_row.extend(cells)
             else:
@@ -45,7 +60,6 @@ def get_table_surya(page, table_box, y_tol=.005) -> List[List[str]]:
                 if len(table_row) > 0:
                     table_rows.append(table_row)
                 table_row = cells
-            y_position = normed_y_start
             x_position = normed_x_end
     if len(table_row) > 0:
         table_rows.append(table_row)
@@ -102,8 +116,10 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01) -> List[List[str]]:
     cell_bbox = None
     prev_end = None
     table_row = []
-    for block_idx, block in enumerate(page.char_blocks):
-        for line_idx, line in enumerate(block["lines"]):
+    sorted_char_blocks = sort_char_blocks(page.char_blocks)
+    for block_idx, block in enumerate(sorted_char_blocks):
+        sorted_block_lines = sort_char_blocks(block["lines"])
+        for line_idx, line in enumerate(sorted_block_lines):
             line_bbox = line["bbox"]
             intersect_pct = box_intersection_pct(line_bbox, table_box)
             if intersect_pct < .5:

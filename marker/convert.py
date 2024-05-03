@@ -1,4 +1,7 @@
 import warnings
+
+from marker.cleaners.text import cleanup_text
+
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
 import pypdfium2 as pdfium
@@ -131,8 +134,7 @@ def convert_single_pdf(
     full_text = get_full_text(text_blocks)
 
     # Handle empty blocks being joined
-    full_text = re.sub(r'\n{3,}', '\n\n', full_text)
-    full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
+    full_text = cleanup_text(full_text)
 
     # Replace bullet characters with a -
     full_text = replace_bullets(full_text)
