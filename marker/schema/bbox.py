@@ -36,6 +36,8 @@ def box_intersection_pct(box1, box2):
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
     bb1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
 
+    if bb1_area == 0:
+        return 0.0
     iou = intersection_area / bb1_area
     return iou
 

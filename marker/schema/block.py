@@ -80,3 +80,9 @@ class Block(BboxElement):
         return font_info
 
 
+def bbox_from_lines(lines: List[Line]):
+    min_x = min([line.bbox[0] for line in lines])
+    min_y = min([line.bbox[1] for line in lines])
+    max_x = max([line.bbox[2] for line in lines])
+    max_y = max([line.bbox[3] for line in lines])
+    return [min_x, min_y, max_x, max_y]

@@ -6,7 +6,7 @@ Marker converts PDF, EPUB, and MOBI to markdown.  It's 10x faster than nougat, m
 - Removes headers/footers/other artifacts
 - Converts most equations to latex
 - Formats code blocks and tables
-- Support for multiple languages (although most testing is done in English).  See `settings.py` for a language list, or to add your own.
+- Support for all languages (although most testing is done in English).
 - Works on GPU, CPU, or MPS
 
 ## How it works
@@ -111,7 +111,7 @@ python convert_single.py /path/to/file.pdf /path/to/output.md --parallel_factor 
 - `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
 - `--langs` is a comma separated list of the languages in the document, for OCR
 
-Make sure the `DEFAULT_LANG` setting is set appropriately for your document.
+Make sure the `DEFAULT_LANG` setting is set appropriately for your document.  The list of supported languages for OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you need more languages, you can use any language supported by [Tesseract](https://tesseract-ocr.github.io/tessdoc/Data-Files#data-files-for-version-400-november-29-2016) if you set `OCR_ENGINE` to `ocrmypdf`.  If you don't need OCR, marker can work with any language.
 
 ## Convert multiple files
 

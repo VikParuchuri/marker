@@ -17,7 +17,10 @@ from marker.pdf.utils import find_filetype
 from marker.postprocessors.editor import edit_full_text
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
+from marker.cleaners.headings import split_heading_blocks
+from marker.cleaners.fontstyle import find_bold_italic
 from marker.postprocessors.markdown import merge_spans, merge_lines, get_full_text
+
 from typing import List, Dict, Tuple, Optional
 import re
 from marker.settings import settings
@@ -116,6 +119,10 @@ def convert_single_pdf(
         batch_size=int(settings.TEXIFY_BATCH_SIZE * parallel_factor)
     )
     out_meta["block_stats"]["equations"] = eq_stats
+
+    # Split out headers
+    split_heading_blocks(pages)
+    find_bold_italic(pages)
 
     # Copy to avoid changing original data
     merged_lines = merge_spans(filtered)

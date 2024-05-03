@@ -26,11 +26,10 @@ def merge_spans(pages: List[Page]) -> List[List[MergedBlock]]:
                 fonts = []
                 for i, span in enumerate(line.spans):
                     font = span.font.lower()
-                    next_font = None
+                    next_span = None
                     next_idx = 1
                     while len(line.spans) > i + next_idx:
                         next_span = line.spans[i + next_idx]
-                        next_font = next_span.font.lower()
                         next_idx += 1
                         if len(next_span.text.strip()) > 2:
                             break
@@ -41,9 +40,9 @@ def merge_spans(pages: List[Page]) -> List[List[MergedBlock]]:
                     # Don't bold or italicize very short sequences
                     # Avoid bolding first and last sequence so lines can be joined properly
                     if len(span_text) > 3 and 0 < i < len(line.spans) - 1:
-                        if "ital" in font and (not next_font or "ital" not in next_font):
+                        if span.italic and (not next_span or not next_span.italic):
                             span_text = surround_text(span_text, "*")
-                        elif "bold" in font and (not next_font or "bold" not in next_font):
+                        elif span.bold and (not next_span or not next_span.bold):
                             span_text = surround_text(span_text, "**")
                     line_text += span_text
                 block_lines.append(MergedLine(
