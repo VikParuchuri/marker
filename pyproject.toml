@@ -40,6 +40,7 @@ rapidfuzz = "^3.8.1"
 surya-ocr = "^0.4.0"
 filetype = "^1.2.0"
 pdftext = "^0.3.4"
+regex = "^2024.4.28"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

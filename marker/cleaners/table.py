@@ -6,6 +6,27 @@ from typing import List, Dict
 import re
 
 
+def sort_table_blocks(blocks, tolerance=5):
+    vertical_groups = {}
+    for block in blocks:
+        if hasattr(block, "bbox"):
+            bbox = block.bbox
+        else:
+            bbox = block["bbox"]
+        group_key = round(bbox[1] / tolerance) * tolerance
+        if group_key not in vertical_groups:
+            vertical_groups[group_key] = []
+        vertical_groups[group_key].append(block)
+
+    # Sort each group horizontally and flatten the groups into a single list
+    sorted_blocks = []
+    for _, group in sorted(vertical_groups.items()):
+        sorted_group = sorted(group, key=lambda x: x.bbox[0] if hasattr(x, "bbox") else x["bbox"][0])
+        sorted_blocks.extend(sorted_group)
+
+    return sorted_blocks
+
+
 def replace_dots(text):
     dot_pattern = re.compile(r'(\s*\.\s*){4,}')
     dot_multiline_pattern = re.compile(r'.*(\s*\.\s*){4,}.*', re.DOTALL)
@@ -15,41 +36,100 @@ def replace_dots(text):
     return text
 
 
-def get_table_surya(page, table_box, y_tol=.005) -> List[List[str]]:
+def replace_newlines(text):
+    # Replace all newlines
+    newline_pattern = re.compile(r'[\r\n]+')
+    return newline_pattern.sub(' ', text.strip())
+
+
+def get_table_surya(page, table_box, space_tol=.01) -> List[List[str]]:
     table_rows = []
-    row_y_coord = None
     table_row = []
-    for block_idx, block in enumerate(page.blocks):
-        for line_idx, line in enumerate(block.lines):
+    x_position = None
+    sorted_blocks = sort_table_blocks(page.blocks)
+    for block_idx, block in enumerate(sorted_blocks):
+        sorted_lines = sort_table_blocks(block.lines)
+        for line_idx, line in enumerate(sorted_lines):
             line_bbox = line.bbox
             intersect_pct = box_intersection_pct(line_bbox, table_box)
             if intersect_pct < .5 or len(line.spans) == 0:
                 continue
-            normed_y_start = line_bbox[1] / page.height
-            if row_y_coord is None or abs(normed_y_start - row_y_coord) < y_tol:
-                table_row.extend([s.text for s in line.spans])
+            normed_x_start = line_bbox[0] / page.width
+            normed_x_end = line_bbox[2] / page.width
+
+            cells = [[s.bbox, s.text] for s in line.spans]
+            if x_position is None or normed_x_start > x_position - space_tol:
+                # Same row
+                table_row.extend(cells)
             else:
-                table_rows.append(table_row)
-                table_row = [s.text for s in line.spans]
-            row_y_coord = normed_y_start
+                # New row
+                if len(table_row) > 0:
+                    table_rows.append(table_row)
+                table_row = cells
+            x_position = normed_x_end
     if len(table_row) > 0:
         table_rows.append(table_row)
+    table_rows = assign_cells_to_columns(table_rows)
     return table_rows
 
 
-def get_table_pdftext(page: Page, table_box) -> List[List[str]]:
+def assign_cells_to_columns(rows, round_factor=4, tolerance=4):
+    left_edges = []
+    right_edges = []
+    centers = []
+
+    for row in rows:
+        for cell in row:
+            left_edges.append(cell[0][0] / round_factor * round_factor)
+            right_edges.append(cell[0][2] / round_factor * round_factor)
+            centers.append((cell[0][0] + cell[0][2]) / 2 * round_factor / round_factor)
+
+    unique_left = sorted(list(set(left_edges)))
+    unique_right = sorted(list(set(right_edges)))
+    unique_center = sorted(list(set(centers)))
+
+    # Find list with minimum length
+    separators = min([unique_left, unique_right, unique_center], key=len)
+
+    new_rows = []
+    for row in rows:
+        new_row = {}
+        last_col_index = -1
+        for cell in row:
+            left_edge = cell[0][0]
+            column_index = -1
+            for i, separator in enumerate(separators):
+                if left_edge - tolerance < separator and last_col_index < i:
+                    column_index = i
+                    break
+            if column_index == -1:
+                column_index = cell[0][0] # Assign a new column
+            new_row[column_index] = cell[1]
+            last_col_index = column_index
+
+        flat_row = [cell[1] for cell in sorted(new_row.items())]
+        min_column_index = min(new_row.keys())
+        flat_row = [""] * min_column_index + flat_row
+        new_rows.append(flat_row)
+
+    return new_rows
+
+
+def get_table_pdftext(page: Page, table_box, space_tol=.01) -> List[List[str]]:
     page_width = page.width
     table_rows = []
-    for block_idx, block in enumerate(page.char_blocks):
-        for line_idx, line in enumerate(block["lines"]):
+    table_cell = ""
+    cell_bbox = None
+    prev_end = None
+    table_row = []
+    sorted_char_blocks = sort_table_blocks(page.char_blocks)
+    for block_idx, block in enumerate(sorted_char_blocks):
+        sorted_block_lines = sort_table_blocks(block["lines"])
+        for line_idx, line in enumerate(sorted_block_lines):
             line_bbox = line["bbox"]
             intersect_pct = box_intersection_pct(line_bbox, table_box)
             if intersect_pct < .5:
                 continue
-            prev_end = None
-            table_row = []
-            table_cell = ""
-            cell_bbox = None
             for span in line["spans"]:
                 for char in span["chars"]:
                     x_start, y_start, x_end, y_end = char["bbox"]
@@ -60,18 +140,28 @@ def get_table_pdftext(page: Page, table_box) -> List[List[str]]:
 
                     x_start /= page_width
                     x_end /= page_width
-                    if prev_end is None or x_start - prev_end < .01:
+                    cell_content = replace_dots(replace_newlines(table_cell))
+                    if prev_end is None or abs(x_start - prev_end) < space_tol: # Check if we are in the same cell
                         table_cell += char["char"]
-                    else:
-                        table_row.append(replace_dots(table_cell.strip()))
+                    elif x_start > prev_end - space_tol: # Check if we are on the same line
+                        if len(table_cell) > 0:
+                            table_row.append((cell_bbox, cell_content))
                         table_cell = char["char"]
                         cell_bbox = char["bbox"]
+                    else: # New line and cell
+                        if len(table_cell) > 0:
+                            table_row.append((cell_bbox, cell_content))
+                        table_cell = char["char"]
+                        cell_bbox = char["bbox"]
+                        if len(table_row) > 0:
+                            table_rows.append(table_row)
+                        table_row = []
                     prev_end = x_end
-                if len(table_cell) > 0:
-                    table_row.append(replace_dots(table_cell.strip()))
-                    table_cell = ""
-            if len(table_row) > 0:
-                table_rows.append(table_row)
+    if len(table_cell) > 0:
+        table_row.append((cell_bbox, replace_dots(replace_newlines(table_cell))))
+    if len(table_row) > 0:
+        table_rows.append(table_row)
+    table_rows = assign_cells_to_columns(table_rows)
     return table_rows
 
 

@@ -41,7 +41,7 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, parallel_factor
             ocr_success += 1
             pages[orig_idx] = page
 
-    return pages, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success}
+    return pages, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success, "ocr_engine": ocr_method}
 
 
 def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[Page]) -> List[Optional[Page]]:
@@ -120,8 +120,8 @@ def _tesseract_recognition(in_pdf, langs: List[str]) -> Optional[Page]:
         out_pdf,
         language=langs[0],
         output_type="pdf",
-        redo_ocr=None if settings.OCR_ALL_PAGES else True,
-        force_ocr=True if settings.OCR_ALL_PAGES else None,
+        redo_ocr=None,
+        force_ocr=True,
         progress_bar=False,
         optimize=False,
         fast_web_view=1e6,

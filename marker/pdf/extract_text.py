@@ -22,10 +22,14 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
         for l in block["lines"]:
             spans = []
             for i, s in enumerate(l["spans"]):
-                block_text = s["text"].rstrip("\n")
+                block_text = s["text"]
+                # Remove trailing newlines and carriage returns (tesseract)
+                while len(block_text) > 0 and block_text[-1] in ["\n", "\r"]:
+                    block_text = block_text[:-1]
+
                 block_text = block_text.replace("-\n", "") # Remove hyphenated line breaks
                 span_obj = Span(
-                    text=block_text.rstrip("\n"), # Remove end of line newlines, not spaces
+                    text=block_text, # Remove end of line newlines, not spaces
                     bbox=s["bbox"],
                     span_id=f"{pnum}_{span_id}",
                     font=f"{s['font']['name']}_{font_flags_decomposer(s['font']['flags'])}", # Add font flags to end of font
@@ -49,10 +53,15 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
         # Only select blocks with lines
         if len(block_lines) > 0:
             page_blocks.append(block_obj)
+
+    page_bbox = page["bbox"]
+    page_width = abs(page_bbox[2] - page_bbox[0])
+    page_height = abs(page_bbox[3] - page_bbox[1])
+    page_bbox = [0, 0, page_width, page_height]
     out_page = Page(
         blocks=page_blocks,
         pnum=page["page"],
-        bbox=page["bbox"],
+        bbox=page_bbox,
         rotation=page["rotation"],
         char_blocks=page["blocks"]
     )

@@ -61,11 +61,7 @@ class Settings(BaseSettings):
         if self.OCR_ENGINE is not None:
             return self.OCR_ENGINE
 
-        # Does not work with mps
-        if torch.cuda.is_available():
-            return "surya"
-
-        return "ocrmypdf"
+        return "surya"
 
     # Texify model
     TEXIFY_MODEL_MAX: int = 384 # Max inference length for texify

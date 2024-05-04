@@ -1,6 +1,7 @@
 from marker.schema.merged import MergedLine, MergedBlock, FullyMergedBlock
 from marker.schema.page import Page
 import re
+import regex
 from typing import List
 
 
@@ -80,29 +81,35 @@ def block_surround(text, block_type):
 
 def line_separator(line1, line2, block_type, is_continuation=False):
     # Should cover latin-derived languages and russian
-    lowercase_letters = "a-zà-öø-ÿа-яşćăâđêôơưþðæøå"
-    uppercase_letters = "A-ZÀ-ÖØ-ßА-ЯŞĆĂÂĐÊÔƠƯÞÐÆØÅ"
+    lowercase_letters = r'(\p{Lo}+|\p{Ll}+)'
     # Remove hyphen in current line if next line and current line appear to be joined
-    hyphen_pattern = re.compile(rf'.*[{lowercase_letters}][-]\s?$', re.DOTALL)
-    if line1 and hyphen_pattern.match(line1) and re.match(rf"^\s?[{lowercase_letters}]", line2):
+    hyphen_pattern = regex.compile(rf'.*[{lowercase_letters}][-]\s?$', regex.DOTALL)
+    if line1 and hyphen_pattern.match(line1) and regex.match(rf"^\s?[{lowercase_letters}]", line2):
         # Split on — or - from the right
         line1 = re.split(r"[-—]\s?$", line1)[0]
         return line1.rstrip() + line2.lstrip()
 
-    lowercase_pattern1 = re.compile(rf'.*[{lowercase_letters},]\s?$', re.DOTALL)
-    lowercase_pattern2 = re.compile(rf'^\s?[{uppercase_letters}{lowercase_letters}]', re.DOTALL)
-    end_pattern = re.compile(r'.*[.?!]\s?$', re.DOTALL)
+    all_letters = r'\p{L}+'
+    sentence_continuations = r',;(—'
+    sentence_ends = r'。ๆ.?!'
+    line_end_pattern = regex.compile(rf'.*[{lowercase_letters}{sentence_continuations}]\s?$', regex.DOTALL)
+    line_start_pattern = regex.compile(rf'^\s?[{all_letters}]', regex.DOTALL)
+    sentence_end_pattern = regex.compile(rf'.*[{sentence_ends}]\s?$', regex.DOTALL)
 
     if block_type in ["Title", "Section-header"]:
         return line1.rstrip() + " " + line2.lstrip()
-    elif lowercase_pattern1.match(line1) and lowercase_pattern2.match(line2) and block_type == "Text":
+    elif line_end_pattern.match(line1) and line_start_pattern.match(line2) and block_type == "Text":
         return line1.rstrip() + " " + line2.lstrip()
     elif is_continuation:
         return line1.rstrip() + " " + line2.lstrip()
-    elif block_type == "Text" and end_pattern.match(line1):
+    elif block_type == "Text" and sentence_end_pattern.match(line1):
         return line1 + "\n\n" + line2
     elif block_type == "Formula":
         return line1 + " " + line2
+    elif block_type == "Table":
+        return line1 + "\n\n" + line2
+    elif block_type in ["Formula"]:
+        return line1.rstrip() + "\n\n" + line2.lstrip()
     else:
         return line1 + "\n" + line2
 

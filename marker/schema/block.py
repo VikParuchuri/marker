@@ -86,3 +86,15 @@ def bbox_from_lines(lines: List[Line]):
     max_x = max([line.bbox[2] for line in lines])
     max_y = max([line.bbox[3] for line in lines])
     return [min_x, min_y, max_x, max_y]
+
+
+def split_block_lines(block: Block, split_line_idx: int):
+    new_blocks = []
+    if split_line_idx >= len(block.lines):
+        return [block]
+    elif split_line_idx == 0:
+        return [block]
+    else:
+        new_blocks.append(Block(lines=block.lines[:split_line_idx], bbox=bbox_from_lines(block.lines[:split_line_idx]), pnum=block.pnum))
+        new_blocks.append(Block(lines=block.lines[split_line_idx:], bbox=bbox_from_lines(block.lines[split_line_idx:]), pnum=block.pnum))
+    return new_blocks
