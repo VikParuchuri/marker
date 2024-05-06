@@ -57,12 +57,18 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
     page_bbox = page["bbox"]
     page_width = abs(page_bbox[2] - page_bbox[0])
     page_height = abs(page_bbox[3] - page_bbox[1])
+    rotation = page["rotation"]
+
+    # Flip width and height if rotated
+    if rotation == 90 or rotation == 270:
+        page_width, page_height = page_height, page_width
+
     page_bbox = [0, 0, page_width, page_height]
     out_page = Page(
         blocks=page_blocks,
         pnum=page["page"],
         bbox=page_bbox,
-        rotation=page["rotation"],
+        rotation=rotation,
         char_blocks=page["blocks"]
     )
     return out_page

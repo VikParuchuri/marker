@@ -39,7 +39,7 @@ texify = "^0.1.8"
 rapidfuzz = "^3.8.1"
 surya-ocr = "^0.4.0"
 filetype = "^1.2.0"
-pdftext = "^0.3.4"
+pdftext = "^0.3.6"
 regex = "^2024.4.28"
 
 [tool.poetry.group.dev.dependencies]

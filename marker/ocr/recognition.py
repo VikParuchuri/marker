@@ -28,7 +28,7 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, parallel_factor
             ocr_idxs.append(pnum)
             ocr_pages += 1
 
-    ocr_method = settings.OCR_ENGINE_INTERNAL
+    ocr_method = settings.OCR_ENGINE
     if ocr_method == "surya":
         new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages)
     else:

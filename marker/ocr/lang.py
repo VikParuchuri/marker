@@ -5,7 +5,7 @@ from marker.settings import settings
 
 
 def replace_langs_with_codes(langs):
-    if settings.OCR_ENGINE_INTERNAL == "surya":
+    if settings.OCR_ENGINE == "surya":
         for i, lang in enumerate(langs):
             if lang in LANGUAGE_TO_CODE:
                 langs[i] = LANGUAGE_TO_CODE[lang]
@@ -17,7 +17,7 @@ def replace_langs_with_codes(langs):
 
 
 def validate_langs(langs):
-    if settings.OCR_ENGINE_INTERNAL == "surya":
+    if settings.OCR_ENGINE == "surya":
         for lang in langs:
             if lang not in CODE_TO_LANGUAGE:
                 raise ValueError(f"Invalid language code {lang} for Surya OCR")
