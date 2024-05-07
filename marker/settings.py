@@ -10,6 +10,7 @@ import torch
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: Optional[str] = None
+    IMAGE_DPI: int = 96 # DPI to render images pulled from pdf at
 
     @computed_field
     @property

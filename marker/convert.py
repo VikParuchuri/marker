@@ -6,7 +6,7 @@ warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree us
 
 import pypdfium2 as pdfium
 
-from marker.cleaners.table import arrange_table_rows
+from marker.tables.table import format_tables
 from marker.debug.data import dump_bbox_debug_data
 from marker.layout.layout import surya_layout, annotate_block_types
 from marker.layout.order import surya_order, sort_blocks_in_reading_order
@@ -25,7 +25,6 @@ from marker.cleaners.fontstyle import find_bold_italic
 from marker.postprocessors.markdown import merge_spans, merge_lines, get_full_text
 
 from typing import List, Dict, Tuple, Optional
-import re
 from marker.settings import settings
 
 
@@ -107,7 +106,7 @@ def convert_single_pdf(
     indent_blocks(pages)
 
     # Fix table blocks
-    table_count = arrange_table_rows(pages)
+    table_count = format_tables(pages)
     out_meta["block_stats"]["table"] = table_count
 
     for page in pages:

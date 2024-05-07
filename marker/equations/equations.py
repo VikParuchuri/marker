@@ -3,11 +3,11 @@ from copy import deepcopy
 from typing import List
 
 from marker.debug.data import dump_equation_debug_data
-from marker.equations.images import get_equation_image
 from marker.equations.inference import get_total_texify_tokens, get_latex_batched
+from marker.pdf.images import render_bbox_image
 from marker.schema.bbox import rescale_bbox
 from marker.schema.page import Page
-from marker.schema.block import Line, Span, Block, bbox_from_lines, split_block_lines
+from marker.schema.block import Line, Span, Block, bbox_from_lines, split_block_lines, find_insert_block
 from marker.settings import settings
 
 
@@ -30,21 +30,29 @@ def find_equation_blocks(page, processor):
                     if region_idx not in insert_points:
                         insert_points[region_idx] = (block_idx, line_idx)
 
+    # Account for regions where the lines were not detected
+    for region_idx, region in enumerate(equation_regions):
+        if region_idx in insert_points:
+            continue
+
+        insert_points[region_idx] = (find_insert_block(page.blocks, region), 0)
+
     block_lines_to_remove = defaultdict(set)
     for region_idx, equation_region in enumerate(equation_regions):
         if region_idx not in equation_lines or len(equation_lines[region_idx]) == 0:
-            continue
-        equation_block = equation_lines[region_idx]
-        equation_insert = insert_points[region_idx]
-        block_text = " ".join([line.prelim_text for line in equation_block])
-        equation_bbox = bbox_from_lines(equation_block)
+            block_text = ""
+            total_tokens = 0
+        else:
+            equation_block = equation_lines[region_idx]
+            block_text = " ".join([line.prelim_text for line in equation_block])
+            total_tokens = get_total_texify_tokens(block_text, processor)
 
-        total_tokens = get_total_texify_tokens(block_text, processor)
+        equation_insert = insert_points[region_idx]
         equation_insert_line_idx = equation_insert[1]
         equation_insert_line_idx -= len(
             [x for x in lines_to_remove[region_idx] if x[0] == equation_insert[0] and x[1] < equation_insert[1]])
 
-        selected_blocks = [equation_insert[0], equation_insert_line_idx, total_tokens, block_text, equation_bbox]
+        selected_blocks = [equation_insert[0], equation_insert_line_idx, total_tokens, block_text, equation_region]
         if total_tokens < settings.TEXIFY_MODEL_MAX:
             # Account for the lines we're about to remove
             for item in lines_to_remove[region_idx]:
@@ -144,7 +152,7 @@ def replace_equations(doc, pages: List[Page], texify_model, batch_size=settings.
     for page_idx, page_equation_blocks in enumerate(equation_blocks):
         page_obj = doc[page_idx]
         for equation_idx, (insert_block_idx, insert_line_idx, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
-            png_image = get_equation_image(page_obj, pages[page_idx], equation_bbox)
+            png_image = render_bbox_image(page_obj, pages[page_idx], equation_bbox)
 
             images.append(png_image)
             token_counts.append(token_count)

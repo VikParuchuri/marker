@@ -52,3 +52,25 @@ def font_flags_decomposer(flags: Optional[int]) -> str:
         flag_descriptions.append("use_extern_attr")
 
     return "_".join(flag_descriptions)
+
+
+def sort_block_group(blocks, tolerance=1.25):
+    vertical_groups = {}
+    for block in blocks:
+        if hasattr(block, "bbox"):
+            bbox = block.bbox
+        else:
+            bbox = block["bbox"]
+
+        group_key = round(bbox[1] / tolerance) * tolerance
+        if group_key not in vertical_groups:
+            vertical_groups[group_key] = []
+        vertical_groups[group_key].append(block)
+
+    # Sort each group horizontally and flatten the groups into a single list
+    sorted_blocks = []
+    for _, group in sorted(vertical_groups.items()):
+        sorted_group = sorted(group, key=lambda x: x.bbox[0] if hasattr(x, "bbox") else x["bbox"][0])
+        sorted_blocks.extend(sorted_group)
+
+    return sorted_blocks

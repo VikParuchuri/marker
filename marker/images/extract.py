@@ -1,0 +1,53 @@
+from marker.pdf.images import render_bbox_image
+from marker.schema.bbox import rescale_bbox
+from marker.schema.block import find_insert_block, Span
+
+
+def find_image_blocks(page):
+    image_blocks = []
+    image_regions = [l.bbox for l in page.layout.bboxes if l.label in ["Figure", "Picture"]]
+    image_regions = [rescale_bbox(page.layout.image_bbox, page.bbox, b) for b in image_regions]
+
+    insert_points = {}
+    for region_idx, region in enumerate(image_regions):
+        for block_idx, block in enumerate(page.blocks):
+            for line_idx, line in enumerate(block.lines):
+                if line.intersection_pct(region) > .8:
+                    line.spans = [] # We will remove this line from the block
+
+                    if region_idx not in insert_points:
+                        insert_points[region_idx] = (block_idx, line_idx)
+
+    # Account for images with no detected lines
+    for region_idx, region in enumerate(image_regions):
+        if region_idx in insert_points:
+            continue
+
+        insert_points[region_idx] = (find_insert_block(page.blocks, region), 0)
+
+    for region_idx, image_region in enumerate(image_regions):
+        image_insert = insert_points[region_idx]
+        image_blocks.append([image_insert[0], image_insert[1], image_region])
+
+    return image_blocks
+
+
+def extract_images(page):
+    image_blocks = find_image_blocks(page)
+
+    for image_idx, (block_idx, line_idx, bbox) in enumerate(image_blocks):
+        block = page.blocks[block_idx]
+        image = render_bbox_image(page.page_obj, page, bbox)
+        image_filename = f"{page.pnum}_image_{image_idx}.png"
+        image_markdown = f"![{image_filename}]({image_filename})"
+        image_span = Span(
+            bbox=bbox,
+            text=image_markdown,
+            font="Image",
+            rotation=0,
+            font_weight=0,
+            font_size=0,
+            image=True
+        )
+        block.lines[line_idx].spans.append(image_span)
+        page.images.append(image)

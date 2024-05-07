@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 from marker.schema.bbox import BboxElement
 from marker.schema.block import Block, Span
@@ -15,6 +15,7 @@ class Page(BboxElement):
     order: Optional[OrderResult] = None
     ocr_method: Optional[str] = None # One of "surya" or "tesseract"
     char_blocks: Optional[List[Dict]] = None # Blocks with character-level data from pdftext
+    images: Optional[List[Any]] = None # Images to save along with the page, need Any to avoid pydantic error
 
     def get_nonblank_lines(self):
         lines = self.get_all_lines()
