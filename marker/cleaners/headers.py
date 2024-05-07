@@ -11,10 +11,13 @@ from marker.schema.page import Page
 from typing import List, Tuple
 
 
-def filter_common_elements(lines, page_count):
+def filter_common_elements(lines, page_count, threshold=.6):
+    # We can't filter if we don't have enough pages to find common elements
+    if page_count < 3:
+        return []
     text = [s.text for line in lines for s in line.spans if len(s.text) > 4]
     counter = Counter(text)
-    common = [k for k, v in counter.items() if v > page_count * .6]
+    common = [k for k, v in counter.items() if v > page_count * threshold]
     bad_span_ids = [s.span_id for line in lines for s in line.spans if s.text in common]
     return bad_span_ids
 

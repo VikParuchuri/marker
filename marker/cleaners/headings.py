@@ -1,5 +1,6 @@
 from typing import List
 
+from marker.settings import settings
 from marker.schema.bbox import rescale_bbox
 from marker.schema.block import bbox_from_lines
 from marker.schema.page import Page
@@ -21,7 +22,7 @@ def split_heading_blocks(pages: List[Page]):
             heading_lines = []
             for line_idx, line in enumerate(block.lines):
                 for (heading_box, label) in page_heading_boxes:
-                    if line.intersection_pct(heading_box) > .8:
+                    if line.intersection_pct(heading_box) > settings.BBOX_INTERSECTION_THRESH:
                         heading_lines.append((line_idx, label))
                         break
 

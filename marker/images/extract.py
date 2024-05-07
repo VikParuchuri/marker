@@ -2,6 +2,7 @@ from marker.images.save import get_image_filename
 from marker.pdf.images import render_bbox_image
 from marker.schema.bbox import rescale_bbox
 from marker.schema.block import find_insert_block, Span
+from marker.settings import settings
 
 
 def find_image_blocks(page):
@@ -13,7 +14,7 @@ def find_image_blocks(page):
     for region_idx, region in enumerate(image_regions):
         for block_idx, block in enumerate(page.blocks):
             for line_idx, line in enumerate(block.lines):
-                if line.intersection_pct(region) > .8:
+                if line.intersection_pct(region) > settings.BBOX_INTERSECTION_THRESH:
                     line.spans = [] # We will remove this line from the block
 
                     if region_idx not in insert_points:

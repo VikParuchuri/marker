@@ -3,6 +3,8 @@ from marker.schema.page import Page
 from sklearn.cluster import DBSCAN
 import numpy as np
 
+from marker.settings import settings
+
 
 def cluster_coords(coords):
     if len(coords) == 0:
@@ -28,7 +30,7 @@ def find_column_separators(page: Page, table_box, round_factor=4, min_count=1):
 
     line_boxes = [p.bbox for p in page.text_lines.bboxes]
     line_boxes = [rescale_bbox(page.text_lines.image_bbox, page.bbox, l) for l in line_boxes]
-    line_boxes = [l for l in line_boxes if box_intersection_pct(l, table_box) > .8]
+    line_boxes = [l for l in line_boxes if box_intersection_pct(l, table_box) > settings.BBOX_INTERSECTION_THRESH]
 
     for cell in line_boxes:
         left_edges.append(cell[0] / round_factor * round_factor)

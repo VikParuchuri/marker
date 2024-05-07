@@ -27,7 +27,9 @@ def main():
     full_text, images, out_meta = convert_single_pdf(fname, model_lst, max_pages=args.max_pages, parallel_factor=args.parallel_factor, langs=langs)
 
     fname = os.path.basename(fname)
-    save_markdown(args.output, fname, full_text, images, out_meta)
+    subfolder_path = save_markdown(args.output, fname, full_text, images, out_meta)
+
+    print(f"Saved markdown to the {subfolder_path} folder")
 
 
 if __name__ == "__main__":

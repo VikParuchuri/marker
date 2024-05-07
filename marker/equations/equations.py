@@ -22,7 +22,7 @@ def find_equation_blocks(page, processor):
     for region_idx, region in enumerate(equation_regions):
         for block_idx, block in enumerate(page.blocks):
             for line_idx, line in enumerate(block.lines):
-                if line.intersection_pct(region) > .8:
+                if line.intersection_pct(region) > settings.BBOX_INTERSECTION_THRESH:
                     # We will remove this line from the block
                     lines_to_remove[region_idx].append((block_idx, line_idx))
                     equation_lines[region_idx].append(line)

@@ -33,10 +33,6 @@ class Settings(BaseSettings):
 
     SUPPORTED_FILETYPES: Dict = {
         "application/pdf": "pdf",
-        #"application/epub+zip": "epub",
-        #"application/x-mobipocket-ebook": "mobi",
-        #"application/vnd.ms-xpsdocument": "xps",
-        #"application/x-fictionbook+xml": "fb2"
     }
 
     # Text line Detection
@@ -69,6 +65,7 @@ class Settings(BaseSettings):
     SURYA_LAYOUT_DPI: int = 96
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
     LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout2"
+    BBOX_INTERSECTION_THRESH: float = 0.7 # How much the layout and pdf bboxes need to overlap to be the same
 
     # Ordering model
     SURYA_ORDER_DPI: int = 96
