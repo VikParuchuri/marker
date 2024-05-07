@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from marker.schema.bbox import merge_boxes, box_intersection_pct, rescale_bbox
 from marker.schema.block import Line, Span, Block
 from marker.schema.page import Page

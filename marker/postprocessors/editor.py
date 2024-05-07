@@ -1,8 +1,7 @@
-from collections import defaultdict, Counter
+from collections import defaultdict
 from itertools import chain
 from typing import Optional
 
-from transformers import AutoTokenizer
 from marker.settings import settings
 import torch
 import torch.nn.functional as F

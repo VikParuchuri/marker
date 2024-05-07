@@ -1,7 +1,6 @@
 from itertools import repeat
 from typing import List, Optional, Dict
 
-import ocrmypdf
 import pypdfium2 as pdfium
 import io
 from concurrent.futures import ThreadPoolExecutor
@@ -113,6 +112,7 @@ def generate_single_page_pdfs(doc, page_idxs) -> List[io.BytesIO]:
 
 
 def _tesseract_recognition(in_pdf, langs: List[str]) -> Optional[Page]:
+    import ocrmypdf
     out_pdf = io.BytesIO()
 
     ocrmypdf.ocr(

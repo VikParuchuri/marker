@@ -1,7 +1,7 @@
 from marker.images.save import get_image_filename
 from marker.pdf.images import render_bbox_image
 from marker.schema.bbox import rescale_bbox
-from marker.schema.block import find_insert_block, Span
+from marker.schema.block import find_insert_block, Span, Line
 from marker.settings import settings
 
 
@@ -53,7 +53,16 @@ def extract_page_images(page_obj, page):
             image=True,
             span_id=f"image_{image_idx}"
         )
-        block.lines[line_idx].spans.append(image_span)
+
+        # Sometimes, the block has zero lines
+        if len(block.lines) > line_idx:
+            block.lines[line_idx].spans.append(image_span)
+        else:
+            line = Line(
+                bbox=bbox,
+                spans=[image_span]
+            )
+            block.lines.append(line)
         page.images.append(image)
 
 

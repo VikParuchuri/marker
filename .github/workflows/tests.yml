@@ -3,9 +3,8 @@ name: Integration test with benchmark
 on: [push]
 
 env:
-  TESSDATA_PREFIX: "/usr/share/tesseract-ocr/4.00/tessdata"
   TORCH_DEVICE: "cpu"
-  OCR_ENGINE: "tesseract" # So we don't have to install ghostscript, which takes a long time
+  OCR_ENGINE: "surya"
 
 jobs:
   build:
@@ -16,12 +15,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y
-      - name: Show tessdata folders
-        run: ls /usr/share/tesseract-ocr/
       - name: Install python dependencies
         run: |
           pip install poetry

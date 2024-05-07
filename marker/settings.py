@@ -1,4 +1,3 @@
-import os
 from typing import Optional, List, Dict
 
 from dotenv import find_dotenv

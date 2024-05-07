@@ -4,7 +4,6 @@ import os
 from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
 from marker.models import load_all_models
-import json
 
 from marker.output import save_markdown
 

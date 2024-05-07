@@ -1,13 +1,8 @@
 import re
-from collections import Counter, defaultdict
-from itertools import chain
+from collections import Counter
 from rapidfuzz import fuzz
 
-from sklearn.cluster import DBSCAN
-import numpy as np
-
 from marker.schema.merged import FullyMergedBlock
-from marker.schema.page import Page
 from typing import List, Tuple
 
 
