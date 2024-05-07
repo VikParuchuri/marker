@@ -68,7 +68,7 @@ def main():
         for method in methods:
             start = time.time()
             if method == "marker":
-                full_text, out_meta = convert_single_pdf(pdf_filename, model_lst, parallel_factor=args.marker_parallel_factor)
+                full_text, _, out_meta = convert_single_pdf(pdf_filename, model_lst, parallel_factor=args.marker_parallel_factor)
             elif method == "nougat":
                 full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
             elif method == "naive":

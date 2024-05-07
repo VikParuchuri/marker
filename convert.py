@@ -7,6 +7,7 @@ from tqdm import tqdm
 import math
 
 from marker.convert import convert_single_pdf
+from marker.output import markdown_exists, save_markdown
 from marker.pdf.utils import find_filetype
 from marker.pdf.extract_text import get_length_of_text
 from marker.models import load_all_models
@@ -20,10 +21,7 @@ configure_logging()
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
 def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Optional[Dict] = None, min_length: Optional[int] = None):
-    out_filename = fname.rsplit(".", 1)[0] + ".md"
-    out_filename = os.path.join(out_folder, os.path.basename(out_filename))
-    out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"
-    if os.path.exists(out_filename):
+    if markdown_exists(out_folder, fname):
         return
     try:
         # Skip trying to convert files that don't have a lot of embedded text
@@ -38,12 +36,9 @@ def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Option
             if length < min_length:
                 return
 
-        full_text, out_metadata = convert_single_pdf(fname, model_refs, metadata=metadata)
+        full_text, images, out_metadata = convert_single_pdf(fname, model_refs, metadata=metadata)
         if len(full_text.strip()) > 0:
-            with open(out_filename, "w+", encoding='utf-8') as f:
-                f.write(full_text)
-            with open(out_meta_filename, "w+") as f:
-                f.write(json.dumps(out_metadata, indent=4))
+            save_markdown(out_folder, fname, full_text, images, out_metadata)
         else:
             print(f"Empty file: {fname}.  Could not convert.")
     except Exception as e:

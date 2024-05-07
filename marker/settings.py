@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # General
     TORCH_DEVICE: Optional[str] = None
     IMAGE_DPI: int = 96 # DPI to render images pulled from pdf at
+    EXTRACT_IMAGES: bool = True # Extract images from pdfs and save them
 
     @computed_field
     @property

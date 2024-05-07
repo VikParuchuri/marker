@@ -1,36 +1,27 @@
 from marker.schema.bbox import rescale_bbox, box_intersection_pct
 from marker.schema.page import Page
+from sklearn.cluster import DBSCAN
+import numpy as np
 
 
-def find_row_separators(page: Page, table_box, round_factor=4):
-    top_edges = []
-    bottom_edges = []
+def cluster_coords(coords):
+    if len(coords) == 0:
+        return []
+    coords = np.array(sorted(set(coords))).reshape(-1, 1)
 
-    line_boxes = [p.bbox for p in page.text_lines.bboxes]
-    line_boxes = [rescale_bbox(page.text_lines.image_bbox, page.bbox, l) for l in line_boxes]
-    line_boxes = [l for l in line_boxes if box_intersection_pct(l, table_box) > .8]
+    clustering = DBSCAN(eps=5, min_samples=1).fit(coords)
+    clusters = clustering.labels_
 
-    min_count = len(line_boxes) / 3
+    separators = []
+    for label in set(clusters):
+        clustered_points = coords[clusters == label]
+        separators.append(np.mean(clustered_points))
 
-    for cell in line_boxes:
-        top_edges.append(cell[1] / round_factor * round_factor)
-        bottom_edges.append(cell[3] / round_factor * round_factor)
-
-    top_edges = [t for t in top_edges if top_edges.count(t) > min_count]
-    bottom_edges = [b for b in bottom_edges if bottom_edges.count(b) > min_count]
-
-    unique_top = sorted(list(set(top_edges)))
-    unique_bottom = sorted(list(set(bottom_edges)))
-
-    separators = min([unique_top, unique_bottom], key=len)
-
-    # Add the top and bottom of the page as separators, to grab all possible cells
-    separators.append(page.bbox[3])
-    separators.insert(0, page.bbox[1])
+    separators = sorted(separators)
     return separators
 
 
-def find_column_separators(page: Page, table_box, round_factor=4):
+def find_column_separators(page: Page, table_box, round_factor=4, min_count=1):
     left_edges = []
     right_edges = []
     centers = []
@@ -39,7 +30,6 @@ def find_column_separators(page: Page, table_box, round_factor=4):
     line_boxes = [rescale_bbox(page.text_lines.image_bbox, page.bbox, l) for l in line_boxes]
     line_boxes = [l for l in line_boxes if box_intersection_pct(l, table_box) > .8]
 
-    min_count = len(line_boxes) / 3
     for cell in line_boxes:
         left_edges.append(cell[0] / round_factor * round_factor)
         right_edges.append(cell[2] / round_factor * round_factor)
@@ -49,12 +39,12 @@ def find_column_separators(page: Page, table_box, round_factor=4):
     right_edges = [r for r in right_edges if right_edges.count(r) > min_count]
     centers = [c for c in centers if centers.count(c) > min_count]
 
-    unique_left = sorted(list(set(left_edges)))
-    unique_right = sorted(list(set(right_edges)))
-    unique_center = sorted(list(set(centers)))
+    sorted_left = cluster_coords(left_edges)
+    sorted_right = cluster_coords(right_edges)
+    sorted_center = cluster_coords(centers)
 
     # Find list with minimum length
-    separators = min([unique_left, unique_right, unique_center], key=len)
+    separators = max([sorted_left, sorted_right, sorted_center], key=len)
     separators.append(page.bbox[2])
     separators.insert(0, page.bbox[0])
     return separators
@@ -83,7 +73,7 @@ def assign_cells_to_columns(page, table_box, rows, round_factor=4, tolerance=4):
 
         flat_row = []
         for cell_idx, cell in enumerate(sorted(new_row.items())):
-            flat_row.extend([""] * (cell[0] - cell_idx) + [cell[1]])
+            flat_row.append(cell[1])
         new_rows.append(flat_row)
 
     # Pad rows to have the same length

@@ -69,13 +69,16 @@ First, clone the repo:
   - GPU only: run `pip install torch` to install other torch dependencies.
   - CPU only: Uninstall torch with `poetry remove torch`, then follow the [CPU install](https://pytorch.org/get-started/locally/) instructions.
 
-- Optional: Install system requirements, only needed if using `ocrmypdf` as the ocr backend
-  - Optional: Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `scripts/install/tesseract_5_install.sh`.
-  - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
-  - Install other requirements with `cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y`
-  - Set the tesseract data folder path
-    - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
-    - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+**Optional**
+
+Only needed if using `ocrmypdf` as the ocr backend.
+
+- Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `scripts/install/tesseract_5_install.sh`.
+- Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
+- Install other requirements with `cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y`
+- Set the tesseract data folder path
+  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
+  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 
 ## Mac
 
@@ -83,10 +86,14 @@ First, clone the repo:
   - `poetry install`
   - `poetry shell` to activate your poetry venv
 
-- Optional: Install system requirements from `scripts/install/brew-requirements.txt`, only needed if using `ocrmypdf` for OCR
-  - Set the tesseract data folder path
-    - Find the tesseract data folder `tessdata` with `brew list tesseract`
-    - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+**Optional**
+
+Only needed if using `ocrmypdf` as the ocr backend.
+
+- Install system requirements from `scripts/install/brew-requirements.txt`
+- Set the tesseract data folder path
+  - Find the tesseract data folder `tessdata` with `brew list tesseract`
+  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 
 # Usage
 
@@ -104,7 +111,7 @@ First, some configuration.  Note that settings can be overridden with env vars, 
 Run `convert_single.py`, like this:
 
 ```
-python convert_single.py /path/to/file.pdf /path/to/output.md --parallel_factor 2 --max_pages 10 --langs English
+python convert_single.py /path/to/file.pdf /path/to/output/folder --parallel_factor 2 --max_pages 10 --langs English
 ```
 
 - `--parallel_factor` is how much to increase batch size and parallel OCR workers by.  Higher numbers will take more VRAM and CPU, but process faster.  Set to 1 by default.

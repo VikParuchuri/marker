@@ -6,7 +6,7 @@ from marker.schema.page import Page
 from tabulate import tabulate
 from typing import List
 
-from marker.tables.cells import assign_cells_to_columns, find_row_separators, find_column_separators
+from marker.tables.cells import assign_cells_to_columns
 from marker.tables.utils import sort_table_blocks, replace_dots, replace_newlines
 
 
@@ -46,9 +46,11 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
     table_rows = []
     table_cell = ""
     cell_bbox = None
-    prev_char = False
     table_row = []
     sorted_char_blocks = sort_table_blocks(page.char_blocks)
+
+    table_width = table_box[2] - table_box[0]
+    new_line_start_x = table_box[0] + table_width * .2
 
     for block_idx, block in enumerate(sorted_char_blocks):
         sorted_lines = sort_table_blocks(block["lines"])
@@ -60,31 +62,25 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
             for span in line["spans"]:
                 for char in span["chars"]:
                     x_start, y_start, x_end, y_end = char["bbox"]
+                    x_start /= page_width
+                    x_end /= page_width
 
-                    if cell_bbox is None:
-                        cell_bbox = char["bbox"]
-                    else:
+                    if cell_bbox is not None:
                         # Find boundaries of cell bbox before merging
                         cell_x_start, cell_y_start, cell_x_end, cell_y_end = cell_bbox
                         cell_x_start /= page_width
                         cell_x_end /= page_width
 
-                        cell_bbox = merge_boxes(cell_bbox, char["bbox"])
-
-                    x_start /= page_width
-                    x_end /= page_width
-
                     cell_content = replace_dots(replace_newlines(table_cell))
-                    if not prev_char: # First char
+                    if cell_bbox is None: # First char
                         table_cell += char["char"]
+                        cell_bbox = char["bbox"]
                     elif cell_x_start - space_tol < x_start < cell_x_end + space_tol: # Check if we are in the same cell
                         table_cell += char["char"]
-                    elif x_start > cell_x_end - space_tol: # Same line, new cell, check against cell bbox
-                        if len(table_cell) > 0:
-                            table_row.append((cell_bbox, cell_content))
-                        table_cell = char["char"]
-                        cell_bbox = char["bbox"]
-                    else: # New line and cell
+                        cell_bbox = merge_boxes(cell_bbox, char["bbox"])
+                    # New line and cell
+                    # Use x_start < new_line_start_x to account for out-of-order cells in the pdf
+                    elif x_start < cell_x_end - space_tol and x_start < new_line_start_x:
                         if len(table_cell) > 0:
                             table_row.append((cell_bbox, cell_content))
                         table_cell = char["char"]
@@ -93,7 +89,11 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
                             table_row = sorted(table_row, key=lambda x: round(x[0][0] / round_factor))
                             table_rows.append(table_row)
                         table_row = []
-                    prev_char = True
+                    else: # Same line, new cell, check against cell bbox
+                        if len(table_cell) > 0:
+                            table_row.append((cell_bbox, cell_content))
+                        table_cell = char["char"]
+                        cell_bbox = char["bbox"]
 
     if len(table_cell) > 0:
         table_row.append((cell_bbox, replace_dots(replace_newlines(table_cell))))

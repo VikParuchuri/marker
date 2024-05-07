@@ -1,3 +1,4 @@
+from marker.images.save import get_image_filename
 from marker.pdf.images import render_bbox_image
 from marker.schema.bbox import rescale_bbox
 from marker.schema.block import find_insert_block, Span
@@ -32,14 +33,15 @@ def find_image_blocks(page):
     return image_blocks
 
 
-def extract_images(page):
+def extract_page_images(page_obj, page):
+    page.images = []
     image_blocks = find_image_blocks(page)
 
     for image_idx, (block_idx, line_idx, bbox) in enumerate(image_blocks):
         block = page.blocks[block_idx]
-        image = render_bbox_image(page.page_obj, page, bbox)
-        image_filename = f"{page.pnum}_image_{image_idx}.png"
-        image_markdown = f"![{image_filename}]({image_filename})"
+        image = render_bbox_image(page_obj, page, bbox)
+        image_filename = get_image_filename(page, image_idx)
+        image_markdown = f"\n\n![{image_filename}]({image_filename})\n\n"
         image_span = Span(
             bbox=bbox,
             text=image_markdown,
@@ -47,7 +49,14 @@ def extract_images(page):
             rotation=0,
             font_weight=0,
             font_size=0,
-            image=True
+            image=True,
+            span_id=f"image_{image_idx}"
         )
         block.lines[line_idx].spans.append(image_span)
         page.images.append(image)
+
+
+def extract_images(doc, pages):
+    for page_idx, page in enumerate(pages):
+        page_obj = doc[page_idx]
+        extract_page_images(page_obj, page)
