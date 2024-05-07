@@ -10,6 +10,8 @@ import torch
 class Settings(BaseSettings):
     # General
     TORCH_DEVICE: Optional[str] = None
+    IMAGE_DPI: int = 96 # DPI to render images pulled from pdf at
+    EXTRACT_IMAGES: bool = True # Extract images from pdfs and save them
 
     @computed_field
     @property
@@ -44,7 +46,7 @@ class Settings(BaseSettings):
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "�"]
-    OCR_ENGINE: Optional[str] = None # Which OCR engine to use, either "surya" or "ocrmypdf".  Defaults to "ocrmypdf" on CPU, "surya" on GPU.
+    OCR_ENGINE: Optional[str] = "surya" # Which OCR engine to use, either "surya" or "ocrmypdf".  Defaults to "ocrmypdf" on CPU, "surya" on GPU.
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
 
     ## Surya
@@ -55,13 +57,6 @@ class Settings(BaseSettings):
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
     TESSERACT_TIMEOUT: int = 20 # When to give up on OCR
     TESSDATA_PREFIX: str = ""
-
-    @computed_field
-    def OCR_ENGINE_INTERNAL(self) -> str:
-        if self.OCR_ENGINE is not None:
-            return self.OCR_ENGINE
-
-        return "surya"
 
     # Texify model
     TEXIFY_MODEL_MAX: int = 384 # Max inference length for texify

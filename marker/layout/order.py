@@ -4,6 +4,7 @@ from typing import List
 from surya.ordering import batch_ordering
 
 from marker.pdf.images import render_image
+from marker.pdf.utils import sort_block_group
 from marker.schema.bbox import rescale_bbox
 from marker.schema.page import Page
 from marker.settings import settings
@@ -56,20 +57,3 @@ def sort_blocks_in_reading_order(pages: List[Page]):
             new_blocks.extend(block_group)
 
         page.blocks = new_blocks
-
-
-def sort_block_group(blocks, tolerance=1.25):
-    vertical_groups = {}
-    for block in blocks:
-        group_key = round(block.bbox[1] / tolerance) * tolerance
-        if group_key not in vertical_groups:
-            vertical_groups[group_key] = []
-        vertical_groups[group_key].append(block)
-
-    # Sort each group horizontally and flatten the groups into a single list
-    sorted_blocks = []
-    for _, group in sorted(vertical_groups.items()):
-        sorted_group = sorted(group, key=lambda x: x.bbox[0])
-        sorted_blocks.extend(sorted_group)
-
-    return sorted_blocks

@@ -1,12 +1,10 @@
 import warnings
-
-from marker.cleaners.text import cleanup_text
-
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
 import pypdfium2 as pdfium
+from PIL import Image
 
-from marker.cleaners.table import arrange_table_rows
+from marker.tables.table import format_tables
 from marker.debug.data import dump_bbox_debug_data
 from marker.layout.layout import surya_layout, annotate_block_types
 from marker.layout.order import surya_order, sort_blocks_in_reading_order
@@ -23,9 +21,11 @@ from marker.cleaners.bullets import replace_bullets
 from marker.cleaners.headings import split_heading_blocks
 from marker.cleaners.fontstyle import find_bold_italic
 from marker.postprocessors.markdown import merge_spans, merge_lines, get_full_text
+from marker.cleaners.text import cleanup_text
+from marker.images.extract import extract_images
+from marker.images.save import images_to_dict
 
 from typing import List, Dict, Tuple, Optional
-import re
 from marker.settings import settings
 
 
@@ -36,7 +36,7 @@ def convert_single_pdf(
         metadata: Optional[Dict]=None,
         parallel_factor: int = 1,
         langs: Optional[List[str]] = None
-) -> Tuple[str, Dict]:
+) -> Tuple[str, Dict[str, Image.Image], Dict]:
     # Set language needed for OCR
     if langs is None:
         langs = [settings.DEFAULT_LANG]
@@ -107,7 +107,7 @@ def convert_single_pdf(
     indent_blocks(pages)
 
     # Fix table blocks
-    table_count = arrange_table_rows(pages)
+    table_count = format_tables(pages)
     out_meta["block_stats"]["table"] = table_count
 
     for page in pages:
@@ -122,6 +122,10 @@ def convert_single_pdf(
         batch_size=int(settings.TEXIFY_BATCH_SIZE * parallel_factor)
     )
     out_meta["block_stats"]["equations"] = eq_stats
+
+    # Extract images and figures
+    if settings.EXTRACT_IMAGES:
+        extract_images(doc, pages)
 
     # Split out headers
     split_heading_blocks(pages)
@@ -146,5 +150,6 @@ def convert_single_pdf(
         batch_size=settings.EDITOR_BATCH_SIZE * parallel_factor
     )
     out_meta["postprocess_stats"] = {"edit": edit_stats}
+    doc_images = images_to_dict(pages)
 
-    return full_text, out_meta
+    return full_text, doc_images, out_meta

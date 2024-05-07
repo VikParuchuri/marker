@@ -50,7 +50,7 @@ def load_all_models(langs=None):
     layout = setup_layout_model()
     order = setup_order_model()
     edit = load_editing_model()
-    ocr = setup_recognition_model(langs) if settings.OCR_ENGINE_INTERNAL == "surya" else None
+    ocr = setup_recognition_model(langs) if settings.OCR_ENGINE == "surya" else None
     texify = setup_texify_model()
     model_lst = [texify, layout, order, edit, detection, ocr]
     return model_lst

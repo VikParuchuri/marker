@@ -4,7 +4,7 @@ from typing import List, Optional, Dict
 import pypdfium2 as pdfium
 import pypdfium2.internal as pdfium_i
 
-from marker.pdf.utils import find_filetype, font_flags_decomposer
+from marker.pdf.utils import find_filetype, font_flags_decomposer, sort_block_group
 from marker.ocr.heuristics import detect_bad_ocr
 from marker.settings import settings
 from marker.schema.block import Span, Line, Block
@@ -57,13 +57,20 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
     page_bbox = page["bbox"]
     page_width = abs(page_bbox[2] - page_bbox[0])
     page_height = abs(page_bbox[3] - page_bbox[1])
+    rotation = page["rotation"]
+
+    # Flip width and height if rotated
+    if rotation == 90 or rotation == 270:
+        page_width, page_height = page_height, page_width
+
+    char_blocks = page["blocks"]
     page_bbox = [0, 0, page_width, page_height]
     out_page = Page(
         blocks=page_blocks,
         pnum=page["page"],
         bbox=page_bbox,
-        rotation=page["rotation"],
-        char_blocks=page["blocks"]
+        rotation=rotation,
+        char_blocks=char_blocks
     )
     return out_page
 

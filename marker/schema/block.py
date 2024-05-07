@@ -1,3 +1,4 @@
+import math
 from typing import List, Optional
 
 from pydantic import field_validator
@@ -19,6 +20,7 @@ class Span(BboxElement):
     font_size: float
     bold: Optional[bool] = None
     italic: Optional[bool] = None
+    image: Optional[bool] = None
 
 
     @field_validator('text')
@@ -98,3 +100,22 @@ def split_block_lines(block: Block, split_line_idx: int):
         new_blocks.append(Block(lines=block.lines[:split_line_idx], bbox=bbox_from_lines(block.lines[:split_line_idx]), pnum=block.pnum))
         new_blocks.append(Block(lines=block.lines[split_line_idx:], bbox=bbox_from_lines(block.lines[split_line_idx:]), pnum=block.pnum))
     return new_blocks
+
+
+def find_insert_block(blocks: List[Block], bbox):
+    nearest_match = None
+    match_dist = None
+    for idx, block in enumerate(blocks):
+        try:
+            dist = math.sqrt((block.bbox[1] - bbox[1]) ** 2 + (block.bbox[0] - bbox[0]) ** 2)
+        except Exception as e:
+            continue
+
+        if nearest_match is None or dist < match_dist:
+            nearest_match = idx
+            match_dist = dist
+    if nearest_match is None:
+        return 0
+    return nearest_match
+
+
