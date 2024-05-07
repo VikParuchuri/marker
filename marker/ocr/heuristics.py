@@ -52,7 +52,7 @@ def no_text_found(pages: List[Page]):
     return len(full_text.strip()) == 0
 
 
-def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.6):
+def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.65):
     found_lines = 0
     for detected_line in page.text_lines.bboxes:
 

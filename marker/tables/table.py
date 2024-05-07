@@ -37,11 +37,11 @@ def get_table_surya(page, table_box, space_tol=.01) -> List[List[str]]:
             x_position = normed_x_end
     if len(table_row) > 0:
         table_rows.append(table_row)
-    table_rows = assign_cells_to_columns(table_rows)
+    table_rows = assign_cells_to_columns(page, table_box, table_rows)
     return table_rows
 
 
-def get_table_pdftext(page: Page, table_box, space_tol=.01) -> List[List[str]]:
+def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> List[List[str]]:
     page_width = page.width
     table_rows = []
     table_cell = ""
@@ -90,6 +90,7 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01) -> List[List[str]]:
                         table_cell = char["char"]
                         cell_bbox = char["bbox"]
                         if len(table_row) > 0:
+                            table_row = sorted(table_row, key=lambda x: round(x[0][0] / round_factor))
                             table_rows.append(table_row)
                         table_row = []
                     prev_char = True
@@ -97,6 +98,7 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01) -> List[List[str]]:
     if len(table_cell) > 0:
         table_row.append((cell_bbox, replace_dots(replace_newlines(table_cell))))
     if len(table_row) > 0:
+        table_row = sorted(table_row, key=lambda x: round(x[0][0] / round_factor))
         table_rows.append(table_row)
 
     table_rows = assign_cells_to_columns(page, table_box, table_rows)
@@ -138,11 +140,6 @@ def format_tables(pages: List[Page]):
             # Skip empty tables
             if len(table_rows) == 0:
                 continue
-
-            max_row_len = max([len(r) for r in table_rows])
-            for row in table_rows:
-                while len(row) < max_row_len:
-                    row.append("")
 
             table_text = tabulate(table_rows, headers="firstrow", tablefmt="github")
             table_block = Block(

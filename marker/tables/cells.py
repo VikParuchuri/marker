@@ -86,4 +86,20 @@ def assign_cells_to_columns(page, table_box, rows, round_factor=4, tolerance=4):
             flat_row.extend([""] * (cell[0] - cell_idx) + [cell[1]])
         new_rows.append(flat_row)
 
-    return new_rows
+    # Pad rows to have the same length
+    max_row_len = max([len(r) for r in new_rows])
+    for row in new_rows:
+        while len(row) < max_row_len:
+            row.append("")
+
+    cols_to_remove = set()
+    for idx, col in enumerate(zip(*new_rows)):
+        col_total = sum([len(cell.strip()) > 0 for cell in col])
+        if col_total == 0:
+            cols_to_remove.add(idx)
+
+    rows = []
+    for row in new_rows:
+        rows.append([col for idx, col in enumerate(row) if idx not in cols_to_remove])
+
+    return rows
