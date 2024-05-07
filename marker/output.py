@@ -34,3 +34,5 @@ def save_markdown(out_folder, fname, full_text, images, out_metadata):
     for filename, image in images.items():
         image_filepath = os.path.join(subfolder_path, filename)
         image.save(image_filepath, "PNG")
+
+    return subfolder_path

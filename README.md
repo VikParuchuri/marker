@@ -1,11 +1,11 @@
 # Marker
 
-Marker converts PDF, EPUB, and MOBI to markdown.  It's 10x faster than nougat, more accurate on most documents, and has low hallucination risk.
+Marker converts PDF to markdown.  It's 10x faster than nougat, more accurate on most documents, and has low hallucination risk.
 
-- Support for a range of PDF documents (optimized for books and scientific papers)
+- Support for a range of documents (optimized for books and scientific papers)
 - Removes headers/footers/other artifacts
 - Converts most equations to latex
-- Formats code blocks and tables
+- Formats tables and code blocks
 - Support for all languages (although most testing is done in English).
 - Works on GPU, CPU, or MPS
 
@@ -73,9 +73,9 @@ First, clone the repo:
 
 Only needed if using `ocrmypdf` as the ocr backend.
 
-- Install tesseract 5 by following [these instructions](https://notesalexp.org/tesseract-ocr/html/) or running `scripts/install/tesseract_5_install.sh`.
+- Run `pip install ocrmypdf`
 - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
-- Install other requirements with `cat scripts/install/apt-requirements.txt | xargs sudo apt-get install -y`
+- Install other requirements with `cat scripts/install/tess-apt-requirements.txt | xargs sudo apt-get install -y`
 - Set the tesseract data folder path
   - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
@@ -90,7 +90,8 @@ Only needed if using `ocrmypdf` as the ocr backend.
 
 Only needed if using `ocrmypdf` as the ocr backend.
 
-- Install system requirements from `scripts/install/brew-requirements.txt`
+- Run `pip install ocrmypdf`
+- Install system requirements from `scripts/install/tess-brew-requirements.txt`
 - Set the tesseract data folder path
   - Find the tesseract data folder `tessdata` with `brew list tesseract`
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
@@ -210,7 +211,7 @@ All models were trained from scratch, so they're okay for commercial usage.  The
 
 If you want to remove the GPL license requirements for inference or use the weights commercially over the revenue limit, please contact me at marker@vikas.sh for dual licensing.
 
-Note that the `ocrmypdf` OCR option will use ocrmypdf, which includes Ghostscript, an AGPL dependency, but calls it via CLI, so it does not trigger the license provisions.  If you want to avoid this completely, just use `surya` as the OCR option.  (ocrmypdf is faster on CPU, but less accurate)
+Note that the `ocrmypdf` OCR option will use ocrmypdf, which includes Ghostscript, an AGPL dependency, but calls it via CLI, so it does not trigger the license provisions.  Ocrmypdf is disabled by default, and will not be installed automatically.
 
 # Thanks
 

@@ -1,11 +1,10 @@
-from collections import defaultdict
-
 from marker.schema.bbox import merge_boxes, box_intersection_pct, rescale_bbox
 from marker.schema.block import Line, Span, Block
 from marker.schema.page import Page
 from tabulate import tabulate
 from typing import List
 
+from marker.settings import settings
 from marker.tables.cells import assign_cells_to_columns
 from marker.tables.utils import sort_table_blocks, replace_dots, replace_newlines
 
@@ -57,7 +56,7 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
         for line_idx, line in enumerate(sorted_lines):
             line_bbox = line["bbox"]
             intersect_pct = box_intersection_pct(line_bbox, table_box)
-            if intersect_pct < .7:
+            if intersect_pct < settings.BBOX_INTERSECTION_THRESH:
                 continue
             for span in line["spans"]:
                 for char in span["chars"]:
@@ -118,7 +117,7 @@ def format_tables(pages: List[Page]):
         for table_idx, table_box in enumerate(page_table_boxes):
             for block_idx, block in enumerate(page.blocks):
                 intersect_pct = block.intersection_pct(table_box)
-                if intersect_pct > .7 and block.block_type == "Table":
+                if intersect_pct > settings.BBOX_INTERSECTION_THRESH and block.block_type == "Table":
                     if table_idx not in table_insert_points:
                         table_insert_points[table_idx] = block_idx - len(blocks_to_remove) + table_idx # Where to insert the new table
                     blocks_to_remove.add(block_idx)

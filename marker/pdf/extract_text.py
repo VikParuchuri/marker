@@ -4,8 +4,7 @@ from typing import List, Optional, Dict
 import pypdfium2 as pdfium
 import pypdfium2.internal as pdfium_i
 
-from marker.pdf.utils import find_filetype, font_flags_decomposer, sort_block_group
-from marker.ocr.heuristics import detect_bad_ocr
+from marker.pdf.utils import font_flags_decomposer
 from marker.settings import settings
 from marker.schema.block import Span, Line, Block
 from marker.schema.page import Page
