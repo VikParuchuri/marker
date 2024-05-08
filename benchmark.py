@@ -16,6 +16,7 @@ import os
 import subprocess
 import shutil
 from tabulate import tabulate
+import torch
 
 configure_logging()
 
@@ -37,9 +38,12 @@ def main():
     parser.add_argument("out_file", help="Output filename")
     parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
     # Nougat batch size 1 uses about as much VRAM as default marker settings
+    parser.add_argument("--marker_batch_multiplier", type=int, default=1, help="Batch size multiplier to use for marker when making predictions.")
     parser.add_argument("--nougat_batch_size", type=int, default=1, help="Batch size to use for nougat when making predictions.")
-    parser.add_argument("--marker_parallel_factor", type=int, default=1, help="How much to multiply default parallel OCR workers and model batch sizes by.")
     parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
+    parser.add_argument("--profile_memory", action="store_true", help="Profile memory usage", default=False)
+    parser.add_argument("--profile_memory_file", type=str, default="benchmark_memory.pickle", help="File to save memory profile to")
+
     args = parser.parse_args()
 
     methods = ["naive", "marker"]
@@ -54,11 +58,16 @@ def main():
     times = defaultdict(dict)
     pages = defaultdict(int)
 
+    if args.profile_memory:
+        torch.cuda.memory._record_memory_history(
+            max_entries=100000
+        )
+
     for fname in tqdm(benchmark_files):
         md_filename = fname.rsplit(".", 1)[0] + ".md"
 
         reference_filename = os.path.join(args.reference_folder, md_filename)
-        with open(reference_filename, "r") as f:
+        with open(reference_filename, "r", encoding="utf-8") as f:
             reference = f.read()
 
         pdf_filename = os.path.join(args.in_folder, fname)
@@ -68,7 +77,7 @@ def main():
         for method in methods:
             start = time.time()
             if method == "marker":
-                full_text, _, out_meta = convert_single_pdf(pdf_filename, model_lst, parallel_factor=args.marker_parallel_factor)
+                full_text, _, out_meta = convert_single_pdf(pdf_filename, model_lst, batch_multiplier=args.marker_batch_multiplier)
             elif method == "nougat":
                 full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
             elif method == "naive":
@@ -109,6 +118,15 @@ def main():
             }
 
         json.dump(write_data, f, indent=4)
+
+    if args.profile_memory:
+        try:
+            torch.cuda.memory._dump_snapshot(args.profile_memory_file)
+        except Exception as e:
+            logger.error(f"Failed to capture memory snapshot {e}")
+
+            # Stop recording memory snapshot history.
+        torch.cuda.memory._record_memory_history(enabled=None)
 
     summary_table = []
     score_table = []

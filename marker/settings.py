@@ -8,7 +8,7 @@ import torch
 
 class Settings(BaseSettings):
     # General
-    TORCH_DEVICE: Optional[str] = None
+    TORCH_DEVICE: Optional[str] = None # Note: MPS device does not work for text detection, and will default to CPU
     IMAGE_DPI: int = 96 # DPI to render images pulled from pdf at
     EXTRACT_IMAGES: bool = True # Extract images from pdfs and save them
 
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         return "cpu"
 
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
-    VRAM_PER_TASK: float = 2.5 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3GB, but avg across workers is lower.
+    VRAM_PER_TASK: float = 3 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3.5GB, but avg across workers is lower.
     DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
     SUPPORTED_FILETYPES: Dict = {
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     }
 
     # Text line Detection
-    DETECTOR_BATCH_SIZE: Optional[int] = None # Defaults to 2 for CPU, 32 otherwise
+    DETECTOR_BATCH_SIZE: Optional[int] = None # Defaults to 6 for CPU, 12 otherwise
     SURYA_DETECTOR_DPI: int = 96
     DETECTOR_POSTPROCESSING_CPU_WORKERS: int = 4
 
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     ## Surya
     SURYA_OCR_DPI: int = 96
-    RECOGNITION_BATCH_SIZE: Optional[int] = None # Batch size for surya OCR defaults to 8 for CPU/MPS, 256 otherwise
+    RECOGNITION_BATCH_SIZE: Optional[int] = None # Batch size for surya OCR defaults to 64 for cuda, 32 otherwise
 
     ## Tesseract
     OCR_PARALLEL_WORKERS: int = 2 # How many CPU workers to use for OCR
@@ -65,10 +65,11 @@ class Settings(BaseSettings):
     BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
     LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout2"
     BBOX_INTERSECTION_THRESH: float = 0.7 # How much the layout and pdf bboxes need to overlap to be the same
+    LAYOUT_BATCH_SIZE: Optional[int] = None # Defaults to 12 for cuda, 6 otherwise
 
     # Ordering model
     SURYA_ORDER_DPI: int = 96
-    ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 4 for CPU/MPS, 32 otherwise
+    ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 12 for cuda, 6 otherwise
 
     # Final editing model
     EDITOR_BATCH_SIZE: int = 4

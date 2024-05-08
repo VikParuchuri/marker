@@ -46,7 +46,7 @@ See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instruc
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
-- Marker will not convert 100% of equations to LaTeX.  This is because it has to first detect equations, then convert them.
+- Marker will not convert 100% of equations to LaTeX.  This is because it has to detect then convert.
 - Whitespace and indentations are not always respected.
 - Not all lines/spans will be joined properly.
 - This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
@@ -115,7 +115,7 @@ Run `convert_single.py`, like this:
 python convert_single.py /path/to/file.pdf /path/to/output/folder --parallel_factor 2 --max_pages 10 --langs English
 ```
 
-- `--parallel_factor` is how much to increase batch size and parallel OCR workers by.  Higher numbers will take more VRAM and CPU, but process faster.  Set to 1 by default.
+- `--batch_multiplier` is how much to multiply default batch sizes by if you have extra VRAM.  Higher numbers will take more VRAM, but process faster.  Set to 2 by default.  The default batch sizes will take ~3GB of VRAM.
 - `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
 - `--langs` is a comma separated list of the languages in the document, for OCR
 
@@ -187,7 +187,7 @@ Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `3.1GB` fo
 
 **Throughput**
 
-Marker takes about 2GB of VRAM on average per task, so you can convert 24 documents in parallel on an A6000.
+Marker takes about 3GB of VRAM on average per task, so you can convert 16 documents in parallel on an A6000.
 
 ![Benchmark results](data/images/per_doc.png)
 
@@ -217,7 +217,8 @@ Note that the `ocrmypdf` OCR option will use ocrmypdf, which includes Ghostscrip
 
 This work would not have been possible without amazing open source models and datasets, including (but not limited to):
 
-- Nougat from Meta
+- Surya
+- Texify
 - Pypdfium2/pdfium
 - DocLayNet from IBM
 - ByT5 from Google
