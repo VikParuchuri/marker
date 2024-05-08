@@ -5,6 +5,13 @@ import regex
 from typing import List
 
 
+def escape_markdown(text):
+    # List of characters that need to be escaped in markdown
+    characters_to_escape = r"[#]"
+    # Escape each of these characters with a backslash
+    escaped_text = re.sub(characters_to_escape, r'\\\g<0>', text)
+    return escaped_text
+
 def surround_text(s, char_to_insert):
     leading_whitespace = re.match(r'^(\s*)', s).group(1)
     trailing_whitespace = re.search(r'(\s*)$', s).group(1)
@@ -73,9 +80,11 @@ def block_surround(text, block_type):
     elif block_type == "Table":
         text = "\n" + text + "\n"
     elif block_type == "List-item":
-        pass
+        text = escape_markdown(text)
     elif block_type == "Code":
-        text = "\n" + text + "\n"
+        text = "\n" + escape_markdown(text) + "\n"
+    elif block_type == "Text":
+        text = escape_markdown(text)
     return text
 
 

@@ -28,10 +28,14 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, parallel_factor
             ocr_pages += 1
 
     ocr_method = settings.OCR_ENGINE
-    if ocr_method == "surya":
+    if ocr_method is None:
+        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
+    elif ocr_method == "surya":
         new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages)
-    else:
+    elif ocr_method == "ocrmypdf":
         new_pages = tesseract_recognition(doc, ocr_idxs, langs)
+    else:
+        raise ValueError(f"Unknown OCR method {ocr_method}")
 
     for orig_idx, page in zip(ocr_idxs, new_pages):
         if detect_bad_ocr(page.prelim_text) or len(page.prelim_text) == 0:

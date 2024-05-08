@@ -78,7 +78,6 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
     idx = 0
     success_count = 0
     fail_count = 0
-    total_inserted = 0
     for block_number, (insert_block_idx, insert_line_idx, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
         latex_text = predictions[block_number]
         conditions = [
@@ -91,7 +90,7 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
             lines=[Line(
                 spans=[
                     Span(
-                        text=block_text.replace("\n", " "),
+                        text="\n\n" + block_text.replace("\n", " ") + "\n\n",
                         bbox=equation_bbox,
                         span_id=f"{pnum}_{idx}_fixeq",
                         font="Latex",

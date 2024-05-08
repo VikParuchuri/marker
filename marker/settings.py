@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Literal
 
 from dotenv import find_dotenv
 from pydantic import computed_field
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xfffd), "�"]
-    OCR_ENGINE: Optional[str] = "surya" # Which OCR engine to use, either "surya" or "ocrmypdf".  Defaults to "ocrmypdf" on CPU, "surya" on GPU.
+    OCR_ENGINE: Optional[Literal["surya", "ocrmypdf"]] = "surya" # Which OCR engine to use, either "surya" or "ocrmypdf".  Defaults to "ocrmypdf" on CPU, "surya" on GPU.
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
 
     ## Surya
@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def CUDA(self) -> bool:
-        return "cuda" in self.TORCH_DEVICE
+        return "cuda" in self.TORCH_DEVICE_MODEL
 
     @computed_field
     @property

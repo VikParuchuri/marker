@@ -107,7 +107,10 @@ def indent_blocks(pages: List[Page]):
             blank_line = False
             for line in lines:
                 text = line[1]
-                prefix = " " * int((line[0][0] - min_left) / col_width)
+                if col_width == 0:
+                    prefix = ""
+                else:
+                    prefix = " " * int((line[0][0] - min_left) / col_width)
                 current_line_blank = len(text.strip()) == 0
                 if blank_line and current_line_blank:
                     # Don't put multiple blank lines in a row
