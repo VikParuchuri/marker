@@ -74,12 +74,11 @@ class Block(BboxElement):
                 new_lines.append(line)
         self.lines = new_lines
 
-    def font_info(self, prop="font"):
-        font_info = []
-        for line in self.lines:
-            for span in line.spans:
-                font_info.append(getattr(span, prop))
-        return font_info
+    def get_min_line_start(self):
+        line_starts = [line.start for line in self.lines]
+        if len(line_starts) == 0:
+            return None
+        return min(line_starts)
 
 
 def bbox_from_lines(lines: List[Line]):

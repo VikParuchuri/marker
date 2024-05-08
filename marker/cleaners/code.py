@@ -1,10 +1,13 @@
+from collections import Counter
+from statistics import mean, median
+
 from marker.schema.block import Span, Line
 from marker.schema.page import Page
 import re
 from typing import List
 
 
-def is_code_linelen(lines, thresh=60):
+def is_code_linelen(lines, thresh=80):
     # Decide based on chars per newline threshold
     total_alnum_chars = sum(len(re.findall(r'\w', line.prelim_text)) for line in lines)
     total_newlines = max(len(lines) - 1, 1)
@@ -23,64 +26,61 @@ def comment_count(lines):
 
 def identify_code_blocks(pages: List[Page]):
     code_block_count = 0
-    font_info = None
+    font_sizes = []
+    line_heights = []
     for page in pages:
-        stats = page.get_font_stats()
-        if font_info is None:
-            font_info = stats
-        else:
-            font_info += stats
-    try:
-        most_common_font = font_info.most_common(1)[0][0]
-    except IndexError:
-        print(f"Could not find most common font")
-        most_common_font = None
+        font_sizes += page.get_font_sizes()
+        line_heights += page.get_line_heights()
 
-    last_block = None
+    avg_font_size = None
+    avg_line_height = None
+    if len(font_sizes) > 0:
+        avg_line_height = median(line_heights)
+        avg_font_size = mean(font_sizes)
+
     for page in pages:
-        try:
-            min_start = page.get_min_line_start()
-        except IndexError:
-            continue
-
         for block in page.blocks:
             if block.block_type != "Text":
                 last_block = block
                 continue
 
+            # Ensure we have lines and spans
+            if len(block.lines) == 0:
+                continue
+            if sum([len(line.spans) for line in block.lines]) == 0:
+                continue
+
+            min_start = block.get_min_line_start()
+
             is_indent = []
             line_fonts = []
+            line_font_sizes = []
+            block_line_heights = []
             for line in block.lines:
-                fonts = [span.font for span in line.spans]
-                line_fonts += fonts
-                line_start = line.bbox[0]
-                if line_start > min_start:
-                    is_indent.append(True)
-                else:
-                    is_indent.append(False)
+                line_fonts += [span.font for span in line.spans]
+                line_font_sizes += [span.font_size for span in line.spans]
+                block_line_heights.append(line.bbox[3] - line.bbox[1])
+
+                is_indent.append(line.bbox[0] > min_start)
+
             comment_lines = comment_count([line.prelim_text for line in block.lines])
             is_code = [
                 len(block.lines) > 3,
-                sum([f != most_common_font for f in line_fonts]) > len(line_fonts) * .8,  # At least 80% of the fonts are not the most common, since code usually uses a different font from the main body text
                 is_code_linelen(block.lines),
-                (
-                    sum(is_indent) > len(block.lines) * .2
-                    or
-                    comment_lines > len(block.lines) * .2
-                 ), # 20% lines indented or 20% of the lines are comments
+                sum(is_indent) + comment_lines > len(block.lines) * .3,
             ]
 
-            # Check if previous block is code, and this block is indented
-            is_code_prev = [
-                last_block and last_block.block_type == "Code",
-                sum(is_indent) >= len(block.lines) * .8 # At least 80% indented
-            ]
+            if avg_font_size is not None:
+                font_checks = [
+                    mean(line_font_sizes) <= avg_font_size, # Lower than average font size and line height
+                    mean(block_line_heights) < avg_line_height
+                ]
+                is_code += font_checks
 
-            if all(is_code) or all(is_code_prev):
+            if all(is_code):
                 code_block_count += 1
                 block.block_type = "Code"
 
-            last_block = block
     return code_block_count
 
 

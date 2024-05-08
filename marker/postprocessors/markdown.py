@@ -12,6 +12,7 @@ def escape_markdown(text):
     escaped_text = re.sub(characters_to_escape, r'\\\g<0>', text)
     return escaped_text
 
+
 def surround_text(s, char_to_insert):
     leading_whitespace = re.match(r'^(\s*)', s).group(1)
     trailing_whitespace = re.search(r'(\s*)$', s).group(1)
@@ -82,43 +83,45 @@ def block_surround(text, block_type):
     elif block_type == "List-item":
         text = escape_markdown(text)
     elif block_type == "Code":
-        text = "\n" + escape_markdown(text) + "\n"
+        text = "\n```\n" + text + "\n```\n"
     elif block_type == "Text":
         text = escape_markdown(text)
+    elif block_type == "Formula":
+        if text.strip().startswith("$$") and text.strip().endswith("$$"):
+            text = text.strip()
+            text = "\n" + text + "\n"
     return text
 
 
 def line_separator(line1, line2, block_type, is_continuation=False):
     # Should cover latin-derived languages and russian
-    lowercase_letters = r'(\p{Lo}+|\p{Ll}+)'
+    lowercase_letters = r'\p{Lo}+|\d+'
     # Remove hyphen in current line if next line and current line appear to be joined
     hyphen_pattern = regex.compile(rf'.*[{lowercase_letters}][-]\s?$', regex.DOTALL)
     if line1 and hyphen_pattern.match(line1) and regex.match(rf"^\s?[{lowercase_letters}]", line2):
         # Split on — or - from the right
-        line1 = re.split(r"[-—]\s?$", line1)[0]
+        line1 = regex.split(r"[-—]\s?$", line1)[0]
         return line1.rstrip() + line2.lstrip()
 
-    all_letters = r'\p{L}+'
-    sentence_continuations = r',;(—'
-    sentence_ends = r'。ๆ.?!'
-    line_end_pattern = regex.compile(rf'.*[{lowercase_letters}{sentence_continuations}]\s?$', regex.DOTALL)
+    all_letters = r'\p{L}+|\d+'
+    sentence_continuations = r',;\(\—'
+    sentence_ends = r'。ๆ\.?!'
+    line_end_pattern = regex.compile(rf'.*[{lowercase_letters}][{sentence_continuations}]?\s?$', regex.DOTALL)
     line_start_pattern = regex.compile(rf'^\s?[{all_letters}]', regex.DOTALL)
     sentence_end_pattern = regex.compile(rf'.*[{sentence_ends}]\s?$', regex.DOTALL)
 
     if block_type in ["Title", "Section-header"]:
         return line1.rstrip() + " " + line2.lstrip()
+    elif block_type == "Formula":
+        return line1 + "\n" + line2
     elif line_end_pattern.match(line1) and line_start_pattern.match(line2) and block_type == "Text":
         return line1.rstrip() + " " + line2.lstrip()
     elif is_continuation:
         return line1.rstrip() + " " + line2.lstrip()
     elif block_type == "Text" and sentence_end_pattern.match(line1):
         return line1 + "\n\n" + line2
-    elif block_type == "Formula":
-        return line1 + " " + line2
     elif block_type == "Table":
         return line1 + "\n\n" + line2
-    elif block_type in ["Formula"]:
-        return line1.rstrip() + "\n\n" + line2.lstrip()
     else:
         return line1 + "\n" + line2
 

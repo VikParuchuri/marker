@@ -90,7 +90,7 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
             lines=[Line(
                 spans=[
                     Span(
-                        text="\n\n" + block_text.replace("\n", " ") + "\n\n",
+                        text=block_text.replace("\n", " "),
                         bbox=equation_bbox,
                         span_id=f"{pnum}_{idx}_fixeq",
                         font="Latex",
@@ -109,7 +109,7 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
             fail_count += 1
         else:
             success_count += 1
-            new_block.lines[0].spans[0].text = latex_text
+            new_block.lines[0].spans[0].text = latex_text.replace("\n", " ")
             converted_spans.append(deepcopy(new_block.lines[0].spans[0]))
 
         # Add in the new LaTeX block
