@@ -21,6 +21,22 @@ import torch
 configure_logging()
 
 
+def start_memory_profiling():
+    torch.cuda.memory._record_memory_history(
+        max_entries=100000
+    )
+
+
+def stop_memory_profiling(memory_file):
+    try:
+        torch.cuda.memory._dump_snapshot(memory_file)
+    except Exception as e:
+        logger.error(f"Failed to capture memory snapshot {e}")
+
+        # Stop recording memory snapshot history.
+    torch.cuda.memory._record_memory_history(enabled=None)
+
+
 def nougat_prediction(pdf_filename, batch_size=1):
     out_dir = tempfile.mkdtemp()
     subprocess.run(["nougat", pdf_filename, "-o", out_dir, "--no-skipping", "--recompute", "--batchsize", str(batch_size)], check=True)
@@ -42,7 +58,6 @@ def main():
     parser.add_argument("--nougat_batch_size", type=int, default=1, help="Batch size to use for nougat when making predictions.")
     parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
     parser.add_argument("--profile_memory", action="store_true", help="Profile memory usage", default=False)
-    parser.add_argument("--profile_memory_file", type=str, default="benchmark_memory.pickle", help="File to save memory profile to")
 
     args = parser.parse_args()
 
@@ -50,7 +65,13 @@ def main():
     if args.nougat:
         methods.append("nougat")
 
+    if args.profile_memory:
+        start_memory_profiling()
+
     model_lst = load_all_models()
+
+    if args.profile_memory:
+        stop_memory_profiling("model_load.pickle")
 
     scores = defaultdict(dict)
     benchmark_files = os.listdir(args.in_folder)
@@ -58,12 +79,7 @@ def main():
     times = defaultdict(dict)
     pages = defaultdict(int)
 
-    if args.profile_memory:
-        torch.cuda.memory._record_memory_history(
-            max_entries=100000
-        )
-
-    for fname in tqdm(benchmark_files):
+    for idx, fname in tqdm(enumerate(benchmark_files)):
         md_filename = fname.rsplit(".", 1)[0] + ".md"
 
         reference_filename = os.path.join(args.reference_folder, md_filename)
@@ -77,7 +93,11 @@ def main():
         for method in methods:
             start = time.time()
             if method == "marker":
+                if args.profile_memory:
+                    start_memory_profiling()
                 full_text, _, out_meta = convert_single_pdf(pdf_filename, model_lst, batch_multiplier=args.marker_batch_multiplier)
+                if args.profile_memory:
+                    stop_memory_profiling(f"marker_memory_{idx}.pickle")
             elif method == "nougat":
                 full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
             elif method == "naive":
@@ -118,15 +138,6 @@ def main():
             }
 
         json.dump(write_data, f, indent=4)
-
-    if args.profile_memory:
-        try:
-            torch.cuda.memory._dump_snapshot(args.profile_memory_file)
-        except Exception as e:
-            logger.error(f"Failed to capture memory snapshot {e}")
-
-            # Stop recording memory snapshot history.
-        torch.cuda.memory._record_memory_history(enabled=None)
 
     summary_table = []
     score_table = []

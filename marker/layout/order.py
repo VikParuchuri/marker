@@ -14,7 +14,7 @@ def get_batch_size():
     if settings.ORDER_BATCH_SIZE is not None:
         return settings.ORDER_BATCH_SIZE
     elif settings.TORCH_DEVICE_MODEL == "cuda":
-        return 12
+        return 6
     elif settings.TORCH_DEVICE_MODEL == "mps":
         return 6
     return 6

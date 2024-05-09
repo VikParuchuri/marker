@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         return "cpu"
 
     INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
-    VRAM_PER_TASK: float = 3 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 3.5GB, but avg across workers is lower.
+    VRAM_PER_TASK: float = 4 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 5GB, but avg across workers is lower.
     DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
     SUPPORTED_FILETYPES: Dict = {
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     TEXIFY_MODEL_MAX: int = 384 # Max inference length for texify
     TEXIFY_TOKEN_BUFFER: int = 256 # Number of tokens to buffer above max for texify
     TEXIFY_DPI: int = 96 # DPI to render images at
-    TEXIFY_BATCH_SIZE: int = 2 if TORCH_DEVICE_MODEL == "cpu" else 6 # Batch size for texify, lower on cpu due to float32
+    TEXIFY_BATCH_SIZE: Optional[int] = None # Defaults to 6 for cuda, 12 otherwise
     TEXIFY_MODEL_NAME: str = "vikp/texify"
 
     # Layout model
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 12 for cuda, 6 otherwise
 
     # Final editing model
-    EDITOR_BATCH_SIZE: int = 4
+    EDITOR_BATCH_SIZE: Optional[int] = None # Defaults to 6 for cuda, 12 otherwise
     EDITOR_MAX_LENGTH: int = 1024
     EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor_t5"
     ENABLE_EDITOR_MODEL: bool = False # The editor model can create false positives

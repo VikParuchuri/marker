@@ -12,8 +12,8 @@ def get_batch_size():
     if settings.DETECTOR_BATCH_SIZE is not None:
         return settings.DETECTOR_BATCH_SIZE
     elif settings.TORCH_DEVICE_MODEL == "cuda":
-        return 6
-    return 6
+        return 4
+    return 4
 
 
 def surya_detection(doc: PdfDocument, pages: List[Page], det_model, batch_multiplier=1):

@@ -163,11 +163,11 @@ First 3 are non-arXiv books, last 3 are arXiv papers.
 | marker | 0.536176        | 0.516833         | 0.70515         | 0.710657    | 0.690042     | 0.523467  |
 | nougat | 0.44009         | 0.588973         | 0.322706        | 0.401342    | 0.160842     | 0.525663  |
 
-Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `6.5GB` for marker.  Benchmarks were run on an A6000 Ada.
+Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `5.1GB` for marker.  Benchmarks were run on an A6000 Ada.
 
 **Throughput**
 
-Marker takes about 3GB of VRAM on average per task, so you can convert 16 documents in parallel on an A6000.
+Marker takes about 4GB of VRAM on average per task, so you can convert 12 documents in parallel on an A6000.
 
 ![Benchmark results](data/images/per_doc.png)
 

@@ -1,4 +1,7 @@
 import warnings
+
+from marker.utils import flush_cuda_memory
+
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
 import pypdfium2 as pdfium
@@ -75,9 +78,11 @@ def convert_single_pdf(
 
     # Identify text lines on pages
     surya_detection(doc, pages, detection_model, batch_multiplier=batch_multiplier)
+    flush_cuda_memory()
 
     # OCR pages as needed
     pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier)
+    flush_cuda_memory()
 
     out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
@@ -85,6 +90,7 @@ def convert_single_pdf(
         return "", out_meta
 
     surya_layout(doc, pages, layout_model, batch_multiplier=batch_multiplier)
+    flush_cuda_memory()
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(pages)
@@ -100,6 +106,7 @@ def convert_single_pdf(
     # Sort blocks by reading order
     surya_order(doc, pages, order_model, batch_multiplier=batch_multiplier)
     sort_blocks_in_reading_order(pages)
+    flush_cuda_memory()
 
     # Fix code blocks
     code_block_count = identify_code_blocks(pages)
@@ -121,6 +128,7 @@ def convert_single_pdf(
         texify_model,
         batch_multiplier=batch_multiplier
     )
+    flush_cuda_memory()
     out_meta["block_stats"]["equations"] = eq_stats
 
     # Extract images and figures
@@ -149,6 +157,7 @@ def convert_single_pdf(
         edit_model,
         batch_multiplier=batch_multiplier
     )
+    flush_cuda_memory()
     out_meta["postprocess_stats"] = {"edit": edit_stats}
     doc_images = images_to_dict(pages)
 
