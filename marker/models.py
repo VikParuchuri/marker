@@ -50,7 +50,9 @@ def load_all_models(langs=None):
     layout = setup_layout_model()
     order = setup_order_model()
     edit = load_editing_model()
-    ocr = setup_recognition_model(langs) if settings.OCR_ENGINE == "surya" else None
+
+    # Only load recognition model if we'll need it for all pdfs
+    ocr = setup_recognition_model(langs) if (settings.OCR_ENGINE == "surya" and settings.OCR_ALL_PAGES) else None
     texify = setup_texify_model()
     model_lst = [texify, layout, order, edit, detection, ocr]
     return model_lst

@@ -23,8 +23,8 @@ jobs:
           poetry run pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Download benchmark data
         run: |
-          wget -O benchmark_data.zip "https://drive.google.com/uc?export=download&id=1ktVDYPEeyHlKLaF56FnHjI5VjVnYa1xL"
-          unzip benchmark_data.zip
+          wget -O benchmark_data.zip "https://drive.google.com/uc?export=download&id=1NHrdYatR1rtqs2gPVfdvO0BAvocH8CJi"
+          unzip -o benchmark_data.zip
       - name: Run benchmark test
         run: |
           poetry run python benchmark.py benchmark_data/pdfs benchmark_data/references report.json

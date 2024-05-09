@@ -4,6 +4,7 @@ warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree us
 import pypdfium2 as pdfium
 from PIL import Image
 
+from marker.utils import flush_cuda_memory
 from marker.tables.table import format_tables
 from marker.debug.data import dump_bbox_debug_data
 from marker.layout.layout import surya_layout, annotate_block_types
@@ -34,8 +35,8 @@ def convert_single_pdf(
         model_lst: List,
         max_pages=None,
         metadata: Optional[Dict]=None,
-        parallel_factor: int = 1,
-        langs: Optional[List[str]] = None
+        langs: Optional[List[str]] = None,
+        batch_multiplier: int = 1
 ) -> Tuple[str, Dict[str, Image.Image], Dict]:
     # Set language needed for OCR
     if langs is None:
@@ -74,17 +75,20 @@ def convert_single_pdf(
     texify_model, layout_model, order_model, edit_model, detection_model, ocr_model = model_lst
 
     # Identify text lines on pages
-    surya_detection(doc, pages, detection_model)
+    surya_detection(doc, pages, detection_model, batch_multiplier=batch_multiplier)
+    flush_cuda_memory()
 
     # OCR pages as needed
-    pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, parallel_factor)
+    pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier)
+    flush_cuda_memory()
 
     out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
         return "", out_meta
 
-    surya_layout(doc, pages, layout_model)
+    surya_layout(doc, pages, layout_model, batch_multiplier=batch_multiplier)
+    flush_cuda_memory()
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(pages)
@@ -98,8 +102,9 @@ def convert_single_pdf(
 
     # Find reading order for blocks
     # Sort blocks by reading order
-    surya_order(doc, pages, order_model)
+    surya_order(doc, pages, order_model, batch_multiplier=batch_multiplier)
     sort_blocks_in_reading_order(pages)
+    flush_cuda_memory()
 
     # Fix code blocks
     code_block_count = identify_code_blocks(pages)
@@ -119,8 +124,9 @@ def convert_single_pdf(
         doc,
         pages,
         texify_model,
-        batch_size=int(settings.TEXIFY_BATCH_SIZE * parallel_factor)
+        batch_multiplier=batch_multiplier
     )
+    flush_cuda_memory()
     out_meta["block_stats"]["equations"] = eq_stats
 
     # Extract images and figures
@@ -147,8 +153,9 @@ def convert_single_pdf(
     full_text, edit_stats = edit_full_text(
         full_text,
         edit_model,
-        batch_size=settings.EDITOR_BATCH_SIZE * parallel_factor
+        batch_multiplier=batch_multiplier
     )
+    flush_cuda_memory()
     out_meta["postprocess_stats"] = {"edit": edit_stats}
     doc_images = images_to_dict(pages)
 

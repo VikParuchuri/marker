@@ -78,7 +78,6 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
     idx = 0
     success_count = 0
     fail_count = 0
-    total_inserted = 0
     for block_number, (insert_block_idx, insert_line_idx, token_count, block_text, equation_bbox) in enumerate(page_equation_blocks):
         latex_text = predictions[block_number]
         conditions = [
@@ -110,7 +109,7 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
             fail_count += 1
         else:
             success_count += 1
-            new_block.lines[0].spans[0].text = latex_text
+            new_block.lines[0].spans[0].text = latex_text.replace("\n", " ")
             converted_spans.append(deepcopy(new_block.lines[0].spans[0]))
 
         # Add in the new LaTeX block
@@ -136,7 +135,7 @@ def insert_latex_block(page_blocks: Page, page_equation_blocks, predictions, pnu
     return success_count, fail_count, converted_spans
 
 
-def replace_equations(doc, pages: List[Page], texify_model, batch_size=settings.TEXIFY_BATCH_SIZE):
+def replace_equations(doc, pages: List[Page], texify_model, batch_multiplier=1):
     unsuccessful_ocr = 0
     successful_ocr = 0
 
@@ -158,7 +157,7 @@ def replace_equations(doc, pages: List[Page], texify_model, batch_size=settings.
             token_counts.append(token_count)
 
     # Make batched predictions
-    predictions = get_latex_batched(images, token_counts, texify_model, batch_size)
+    predictions = get_latex_batched(images, token_counts, texify_model, batch_multiplier=batch_multiplier)
 
     # Replace blocks with predictions
     page_start = 0

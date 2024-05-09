@@ -6,11 +6,21 @@ import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
-def get_latex_batched(images, token_counts, texify_model, batch_size):
+def get_batch_size():
+    if settings.TEXIFY_BATCH_SIZE is not None:
+        return settings.TEXIFY_BATCH_SIZE
+    elif settings.TORCH_DEVICE_MODEL == "cuda":
+        return 6
+    elif settings.TORCH_DEVICE_MODEL == "mps":
+        return 6
+    return 2
+
+def get_latex_batched(images, token_counts, texify_model, batch_multiplier=1):
     if len(images) == 0:
         return []
 
     predictions = [""] * len(images)
+    batch_size = get_batch_size() * batch_multiplier
 
     for i in range(0, len(images), batch_size):
         # Dynamically set max length to save inference time

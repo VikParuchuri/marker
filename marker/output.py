@@ -5,7 +5,6 @@ import json
 def get_subfolder_path(out_folder, fname):
     subfolder_name = fname.split(".")[0]
     subfolder_path = os.path.join(out_folder, subfolder_name)
-    os.makedirs(subfolder_path, exist_ok=True)
     return subfolder_path
 
 
@@ -23,6 +22,8 @@ def markdown_exists(out_folder, fname):
 
 def save_markdown(out_folder, fname, full_text, images, out_metadata):
     subfolder_path = get_subfolder_path(out_folder, fname)
+    os.makedirs(subfolder_path, exist_ok=True)
+
     markdown_filepath = get_markdown_filepath(out_folder, fname)
     out_meta_filepath = markdown_filepath.rsplit(".", 1)[0] + "_meta.json"
 

@@ -10,17 +10,27 @@ from marker.schema.page import Page
 from marker.settings import settings
 
 
-def surya_order(doc, pages: List[Page], order_model):
+def get_batch_size():
+    if settings.ORDER_BATCH_SIZE is not None:
+        return settings.ORDER_BATCH_SIZE
+    elif settings.TORCH_DEVICE_MODEL == "cuda":
+        return 6
+    elif settings.TORCH_DEVICE_MODEL == "mps":
+        return 6
+    return 6
+
+
+def surya_order(doc, pages: List[Page], order_model, batch_multiplier=1):
     images = [render_image(doc[pnum], dpi=settings.SURYA_ORDER_DPI) for pnum in range(len(pages))]
 
     # Get bboxes for all pages
     bboxes = []
     for page in pages:
-        bbox = [b.bbox for b in page.layout.bboxes]
+        bbox = [b.bbox for b in page.layout.bboxes][:settings.ORDER_MAX_BBOXES]
         bboxes.append(bbox)
 
     processor = order_model.processor
-    order_results = batch_ordering(images, bboxes, order_model, processor)
+    order_results = batch_ordering(images, bboxes, order_model, processor, batch_size=get_batch_size() * batch_multiplier)
     for page, order_result in zip(pages, order_results):
         page.order = order_result
 

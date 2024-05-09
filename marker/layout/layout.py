@@ -8,12 +8,20 @@ from marker.schema.page import Page
 from marker.settings import settings
 
 
-def surya_layout(doc, pages: List[Page], layout_model):
+def get_batch_size():
+    if settings.LAYOUT_BATCH_SIZE is not None:
+        return settings.LAYOUT_BATCH_SIZE
+    elif settings.TORCH_DEVICE_MODEL == "cuda":
+        return 6
+    return 6
+
+
+def surya_layout(doc, pages: List[Page], layout_model, batch_multiplier=1):
     images = [render_image(doc[pnum], dpi=settings.SURYA_LAYOUT_DPI) for pnum in range(len(pages))]
     text_detection_results = [p.text_lines for p in pages]
 
     processor = layout_model.processor
-    layout_results = batch_layout_detection(images, layout_model, processor, detection_results=text_detection_results)
+    layout_results = batch_layout_detection(images, layout_model, processor, detection_results=text_detection_results, batch_size=get_batch_size() * batch_multiplier)
     for page, layout_result in zip(pages, layout_results):
         page.layout = layout_result
 

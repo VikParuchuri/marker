@@ -31,30 +31,13 @@ class Page(BboxElement):
         spans = [s for l in lines for s in l.spans if s.text.strip()]
         return spans
 
-    def get_font_stats(self):
-        fonts = [s.font for s in self.get_nonblank_spans()]
-        font_counts = Counter(fonts)
-        return font_counts
+    def get_font_sizes(self):
+        font_sizes = [s.font_size for s in self.get_nonblank_spans()]
+        return font_sizes
 
-    def get_line_height_stats(self):
+    def get_line_heights(self):
         heights = [l.bbox[3] - l.bbox[1] for l in self.get_nonblank_lines()]
-        height_counts = Counter(heights)
-        return height_counts
-
-    def get_line_start_stats(self):
-        starts = [l.bbox[0] for l in self.get_nonblank_lines()]
-        start_counts = Counter(starts)
-        return start_counts
-
-    def get_min_line_start(self):
-        starts = []
-        for block in self.blocks:
-            for line in block.lines:
-                if line.spans and block.block_type == "Text":
-                    starts.append(line.bbox[0])
-        if len(starts) == 0:
-            raise IndexError("No lines found")
-        return min(starts)
+        return heights
 
     @property
     def prelim_text(self):

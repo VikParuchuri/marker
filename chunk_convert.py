@@ -1,5 +1,6 @@
 import argparse
 import subprocess
+import pkg_resources
 
 
 def main():
@@ -8,8 +9,10 @@ def main():
     parser.add_argument("out_folder", help="Output folder")
     args = parser.parse_args()
 
+    script_path = pkg_resources.resource_filename(__name__, 'chunk_convert.sh')
+
     # Construct the command
-    cmd = f"./chunk_convert.sh {args.in_folder} {args.out_folder}"
+    cmd = f"{script_path} {args.in_folder} {args.out_folder}"
 
     # Execute the shell script
     subprocess.run(cmd, shell=True, check=True)

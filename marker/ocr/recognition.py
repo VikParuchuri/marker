@@ -7,7 +7,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 from surya.ocr import run_recognition
 
+from marker.models import setup_recognition_model
 from marker.ocr.heuristics import should_ocr_page, no_text_found, detect_bad_ocr
+from marker.ocr.lang import langs_to_ids
 from marker.pdf.images import render_image
 from marker.schema.page import Page
 from marker.schema.block import Block, Line, Span
@@ -15,7 +17,17 @@ from marker.settings import settings
 from marker.pdf.extract_text import get_text_blocks
 
 
-def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, parallel_factor) -> (List[Page], Dict):
+def get_batch_size():
+    if settings.RECOGNITION_BATCH_SIZE is not None:
+        return settings.RECOGNITION_BATCH_SIZE
+    elif settings.TORCH_DEVICE_MODEL == "cuda":
+        return 32
+    elif settings.TORCH_DEVICE_MODEL == "mps":
+        return 32
+    return 32
+
+
+def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplier=1) -> (List[Page], Dict):
     ocr_pages = 0
     ocr_success = 0
     ocr_failed = 0
@@ -27,11 +39,29 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, parallel_factor
             ocr_idxs.append(pnum)
             ocr_pages += 1
 
+    # No pages need OCR
+    if ocr_pages == 0:
+        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
+
     ocr_method = settings.OCR_ENGINE
-    if ocr_method == "surya":
-        new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages)
-    else:
+    if ocr_method is None:
+        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
+    elif ocr_method == "surya":
+        # Load model just in time if we're not OCRing everything
+        del_rec_model = False
+        if rec_model is None:
+            lang_tokens = langs_to_ids(langs)
+            rec_model = setup_recognition_model(lang_tokens)
+            del_rec_model = True
+
+        new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages, batch_multiplier=batch_multiplier)
+
+        if del_rec_model:
+            del rec_model
+    elif ocr_method == "ocrmypdf":
         new_pages = tesseract_recognition(doc, ocr_idxs, langs)
+    else:
+        raise ValueError(f"Unknown OCR method {ocr_method}")
 
     for orig_idx, page in zip(ocr_idxs, new_pages):
         if detect_bad_ocr(page.prelim_text) or len(page.prelim_text) == 0:
@@ -43,7 +73,7 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, parallel_factor
     return pages, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success, "ocr_engine": ocr_method}
 
 
-def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[Page]) -> List[Optional[Page]]:
+def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[Page], batch_multiplier=1) -> List[Optional[Page]]:
     images = [render_image(doc[pnum], dpi=settings.SURYA_OCR_DPI) for pnum in page_idxs]
     processor = rec_model.processor
     selected_pages = [p for i, p in enumerate(pages) if i in page_idxs]
@@ -52,7 +82,7 @@ def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[P
     detection_results = [p.text_lines.bboxes for p in selected_pages]
     polygons = [[b.polygon for b in bboxes] for bboxes in detection_results]
 
-    results = run_recognition(images, surya_langs, rec_model, processor, polygons=polygons)
+    results = run_recognition(images, surya_langs, rec_model, processor, polygons=polygons, batch_size=get_batch_size() * batch_multiplier)
 
     new_pages = []
     for (page_idx, result, old_page) in zip(page_idxs, results, selected_pages):
