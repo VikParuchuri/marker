@@ -67,13 +67,13 @@ def identify_code_blocks(pages: List[Page]):
             is_code = [
                 len(block.lines) > 3,
                 is_code_linelen(block.lines),
-                sum(is_indent) + comment_lines > len(block.lines) * .3,
+                sum(is_indent) + comment_lines > len(block.lines) * .7, # Indentation and comments are a majority
             ]
 
             if avg_font_size is not None:
                 font_checks = [
-                    mean(line_font_sizes) <= avg_font_size, # Lower than average font size and line height
-                    mean(block_line_heights) < avg_line_height
+                    mean(line_font_sizes) <= avg_font_size * .8, # Lower than average font size and line height
+                    mean(block_line_heights) < avg_line_height * .8
                 ]
                 is_code += font_checks
 

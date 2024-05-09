@@ -37,6 +37,7 @@ surya-ocr = "^0.4.3"
 filetype = "^1.2.0"
 regex = "^2024.4.28"
 pdftext = "^0.3.7"
+grpcio = "^1.63.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
