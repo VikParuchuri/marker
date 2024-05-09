@@ -30,7 +30,6 @@ It only uses models where necessary, which improves speed and accuracy.
 | [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf)           | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/switch_transformers.md) |
 | [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf)              | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/multicolcnn.md)         | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/multicolcnn.md)         |
 
-
 ## Performance
 
 ![Benchmark overall](data/images/overall.png)
@@ -38,6 +37,12 @@ It only uses models where necessary, which improves speed and accuracy.
 The above results are with marker and nougat setup so they each take ~4GB of VRAM on an A6000.
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
+
+# Commercial usage
+
+I want marker to be as widely accessible as possible, while still funding my development/training costs.  Research and personal usage is always okay, but there are some restrictions on commercial usage.
+
+The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
 
 # Community
 
@@ -48,13 +53,14 @@ See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instruc
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
 - Marker will not convert 100% of equations to LaTeX.  This is because it has to detect then convert.
+- Tables are not always formatted 100% correctly - text can be in the wrong column.
 - Whitespace and indentations are not always respected.
 - Not all lines/spans will be joined properly.
 - This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
 
 # Installation
 
-This has been tested on Mac and Linux (Ubuntu and Debian).  You'll need python 3.9+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
+You'll need python 3.9+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
 
 Install with:
 
@@ -62,32 +68,15 @@ Install with:
 pip install marker-pdf
 ```
 
-## Optional
+## Optional: OCRMyPDF
 
-Only needed if using `ocrmypdf` as the ocr backend.
+Only needed if you want to use the optional `ocrmypdf` as the ocr backend.  Note that `ocrmypdf` includes Ghostscript, an AGPL dependency, but calls it via CLI, so it does not trigger the license provisions.
 
-**Linux**
-
-- Run `pip install ocrmypdf`
-- Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
-- Install other requirements with `cat scripts/install/tess-apt-requirements.txt | xargs sudo apt-get install -y`
-- Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
-  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
-
-**Mac**
-
-Only needed if using `ocrmypdf` as the ocr backend.
-
-- Run `pip install ocrmypdf`
-- Install system requirements from `scripts/install/tess-brew-requirements.txt`
-- Set the tesseract data folder path
-  - Find the tesseract data folder `tessdata` with `brew list tesseract`
-  - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
+See the instructions [here](docs/install_ocrmypdf.md)
 
 # Usage
 
-First, some configuration.  Note that settings can be overridden with env vars.
+First, some configuration:
 
 - Inspect the settings in `marker/settings.py`.  You can override any settings with environment variables.
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
@@ -98,7 +87,7 @@ First, some configuration.  Note that settings can be overridden with env vars.
 ## Convert a single file
 
 ```shell
-marker_single /path/to/file.pdf /path/to/output/folder --parallel_factor 2 --max_pages 10 --langs English
+marker_single /path/to/file.pdf /path/to/output/folder --batch_multiplier 2 --max_pages 10 --langs English
 ```
 
 - `--batch_multiplier` is how much to multiply default batch sizes by if you have extra VRAM.  Higher numbers will take more VRAM, but process faster.  Set to 2 by default.  The default batch sizes will take ~3GB of VRAM.
@@ -141,16 +130,18 @@ MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 mar
 
 Note that the env variables above are specific to this script, and cannot be set in `local.env`.
 
-# Important settings/Troubleshooting
+# Troubleshooting
 
-There are some settings that you may find especially useful if things aren't working the way you expect:
+There are some settings that you may find useful if things aren't working the way you expect:
 
 - `OCR_ALL_PAGES` - set this to true to force OCR all pages.  This can be very useful if the table layouts aren't recognized properly by default, or if there is garbled text.
 - `TORCH_DEVICE` - set this to force marker to use a given torch device for inference.
 - `OCR_ENGINE` - can set this to `surya` or `ocrmypdf`.
 - `DEBUG` - setting this to `True` shows ray logs when converting multiple pdfs
+- Verify that you set the languages correctly, or passed in a metadata file.
+- If you're getting out of memory errors, decrease worker count (increased the `VRAM_PER_TASK` setting).  You can also try splitting up long PDFs into multiple files.
 
-In general, if output is not what you expect, trying to OCR the PDF is a good first step.
+In general, if output is not what you expect, trying to OCR the PDF is a good first step.  Not all PDFs have good text/bboxes embedded in them.
 
 # Benchmarks
 
@@ -200,14 +191,6 @@ python benchmark.py data/pdfs data/references report.json --nougat
 This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each.
 
 Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
-
-# Commercial usage
-
-All models were trained from scratch, so they're okay for commercial usage.  The weights for the models are licensed cc-by-nc-sa-4.0, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised.
-
-If you want to remove the GPL license requirements for inference or use the weights commercially over the revenue limit, please contact me at marker@vikas.sh for dual licensing.
-
-Note that the `ocrmypdf` OCR option will use ocrmypdf, which includes Ghostscript, an AGPL dependency, but calls it via CLI, so it does not trigger the license provisions.  Ocrmypdf is disabled by default, and will not be installed automatically.
 
 # Thanks
 
