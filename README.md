@@ -35,7 +35,7 @@ It only uses models where necessary, which improves speed and accuracy.
 
 ![Benchmark overall](data/images/overall.png)
 
-The above results are with marker and nougat setup so they each take ~3GB of VRAM on an A6000.
+The above results are with marker and nougat setup so they each take ~4GB of VRAM on an A6000.
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
@@ -178,7 +178,7 @@ Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `4.1GB` fo
 
 **Throughput**
 
-Marker takes about 4GB of VRAM on average per task, so you can convert 12 documents in parallel on an A6000.
+Marker takes about 4.5GB of VRAM on average per task, so you can convert 10 documents in parallel on an A6000.
 
 ![Benchmark results](data/images/per_doc.png)
 
