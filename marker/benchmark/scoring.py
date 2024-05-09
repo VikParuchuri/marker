@@ -7,12 +7,7 @@ from statistics import mean
 
 CHUNK_MIN_CHARS = 25
 
-
-def replace_alphanumeric(text):
-    return regex.sub(r'[\p{L}]', '', text)
-
-
-def chunk_text(text, chunk_len=50):
+def chunk_text(text, chunk_len=500):
     chunks = [text[i:i+chunk_len] for i in range(0, len(text), chunk_len)]
     chunks = [c for c in chunks if c.strip() and len(c) > CHUNK_MIN_CHARS]
     return chunks
@@ -29,7 +24,7 @@ def overlap_score(hypothesis_chunks, reference_chunks):
         chunk_range = range(max(0, i_offset-search_distance), min(len(reference_chunks), i_offset+search_distance))
         for j in chunk_range:
             ref_chunk = reference_chunks[j]
-            score = fuzz.ratio(hyp_chunk, ref_chunk, score_cutoff=50) / 100
+            score = fuzz.ratio(hyp_chunk, ref_chunk, score_cutoff=30) / 100
             if score > max_score:
                 max_score = score
                 total_len = len(ref_chunk)
@@ -38,8 +33,6 @@ def overlap_score(hypothesis_chunks, reference_chunks):
 
 
 def score_text(hypothesis, reference):
-    hypothesis = replace_alphanumeric(hypothesis)
-    reference = replace_alphanumeric(reference)
     # Returns a 0-1 alignment score
     hypothesis_chunks = chunk_text(hypothesis)
     reference_chunks = chunk_text(reference)

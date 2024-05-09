@@ -14,7 +14,6 @@ include = [
     "convert.py",
     "convert_single.py",
     "chunk_convert.sh",
-    "benchmark.py",
     "chunk_convert.py",
 ]
 
@@ -27,14 +26,14 @@ pydantic-settings = "^2.0.3"
 transformers = "^4.36.2" # 4.36.2 needed because issues with donut models and later versions
 numpy = "^1.26.1"
 python-dotenv = "^1.0.0"
-torch = "2.2.2" # Issue with torch 2.3.0 and vision models - https://github.com/pytorch/pytorch/issues/121834
+torch = "^2.2.2" # Issue with torch 2.3.0 and vision models - https://github.com/pytorch/pytorch/issues/121834
 ray = "^2.20.0"
 tqdm = "^4.66.1"
 tabulate = "^0.9.0"
 ftfy = "^6.1.1"
 texify = "^0.1.8"
 rapidfuzz = "^3.8.1"
-surya-ocr = "^0.4.0"
+surya-ocr = "^0.4.3"
 filetype = "^1.2.0"
 regex = "^2024.4.28"
 pdftext = "^0.3.7"
@@ -45,7 +44,6 @@ jupyter = "^1.0.0"
 [tool.poetry.scripts]
 marker = "convert:main"
 marker_single = "convert_single:main"
-marker_benchmark = "benchmark:main"
 marker_chunk_convert = "chunk_convert:main"
 
 [build-system]

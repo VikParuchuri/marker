@@ -12,7 +12,7 @@ def get_batch_size():
     if settings.LAYOUT_BATCH_SIZE is not None:
         return settings.LAYOUT_BATCH_SIZE
     elif settings.TORCH_DEVICE_MODEL == "cuda":
-        return 12
+        return 6
     return 6
 
 

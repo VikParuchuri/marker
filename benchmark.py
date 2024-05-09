@@ -46,7 +46,7 @@ def main():
 
     args = parser.parse_args()
 
-    methods = ["naive", "marker"]
+    methods = ["marker"]
     if args.nougat:
         methods.append("nougat")
 

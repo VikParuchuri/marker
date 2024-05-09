@@ -1,12 +1,13 @@
 # Marker
 
-Marker converts PDF to markdown.  It's 10x faster than nougat, more accurate on most documents, and has low hallucination risk.
+Marker converts PDF to markdown quickly and accurately.
 
-- Support for a range of documents (optimized for books and scientific papers)
+- Supports a wide range of documents (optimized for books and scientific papers)
+- Supports all languages
 - Removes headers/footers/other artifacts
-- Converts most equations to latex
 - Formats tables and code blocks
-- Support for all languages (although most testing is done in English).
+- Extracts and saves images along with the markdown
+- Converts most equations to latex
 - Works on GPU, CPU, or MPS
 
 ## How it works
@@ -53,25 +54,19 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 
 # Installation
 
-This has been tested on Mac and Linux (Ubuntu and Debian).  You'll need python 3.9+ and [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer).
+This has been tested on Mac and Linux (Ubuntu and Debian).  You'll need python 3.9+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
 
-First, clone the repo:
+Install with:
 
-- `git clone https://github.com/VikParuchuri/marker.git`
-- `cd marker`
+```shell
+pip install marker-pdf
+```
 
-## Linux
-
-- Install python requirements
-  - `poetry install`
-  - `poetry shell` to activate your poetry venv
-- Update pytorch since poetry doesn't play nicely with it
-  - GPU only: run `pip install torch` to install other torch dependencies.
-  - CPU only: Uninstall torch with `poetry remove torch`, then follow the [CPU install](https://pytorch.org/get-started/locally/) instructions.
-
-**Optional**
+## Optional
 
 Only needed if using `ocrmypdf` as the ocr backend.
+
+**Linux**
 
 - Run `pip install ocrmypdf`
 - Install ghostscript > 9.55 by following [these instructions](https://ghostscript.readthedocs.io/en/latest/Install.html) or running `scripts/install/ghostscript_install.sh`.
@@ -80,13 +75,7 @@ Only needed if using `ocrmypdf` as the ocr backend.
   - Find the tesseract data folder `tessdata` with `find / -name tessdata`.  Make sure to use the one corresponding to the latest tesseract version if you have multiple.
   - Create a `local.env` file in the root `marker` folder with `TESSDATA_PREFIX=/path/to/tessdata` inside it
 
-## Mac
-
-- Install python requirements
-  - `poetry install`
-  - `poetry shell` to activate your poetry venv
-
-**Optional**
+**Mac**
 
 Only needed if using `ocrmypdf` as the ocr backend.
 
@@ -98,21 +87,18 @@ Only needed if using `ocrmypdf` as the ocr backend.
 
 # Usage
 
-First, some configuration.  Note that settings can be overridden with env vars, or in a `local.env` file in the root `marker` folder.
+First, some configuration.  Note that settings can be overridden with env vars.
 
-- Your torch device will be automatically detected, but you can manually set it also.  For example, `TORCH_DEVICE=cuda` or `TORCH_DEVICE=mps`. `cpu` is the default.
+- Inspect the settings in `marker/settings.py`.  You can override any settings with environment variables.
+- Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
   - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
   - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
 - By default, marker will use `surya` for OCR.  Surya is slower on CPU, but more accurate than tesseract.  If you want faster OCR, set `OCR_ENGINE` to `ocrmypdf`. This also requires external dependencies (see above).  If you don't want OCR at all, set `OCR_ENGINE` to `None`.
-- Inspect the other settings in `marker/settings.py`.  You can override any settings in the `local.env` file, or by setting environment variables.
-
 
 ## Convert a single file
 
-Run `convert_single.py`, like this:
-
-```
-python convert_single.py /path/to/file.pdf /path/to/output/folder --parallel_factor 2 --max_pages 10 --langs English
+```shell
+marker_single /path/to/file.pdf /path/to/output/folder --parallel_factor 2 --max_pages 10 --langs English
 ```
 
 - `--batch_multiplier` is how much to multiply default batch sizes by if you have extra VRAM.  Higher numbers will take more VRAM, but process faster.  Set to 2 by default.  The default batch sizes will take ~3GB of VRAM.
@@ -123,10 +109,8 @@ Make sure the `DEFAULT_LANG` setting is set appropriately for your document.  Th
 
 ## Convert multiple files
 
-Run `convert.py`, like this:
-
-```
-python convert.py /path/to/input/folder /path/to/output/folder --workers 10 --max 10 --metadata_file /path/to/metadata.json --min_length 10000
+```shell
+marker /path/to/input/folder /path/to/output/folder --workers 10 --max 10 --metadata_file /path/to/metadata.json --min_length 10000
 ```
 
 - `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage. Parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK` if you're using GPU.
@@ -146,10 +130,8 @@ You can use language names or codes.  The exact codes depend on the OCR engine. 
 
 ## Convert multiple files on multiple GPUs
 
-Run `chunk_convert.sh`, like this:
-
-```
-MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 bash chunk_convert.sh ../pdf_in ../md_out
+```shell
+MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 marker_chunk_convert ../pdf_in ../md_out
 ```
 
 - `METADATA_FILE` is an optional path to a json file with metadata about the pdfs.  See above for the format.
@@ -161,29 +143,27 @@ Note that the env variables above are specific to this script, and cannot be set
 
 # Benchmarks
 
-Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.
+Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
 
-Benchmarks show that marker is 10x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).  We show naive text extraction (pulling text out of the pdf with no processing) for comparison.
+Benchmarks show that marker is 4x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).  We show naive text extraction (pulling text out of the pdf with no processing) for comparison.
 
 **Speed**
 
 | Method | Average Score | Time per page | Time per document |
 |--------|---------------|---------------|-------------------|
-| naive  | 0.350727      | 0.00152378    | 0.326524          |
-| marker | 0.641062      | 0.360622      | 77.2762           |
-| nougat | 0.629211      | 3.77259       | 808.413           |
+| marker | 0.613721      | 0.631991      | 58.1432           |
+| nougat | 0.406603      | 2.59702       | 238.926           |
 
 **Accuracy**
 
 First 3 are non-arXiv books, last 3 are arXiv papers.
 
-| Method | switch_trans.pdf | crowd.pdf | multicolcnn.pdf | thinkos.pdf | thinkdsp.pdf | thinkpython.pdf |
-|--------|------------------|-----------|-----------------|-------------|--------------|-----------------|
-| naive  | 0.244114         | 0.140669  | 0.0868221       | 0.366856    | 0.412521     | 0.468281        |
-| marker | 0.482091         | 0.466882  | 0.537062        | 0.754347    | 0.78825      | 0.779536        |
-| nougat | 0.696458         | 0.552337  | 0.735099        | 0.655002    | 0.645704     | 0.650282        |
+| Method | multicolcnn.pdf | switch_trans.pdf | thinkpython.pdf | thinkos.pdf | thinkdsp.pdf | crowd.pdf |
+|--------|-----------------|------------------|-----------------|-------------|--------------|-----------|
+| marker | 0.536176        | 0.516833         | 0.70515         | 0.710657    | 0.690042     | 0.523467  |
+| nougat | 0.44009         | 0.588973         | 0.322706        | 0.401342    | 0.160842     | 0.525663  |
 
-Peak GPU memory usage during the benchmark is `3.3GB` for nougat, and `3.1GB` for marker.  Benchmarks were run on an A6000.
+Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `6.5GB` for marker.  Benchmarks were run on an A6000 Ada.
 
 **Throughput**
 
@@ -193,11 +173,16 @@ Marker takes about 3GB of VRAM on average per task, so you can convert 16 docume
 
 ## Running your own benchmarks
 
-You can benchmark the performance of marker on your machine.  First, download the benchmark data [here](https://drive.google.com/file/d/1WiN4K2-jQfwyQMe4wSSurbpz3hxo2fG9/view?usp=drive_link) and unzip.
+You can benchmark the performance of marker on your machine. Install marker manually with:
 
-Then run `benchmark.py` like this:
-
+```shell
+git clone https://github.com/VikParuchuri/marker.git
+poetry install
 ```
+
+Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run `benchmark.py` like this:
+
+```shell
 python benchmark.py data/pdfs data/references report.json --nougat
 ```
 

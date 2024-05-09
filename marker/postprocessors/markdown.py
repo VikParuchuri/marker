@@ -95,7 +95,7 @@ def block_surround(text, block_type):
 
 def line_separator(line1, line2, block_type, is_continuation=False):
     # Should cover latin-derived languages and russian
-    lowercase_letters = r'\p{Lo}+|\d+'
+    lowercase_letters = r'\p{Lo}|\p{Ll}|\d'
     # Remove hyphen in current line if next line and current line appear to be joined
     hyphen_pattern = regex.compile(rf'.*[{lowercase_letters}][-]\s?$', regex.DOTALL)
     if line1 and hyphen_pattern.match(line1) and regex.match(rf"^\s?[{lowercase_letters}]", line2):
@@ -103,8 +103,8 @@ def line_separator(line1, line2, block_type, is_continuation=False):
         line1 = regex.split(r"[-—]\s?$", line1)[0]
         return line1.rstrip() + line2.lstrip()
 
-    all_letters = r'\p{L}+|\d+'
-    sentence_continuations = r',;\(\—'
+    all_letters = r'\p{L}|\d'
+    sentence_continuations = r',;\(\—\"\''
     sentence_ends = r'。ๆ\.?!'
     line_end_pattern = regex.compile(rf'.*[{lowercase_letters}][{sentence_continuations}]?\s?$', regex.DOTALL)
     line_start_pattern = regex.compile(rf'^\s?[{all_letters}]', regex.DOTALL)
