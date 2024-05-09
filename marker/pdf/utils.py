@@ -7,6 +7,9 @@ from marker.settings import settings
 
 def find_filetype(fpath):
     kind = filetype.guess(fpath)
+    if kind is None:
+        print(f"Could not determine filetype for {fpath}")
+        return "other"
 
     mimetype = kind.mime
 
