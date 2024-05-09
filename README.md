@@ -141,6 +141,17 @@ MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 mar
 
 Note that the env variables above are specific to this script, and cannot be set in `local.env`.
 
+# Important settings/Troubleshooting
+
+There are some settings that you may find especially useful if things aren't working the way you expect:
+
+- `OCR_ALL_PAGES` - set this to true to force OCR all pages.  This can be very useful if the table layouts aren't recognized properly by default, or if there is garbled text.
+- `TORCH_DEVICE` - set this to force marker to use a given torch device for inference.
+- `OCR_ENGINE` - can set this to `surya` or `ocrmypdf`.
+- `DEBUG` - setting this to `True` shows ray logs when converting multiple pdfs
+
+In general, if output is not what you expect, trying to OCR the PDF is a good first step.
+
 # Benchmarks
 
 Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
@@ -163,7 +174,7 @@ First 3 are non-arXiv books, last 3 are arXiv papers.
 | marker | 0.536176        | 0.516833         | 0.70515         | 0.710657    | 0.690042     | 0.523467  |
 | nougat | 0.44009         | 0.588973         | 0.322706        | 0.401342    | 0.160842     | 0.525663  |
 
-Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `5.1GB` for marker.  Benchmarks were run on an A6000 Ada.
+Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `4.1GB` for marker.  Benchmarks were run on an A6000 Ada.
 
 **Throughput**
 

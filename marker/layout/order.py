@@ -26,7 +26,7 @@ def surya_order(doc, pages: List[Page], order_model, batch_multiplier=1):
     # Get bboxes for all pages
     bboxes = []
     for page in pages:
-        bbox = [b.bbox for b in page.layout.bboxes]
+        bbox = [b.bbox for b in page.layout.bboxes][:settings.ORDER_MAX_BBOXES]
         bboxes.append(bbox)
 
     processor = order_model.processor

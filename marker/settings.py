@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     # Ordering model
     SURYA_ORDER_DPI: int = 96
     ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 12 for cuda, 6 otherwise
+    ORDER_MAX_BBOXES: int = 255
 
     # Final editing model
     EDITOR_BATCH_SIZE: Optional[int] = None # Defaults to 6 for cuda, 12 otherwise

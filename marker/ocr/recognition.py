@@ -7,7 +7,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 from surya.ocr import run_recognition
 
+from marker.models import setup_recognition_model
 from marker.ocr.heuristics import should_ocr_page, no_text_found, detect_bad_ocr
+from marker.ocr.lang import langs_to_ids
 from marker.pdf.images import render_image
 from marker.schema.page import Page
 from marker.schema.block import Block, Line, Span
@@ -19,7 +21,7 @@ def get_batch_size():
     if settings.RECOGNITION_BATCH_SIZE is not None:
         return settings.RECOGNITION_BATCH_SIZE
     elif settings.TORCH_DEVICE_MODEL == "cuda":
-        return 64
+        return 32
     elif settings.TORCH_DEVICE_MODEL == "mps":
         return 32
     return 32
@@ -37,11 +39,25 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplie
             ocr_idxs.append(pnum)
             ocr_pages += 1
 
+    # No pages need OCR
+    if ocr_pages == 0:
+        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
+
     ocr_method = settings.OCR_ENGINE
     if ocr_method is None:
         return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
     elif ocr_method == "surya":
+        # Load model just in time if we're not OCRing everything
+        del_rec_model = False
+        if rec_model is None:
+            lang_tokens = langs_to_ids(langs)
+            rec_model = setup_recognition_model(lang_tokens)
+            del_rec_model = True
+
         new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages, batch_multiplier=batch_multiplier)
+
+        if del_rec_model:
+            del rec_model
     elif ocr_method == "ocrmypdf":
         new_pages = tesseract_recognition(doc, ocr_idxs, langs)
     else:
