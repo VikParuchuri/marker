@@ -6,7 +6,10 @@ import ray
 from tqdm import tqdm
 import math
 
-from marker.convert import convert_single_pdf, get_length_of_text
+from marker.convert import convert_single_pdf
+from marker.output import markdown_exists, save_markdown
+from marker.pdf.utils import find_filetype
+from marker.pdf.extract_text import get_length_of_text
 from marker.models import load_all_models
 from marker.settings import settings
 from marker.logger import configure_logging
@@ -17,31 +20,31 @@ configure_logging()
 
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(fname: str, out_folder: str, model_refs, metadata: Optional[Dict] = None, min_length: Optional[int] = None):
-    out_filename = fname.rsplit(".", 1)[0] + ".md"
-    out_filename = os.path.join(out_folder, os.path.basename(out_filename))
-    out_meta_filename = out_filename.rsplit(".", 1)[0] + "_meta.json"
-    if os.path.exists(out_filename):
+def process_single_pdf(filepath: str, out_folder: str, model_refs, metadata: Optional[Dict] = None, min_length: Optional[int] = None):
+    fname = os.path.basename(filepath)
+    if markdown_exists(out_folder, fname):
         return
+
     try:
         # Skip trying to convert files that don't have a lot of embedded text
         # This can indicate that they were scanned, and not OCRed properly
         # Usually these files are not recent/high-quality
         if min_length:
-            length = get_length_of_text(fname)
+            filetype = find_filetype(filepath)
+            if filetype == "other":
+                return 0
+
+            length = get_length_of_text(filepath)
             if length < min_length:
                 return
 
-        full_text, out_metadata = convert_single_pdf(fname, model_refs, metadata=metadata)
+        full_text, images, out_metadata = convert_single_pdf(filepath, model_refs, metadata=metadata)
         if len(full_text.strip()) > 0:
-            with open(out_filename, "w+", encoding='utf-8') as f:
-                f.write(full_text)
-            with open(out_meta_filename, "w+") as f:
-                f.write(json.dumps(out_metadata, indent=4))
+            save_markdown(out_folder, fname, full_text, images, out_metadata)
         else:
-            print(f"Empty file: {fname}.  Could not convert.")
+            print(f"Empty file: {filepath}.  Could not convert.")
     except Exception as e:
-        print(f"Error converting {fname}: {e}")
+        print(f"Error converting {filepath}: {e}")
         print(traceback.format_exc())
 
 
@@ -61,6 +64,7 @@ def main():
     in_folder = os.path.abspath(args.in_folder)
     out_folder = os.path.abspath(args.out_folder)
     files = [os.path.join(in_folder, f) for f in os.listdir(in_folder)]
+    files = [f for f in files if os.path.isfile(f)]
     os.makedirs(out_folder, exist_ok=True)
 
     # Handle chunks if we're processing in parallel
@@ -99,12 +103,12 @@ def main():
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
     futures = [
         process_single_pdf.options(num_gpus=gpu_frac).remote(
-            filename,
+            filepath,
             out_folder,
             model_refs,
-            metadata=metadata.get(os.path.basename(filename)),
+            metadata=metadata.get(os.path.basename(filepath)),
             min_length=args.min_length
-        ) for filename in files_to_convert
+        ) for filepath in files_to_convert
     ]
 
     # Run all ray conversion tasks

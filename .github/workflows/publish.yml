@@ -16,8 +16,6 @@ jobs:
         run: |
           pip install poetry
           poetry install
-          poetry remove torch
-          poetry run pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Build package
         run: |
           poetry build

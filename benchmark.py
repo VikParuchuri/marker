@@ -4,20 +4,37 @@ import time
 from collections import defaultdict
 
 from tqdm import tqdm
+import pypdfium2 as pdfium
 
 from marker.convert import convert_single_pdf
 from marker.logger import configure_logging
 from marker.models import load_all_models
 from marker.benchmark.scoring import score_text
-from marker.extract_text import naive_get_text
+from marker.pdf.extract_text import naive_get_text
 import json
 import os
 import subprocess
 import shutil
-import fitz as pymupdf
 from tabulate import tabulate
+import torch
 
 configure_logging()
+
+
+def start_memory_profiling():
+    torch.cuda.memory._record_memory_history(
+        max_entries=100000
+    )
+
+
+def stop_memory_profiling(memory_file):
+    try:
+        torch.cuda.memory._dump_snapshot(memory_file)
+    except Exception as e:
+        logger.error(f"Failed to capture memory snapshot {e}")
+
+        # Stop recording memory snapshot history.
+    torch.cuda.memory._record_memory_history(enabled=None)
 
 
 def nougat_prediction(pdf_filename, batch_size=1):
@@ -37,16 +54,24 @@ def main():
     parser.add_argument("out_file", help="Output filename")
     parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
     # Nougat batch size 1 uses about as much VRAM as default marker settings
+    parser.add_argument("--marker_batch_multiplier", type=int, default=1, help="Batch size multiplier to use for marker when making predictions.")
     parser.add_argument("--nougat_batch_size", type=int, default=1, help="Batch size to use for nougat when making predictions.")
-    parser.add_argument("--marker_parallel_factor", type=int, default=1, help="How much to multiply default parallel OCR workers and model batch sizes by.")
     parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
+    parser.add_argument("--profile_memory", action="store_true", help="Profile memory usage", default=False)
+
     args = parser.parse_args()
 
-    methods = ["naive", "marker"]
+    methods = ["marker"]
     if args.nougat:
         methods.append("nougat")
 
+    if args.profile_memory:
+        start_memory_profiling()
+
     model_lst = load_all_models()
+
+    if args.profile_memory:
+        stop_memory_profiling("model_load.pickle")
 
     scores = defaultdict(dict)
     benchmark_files = os.listdir(args.in_folder)
@@ -54,21 +79,25 @@ def main():
     times = defaultdict(dict)
     pages = defaultdict(int)
 
-    for fname in tqdm(benchmark_files):
+    for idx, fname in tqdm(enumerate(benchmark_files)):
         md_filename = fname.rsplit(".", 1)[0] + ".md"
 
         reference_filename = os.path.join(args.reference_folder, md_filename)
-        with open(reference_filename, "r") as f:
+        with open(reference_filename, "r", encoding="utf-8") as f:
             reference = f.read()
 
         pdf_filename = os.path.join(args.in_folder, fname)
-        doc = pymupdf.open(pdf_filename)
+        doc = pdfium.PdfDocument(pdf_filename)
         pages[fname] = len(doc)
 
         for method in methods:
             start = time.time()
             if method == "marker":
-                full_text, out_meta = convert_single_pdf(pdf_filename, model_lst, parallel_factor=args.marker_parallel_factor)
+                if args.profile_memory:
+                    start_memory_profiling()
+                full_text, _, out_meta = convert_single_pdf(pdf_filename, model_lst, batch_multiplier=args.marker_batch_multiplier)
+                if args.profile_memory:
+                    stop_memory_profiling(f"marker_memory_{idx}.pickle")
             elif method == "nougat":
                 full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
             elif method == "naive":

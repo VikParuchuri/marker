@@ -2,7 +2,7 @@ from transformers import T5Config, T5PreTrainedModel
 import torch
 from torch import nn
 from copy import deepcopy
-from typing import Optional, Tuple, Union, List
+from typing import Optional, Tuple, Union
 from itertools import chain
 
 from transformers.modeling_outputs import TokenClassifierOutput
