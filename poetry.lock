@@ -3714,13 +3714,13 @@ streamlit = ">=0.63"
 
 [[package]]
 name = "surya-ocr"
-version = "0.4.4"
+version = "0.4.5"
 description = "OCR, layout, reading order, and line detection in 90+ languages"
 optional = false
 python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,!=3.8.*,>=3.9"
 files = [
-    {file = "surya_ocr-0.4.4-py3-none-any.whl", hash = "sha256:5ff52f11f0f13218566bcd402697bf84336a488cbc314ebc02ba234255df96ef"},
-    {file = "surya_ocr-0.4.4.tar.gz", hash = "sha256:00d6376186e9a68f366a2c149e233f3d68b6080df48065e756a97e739464fce9"},
+    {file = "surya_ocr-0.4.5-py3-none-any.whl", hash = "sha256:a670387307ffc2951d7a8b3a005dec6c80ababb6107ea7d0a097cb33f0c6f355"},
+    {file = "surya_ocr-0.4.5.tar.gz", hash = "sha256:1b59858c2caa476a6e27579f0747dafe62ad8fb866af7bdcdb19ee01b0d7915c"},
 ]
 
 [package.dependencies]
