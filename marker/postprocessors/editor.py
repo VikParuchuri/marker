@@ -16,14 +16,21 @@ def get_batch_size():
     return 6
 
 
-def load_editing_model():
+def load_editing_model(device=None, dtype=None):
     if not settings.ENABLE_EDITOR_MODEL:
         return None
 
-    model = T5ForTokenClassification.from_pretrained(
+    if device:
+        model = T5ForTokenClassification.from_pretrained(
             settings.EDITOR_MODEL_NAME,
-            torch_dtype=settings.MODEL_DTYPE,
-        ).to(settings.TORCH_DEVICE_MODEL)
+            torch_dtype=dtype,
+            device=device,
+        )
+    else:
+        model = T5ForTokenClassification.from_pretrained(
+                settings.EDITOR_MODEL_NAME,
+                torch_dtype=settings.MODEL_DTYPE,
+            ).to(settings.TORCH_DEVICE_MODEL)
     model.eval()
 
     model.config.label2id = {

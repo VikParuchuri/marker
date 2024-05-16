@@ -5,6 +5,7 @@ experiments
 test_data
 training
 wandb
+*.dat
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

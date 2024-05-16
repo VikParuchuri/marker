@@ -58,7 +58,7 @@ def convert_single_pdf(
     }
 
     if filetype == "other": # We can't process this file
-        return "", out_meta
+        return "", {}, out_meta
 
     # Get initial text blocks from the pdf
     doc = pdfium.PdfDocument(fname)
@@ -85,7 +85,7 @@ def convert_single_pdf(
     out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
         print(f"Could not extract any text blocks for {fname}")
-        return "", out_meta
+        return "", {}, out_meta
 
     surya_layout(doc, pages, layout_model, batch_multiplier=batch_multiplier)
     flush_cuda_memory()
