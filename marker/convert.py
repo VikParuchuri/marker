@@ -1,4 +1,7 @@
 import warnings
+
+from marker.schema.merged import FullyMergedBlock
+
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
 import pypdfium2 as pdfium
@@ -37,7 +40,7 @@ def convert_single_pdf(
         metadata: Optional[Dict]=None,
         langs: Optional[List[str]] = None,
         batch_multiplier: int = 1
-) -> Tuple[str, Dict[str, Image.Image], Dict]:
+) -> Tuple[str, Dict[str, Image.Image], Dict, List[FullyMergedBlock]]:
     # Set language needed for OCR
     if langs is None:
         langs = [settings.DEFAULT_LANG]
@@ -159,4 +162,4 @@ def convert_single_pdf(
     out_meta["postprocess_stats"] = {"edit": edit_stats}
     doc_images = images_to_dict(pages)
 
-    return full_text, doc_images, out_meta
+    return full_text, doc_images, out_meta, text_blocks
