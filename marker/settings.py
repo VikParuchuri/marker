@@ -34,6 +34,9 @@ class Settings(BaseSettings):
         "application/pdf": "pdf",
     }
 
+    # Text extraction
+    PDFTEXT_CPU_WORKERS: int = 4 # How many CPU workers to use for pdf text extraction
+
     # Text line Detection
     DETECTOR_BATCH_SIZE: Optional[int] = None # Defaults to 6 for CPU, 12 otherwise
     SURYA_DETECTOR_DPI: int = 96
