@@ -64,6 +64,7 @@ def convert_single_pdf(
     doc = pdfium.PdfDocument(fname)
     pages, toc = get_text_blocks(
         doc,
+        fname,
         max_pages=max_pages,
     )
     out_meta.update({

@@ -1,3 +1,4 @@
+import tempfile
 from itertools import repeat
 from typing import List, Optional, Dict
 
@@ -160,9 +161,12 @@ def _tesseract_recognition(in_pdf, langs: List[str]) -> Optional[Page]:
         tesseract_non_ocr_timeout=settings.TESSERACT_TIMEOUT,
     )
 
-    new_doc = pdfium.PdfDocument(out_pdf.getvalue())
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(out_pdf.getvalue())
+        f.seek(0)
+        new_doc = pdfium.PdfDocument(f.name)
+        blocks, _ = get_text_blocks(new_doc, f.name, max_pages=1)
 
-    blocks, _ = get_text_blocks(new_doc, max_pages=1)
     page = blocks[0]
     page.ocr_method = "tesseract"
     return page

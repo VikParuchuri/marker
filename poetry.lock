@@ -2007,13 +2007,13 @@ testing = ["docopt", "pytest"]
 
 [[package]]
 name = "pdftext"
-version = "0.3.7"
+version = "0.3.8"
 description = "Extract structured text from pdfs quickly"
 optional = false
 python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,!=3.8.*,>=3.9"
 files = [
-    {file = "pdftext-0.3.7-py3-none-any.whl", hash = "sha256:b536f538823dc7a8d43f2a3a0e88934296f575b2425969c10bd71cdc94b141ed"},
-    {file = "pdftext-0.3.7.tar.gz", hash = "sha256:b35c37c91557df692185f9aa75180c63fef2714fb0e679e199833cb183d813b2"},
+    {file = "pdftext-0.3.8-py3-none-any.whl", hash = "sha256:d11aeaf792b96ea878139ad7cd64a92d61cc5e01fec4f3b85ca6da1043d98cbe"},
+    {file = "pdftext-0.3.8.tar.gz", hash = "sha256:1fbf53f0dc636b6863ccbbb6aed693c0e435b531a55a58e3d23bd125a2e0c616"},
 ]
 
 [package.dependencies]
@@ -3969,4 +3969,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13,!=3.9.7"
-content-hash = "d43e2a65a5ce18d8bd27c6596f83a22e01a50be89728e52ebaefb89ab7765244"
+content-hash = "e9634536058b98ae75eef138e2eedb2b6b62fbdfca6b629a356eebfc11c3d1c3"
