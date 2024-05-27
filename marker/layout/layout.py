@@ -21,7 +21,7 @@ def surya_layout(doc, pages: List[Page], layout_model, batch_multiplier=1):
     text_detection_results = [p.text_lines for p in pages]
 
     processor = layout_model.processor
-    layout_results = batch_layout_detection(images, layout_model, processor, detection_results=text_detection_results, batch_size=get_batch_size() * batch_multiplier)
+    layout_results = batch_layout_detection(images, layout_model, processor, detection_results=text_detection_results, batch_size=int(get_batch_size() * batch_multiplier))
     for page, layout_result in zip(pages, layout_results):
         page.layout = layout_result
 

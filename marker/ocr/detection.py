@@ -21,7 +21,7 @@ def surya_detection(doc: PdfDocument, pages: List[Page], det_model, batch_multip
     max_len = min(len(pages), len(doc))
     images = [render_image(doc[pnum], dpi=settings.SURYA_DETECTOR_DPI) for pnum in range(max_len)]
 
-    predictions = batch_text_detection(images, det_model, processor, batch_size=get_batch_size() * batch_multiplier)
+    predictions = batch_text_detection(images, det_model, processor, batch_size=int(get_batch_size() * batch_multiplier))
     for (page, pred) in zip(pages, predictions):
         page.text_lines = pred
 

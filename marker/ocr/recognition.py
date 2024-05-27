@@ -83,7 +83,7 @@ def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[P
     detection_results = [p.text_lines.bboxes for p in selected_pages]
     polygons = [[b.polygon for b in bboxes] for bboxes in detection_results]
 
-    results = run_recognition(images, surya_langs, rec_model, processor, polygons=polygons, batch_size=get_batch_size() * batch_multiplier)
+    results = run_recognition(images, surya_langs, rec_model, processor, polygons=polygons, batch_size=int(get_batch_size() * batch_multiplier))
 
     new_pages = []
     for (page_idx, result, old_page) in zip(page_idxs, results, selected_pages):

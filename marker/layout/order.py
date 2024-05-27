@@ -30,7 +30,7 @@ def surya_order(doc, pages: List[Page], order_model, batch_multiplier=1):
         bboxes.append(bbox)
 
     processor = order_model.processor
-    order_results = batch_ordering(images, bboxes, order_model, processor, batch_size=get_batch_size() * batch_multiplier)
+    order_results = batch_ordering(images, bboxes, order_model, processor, batch_size=int(get_batch_size() * batch_multiplier))
     for page, order_result in zip(pages, order_results):
         page.order = order_result
 
