@@ -6,6 +6,8 @@ test_data
 training
 wandb
 *.dat
+report.json
+benchmark_data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

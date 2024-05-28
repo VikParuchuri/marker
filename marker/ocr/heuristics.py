@@ -12,7 +12,7 @@ def should_ocr_page(page: Page, no_text: bool):
 
     # OCR page if we got minimal text, or if we got too many spaces
     conditions = [
-        no_text , # Full doc has no text, and needs full OCR
+        no_text, # Full doc has no text, and needs full OCR
         (len(page.prelim_text) > 0 and detect_bad_ocr(page.prelim_text)),  # Bad OCR
         detected_lines_found is False, # didn't extract text for all detected lines
     ]
@@ -39,7 +39,7 @@ def detect_bad_ocr(text, space_threshold=.7, newline_threshold=.6, alphanum_thre
         return True
 
     invalid_chars = len([c for c in text if c in settings.INVALID_CHARS])
-    if invalid_chars > max(4.0, len(text) * .03):
+    if invalid_chars > max(6.0, len(text) * .03):
         return True
 
     return False
@@ -52,7 +52,7 @@ def no_text_found(pages: List[Page]):
     return len(full_text.strip()) == 0
 
 
-def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.65):
+def detected_line_coverage(page: Page, intersect_thresh=.5, detection_thresh=.4):
     found_lines = 0
     for detected_line in page.text_lines.bboxes:
 
