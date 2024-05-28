@@ -169,7 +169,7 @@ Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `4.1GB` fo
 
 **Throughput**
 
-Marker takes about 4.5GB of VRAM on average per task, so you can convert 10 documents in parallel on an A6000.
+Marker takes about 4GB of VRAM on average per task, so you can convert 12 documents in parallel on an A6000.
 
 ![Benchmark results](data/images/per_doc.png)
 
