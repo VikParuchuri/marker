@@ -1,7 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
-import pypdfium2 as pdfium
+import pypdfium2 as pdfium # Needs to be at the top to avoid warnings
 from PIL import Image
 
 from marker.utils import flush_cuda_memory
@@ -33,8 +33,8 @@ from marker.settings import settings
 def convert_single_pdf(
         fname: str,
         model_lst: List,
-        max_pages=None,
-        metadata: Optional[Dict]=None,
+        max_pages: int = None,
+        metadata: Optional[Dict] = None,
         langs: Optional[List[str]] = None,
         batch_multiplier: int = 1
 ) -> Tuple[str, Dict[str, Image.Image], Dict]:

@@ -71,7 +71,7 @@ def load_all_models(langs=None, device=None, dtype=None, force_load_ocr=False):
     edit = load_editing_model(device, dtype)
 
     # Only load recognition model if we'll need it for all pdfs
-    ocr = setup_recognition_model(langs, device, dtype) if ((settings.OCR_ENGINE == "surya" and settings.OCR_ALL_PAGES) or force_load_ocr) else None
+    ocr = setup_recognition_model(langs, device, dtype)
     texify = setup_texify_model(device, dtype)
     model_lst = [texify, layout, order, edit, detection, ocr]
     return model_lst

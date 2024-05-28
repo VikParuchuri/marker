@@ -1,3 +1,4 @@
+import pypdfium2 # Needs to be at the top to avoid warnings
 import argparse
 import os
 
