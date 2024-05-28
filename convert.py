@@ -1,8 +1,11 @@
-import argparse
 import os
-from typing import Dict, Optional
 
-import ray
+os.environ["IN_STREAMLIT"] = "true" # Avoid multiprocessing inside surya
+os.environ["PDFTEXT_CPU_WORKERS"] = "1" # Avoid multiprocessing inside pdftext
+
+import pypdfium2 # Needs to be at the top to avoid warnings
+import argparse
+import torch.multiprocessing as mp
 from tqdm import tqdm
 import math
 
@@ -19,8 +22,19 @@ import json
 configure_logging()
 
 
-@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER, num_gpus=.05 if settings.CUDA else 0)
-def process_single_pdf(filepath: str, out_folder: str, model_refs, metadata: Optional[Dict] = None, min_length: Optional[int] = None):
+def worker_init(shared_model):
+    global model_refs
+    model_refs = shared_model
+
+
+def worker_exit():
+    global model_refs
+    del model_refs
+
+
+def process_single_pdf(args):
+    filepath, out_folder, metadata, min_length = args
+
     fname = os.path.basename(filepath)
     if markdown_exists(out_folder, fname):
         return
@@ -86,45 +100,27 @@ def main():
 
     total_processes = min(len(files_to_convert), args.workers)
 
-    ray.init(
-        num_cpus=total_processes,
-        num_gpus=1 if settings.CUDA else 0,
-        storage=settings.RAY_CACHE_PATH,
-        _temp_dir=settings.RAY_CACHE_PATH,
-        log_to_driver=settings.DEBUG
-    )
-
-    model_lst = load_all_models()
-    model_refs = ray.put(model_lst)
-
     # Dynamically set GPU allocation per task based on GPU ram
-    gpu_frac = settings.VRAM_PER_TASK / settings.INFERENCE_RAM if settings.CUDA else 0
+    if settings.CUDA:
+        tasks_per_gpu = settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
+        total_processes = min(tasks_per_gpu, total_processes)
+
+    mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
+    model_lst = load_all_models()
+    for model in model_lst:
+        if model:
+            model.share_memory()
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
-    futures = [
-        process_single_pdf.options(num_gpus=gpu_frac).remote(
-            filepath,
-            out_folder,
-            model_refs,
-            metadata=metadata.get(os.path.basename(filepath)),
-            min_length=args.min_length
-        ) for filepath in files_to_convert
-    ]
+    task_args = [(f, out_folder, metadata.get(os.path.basename(f)), args.min_length) for f in files_to_convert]
 
-    # Run all ray conversion tasks
-    progress_bar = tqdm(total=len(futures))
-    while len(futures) > 0:
-        finished, futures = ray.wait(
-            futures, timeout=7.0
-        )
-        finished_lst = ray.get(finished)
-        if isinstance(finished_lst, list):
-            progress_bar.update(len(finished_lst))
-        else:
-            progress_bar.update(1)
+    with mp.Pool(processes=total_processes, initializer=worker_init, initargs=(model_lst,)) as pool:
+        list(tqdm(pool.imap(process_single_pdf, task_args), total=len(task_args), desc="Processing PDFs", unit="pdf"))
 
-    # Shutdown ray to free resources
-    ray.shutdown()
+        pool._worker_handler.terminate = worker_exit
+
+    # Delete all CUDA tensors
+    del model_lst
 
 
 if __name__ == "__main__":
