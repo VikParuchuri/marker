@@ -16,6 +16,7 @@ from typing import List, Dict, Tuple, Optional
 import re
 import magic
 import os
+import torch
 
 from celery.utils.log import get_task_logger
 
@@ -129,6 +130,7 @@ def convert_single_pdf(
         layoutlm_model,
         batch_size=int(settings.LAYOUT_BATCH_SIZE * parallel_factor),
     )
+    torch.cuda.empty_cache()
 
     # Find headers and footers
     bad_span_ids = filter_header_footer(blocks)
@@ -145,6 +147,7 @@ def convert_single_pdf(
         order_model,
         batch_size=int(settings.ORDERER_BATCH_SIZE * parallel_factor),
     )
+    torch.cuda.empty_cache()
 
     # Fix code blocks
     code_block_count = identify_code_blocks(blocks)
@@ -152,9 +155,11 @@ def convert_single_pdf(
     out_meta["block_stats"]["code"] = code_block_count
 
     indent_blocks(blocks)
+    torch.cuda.empty_cache()
 
     # Fix table blocks
     merge_table_blocks(blocks)
+    torch.cuda.empty_cache()
     table_count = create_new_tables(blocks)
     out_meta["block_stats"]["table"] = table_count
 
