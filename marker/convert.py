@@ -34,6 +34,7 @@ def convert_single_pdf(
         fname: str,
         model_lst: List,
         max_pages: int = None,
+        start_page: int = None,
         metadata: Optional[Dict] = None,
         langs: Optional[List[str]] = None,
         batch_multiplier: int = 1
@@ -66,11 +67,17 @@ def convert_single_pdf(
         doc,
         fname,
         max_pages=max_pages,
+        start_page=start_page
     )
     out_meta.update({
         "toc": toc,
         "pages": len(pages),
     })
+
+    # Trim pages from doc to align with start page
+    if start_page:
+        for page_idx in range(start_page):
+            doc.del_page(0)
 
     # Unpack models from list
     texify_model, layout_model, order_model, edit_model, detection_model, ocr_model = model_lst
@@ -99,7 +106,7 @@ def convert_single_pdf(
     annotate_block_types(pages)
 
     # Dump debug data if flags are set
-    dump_bbox_debug_data(doc, pages)
+    dump_bbox_debug_data(doc, fname, pages)
 
     # Find reading order for blocks
     # Sort blocks by reading order

@@ -42,12 +42,12 @@ def dump_equation_debug_data(doc, images, converted_spans):
         json.dump(data_lines, f)
 
 
-def dump_bbox_debug_data(doc, blocks: List[Page]):
+def dump_bbox_debug_data(doc, fname, blocks: List[Page]):
     if not settings.DEBUG_DATA_FOLDER or settings.DEBUG_LEVEL < 2:
         return
 
     # Remove extension from doc name
-    doc_base = os.path.basename(doc.name).rsplit(".", 1)[0]
+    doc_base = fname.rsplit(".", 1)[0]
 
     debug_file = os.path.join(settings.DEBUG_DATA_FOLDER, f"{doc_base}_bbox.json")
     debug_data = []
