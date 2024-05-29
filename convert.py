@@ -107,7 +107,11 @@ def main():
 
     mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
     model_lst = load_all_models()
+
     for model in model_lst:
+        if model.device.type == "mps":
+            raise ValueError("Cannot use MPS with torch multiprocessing share_memory.  You have to use CUDA or CPU.  Set the TORCH_DEVICE environment variable to change the device.")
+
         if model:
             model.share_memory()
 
