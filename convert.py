@@ -109,11 +109,13 @@ def main():
     model_lst = load_all_models()
 
     for model in model_lst:
+        if model is None:
+            continue
+
         if model.device.type == "mps":
             raise ValueError("Cannot use MPS with torch multiprocessing share_memory.  You have to use CUDA or CPU.  Set the TORCH_DEVICE environment variable to change the device.")
 
-        if model:
-            model.share_memory()
+        model.share_memory()
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
     task_args = [(f, out_folder, metadata.get(os.path.basename(f)), args.min_length) for f in files_to_convert]
