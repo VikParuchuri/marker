@@ -103,7 +103,9 @@ def main():
     # Dynamically set GPU allocation per task based on GPU ram
     if settings.CUDA:
         tasks_per_gpu = settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
-        total_processes = min(tasks_per_gpu, total_processes)
+        total_processes = int(min(tasks_per_gpu, total_processes))
+    else:
+        total_processes = int(total_processes)
 
     mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
     model_lst = load_all_models()
