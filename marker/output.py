@@ -3,7 +3,7 @@ import json
 
 
 def get_subfolder_path(out_folder, fname):
-    subfolder_name = fname.split(".")[0]
+    subfolder_name = fname.rsplit('.', 1)[0]
     subfolder_path = os.path.join(out_folder, subfolder_name)
     return subfolder_path
 
