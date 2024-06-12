@@ -206,7 +206,6 @@ This work would not have been possible without amazing open source models and da
 - DocLayNet from IBM
 - ByT5 from Google
 
-Thank you to the authors of these models and datasets for making them available to the community!
 # How to use this library for Python 3.10
 ```shell
 pip install -r https://raw.githubusercontent.com/VikParuchuri/marker/master/requirements.txt
@@ -256,4 +255,5 @@ pip install -r https://raw.githubusercontent.com/VikParuchuri/marker/master/requ
     converted_folder = convert_pdf_to_markdown(filename,output)
 
 ```
+Thank you to the authors of these models and datasets for making them available to the community!
 
