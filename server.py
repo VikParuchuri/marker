@@ -133,12 +133,12 @@ class BaseMarkerCliInput(BaseModel):
     num_chunks : int = 1
     max_pdfs : Optional[int] = None 
     min_length : Optional[int] = None 
-    metadata_file : str
+    metadata_file : Optional[str] = None
 
 
 
-@post("/process_pdfs")
-async def process_pdfs_endpoint(data: BaseMarkerCliInput) -> None:
+@post("/process_pdfs_raw_cli")
+async def process_pdfs_endpoint_raw_cli(data: BaseMarkerCliInput) -> None:
     in_folder = data.in_folder
     out_folder = data.out_folder
     chunk_idx = data.chunk_idx
