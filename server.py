@@ -118,7 +118,7 @@ def process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, mi
 
 
 @post("/process_pdfs")
-async def process_pdfs_endpoint(data: dict):
+async def process_pdfs_endpoint(data: dict) -> None:
     in_folder = data["in_folder"]
     out_folder = data["out_folder"]
     chunk_idx = data.get("chunk_idx", 0)
