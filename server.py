@@ -131,7 +131,7 @@ async def process_pdfs_endpoint(data: dict):
     return result
 
 def start_server():
-    app = Litestar([process_pdfs])
+    app = Litestar([process_pdfs_endpoint])
 
     run_config = uvicorn.Config(app, port=8000, host="0.0.0.0")
     server = uvicorn.Server(run_config)
