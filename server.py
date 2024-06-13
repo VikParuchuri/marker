@@ -157,7 +157,7 @@ def start_server():
     server = uvicorn.Server(run_config)
 
     init_models_and_workers(workers=5)  # Initialize models and workers with a default worker count of 5
-
+    signal.signal(signal.SIGINT, lambda s, f: shutdown())  # Updated to catch Control-C and run shutdown
     server.run()
     shutdown()
 
