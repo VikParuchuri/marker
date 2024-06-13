@@ -124,6 +124,8 @@ def process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, mi
 
 from pydantic import BaseModel
 
+from typing import Optional
+
 class BaseMarkerCliInput(BaseModel):
     in_folder: str
     out_folder: str 
