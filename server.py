@@ -117,15 +117,32 @@ def process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, mi
         return {"status": "error", "message": str(e)}
 
 
+# Server Stuff.
+#
+#
+
+
+from pydantic import BaseModel
+
+class BaseMarkerCliInput(BaseModel):
+    in_folder: str
+    out_folder: str 
+    chunk_idx: int = 0
+    max_pdfs : int 
+    min_length : int 
+    metadata_file : str
+
+
+
 @post("/process_pdfs")
-async def process_pdfs_endpoint(data: dict) -> None:
-    in_folder = data["in_folder"]
-    out_folder = data["out_folder"]
-    chunk_idx = data.get("chunk_idx", 0)
-    num_chunks = data.get("num_chunks", 1)
-    max_pdfs = data.get("max", None)
-    min_length = data.get("min_length", None)
-    metadata_file = data.get("metadata_file", None)
+async def process_pdfs_endpoint(data: BaseMarkerCliInput) -> None:
+    in_folder = data.in_folder
+    out_folder = data.out_folder
+    chunk_idx = data.chunk_idx
+    num_chunks = data.num_chunks
+    max_pdfs = data.max_pdfs
+    min_length = data.min_length
+    metadata_file = data.metadata_file
 
     result = process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, min_length, metadata_file)
     return result
@@ -133,7 +150,7 @@ async def process_pdfs_endpoint(data: dict) -> None:
 def start_server():
     app = Litestar([process_pdfs_endpoint])
 
-    run_config = uvicorn.Config(app, port=8000, host="0.0.0.0")
+    run_config = uvicorn.Config(app, port=2718, host="0.0.0.0")
     server = uvicorn.Server(run_config)
 
     init_models_and_workers(workers=5)  # Initialize models and workers with a default worker count of 5
