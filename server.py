@@ -86,16 +86,9 @@ def init_models_and_workers(workers):
     mp.set_start_method('spawn')
     pool = mp.Pool(processes=total_processes, initializer=worker_init, initargs=(model_lst,))
 
-
-@post("/process_pdfs")
-async def process_pdfs(data: dict):
-    in_folder = os.path.abspath(data["in_folder"])
-    out_folder = os.path.abspath(data["out_folder"])
-    chunk_idx = data.get("chunk_idx", 0)
-    num_chunks = data.get("num_chunks", 1)
-    max_pdfs = data.get("max", None)
-    min_length = data.get("min_length", None)
-    metadata_file = data.get("metadata_file", None)
+def process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, min_length, metadata_file):
+    in_folder = os.path.abspath(in_folder)
+    out_folder = os.path.abspath(out_folder)
 
     files = [os.path.join(in_folder, f) for f in os.listdir(in_folder)]
     files = [f for f in files if os.path.isfile(f)]
@@ -116,12 +109,26 @@ async def process_pdfs(data: dict):
             metadata = json.load(f)
 
     task_args = [(f, out_folder, metadata.get(os.path.basename(f)), min_length) for f in files_to_convert]
+
     try:
         list(tqdm(pool.imap(process_single_pdf, task_args), total=len(task_args), desc="Processing PDFs", unit="pdf"))
         return {"status": "success", "message": f"Processed {len(files_to_convert)} PDFs."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+
+@post("/process_pdfs")
+async def process_pdfs_endpoint(data: dict):
+    in_folder = data["in_folder"]
+    out_folder = data["out_folder"]
+    chunk_idx = data.get("chunk_idx", 0)
+    num_chunks = data.get("num_chunks", 1)
+    max_pdfs = data.get("max", None)
+    min_length = data.get("min_length", None)
+    metadata_file = data.get("metadata_file", None)
+
+    result = process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, min_length, metadata_file)
+    return result
 
 def start_server():
     app = Litestar([process_pdfs])
