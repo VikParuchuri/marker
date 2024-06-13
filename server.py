@@ -128,8 +128,9 @@ class BaseMarkerCliInput(BaseModel):
     in_folder: str
     out_folder: str 
     chunk_idx: int = 0
-    max_pdfs : int 
-    min_length : int 
+    num_chunks : int = 1
+    max_pdfs : Optional[int] = None 
+    min_length : Optional[int] = None 
     metadata_file : str
 
 
