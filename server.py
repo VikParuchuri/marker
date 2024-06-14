@@ -153,12 +153,11 @@ class PDFUploadFormData(BaseModel):
 TMP_DIR = Path("/tmp")
 MARKER_TMP_DIR = TMP_DIR / Path("marker")
 @post("/process_pdf_upload", media_type="multipart/form-data")
-async def process_pdf_upload_endpoint(request: Request, ):
+async def process_pdf_upload_endpoint(data : PDFUploadFormData ):
     doc_dir = MARKER_TMP_DIR / Path(rand_string())
 
     # Parse the uploaded file
-    form_data = await request.form()
-    pdf_file = form_data['file']
+    pdf_binary = data.file
 
     input_directory = doc_dir / Path("in")
     output_directory = doc_dir / Path("out")
@@ -170,7 +169,7 @@ async def process_pdf_upload_endpoint(request: Request, ):
     # Save the PDF to the output directory
     pdf_filename = os.path.join(input_directory, pdf_file.filename)
     with open(pdf_filename, "wb") as f:
-        f.write(pdf_file.read())
+        f.write(pdf_binary.read())
     
     # Process the PDF
     result = process_pdfs_core(input_directory, output_directory, chunk_idx=0, num_chunks=1, max_pdfs=1, min_length=None, metadata_file=None)
