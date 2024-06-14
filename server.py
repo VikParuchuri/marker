@@ -4,7 +4,6 @@ import argparse
 import torch.multiprocessing as mp
 from tqdm import tqdm
 import math
-from litestar import Litestar, post  # Importing Litestar
 
 from marker.convert import convert_single_pdf
 from marker.output import markdown_exists, save_markdown
@@ -13,9 +12,6 @@ from marker.pdf.extract_text import get_length_of_text
 from marker.models import load_all_models
 from marker.settings import settings
 from marker.logger import configure_logging
-import traceback
-import json
-import uvicorn
 
 os.environ["IN_STREAMLIT"] = "true"  # Avoid multiprocessing inside surya
 os.environ["PDFTEXT_CPU_WORKERS"] = "1"  # Avoid multiprocessing inside pdftext
@@ -125,6 +121,14 @@ def process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, mi
 from pydantic import BaseModel
 
 from typing import Optional
+import signal  # Add this import to handle signal
+from litestar import Litestar, post  # Importing Litestar
+import traceback
+import json
+import uvicorn
+
+import os
+import shutil
 
 class BaseMarkerCliInput(BaseModel):
     in_folder: str
@@ -136,6 +140,40 @@ class BaseMarkerCliInput(BaseModel):
     metadata_file : Optional[str] = None
 
 
+
+
+class PDFUploadFormData(BaseModel):
+    file: bytes
+
+
+@post("/process_pdf_upload", media_type="multipart/form-data")
+async def process_pdf_upload_endpoint(request: Request, out_dir: str = "./uploaded_pdfs", out_folder: str = "./output_markdown"):
+    # Parse the uploaded file
+    form_data = await request.form()
+    pdf_file = form_data['file']
+    
+    # Ensure the directories exist
+    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(out_folder, exist_ok=True)
+    
+    # Save the PDF to the output directory
+    pdf_filename = os.path.join(out_dir, pdf_file.filename)
+    with open(pdf_filename, "wb") as f:
+        f.write(pdf_file.read())
+    
+    # Process the PDF
+    result = process_pdfs_core(out_dir, out_folder, chunk_idx=0, num_chunks=1, max_pdfs=1, min_length=None, metadata_file=None)
+
+    # Read the output markdown file
+    output_filename = os.path.join(out_folder, pdf_file.filename.replace(".pdf", ".md"))
+    if not os.path.exists(output_filename):
+        return Response({"error": "Output markdown file not found."}, status_code=500)
+
+    with open(output_filename, "r") as f:
+        markdown_content = f.read()
+
+    # Return the markdown content as a response
+    return Response(markdown_content, media_type="text/markdown")
 
 @post("/process_pdfs_raw_cli")
 async def process_pdfs_endpoint_raw_cli(data: BaseMarkerCliInput) -> None:
