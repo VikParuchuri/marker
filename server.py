@@ -116,7 +116,10 @@ def process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, mi
 # Server Stuff.
 #
 #
-
+import base64
+import secrets
+def rand_string() -> str:
+    return base64.urlsafe_b64encode(secrets.token_bytes(8)).decode()
 
 from pydantic import BaseModel
 
@@ -145,16 +148,22 @@ class BaseMarkerCliInput(BaseModel):
 class PDFUploadFormData(BaseModel):
     file: bytes
 
-
+TMP_DIR = Path("/tmp")
+MARKER_TMP_DIR = TMP_DIR / Path("marker")
 @post("/process_pdf_upload", media_type="multipart/form-data")
-async def process_pdf_upload_endpoint(request: Request, out_dir: str = "./uploaded_pdfs", out_folder: str = "./output_markdown"):
+async def process_pdf_upload_endpoint(request: Request, ):
+    doc_dir = MARKER_TMP_DIR / Path(rand_string())
+
     # Parse the uploaded file
     form_data = await request.form()
     pdf_file = form_data['file']
+
+    input_directory = doc_dir / Path("in")
+    output_directory = doc_dir / Path("out")
     
     # Ensure the directories exist
-    os.makedirs(out_dir, exist_ok=True)
-    os.makedirs(out_folder, exist_ok=True)
+    os.makedirs(input_directory, exist_ok=True)
+    os.makedirs(output_directory, exist_ok=True)
     
     # Save the PDF to the output directory
     pdf_filename = os.path.join(out_dir, pdf_file.filename)
@@ -171,6 +180,8 @@ async def process_pdf_upload_endpoint(request: Request, out_dir: str = "./upload
 
     with open(output_filename, "r") as f:
         markdown_content = f.read()
+    # Cleanup directories
+    shutil.rmtree(doc_dir)
 
     # Return the markdown content as a response
     return Response(markdown_content, media_type="text/markdown")
