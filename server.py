@@ -154,7 +154,7 @@ TMP_DIR = Path("/tmp")
 MARKER_TMP_DIR = TMP_DIR / Path("marker")
 class PDFProcessor(Controller):
     @post("/process_pdf_upload", media_type="multipart/form-data")
-    async def process_pdf_upload_endpoint(data : PDFUploadFormData ):
+    async def process_pdf_upload_endpoint(data : PDFUploadFormData ) -> str:
         doc_dir = MARKER_TMP_DIR / Path(rand_string())
 
         # Parse the uploaded file
@@ -185,7 +185,7 @@ class PDFProcessor(Controller):
         # Cleanup directories
         shutil.rmtree(doc_dir)
         # Return the markdown content as a response
-        return Response(markdown_content, media_type="text/markdown")
+        return markdown_content 
 
     @post("/process_pdfs_raw_cli")
     async def process_pdfs_endpoint_raw_cli(data: BaseMarkerCliInput) -> None:
