@@ -127,7 +127,7 @@ from pydantic import BaseModel
 
 from typing import Optional
 import signal  # Add this import to handle signal
-from litestar import Litestar, post  # Importing Litestar
+from litestar import Litestar Controller post  # Importing Litestar
 import traceback
 import json
 import uvicorn
@@ -152,57 +152,58 @@ class PDFUploadFormData(BaseModel):
 
 TMP_DIR = Path("/tmp")
 MARKER_TMP_DIR = TMP_DIR / Path("marker")
-@post("/process_pdf_upload", media_type="multipart/form-data")
-async def process_pdf_upload_endpoint(data : PDFUploadFormData ):
-    doc_dir = MARKER_TMP_DIR / Path(rand_string())
+class PDFProcessor(Controller):
+    @post("/process_pdf_upload", media_type="multipart/form-data")
+    async def process_pdf_upload_endpoint(data : PDFUploadFormData ):
+        doc_dir = MARKER_TMP_DIR / Path(rand_string())
 
-    # Parse the uploaded file
-    pdf_binary = data.file
+        # Parse the uploaded file
+        pdf_binary = data.file
 
-    input_directory = doc_dir / Path("in")
-    output_directory = doc_dir / Path("out")
-    
-    # Ensure the directories exist
-    os.makedirs(input_directory, exist_ok=True)
-    os.makedirs(output_directory, exist_ok=True)
-    
-    # Save the PDF to the output directory
-    pdf_filename = os.path.join(input_directory, pdf_file.filename)
-    with open(pdf_filename, "wb") as f:
-        f.write(pdf_binary.read())
-    
-    # Process the PDF
-    result = process_pdfs_core(input_directory, output_directory, chunk_idx=0, num_chunks=1, max_pdfs=1, min_length=None, metadata_file=None)
+        input_directory = doc_dir / Path("in")
+        output_directory = doc_dir / Path("out")
+        
+        # Ensure the directories exist
+        os.makedirs(input_directory, exist_ok=True)
+        os.makedirs(output_directory, exist_ok=True)
+        
+        # Save the PDF to the output directory
+        pdf_filename = os.path.join(input_directory, pdf_file.filename)
+        with open(pdf_filename, "wb") as f:
+            f.write(pdf_binary.read())
+        
+        # Process the PDF
+        result = process_pdfs_core(input_directory, output_directory, chunk_idx=0, num_chunks=1, max_pdfs=1, min_length=None, metadata_file=None)
 
-    # Read the output markdown file
-    # TODO : Fix at some point with tests
-    output_filename = os.path.join(out_folder, pdf_file.filename.replace(".pdf", ".md"))
-    if not os.path.exists(output_filename):
-        return Response({"error": "Output markdown file not found."}, status_code=500)
+        # Read the output markdown file
+        # TODO : Fix at some point with tests
+        output_filename = os.path.join(out_folder, pdf_file.filename.replace(".pdf", ".md"))
+        if not os.path.exists(output_filename):
+            return Response({"error": "Output markdown file not found."}, status_code=500)
+        with open(output_filename, "r") as f:
+            markdown_content = f.read()
+        # Cleanup directories
+        shutil.rmtree(doc_dir)
+        # Return the markdown content as a response
+        return Response(markdown_content, media_type="text/markdown")
 
-    with open(output_filename, "r") as f:
-        markdown_content = f.read()
-    # Cleanup directories
-    shutil.rmtree(doc_dir)
+    @post("/process_pdfs_raw_cli")
+    async def process_pdfs_endpoint_raw_cli(data: BaseMarkerCliInput) -> None:
+        in_folder = data.in_folder
+        out_folder = data.out_folder
+        chunk_idx = data.chunk_idx
+        num_chunks = data.num_chunks
+        max_pdfs = data.max_pdfs
+        min_length = data.min_length
+        metadata_file = data.metadata_file
 
-    # Return the markdown content as a response
-    return Response(markdown_content, media_type="text/markdown")
-
-@post("/process_pdfs_raw_cli")
-async def process_pdfs_endpoint_raw_cli(data: BaseMarkerCliInput) -> None:
-    in_folder = data.in_folder
-    out_folder = data.out_folder
-    chunk_idx = data.chunk_idx
-    num_chunks = data.num_chunks
-    max_pdfs = data.max_pdfs
-    min_length = data.min_length
-    metadata_file = data.metadata_file
-
-    result = process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, min_length, metadata_file)
-    return result
+        result = process_pdfs_core(in_folder, out_folder, chunk_idx, num_chunks, max_pdfs, min_length, metadata_file)
+        return result
 
 def start_server():
-    app = Litestar([process_pdfs_endpoint])
+    app = Litestar(
+        route_handlers = [PDFProcessor]
+    )
 
     run_config = uvicorn.Config(app, port=2718, host="0.0.0.0")
     server = uvicorn.Server(run_config)
