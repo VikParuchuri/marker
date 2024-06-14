@@ -121,6 +121,8 @@ import secrets
 def rand_string() -> str:
     return base64.urlsafe_b64encode(secrets.token_bytes(8)).decode()
 
+from pathlib import Path
+
 from pydantic import BaseModel
 
 from typing import Optional
@@ -166,14 +168,15 @@ async def process_pdf_upload_endpoint(request: Request, ):
     os.makedirs(output_directory, exist_ok=True)
     
     # Save the PDF to the output directory
-    pdf_filename = os.path.join(out_dir, pdf_file.filename)
+    pdf_filename = os.path.join(input_directory, pdf_file.filename)
     with open(pdf_filename, "wb") as f:
         f.write(pdf_file.read())
     
     # Process the PDF
-    result = process_pdfs_core(out_dir, out_folder, chunk_idx=0, num_chunks=1, max_pdfs=1, min_length=None, metadata_file=None)
+    result = process_pdfs_core(input_directory, output_directory, chunk_idx=0, num_chunks=1, max_pdfs=1, min_length=None, metadata_file=None)
 
     # Read the output markdown file
+    # TODO : Fix at some point with tests
     output_filename = os.path.join(out_folder, pdf_file.filename.replace(".pdf", ".md"))
     if not os.path.exists(output_filename):
         return Response({"error": "Output markdown file not found."}, status_code=500)
