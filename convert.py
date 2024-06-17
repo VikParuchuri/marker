@@ -23,6 +23,9 @@ configure_logging()
 
 
 def worker_init(shared_model):
+    if shared_model is None:
+        shared_model = load_all_models()
+
     global model_refs
     model_refs = shared_model
 
@@ -107,17 +110,22 @@ def main():
     else:
         total_processes = int(total_processes)
 
-    mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
-    model_lst = load_all_models()
+    try:
+        mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
+    except RuntimeError:
+        raise RuntimeError("Set start method to spawn twice. This may be a temporary issue with the script. Please try running it again.")
 
-    for model in model_lst:
-        if model is None:
-            continue
+    if settings.TORCH_DEVICE == "mps" or settings.TORCH_DEVICE_MODEL == "mps":
+        print("Cannot use MPS with torch multiprocessing share_memory. This will make things less memory efficient. If you want to share memory, you have to use CUDA or CPU.  Set the TORCH_DEVICE environment variable to change the device.")
 
-        if model.device.type == "mps":
-            raise ValueError("Cannot use MPS with torch multiprocessing share_memory.  You have to use CUDA or CPU.  Set the TORCH_DEVICE environment variable to change the device.")
+        model_lst = None
+    else:
+        model_lst = load_all_models()
 
-        model.share_memory()
+        for model in model_lst:
+            if model is None:
+                continue
+            model.share_memory()
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
     task_args = [(f, out_folder, metadata.get(os.path.basename(f)), args.min_length) for f in files_to_convert]

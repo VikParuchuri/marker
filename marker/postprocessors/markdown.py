@@ -4,6 +4,8 @@ import re
 import regex
 from typing import List
 
+from marker.settings import settings
+
 
 def escape_markdown(text):
     # List of characters that need to be escaped in markdown
@@ -143,7 +145,7 @@ def merge_lines(blocks: List[List[MergedBlock]]):
     block_text = ""
     block_type = ""
 
-    for page in blocks:
+    for idx, page in enumerate(blocks):
         for block in page:
             block_type = block.block_type
             if block_type != prev_type and prev_type:
@@ -167,6 +169,9 @@ def merge_lines(blocks: List[List[MergedBlock]]):
                     block_text = line_separator(block_text, line.text, block_type, is_continuation)
                 else:
                     block_text = line.text
+
+        if settings.PAGINATE_OUTPUT and idx < len(blocks) - 1:
+            block_text += "\n\n" + "-" * 16 + "\n\n" # Page separator horizontal rule
 
     # Append the final block
     text_blocks.append(
