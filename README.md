@@ -38,15 +38,15 @@ The above results are with marker and nougat setup so they each take ~4GB of VRA
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
+# Hosted API
+
+There is a hosted API for marker available [here](https://www.datalab.to/).  It has been tuned for performance, and generally takes 10s + 1s/page for conversion.
+
 # Commercial usage
 
 I want marker to be as widely accessible as possible, while still funding my development/training costs.  Research and personal usage is always okay, but there are some restrictions on commercial usage.
 
 The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
-
-# Hosted API
-
-There is a hosted API for marker available [here](https://www.datalab.to/).  It's currently in beta, and I'm working on optimizing speed.
 
 # Community
 
@@ -146,6 +146,15 @@ There are some settings that you may find useful if things aren't working the wa
 - If you're getting out of memory errors, decrease worker count (increased the `VRAM_PER_TASK` setting).  You can also try splitting up long PDFs into multiple files.
 
 In general, if output is not what you expect, trying to OCR the PDF is a good first step.  Not all PDFs have good text/bboxes embedded in them.
+
+## Useful settings
+
+These settings can improve/change output quality:
+
+- `OCR_ALL_PAGES` will force OCR across the document.  Many PDFs have bad text embedded due to older OCR engines being used.
+- `PAGINATE_OUTPUT` will put a horizontal rule between pages.  Default: False.
+- `EXTRACT_IMAGES` will extract images and save separately.  Default: True.
+- `BAD_SPAN_TYPES` specifies layout blocks to remove from the markdown output.
 
 # Benchmarks
 

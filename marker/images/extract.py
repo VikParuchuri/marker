@@ -39,6 +39,11 @@ def extract_page_images(page_obj, page):
     image_blocks = find_image_blocks(page)
 
     for image_idx, (block_idx, line_idx, bbox) in enumerate(image_blocks):
+        if block_idx >= len(page.blocks):
+            block_idx = len(page.blocks) - 1
+        if block_idx < 0:
+            continue
+
         block = page.blocks[block_idx]
         image = render_bbox_image(page_obj, page, bbox)
         image_filename = get_image_filename(page, image_idx)
