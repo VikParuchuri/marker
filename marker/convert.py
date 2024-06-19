@@ -127,10 +127,32 @@ def convert_single_pdf(
     table_count = format_tables(pages)
     out_meta["block_stats"]["table"] = table_count
 
-    for page in pages:
+    from marker.schema.block import Span, Line, Block
+
+    for page_num, page in enumerate(pages):
         for block in page.blocks:
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
+
+        page_number_span = Span(
+            bbox=[10, 10, 10, 10],
+            text=f"<header> PAGE NUMBER {page_num + 1} </header>\n",
+            span_id="0_0",
+            font="Times-New-Roman_bold",
+            font_weight=0.0,
+            font_size=0.0,
+        )
+
+        page_number_line = Line(bbox=[10, 10, 10, 10], spans=[page_number_span])
+
+        page_number_block = Block(
+            bbox=[10, 10, 10, 10],
+            lines=[page_number_line],
+            pnum=page_num + 1,
+            block_type="PAGE_NUMBER",
+        )
+
+        page.blocks.insert(0, page_number_block)
 
     filtered, eq_stats = replace_equations(
         doc, pages, texify_model, batch_multiplier=batch_multiplier
