@@ -28,11 +28,13 @@ def dump_equation_debug_data(doc, images, converted_spans):
         img_bytes = io.BytesIO()
         pil_image.save(img_bytes, format="WEBP", lossless=True)
         b64_image = base64.b64encode(img_bytes.getvalue()).decode("utf-8")
-        data_lines.append({
-            "image": b64_image,
-            "text": converted_span.text,
-            "bbox": converted_span.bbox
-        })
+        data_lines.append(
+            {
+                "image": b64_image,
+                "text": converted_span.text,
+                "bbox": converted_span.bbox,
+            }
+        )
 
     # Remove extension from doc name
     doc_base = os.path.basename(doc.name).rsplit(".", 1)[0]
@@ -59,7 +61,10 @@ def dump_bbox_debug_data(doc, fname, blocks: List[Page]):
         max_dimension = 6000
         if width > max_dimension or height > max_dimension:
             scaling_factor = min(max_dimension / width, max_dimension / height)
-            png_image = png_image.resize((int(width * scaling_factor), int(height * scaling_factor)), Image.ANTIALIAS)
+            png_image = png_image.resize(
+                (int(width * scaling_factor), int(height * scaling_factor)),
+                Image.ANTIALIAS,
+            )
 
         img_bytes = io.BytesIO()
         png_image.save(img_bytes, format="WEBP", lossless=True, quality=100)
@@ -71,6 +76,3 @@ def dump_bbox_debug_data(doc, fname, blocks: List[Page]):
 
     with open(debug_file, "w+") as f:
         json.dump(debug_data, f)
-
-
-

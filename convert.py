@@ -1,9 +1,9 @@
 import os
 
-os.environ["IN_STREAMLIT"] = "true" # Avoid multiprocessing inside surya
-os.environ["PDFTEXT_CPU_WORKERS"] = "1" # Avoid multiprocessing inside pdftext
+os.environ["IN_STREAMLIT"] = "true"  # Avoid multiprocessing inside surya
+os.environ["PDFTEXT_CPU_WORKERS"] = "1"  # Avoid multiprocessing inside pdftext
 
-import pypdfium2 # Needs to be at the top to avoid warnings
+import pypdfium2  # Needs to be at the top to avoid warnings
 import argparse
 import torch.multiprocessing as mp
 from tqdm import tqdm
@@ -55,7 +55,9 @@ def process_single_pdf(args):
             if length < min_length:
                 return
 
-        full_text, images, out_metadata = convert_single_pdf(filepath, model_refs, metadata=metadata)
+        full_text, images, out_metadata = convert_single_pdf(
+            filepath, model_refs, metadata=metadata
+        )
         if len(full_text.strip()) > 0:
             save_markdown(out_folder, fname, full_text, images, out_metadata)
         else:
@@ -69,12 +71,30 @@ def main():
     parser = argparse.ArgumentParser(description="Convert multiple pdfs to markdown.")
     parser.add_argument("in_folder", help="Input folder with pdfs.")
     parser.add_argument("out_folder", help="Output folder")
-    parser.add_argument("--chunk_idx", type=int, default=0, help="Chunk index to convert")
-    parser.add_argument("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
-    parser.add_argument("--max", type=int, default=None, help="Maximum number of pdfs to convert")
-    parser.add_argument("--workers", type=int, default=5, help="Number of worker processes to use")
-    parser.add_argument("--metadata_file", type=str, default=None, help="Metadata json file to use for filtering")
-    parser.add_argument("--min_length", type=int, default=None, help="Minimum length of pdf to convert")
+    parser.add_argument(
+        "--chunk_idx", type=int, default=0, help="Chunk index to convert"
+    )
+    parser.add_argument(
+        "--num_chunks",
+        type=int,
+        default=1,
+        help="Number of chunks being processed in parallel",
+    )
+    parser.add_argument(
+        "--max", type=int, default=None, help="Maximum number of pdfs to convert"
+    )
+    parser.add_argument(
+        "--workers", type=int, default=5, help="Number of worker processes to use"
+    )
+    parser.add_argument(
+        "--metadata_file",
+        type=str,
+        default=None,
+        help="Metadata json file to use for filtering",
+    )
+    parser.add_argument(
+        "--min_length", type=int, default=None, help="Minimum length of pdf to convert"
+    )
 
     args = parser.parse_args()
 
@@ -93,7 +113,7 @@ def main():
 
     # Limit files converted if needed
     if args.max:
-        files_to_convert = files_to_convert[:args.max]
+        files_to_convert = files_to_convert[: args.max]
 
     metadata = {}
     if args.metadata_file:
@@ -105,18 +125,24 @@ def main():
 
     # Dynamically set GPU allocation per task based on GPU ram
     if settings.CUDA:
-        tasks_per_gpu = settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
+        tasks_per_gpu = (
+            settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
+        )
         total_processes = int(min(tasks_per_gpu, total_processes))
     else:
         total_processes = int(total_processes)
 
     try:
-        mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
+        mp.set_start_method("spawn")  # Required for CUDA, forkserver doesn't work
     except RuntimeError:
-        raise RuntimeError("Set start method to spawn twice. This may be a temporary issue with the script. Please try running it again.")
+        raise RuntimeError(
+            "Set start method to spawn twice. This may be a temporary issue with the script. Please try running it again."
+        )
 
     if settings.TORCH_DEVICE == "mps" or settings.TORCH_DEVICE_MODEL == "mps":
-        print("Cannot use MPS with torch multiprocessing share_memory. This will make things less memory efficient. If you want to share memory, you have to use CUDA or CPU.  Set the TORCH_DEVICE environment variable to change the device.")
+        print(
+            "Cannot use MPS with torch multiprocessing share_memory. This will make things less memory efficient. If you want to share memory, you have to use CUDA or CPU.  Set the TORCH_DEVICE environment variable to change the device."
+        )
 
         model_lst = None
     else:
@@ -127,11 +153,25 @@ def main():
                 continue
             model.share_memory()
 
-    print(f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}")
-    task_args = [(f, out_folder, metadata.get(os.path.basename(f)), args.min_length) for f in files_to_convert]
+    print(
+        f"Converting {len(files_to_convert)} pdfs in chunk {args.chunk_idx + 1}/{args.num_chunks} with {total_processes} processes, and storing in {out_folder}"
+    )
+    task_args = [
+        (f, out_folder, metadata.get(os.path.basename(f)), args.min_length)
+        for f in files_to_convert
+    ]
 
-    with mp.Pool(processes=total_processes, initializer=worker_init, initargs=(model_lst,)) as pool:
-        list(tqdm(pool.imap(process_single_pdf, task_args), total=len(task_args), desc="Processing PDFs", unit="pdf"))
+    with mp.Pool(
+        processes=total_processes, initializer=worker_init, initargs=(model_lst,)
+    ) as pool:
+        list(
+            tqdm(
+                pool.imap(process_single_pdf, task_args),
+                total=len(task_args),
+                desc="Processing PDFs",
+                unit="pdf",
+            )
+        )
 
         pool._worker_handler.terminate = worker_exit
 

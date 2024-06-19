@@ -1,7 +1,10 @@
 import warnings
-warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
-import pypdfium2 as pdfium # Needs to be at the top to avoid warnings
+warnings.filterwarnings(
+    "ignore", category=UserWarning
+)  # Filter torch pytree user warnings
+
+import pypdfium2 as pdfium  # Needs to be at the top to avoid warnings
 from PIL import Image
 
 from marker.utils import flush_cuda_memory
@@ -31,13 +34,13 @@ from marker.settings import settings
 
 
 def convert_single_pdf(
-        fname: str,
-        model_lst: List,
-        max_pages: int = None,
-        start_page: int = None,
-        metadata: Optional[Dict] = None,
-        langs: Optional[List[str]] = None,
-        batch_multiplier: int = 1
+    fname: str,
+    model_lst: List,
+    max_pages: int = None,
+    start_page: int = None,
+    metadata: Optional[Dict] = None,
+    langs: Optional[List[str]] = None,
+    batch_multiplier: int = 1,
 ) -> Tuple[str, Dict[str, Image.Image], Dict]:
     # Set language needed for OCR
     if langs is None:
@@ -58,21 +61,18 @@ def convert_single_pdf(
         "filetype": filetype,
     }
 
-    if filetype == "other": # We can't process this file
+    if filetype == "other":  # We can't process this file
         return "", {}, out_meta
 
     # Get initial text blocks from the pdf
     doc = pdfium.PdfDocument(fname)
-    pages, toc = get_text_blocks(
-        doc,
-        fname,
-        max_pages=max_pages,
-        start_page=start_page
+    pages, toc = get_text_blocks(doc, fname, max_pages=max_pages, start_page=start_page)
+    out_meta.update(
+        {
+            "toc": toc,
+            "pages": len(pages),
+        }
     )
-    out_meta.update({
-        "toc": toc,
-        "pages": len(pages),
-    })
 
     # Trim pages from doc to align with start page
     if start_page:
@@ -80,14 +80,18 @@ def convert_single_pdf(
             doc.del_page(0)
 
     # Unpack models from list
-    texify_model, layout_model, order_model, edit_model, detection_model, ocr_model = model_lst
+    texify_model, layout_model, order_model, edit_model, detection_model, ocr_model = (
+        model_lst
+    )
 
     # Identify text lines on pages
     surya_detection(doc, pages, detection_model, batch_multiplier=batch_multiplier)
     flush_cuda_memory()
 
     # OCR pages as needed
-    pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier)
+    pages, ocr_stats = run_ocr(
+        doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier
+    )
     flush_cuda_memory()
 
     out_meta["ocr_stats"] = ocr_stats
@@ -129,10 +133,7 @@ def convert_single_pdf(
             block.filter_bad_span_types()
 
     filtered, eq_stats = replace_equations(
-        doc,
-        pages,
-        texify_model,
-        batch_multiplier=batch_multiplier
+        doc, pages, texify_model, batch_multiplier=batch_multiplier
     )
     flush_cuda_memory()
     out_meta["block_stats"]["equations"] = eq_stats
@@ -159,9 +160,7 @@ def convert_single_pdf(
 
     # Postprocess text with editor model
     full_text, edit_stats = edit_full_text(
-        full_text,
-        edit_model,
-        batch_multiplier=batch_multiplier
+        full_text, edit_model, batch_multiplier=batch_multiplier
     )
     flush_cuda_memory()
     out_meta["postprocess_stats"] = {"edit": edit_stats}

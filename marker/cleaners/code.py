@@ -9,7 +9,7 @@ from typing import List
 
 def is_code_linelen(lines, thresh=80):
     # Decide based on chars per newline threshold
-    total_alnum_chars = sum(len(re.findall(r'\w', line.prelim_text)) for line in lines)
+    total_alnum_chars = sum(len(re.findall(r"\w", line.prelim_text)) for line in lines)
     total_newlines = max(len(lines) - 1, 1)
 
     if total_alnum_chars == 0:
@@ -67,13 +67,16 @@ def identify_code_blocks(pages: List[Page]):
             is_code = [
                 len(block.lines) > 3,
                 is_code_linelen(block.lines),
-                sum(is_indent) + comment_lines > len(block.lines) * .7, # Indentation and comments are a majority
+                sum(is_indent) + comment_lines
+                > len(block.lines) * 0.7,  # Indentation and comments are a majority
             ]
 
             if avg_font_size is not None:
                 font_checks = [
-                    mean(line_font_sizes) <= avg_font_size * .8, # Lower than average font size and line height
-                    mean(block_line_heights) < avg_line_height * .8
+                    mean(line_font_sizes)
+                    <= avg_font_size
+                    * 0.8,  # Lower than average font size and line height
+                    mean(block_line_heights) < avg_line_height * 0.8,
                 ]
                 is_code += font_checks
 

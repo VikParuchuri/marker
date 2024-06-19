@@ -4,7 +4,9 @@ import pkg_resources
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert a folder of PDFs to a folder of markdown files in chunks.")
+    parser = argparse.ArgumentParser(
+        description="Convert a folder of PDFs to a folder of markdown files in chunks."
+    )
     parser.add_argument("in_folder", help="Input folder with pdfs.")
     parser.add_argument("out_folder", help="Output folder")
     args = parser.parse_args()
