@@ -46,8 +46,12 @@ def convert_single_pdf(
     if langs is None:
         langs = [settings.DEFAULT_LANG]
 
+    OCR_ALL_PAGES = False
+
     if metadata:
         langs = metadata.get("languages", langs)
+        if metadata.get("OCR_ALL_PAGES"):
+            OCR_ALL_PAGES = True
 
     langs = replace_langs_with_codes(langs)
     validate_langs(langs)
@@ -90,7 +94,7 @@ def convert_single_pdf(
 
     # OCR pages as needed
     pages, ocr_stats = run_ocr(
-        doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier
+        doc, pages, langs, ocr_model, OCR_ALL_PAGES, batch_multiplier=batch_multiplier
     )
     flush_cuda_memory()
 

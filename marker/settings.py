@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         None  # Note: MPS device does not work for text detection, and will default to CPU
     )
     IMAGE_DPI: int = 96  # DPI to render images pulled from pdf at
-    EXTRACT_IMAGES: bool = True  # Extract images from pdfs and save them
+    EXTRACT_IMAGES: bool = False  # Extract images from pdfs and save them
     PAGINATE_OUTPUT: bool = False  # Paginate output markdown
 
     @computed_field
