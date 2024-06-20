@@ -1,6 +1,5 @@
 tesseract-ocr
 libtesseract-dev
-libmagic1
 ocrmypdf
 tesseract-ocr-eng
 tesseract-ocr-deu

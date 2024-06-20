@@ -1,22 +1,36 @@
-from collections import defaultdict, Counter
+from collections import defaultdict
 from itertools import chain
 from typing import Optional
 
-from transformers import AutoTokenizer
 from marker.settings import settings
 import torch
 import torch.nn.functional as F
 from marker.postprocessors.t5 import T5ForTokenClassification, byt5_tokenize
 
 
-def load_editing_model():
+def get_batch_size():
+    if settings.EDITOR_BATCH_SIZE is not None:
+        return settings.EDITOR_BATCH_SIZE
+    elif settings.TORCH_DEVICE_MODEL == "cuda":
+        return 12
+    return 6
+
+
+def load_editing_model(device=None, dtype=None):
     if not settings.ENABLE_EDITOR_MODEL:
         return None
 
-    model = T5ForTokenClassification.from_pretrained(
+    if device:
+        model = T5ForTokenClassification.from_pretrained(
             settings.EDITOR_MODEL_NAME,
-            torch_dtype=settings.MODEL_DTYPE,
-        ).to(settings.TORCH_DEVICE_MODEL)
+            torch_dtype=dtype,
+            device=device,
+        )
+    else:
+        model = T5ForTokenClassification.from_pretrained(
+                settings.EDITOR_MODEL_NAME,
+                torch_dtype=settings.MODEL_DTYPE,
+            ).to(settings.TORCH_DEVICE_MODEL)
     model.eval()
 
     model.config.label2id = {
@@ -29,10 +43,11 @@ def load_editing_model():
     return model
 
 
-def edit_full_text(text: str, model: Optional[T5ForTokenClassification], batch_size: int = settings.EDITOR_BATCH_SIZE):
+def edit_full_text(text: str, model: Optional[T5ForTokenClassification], batch_multiplier=1) -> (str, dict):
     if not model:
         return text, {}
 
+    batch_size = get_batch_size() * batch_multiplier
     tokenized = byt5_tokenize(text, settings.EDITOR_MAX_LENGTH)
     input_ids = tokenized["input_ids"]
     char_token_lengths = tokenized["char_token_lengths"]
