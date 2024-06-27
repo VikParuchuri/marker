@@ -29,9 +29,9 @@ class Settings(BaseSettings):
 
         return "cpu"
 
-    INFERENCE_RAM: int = 40  # How much VRAM each GPU has (in GB).
+    INFERENCE_RAM: int = 16  # How much VRAM each GPU has (in GB).
     VRAM_PER_TASK: float = (
-        4.5  # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 5GB, but avg across workers is lower.
+        2  # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 5GB, but avg across workers is lower.
     )
     DEFAULT_LANG: str = (
         "English"  # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
@@ -42,12 +42,12 @@ class Settings(BaseSettings):
     }
 
     # Text extraction
-    PDFTEXT_CPU_WORKERS: int = 4  # How many CPU workers to use for pdf text extraction
+    PDFTEXT_CPU_WORKERS: int = 1  # How many CPU workers to use for pdf text extraction
 
     # Text line Detection
     DETECTOR_BATCH_SIZE: Optional[int] = None  # Defaults to 6 for CPU, 12 otherwise
     SURYA_DETECTOR_DPI: int = 96
-    DETECTOR_POSTPROCESSING_CPU_WORKERS: int = 4
+    DETECTOR_POSTPROCESSING_CPU_WORKERS: int = 1
 
     # OCR
     INVALID_CHARS: List[str] = [chr(0xFFFD), "�"]
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     )
 
     ## Tesseract
-    OCR_PARALLEL_WORKERS: int = 2  # How many CPU workers to use for OCR
+    OCR_PARALLEL_WORKERS: int = 1  # How many CPU workers to use for OCR
     TESSERACT_TIMEOUT: int = 20  # When to give up on OCR
     TESSDATA_PREFIX: str = ""
 
