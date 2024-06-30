@@ -1,6 +1,10 @@
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
+import os
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
+
+
 import pypdfium2 as pdfium # Needs to be at the top to avoid warnings
 from PIL import Image
 

@@ -1,5 +1,6 @@
 import os
 
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 os.environ["IN_STREAMLIT"] = "true" # Avoid multiprocessing inside surya
 os.environ["PDFTEXT_CPU_WORKERS"] = "1" # Avoid multiprocessing inside pdftext
 
