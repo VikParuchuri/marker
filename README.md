@@ -50,7 +50,7 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 
 - Supports PDFs, word documents, and powerpoints 
 - 1/4th the price of leading cloud-based competitors
-- Uses [modal](https://modal.com/) for high reliability without latency spikes
+- Leverages [Modal](https://modal.com/) for high reliability without latency spikes
 
 # Community
 

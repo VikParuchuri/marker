@@ -1,3 +1,7 @@
+import os
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
+
+
 from marker.postprocessors.editor import load_editing_model
 from surya.model.detection import segformer
 from texify.model.model import load_model as load_texify_model
