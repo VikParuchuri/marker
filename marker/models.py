@@ -3,7 +3,7 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers 
 
 
 from marker.postprocessors.editor import load_editing_model
-from surya.model.detection import segformer
+from surya.model.detection.model import load_model as load_detection_model, load_processor as load_detection_processor
 from texify.model.model import load_model as load_texify_model
 from texify.model.processor import load_processor as load_texify_processor
 from marker.settings import settings
@@ -25,11 +25,11 @@ def setup_recognition_model(langs, device=None, dtype=None):
 
 def setup_detection_model(device=None, dtype=None):
     if device:
-        model = segformer.load_model(device=device, dtype=dtype)
+        model = load_detection_model(device=device, dtype=dtype)
     else:
-        model = segformer.load_model()
+        model = load_detection_model()
 
-    processor = segformer.load_processor()
+    processor = load_detection_processor()
     model.processor = processor
     return model
 
@@ -46,10 +46,10 @@ def setup_texify_model(device=None, dtype=None):
 
 def setup_layout_model(device=None, dtype=None):
     if device:
-        model = segformer.load_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT, device=device, dtype=dtype)
+        model = load_detection_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT, device=device, dtype=dtype)
     else:
-        model = segformer.load_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
-    processor = segformer.load_processor(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
+        model = load_detection_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
+    processor = load_detection_processor(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
     model.processor = processor
     return model
 
