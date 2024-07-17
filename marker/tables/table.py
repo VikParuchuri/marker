@@ -50,7 +50,8 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
     sorted_char_blocks = sort_table_blocks(page.char_blocks)
 
     table_width = table_box[2] - table_box[0]
-    new_line_start_x = table_box[0] + table_width * .2
+    new_line_start_x = table_box[0] + table_width * .3
+    table_width_pct = (table_width / page_width) * .95
 
     for block_idx, block in enumerate(sorted_char_blocks):
         sorted_lines = sort_table_blocks(block["lines"])
@@ -64,6 +65,7 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
                     x_start, y_start, x_end, y_end = char["bbox"]
                     x_start /= page_width
                     x_end /= page_width
+                    fullwidth_cell = False
 
                     if cell_bbox is not None:
                         # Find boundaries of cell bbox before merging
@@ -71,11 +73,14 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
                         cell_x_start /= page_width
                         cell_x_end /= page_width
 
+                        fullwidth_cell = cell_x_end - cell_x_start >= table_width_pct
+
                     cell_content = replace_dots(replace_newlines(table_cell))
                     if cell_bbox is None: # First char
                         table_cell += char["char"]
                         cell_bbox = char["bbox"]
-                    elif cell_x_start - space_tol < x_start < cell_x_end + space_tol: # Check if we are in the same cell
+                    # Check if we are in the same cell, ensure cell is not full table width (like if stray text gets included in the table)
+                    elif (cell_x_start - space_tol < x_start < cell_x_end + space_tol) and not fullwidth_cell:
                         table_cell += char["char"]
                         cell_bbox = merge_boxes(cell_bbox, char["bbox"])
                     # New line and cell

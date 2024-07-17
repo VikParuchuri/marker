@@ -2,12 +2,10 @@ from PIL import Image, ImageDraw
 import copy
 
 from marker.tables.edges import get_vertical_lines
-
-from marker.schema.bbox import rescale_bbox
 import numpy as np
 
 
-def get_column_lines(page, table_box, table_rows, align="l", tolerance=4):
+def get_column_lines(page, table_box, table_rows, align="l", y_tolerance=10, x_tolerance=4):
     table_height = (table_box[3] - table_box[1]) * 2
     table_width = table_box[2] - table_box[0]
     img_size = (int(table_width), int(table_height))
@@ -25,13 +23,13 @@ def get_column_lines(page, table_box, table_rows, align="l", tolerance=4):
                     line_bbox[0] = line_bbox[0] + (line_bbox[2] - line_bbox[0]) / 2
                     line_bbox[2] = line_bbox[0]
 
-            line_bbox[1] -= tolerance
-            line_bbox[3] += tolerance
+            line_bbox[1] -= y_tolerance
+            line_bbox[3] += y_tolerance
             line_bbox[0] -= table_box[0]
             line_bbox[2] -= table_box[0]
             line_bbox[1] -= table_box[1]
             line_bbox[3] -= table_box[1]
-            draw.rectangle(line_bbox, outline="red", width=tolerance)
+            draw.rectangle(line_bbox, outline="red", width=x_tolerance)
 
     np_img = np.array(draw_img, dtype=np.float32) / 255.0
     columns = get_vertical_lines(np_img, divisor=2, x_tolerance=10, y_tolerance=1)
@@ -52,7 +50,6 @@ def get_column_lines(page, table_box, table_rows, align="l", tolerance=4):
 
 
 def assign_cells_to_columns(page, table_box, rows, tolerance=5):
-    return [[cell[1] for cell in row] for row in rows]
     alignments = ["l", "r", "c"]
     columns = {}
     for align in alignments:
@@ -77,15 +74,27 @@ def assign_cells_to_columns(page, table_box, rows, tolerance=5):
                         blanks = prev_column - j
                         if blanks > 1:
                             for b in range(1, blanks):
-                                formatted_row.append((prev_column - b, ""))
-                    formatted_row.append((j, cell[1]))
+                                formatted_row.append([prev_column - b, ""])
+                    formatted_row.append([j, cell[1]])
                     found = True
                     break
             if not found:
-                formatted_row.append((cell_idx, cell[1]))
+                formatted_row.append([cell_idx, cell[1]])
         formatted_rows.append(formatted_row[::-1])
 
-    col_count = len(columns)
+    # Ensure rows have sequential column indices
+    # Also identify the total number of columns
+    col_count = 0
+    for row in formatted_rows:
+        prev_col = -1
+        for col in row:
+            col_idx = col[0]
+            if col_idx <= prev_col:
+                col[0] = prev_col + 1
+            prev_col = col[0]
+            col_count = max(col_count, col[0] + 1)
+
+    # Assign cells to correct column positions
     clean_rows = []
     for row in formatted_rows:
         clean_row = []
@@ -99,4 +108,9 @@ def assign_cells_to_columns(page, table_box, rows, tolerance=5):
             if not found:
                 clean_row.append((col, ""))
         clean_rows.append([cell[1] for cell in clean_row])
+
+    max_cols = max([len(r) for r in clean_rows])
+    for row in clean_rows:
+        while len(row) < max_cols:
+            row.append("")
     return clean_rows
