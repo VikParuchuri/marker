@@ -7,6 +7,7 @@ from typing import List
 from marker.settings import settings
 from marker.tables.cells import assign_cells_to_columns
 from marker.tables.utils import sort_table_blocks, replace_dots, replace_newlines
+from marker.schema.bbox import BboxElement
 
 
 def get_table_surya(page, table_box, space_tol=.01) -> List[List[str]]:
@@ -19,7 +20,7 @@ def get_table_surya(page, table_box, space_tol=.01) -> List[List[str]]:
         for line_idx, line in enumerate(sorted_lines):
             line_bbox = line.bbox
             intersect_pct = box_intersection_pct(line_bbox, table_box)
-            if intersect_pct < .5 or len(line.spans) == 0:
+            if intersect_pct < settings.TABLE_INTERSECTION_THRESH or len(line.spans) == 0:
                 continue
             normed_x_start = line_bbox[0] / page.width
             normed_x_end = line_bbox[2] / page.width
@@ -56,7 +57,7 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
         for line_idx, line in enumerate(sorted_lines):
             line_bbox = line["bbox"]
             intersect_pct = box_intersection_pct(line_bbox, table_box)
-            if intersect_pct < settings.BBOX_INTERSECTION_THRESH:
+            if intersect_pct < settings.TABLE_INTERSECTION_THRESH:
                 continue
             for span in line["spans"]:
                 for char in span["chars"]:
@@ -100,8 +101,34 @@ def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> L
         table_row = sorted(table_row, key=lambda x: round(x[0][0] / round_factor))
         table_rows.append(table_row)
 
-    table_rows = assign_cells_to_columns(page, table_box, table_rows)
-    return table_rows
+    total_cells = sum([len(row) for row in table_rows])
+    if total_cells > 0:
+        table_rows = assign_cells_to_columns(page, table_box, table_rows)
+        return table_rows
+    else:
+        return []
+
+
+def merge_tables(page_table_boxes):
+    # Merge tables that are next to each other
+    expansion_factor = 1.02
+    shrink_factor = .98
+    ignore_boxes = set()
+    for i in range(len(page_table_boxes)):
+        if i in ignore_boxes:
+            continue
+        for j in range(i + 1, len(page_table_boxes)):
+            if j in ignore_boxes:
+                continue
+            expanded_box1 = [page_table_boxes[i][0] * shrink_factor, page_table_boxes[i][1],
+                             page_table_boxes[i][2] * expansion_factor, page_table_boxes[i][3]]
+            expanded_box2 = [page_table_boxes[j][0] * shrink_factor, page_table_boxes[j][1],
+                             page_table_boxes[j][2] * expansion_factor, page_table_boxes[j][3]]
+            if box_intersection_pct(expanded_box1, expanded_box2) > 0:
+                page_table_boxes[i] = merge_boxes(page_table_boxes[i], page_table_boxes[j])
+                ignore_boxes.add(j)
+
+    return [b for i, b in enumerate(page_table_boxes) if i not in ignore_boxes]
 
 
 def format_tables(pages: List[Page]):
@@ -114,12 +141,14 @@ def format_tables(pages: List[Page]):
 
         page_table_boxes = [b for b in page.layout.bboxes if b.label == "Table"]
         page_table_boxes = [rescale_bbox(page.layout.image_bbox, page.bbox, b.bbox) for b in page_table_boxes]
+        page_table_boxes = merge_tables(page_table_boxes)
+
         for table_idx, table_box in enumerate(page_table_boxes):
             for block_idx, block in enumerate(page.blocks):
                 intersect_pct = block.intersection_pct(table_box)
-                if intersect_pct > settings.BBOX_INTERSECTION_THRESH and block.block_type == "Table":
+                if intersect_pct > settings.TABLE_INTERSECTION_THRESH and block.block_type == "Table":
                     if table_idx not in table_insert_points:
-                        table_insert_points[table_idx] = block_idx - len(blocks_to_remove) + table_idx # Where to insert the new table
+                        table_insert_points[table_idx] = max(0, block_idx - len(blocks_to_remove)) # Where to insert the new table
                     blocks_to_remove.add(block_idx)
 
         new_page_blocks = []
@@ -159,6 +188,7 @@ def format_tables(pages: List[Page]):
                 )]
             )
             insert_point = table_insert_points[table_idx]
+            insert_point = min(insert_point, len(new_page_blocks))
             new_page_blocks.insert(insert_point, table_block)
             table_count += 1
         page.blocks = new_page_blocks

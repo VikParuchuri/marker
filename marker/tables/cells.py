@@ -1,97 +1,102 @@
-from marker.schema.bbox import rescale_bbox, box_intersection_pct
-from marker.schema.page import Page
-from sklearn.cluster import DBSCAN
+from PIL import Image, ImageDraw
+import copy
+
+from marker.tables.edges import get_vertical_lines
+
+from marker.schema.bbox import rescale_bbox
 import numpy as np
 
-from marker.settings import settings
 
-
-def cluster_coords(coords):
-    if len(coords) == 0:
-        return []
-    coords = np.array(sorted(set(coords))).reshape(-1, 1)
-
-    clustering = DBSCAN(eps=5, min_samples=1).fit(coords)
-    clusters = clustering.labels_
-
-    separators = []
-    for label in set(clusters):
-        clustered_points = coords[clusters == label]
-        separators.append(np.mean(clustered_points))
-
-    separators = sorted(separators)
-    return separators
-
-
-def find_column_separators(page: Page, table_box, round_factor=4, min_count=1):
-    left_edges = []
-    right_edges = []
-    centers = []
-
-    line_boxes = [p.bbox for p in page.text_lines.bboxes]
-    line_boxes = [rescale_bbox(page.text_lines.image_bbox, page.bbox, l) for l in line_boxes]
-    line_boxes = [l for l in line_boxes if box_intersection_pct(l, table_box) > settings.BBOX_INTERSECTION_THRESH]
-
-    for cell in line_boxes:
-        left_edges.append(cell[0] / round_factor * round_factor)
-        right_edges.append(cell[2] / round_factor * round_factor)
-        centers.append((cell[0] + cell[2]) / 2 * round_factor / round_factor)
-
-    left_edges = [l for l in left_edges if left_edges.count(l) > min_count]
-    right_edges = [r for r in right_edges if right_edges.count(r) > min_count]
-    centers = [c for c in centers if centers.count(c) > min_count]
-
-    sorted_left = cluster_coords(left_edges)
-    sorted_right = cluster_coords(right_edges)
-    sorted_center = cluster_coords(centers)
-
-    # Find list with minimum length
-    separators = max([sorted_left, sorted_right, sorted_center], key=len)
-    separators.append(page.bbox[2])
-    separators.insert(0, page.bbox[0])
-    return separators
-
-
-def assign_cells_to_columns(page, table_box, rows, round_factor=4, tolerance=4):
-    separators = find_column_separators(page, table_box, round_factor=round_factor)
-    new_rows = []
-    additional_column_index = 0
-    for row in rows:
-        new_row = {}
-        last_col_index = -1
+def get_column_lines(page, table_box, table_rows, align="l", tolerance=4):
+    table_height = (table_box[3] - table_box[1]) * 2
+    table_width = table_box[2] - table_box[0]
+    img_size = (int(table_width), int(table_height))
+    draw_img = Image.new("RGB", img_size)
+    draw = ImageDraw.Draw(draw_img)
+    for row in table_rows:
         for cell in row:
-            left_edge = cell[0][0]
-            column_index = -1
-            for i, separator in enumerate(separators):
-                if left_edge - tolerance < separator and last_col_index < i:
-                    column_index = i
+            line_bbox = list(copy.deepcopy(cell[0]))
+            match align:
+                case "l":
+                    line_bbox[2] = line_bbox[0]
+                case "r":
+                    line_bbox[0] = line_bbox[2]
+                case "c":
+                    line_bbox[0] = line_bbox[0] + (line_bbox[2] - line_bbox[0]) / 2
+                    line_bbox[2] = line_bbox[0]
+
+            line_bbox[1] -= tolerance
+            line_bbox[3] += tolerance
+            line_bbox[0] -= table_box[0]
+            line_bbox[2] -= table_box[0]
+            line_bbox[1] -= table_box[1]
+            line_bbox[3] -= table_box[1]
+            draw.rectangle(line_bbox, outline="red", width=tolerance)
+
+    np_img = np.array(draw_img, dtype=np.float32) / 255.0
+    columns = get_vertical_lines(np_img, divisor=2, x_tolerance=10, y_tolerance=1)
+    columns = sorted(columns, key=lambda x: x[0])
+
+    # Remove short columns (single cells, probably)
+    # Rescale coordinates back to image
+    rescaled = []
+    for c in columns:
+        if c[3] - c[1] < table_height / 5:
+            continue
+        c[0] += table_box[0]
+        c[2] += table_box[0]
+        c[1] += table_box[1]
+        c[3] += table_box[1]
+        rescaled.append(c)
+    return rescaled
+
+
+def assign_cells_to_columns(page, table_box, rows, tolerance=5):
+    return [[cell[1] for cell in row] for row in rows]
+    alignments = ["l", "r", "c"]
+    columns = {}
+    for align in alignments:
+        columns[align] = get_column_lines(page, table_box, rows, align=align)
+
+    # Find the column alignment that is closest to the number of columns
+    max_cols = max([len(r) for r in rows])
+    columns = min(columns.items(), key=lambda x: abs(len(x) - max_cols))[1]
+
+    formatted_rows = []
+    for table_row in rows:
+        formatted_row = []
+        for cell_idx in range(len(table_row) - 1, -1, -1):
+            cell = copy.deepcopy(table_row[cell_idx])
+            cell_bbox = cell[0]
+
+            found = False
+            for j in range(len(columns) - 1, -1, -1):
+                if columns[j][0] - tolerance < cell_bbox[0]:
+                    if len(formatted_row) > 0:
+                        prev_column = formatted_row[-1][0]
+                        blanks = prev_column - j
+                        if blanks > 1:
+                            for b in range(1, blanks):
+                                formatted_row.append((prev_column - b, ""))
+                    formatted_row.append((j, cell[1]))
+                    found = True
                     break
-            if column_index == -1:
-                column_index = len(separators) + additional_column_index
-                additional_column_index += 1
-            new_row[column_index] = cell[1]
-            last_col_index = column_index
-        additional_column_index = 0
+            if not found:
+                formatted_row.append((cell_idx, cell[1]))
+        formatted_rows.append(formatted_row[::-1])
 
-        flat_row = []
-        for cell_idx, cell in enumerate(sorted(new_row.items())):
-            flat_row.append(cell[1])
-        new_rows.append(flat_row)
-
-    # Pad rows to have the same length
-    max_row_len = max([len(r) for r in new_rows])
-    for row in new_rows:
-        while len(row) < max_row_len:
-            row.append("")
-
-    cols_to_remove = set()
-    for idx, col in enumerate(zip(*new_rows)):
-        col_total = sum([len(cell.strip()) > 0 for cell in col])
-        if col_total == 0:
-            cols_to_remove.add(idx)
-
-    rows = []
-    for row in new_rows:
-        rows.append([col for idx, col in enumerate(row) if idx not in cols_to_remove])
-
-    return rows
+    col_count = len(columns)
+    clean_rows = []
+    for row in formatted_rows:
+        clean_row = []
+        for col in range(col_count):
+            found = False
+            for cell in row:
+                if cell[0] == col:
+                    clean_row.append(cell)
+                    found = True
+                    break
+            if not found:
+                clean_row.append((col, ""))
+        clean_rows.append([cell[1] for cell in clean_row])
+    return clean_rows
