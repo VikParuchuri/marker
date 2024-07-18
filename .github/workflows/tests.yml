@@ -27,7 +27,7 @@ jobs:
           unzip -o benchmark_data.zip
       - name: Run benchmark test
         run: |
-          poetry run python benchmark.py benchmark_data/pdfs benchmark_data/references report.json
+          poetry run python benchmarks/overall.py benchmark_data/pdfs benchmark_data/references report.json
           poetry run python scripts/verify_benchmark_scores.py report.json
         
           
