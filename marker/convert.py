@@ -192,4 +192,4 @@ def convert_single_pdf(
     out_meta["postprocess_stats"] = {"edit": edit_stats}
     doc_images = images_to_dict(pages)
 
-    return full_text, doc_images, out_meta
+    return full_text, doc_images, out_meta, merged_lines
