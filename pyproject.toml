@@ -36,11 +36,11 @@ surya-ocr = "^0.4.12"
 filetype = "^1.2.0"
 regex = "^2024.4.28"
 pdftext = "^0.3.10"
-grpcio = "^1.63.0"
 langdetect = "^1.0.9"
 pytesseract = "^0.3.10"
 pdf2image = "^1.17.0"
 pymupdf = "^1.24.8"
+grpcio = "^1.63.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
