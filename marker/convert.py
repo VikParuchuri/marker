@@ -24,7 +24,6 @@ from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
 from marker.cleaners.headings import split_heading_blocks
 from marker.cleaners.fontstyle import find_bold_italic
-from marker.cleaners.krutidev_to_unicode import KrutidevToUnicode, convert_pages_to_unicode
 from marker.postprocessors.markdown import merge_spans, merge_lines, get_full_text
 from marker.cleaners.text import cleanup_text
 from marker.images.extract import extract_images
