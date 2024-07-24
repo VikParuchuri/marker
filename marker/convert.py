@@ -24,14 +24,15 @@ from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
 from marker.cleaners.headings import split_heading_blocks
 from marker.cleaners.fontstyle import find_bold_italic
+from marker.cleaners.krutidev_to_unicode import KrutidevToUnicode, convert_pages_to_unicode
 from marker.postprocessors.markdown import merge_spans, merge_lines, get_full_text
 from marker.cleaners.text import cleanup_text
 from marker.images.extract import extract_images
 from marker.images.save import images_to_dict
+from marker.ocr.langdetect import get_text, detect_language_text, detect_language_ocr, keep_most_frequent_element
 
 from typing import List, Dict, Tuple, Optional
 from marker.settings import settings
-
 
 def convert_single_pdf(
     fname: str,
@@ -48,20 +49,19 @@ def convert_single_pdf(
 
     OCR_ALL_PAGES = False
 
-    if metadata:
-        langs = metadata.get("languages", langs)
-        if metadata.get("OCR_ALL_PAGES"):
-            OCR_ALL_PAGES = True
+    # if metadata:
+    #     langs = metadata.get("languages", langs)
+    #     if metadata.get("OCR_ALL_PAGES"):
+    #         OCR_ALL_PAGES = True
 
-    langs = replace_langs_with_codes(langs)
-    validate_langs(langs)
+    # langs = replace_langs_with_codes(langs)
+    # validate_langs(langs)
 
     # Find the filetype
     filetype = find_filetype(fname)
 
     # Setup output metadata
     out_meta = {
-        "languages": langs,
         "filetype": filetype,
     }
 
@@ -75,6 +75,39 @@ def convert_single_pdf(
         {
             "toc": toc,
             "pages": len(pages),
+        }
+    )
+
+    valid_langs=["en","hi","or"]
+
+    # Detecting language of the text layer present. Getting empty means OCR is needed.
+    language = detect_language_text(get_text(pages))
+    langs = [language]
+    # validate_langs(langs)
+
+    print("langs >",langs)
+    if language not in valid_langs:
+        OCR_ALL_PAGES = True
+        language = detect_language_ocr(fname)
+        langs = language
+        # if language in valid_langs:
+        #     pages = convert_pages_to_unicode(pages)
+
+        # else:
+        if keep_most_frequent_element(language)[0] not in valid_langs: 
+            langs = ["en"]
+
+    print("langs >",langs)
+    
+
+    #     OCR_ALL_PAGES=True
+    #     language = detect_language_ocr(fname)
+    #     langs = language
+    #     print("langs >",langs)
+    
+    out_meta.update(
+        {
+            "languages": langs
         }
     )
 

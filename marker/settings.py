@@ -4,7 +4,10 @@ from dotenv import find_dotenv
 from pydantic import computed_field
 from pydantic_settings import BaseSettings
 import torch
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Settings(BaseSettings):
     # General
@@ -65,7 +68,7 @@ class Settings(BaseSettings):
     ## Tesseract
     OCR_PARALLEL_WORKERS: int = 1  # How many CPU workers to use for OCR
     TESSERACT_TIMEOUT: int = 20  # When to give up on OCR
-    TESSDATA_PREFIX: str = ""
+    TESSDATA_PREFIX: str = os.environ.get("TESSDATA_PREFIX")
 
     # Texify model
     TEXIFY_MODEL_MAX: int = 384  # Max inference length for texify
@@ -129,7 +132,7 @@ class Settings(BaseSettings):
         return torch.float32 if self.TORCH_DEVICE_MODEL == "cpu" else torch.float16
 
     class Config:
-        env_file = find_dotenv("local.env")
+        env_file = find_dotenv(".env")
         extra = "ignore"
 
 
