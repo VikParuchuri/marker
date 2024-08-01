@@ -95,12 +95,15 @@ def convert_single_pdf(
         # else:
         if keep_most_frequent_element(language)[0] not in valid_langs: 
             langs = ["en"]
-        langs=set(langs)
+        langs=list(set(langs))
         if "unknown" in langs:
             langs.remove("unknown")
-            if len(langs)==0:
-                langs = ["en"]
-            langs=list(langs)
+        for lang in langs:
+            if lang not in valid_langs:
+                langs.remove(lang)
+        if len(langs)==0:
+            langs = ["en"]
+        langs=list(langs)
 
     print("langs >",langs)
     
