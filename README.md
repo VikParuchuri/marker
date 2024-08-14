@@ -209,6 +209,14 @@ This will benchmark marker against other text extraction methods.  It sets up ba
 
 Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
 
+### Table benchmark
+
+There is a benchmark for table parsing, which you can run with:
+
+```shell
+python benchmarks/table.py test_data/tables.json
+```
+
 # Thanks
 
 This work would not have been possible without amazing open source models and datasets, including (but not limited to):

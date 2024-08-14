@@ -3,6 +3,7 @@ import json
 
 import datasets
 from surya.schema import LayoutResult, LayoutBox
+from tqdm import tqdm
 
 from marker.benchmark.table import score_table
 from marker.schema.bbox import rescale_bbox
@@ -20,7 +21,7 @@ def main():
     ds = datasets.load_dataset(args.dataset, split="train")
 
     results = []
-    for i in range(len(ds)):
+    for i in tqdm(range(len(ds)), desc="Evaluating tables"):
         row = ds[i]
         marker_page = Page(**json.loads(row["marker_page"]))
         table_bbox = row["table_bbox"]
@@ -55,6 +56,7 @@ def main():
 
         table_block = table_blocks[0]
         table_md = table_block.lines[0].spans[0].text
+
         results.append({
             "score": score_table(table_md, gpt4_table),
             "arxiv_id": row["arxiv_id"],

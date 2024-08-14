@@ -34,4 +34,4 @@ def replace_dots(text):
 def replace_newlines(text):
     # Replace all newlines
     newline_pattern = re.compile(r'[\r\n]+')
-    return newline_pattern.sub(' ', text.strip())
+    return newline_pattern.sub(' ', text).strip()

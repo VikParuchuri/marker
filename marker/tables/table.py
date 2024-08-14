@@ -7,7 +7,6 @@ from typing import List
 from marker.settings import settings
 from marker.tables.cells import assign_cells_to_columns
 from marker.tables.utils import sort_table_blocks, replace_dots, replace_newlines
-from marker.schema.bbox import BboxElement
 
 
 def get_table_surya(page, table_box, space_tol=.01) -> List[List[str]]:
