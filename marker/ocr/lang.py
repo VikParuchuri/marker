@@ -18,7 +18,7 @@ def replace_langs_with_codes(langs):
         for i, lang in enumerate(langs):
             if lang.title() in LANGUAGE_TO_CODE:
                 langs[i] = LANGUAGE_TO_CODE[lang.title()]
-    else:
+    elif settings.OCR_ENGINE == "ocrmypdf":
         for i, lang in enumerate(langs):
             if lang in LANGUAGE_TO_CODE:
                 langs[i] = LANGUAGE_TO_TESSERACT_CODE[lang]
@@ -30,7 +30,7 @@ def validate_langs(langs):
         for lang in langs:
             if lang not in CODE_TO_LANGUAGE:
                 raise ValueError(f"Invalid language code {lang} for Surya OCR")
-    else:
+    elif settings.OCR_ENGINE == "ocrmypdf":
         for lang in langs:
             if lang not in TESSERACT_CODE_TO_LANGUAGE:
                 raise ValueError(f"Invalid language code {lang} for Tesseract")
