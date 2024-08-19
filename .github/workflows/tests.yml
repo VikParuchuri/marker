@@ -28,7 +28,11 @@ jobs:
       - name: Run benchmark test
         run: |
           poetry run python benchmarks/overall.py benchmark_data/pdfs benchmark_data/references report.json
-          poetry run python scripts/verify_benchmark_scores.py report.json
+          poetry run python scripts/verify_benchmark_scores.py report.json --type marker
+      - name: Run table benchmark
+        run: |
+          poetry run python benchmarks/table.py tables.json
+          poetry run python scripts/verify_benchmark_scores.py report.json --type table
         
           
 
