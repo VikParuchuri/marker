@@ -45,7 +45,7 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplie
         return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
 
     ocr_method = settings.OCR_ENGINE
-    if ocr_method is None:
+    if ocr_method is None or ocr_method == "None":
         return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
     elif ocr_method == "surya":
         new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages, batch_multiplier=batch_multiplier)

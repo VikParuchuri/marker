@@ -32,7 +32,7 @@ jobs:
       - name: Run table benchmark
         run: |
           poetry run python benchmarks/table.py tables.json
-          poetry run python scripts/verify_benchmark_scores.py report.json --type table
+          poetry run python scripts/verify_benchmark_scores.py tables.json --type table
         
           
 

@@ -141,7 +141,7 @@ MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 mar
 
 - `METADATA_FILE` is an optional path to a json file with metadata about the pdfs.  See above for the format.
 - `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
-- `NUM_WORKERS` is the number of parallel processes to run on each GPU.  Per-GPU parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK`.
+- `NUM_WORKERS` is the number of parallel processes to run on each GPU.
 - `MIN_LENGTH` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
 
 Note that the env variables above are specific to this script, and cannot be set in `local.env`.

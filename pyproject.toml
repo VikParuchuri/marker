@@ -42,6 +42,8 @@ grpcio = "^1.63.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
+datasets = "^2.21.0"
+streamlit = "^1.37.1"
 
 [tool.poetry.scripts]
 marker = "convert:main"
