@@ -15,6 +15,8 @@ include = [
     "convert_single.py",
     "chunk_convert.sh",
     "chunk_convert.py",
+    "marker_app.py",
+    "run_marker_app.py"
 ]
 
 [tool.poetry.dependencies]
@@ -45,6 +47,7 @@ jupyter = "^1.0.0"
 marker = "convert:main"
 marker_single = "convert_single:main"
 marker_chunk_convert = "chunk_convert:main"
+marker_gui = "run_marker_app:run_app"
 
 [build-system]
 requires = ["poetry-core"]

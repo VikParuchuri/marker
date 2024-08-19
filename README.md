@@ -90,6 +90,15 @@ First, some configuration:
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
 - By default, marker will use `surya` for OCR.  Surya is slower on CPU, but more accurate than tesseract.  It also doesn't require you to specify the languages in the document.  If you want faster OCR, set `OCR_ENGINE` to `ocrmypdf`. This also requires external dependencies (see above).  If you don't want OCR at all, set `OCR_ENGINE` to `None`.
 
+## Interactive App
+
+I've included a streamlit app that lets you interactively try marker with some basic options.  Run it with:
+
+```shell
+pip install streamlit
+marker_gui
+```
+
 ## Convert a single file
 
 ```shell
@@ -98,7 +107,8 @@ marker_single /path/to/file.pdf /path/to/output/folder --batch_multiplier 2 --ma
 
 - `--batch_multiplier` is how much to multiply default batch sizes by if you have extra VRAM.  Higher numbers will take more VRAM, but process faster.  Set to 2 by default.  The default batch sizes will take ~3GB of VRAM.
 - `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
-- `--langs` is am optional comma separated list of the languages in the document, for OCR.  Optional by default, required if you use tesseract.
+- `--langs` is an optional comma separated list of the languages in the document, for OCR.  Optional by default, required if you use tesseract.
+- `--ocr_all_pages` is an optional argument to force OCR on all pages of the PDF.  If this or the env var `OCR_ALL_PAGES` are true, OCR will be forced.
 
 The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you need more languages, you can use any language supported by [Tesseract](https://tesseract-ocr.github.io/tessdoc/Data-Files#data-files-for-version-400-november-29-2016) if you set `OCR_ENGINE` to `ocrmypdf`.  If you don't need OCR, marker can work with any language.
 
