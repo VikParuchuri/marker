@@ -13,11 +13,11 @@ from surya.model.ordering.model import load_model as load_order_model
 from surya.model.ordering.processor import load_processor as load_order_processor
 
 
-def setup_recognition_model(langs, device=None, dtype=None):
+def setup_recognition_model(device=None, dtype=None):
     if device:
-        rec_model = load_recognition_model(langs=langs, device=device, dtype=dtype)
+        rec_model = load_recognition_model(device=device, dtype=dtype)
     else:
-        rec_model = load_recognition_model(langs=langs)
+        rec_model = load_recognition_model()
     rec_processor = load_recognition_processor()
     rec_model.processor = rec_processor
     return rec_model
@@ -64,7 +64,7 @@ def setup_order_model(device=None, dtype=None):
     return model
 
 
-def load_all_models(langs=None, device=None, dtype=None, force_load_ocr=False):
+def load_all_models(device=None, dtype=None, force_load_ocr=False):
     if device is not None:
         assert dtype is not None, "Must provide dtype if device is provided"
 
@@ -75,7 +75,7 @@ def load_all_models(langs=None, device=None, dtype=None, force_load_ocr=False):
     edit = load_editing_model(device, dtype)
 
     # Only load recognition model if we'll need it for all pdfs
-    ocr = setup_recognition_model(langs, device, dtype)
+    ocr = setup_recognition_model(device, dtype)
     texify = setup_texify_model(device, dtype)
     model_lst = [texify, layout, order, edit, detection, ocr]
     return model_lst

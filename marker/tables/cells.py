@@ -1,17 +1,16 @@
 from marker.schema.bbox import rescale_bbox, box_intersection_pct
 from marker.schema.page import Page
-from sklearn.cluster import DBSCAN
 import numpy as np
-
+from sklearn.cluster import DBSCAN
 from marker.settings import settings
 
 
-def cluster_coords(coords):
+def cluster_coords(coords, row_count):
     if len(coords) == 0:
         return []
     coords = np.array(sorted(set(coords))).reshape(-1, 1)
 
-    clustering = DBSCAN(eps=5, min_samples=1).fit(coords)
+    clustering = DBSCAN(eps=.01, min_samples=max(2, row_count // 4)).fit(coords)
     clusters = clustering.labels_
 
     separators = []
@@ -23,7 +22,7 @@ def cluster_coords(coords):
     return separators
 
 
-def find_column_separators(page: Page, table_box, round_factor=4, min_count=1):
+def find_column_separators(page: Page, table_box, rows, round_factor=.002, min_count=1):
     left_edges = []
     right_edges = []
     centers = []
@@ -32,35 +31,40 @@ def find_column_separators(page: Page, table_box, round_factor=4, min_count=1):
     line_boxes = [rescale_bbox(page.text_lines.image_bbox, page.bbox, l) for l in line_boxes]
     line_boxes = [l for l in line_boxes if box_intersection_pct(l, table_box) > settings.BBOX_INTERSECTION_THRESH]
 
+    pwidth = page.bbox[2] - page.bbox[0]
+    pheight = page.bbox[3] - page.bbox[1]
     for cell in line_boxes:
-        left_edges.append(cell[0] / round_factor * round_factor)
-        right_edges.append(cell[2] / round_factor * round_factor)
-        centers.append((cell[0] + cell[2]) / 2 * round_factor / round_factor)
+        ncell = [cell[0] / pwidth, cell[1] / pheight, cell[2] / pwidth, cell[3] / pheight]
+        left_edges.append(ncell[0] / round_factor * round_factor)
+        right_edges.append(ncell[2] / round_factor * round_factor)
+        centers.append((ncell[0] + ncell[2]) / 2 * round_factor / round_factor)
 
     left_edges = [l for l in left_edges if left_edges.count(l) > min_count]
     right_edges = [r for r in right_edges if right_edges.count(r) > min_count]
     centers = [c for c in centers if centers.count(c) > min_count]
 
-    sorted_left = cluster_coords(left_edges)
-    sorted_right = cluster_coords(right_edges)
-    sorted_center = cluster_coords(centers)
+    sorted_left = cluster_coords(left_edges, len(rows))
+    sorted_right = cluster_coords(right_edges, len(rows))
+    sorted_center = cluster_coords(centers, len(rows))
 
     # Find list with minimum length
     separators = max([sorted_left, sorted_right, sorted_center], key=len)
-    separators.append(page.bbox[2])
-    separators.insert(0, page.bbox[0])
+    separators.append(1)
+    separators.insert(0, 0)
     return separators
 
 
-def assign_cells_to_columns(page, table_box, rows, round_factor=4, tolerance=4):
-    separators = find_column_separators(page, table_box, round_factor=round_factor)
-    new_rows = []
+def assign_cells_to_columns(page, table_box, rows, round_factor=.002, tolerance=.01):
+    separators = find_column_separators(page, table_box, rows, round_factor=round_factor)
     additional_column_index = 0
+    pwidth = page.bbox[2] - page.bbox[0]
+    row_dicts = []
+
     for row in rows:
         new_row = {}
         last_col_index = -1
         for cell in row:
-            left_edge = cell[0][0]
+            left_edge = cell[0][0] / pwidth
             column_index = -1
             for i, separator in enumerate(separators):
                 if left_edge - tolerance < separator and last_col_index < i:
@@ -72,10 +76,21 @@ def assign_cells_to_columns(page, table_box, rows, round_factor=4, tolerance=4):
             new_row[column_index] = cell[1]
             last_col_index = column_index
         additional_column_index = 0
+        row_dicts.append(new_row)
 
+    max_row_idx = 0
+    for row in row_dicts:
+        max_row_idx = max(max_row_idx, max(row.keys()))
+
+    # Assign sorted cells to columns, account for blanks
+    new_rows = []
+    for row in row_dicts:
         flat_row = []
-        for cell_idx, cell in enumerate(sorted(new_row.items())):
-            flat_row.append(cell[1])
+        for row_idx in range(1, max_row_idx + 1):
+            if row_idx in row:
+                flat_row.append(row[row_idx])
+            else:
+                flat_row.append("")
         new_rows.append(flat_row)
 
     # Pad rows to have the same length

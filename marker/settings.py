@@ -27,8 +27,6 @@ class Settings(BaseSettings):
 
         return "cpu"
 
-    INFERENCE_RAM: int = 40 # How much VRAM each GPU has (in GB).
-    VRAM_PER_TASK: float = 4.5 # How much VRAM to allocate per task (in GB).  Peak marker VRAM usage is around 5GB, but avg across workers is lower.
     DEFAULT_LANG: str = "English" # Default language we assume files to be in, should be one of the keys in TESSERACT_LANGUAGES
 
     SUPPORTED_FILETYPES: Dict = {
@@ -66,9 +64,10 @@ class Settings(BaseSettings):
 
     # Layout model
     SURYA_LAYOUT_DPI: int = 96
-    BAD_SPAN_TYPES: List[str] = ["Caption", "Footnote", "Page-footer", "Page-header", "Picture"]
+    BAD_SPAN_TYPES: List[str] = ["Page-footer", "Page-header", "Picture"] # You can add "Caption" and "Footnote" here to get rid of those elements
     LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout3"
     BBOX_INTERSECTION_THRESH: float = 0.7 # How much the layout and pdf bboxes need to overlap to be the same
+    TABLE_INTERSECTION_THRESH: float = 0.7
     LAYOUT_BATCH_SIZE: Optional[int] = None # Defaults to 12 for cuda, 6 otherwise
 
     # Ordering model

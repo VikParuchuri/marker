@@ -7,7 +7,7 @@ from marker.schema.page import Page
 from marker.settings import settings
 
 
-def should_ocr_page(page: Page, no_text: bool):
+def should_ocr_page(page: Page, no_text: bool, ocr_all_pages=False):
     detected_lines_found, total_lines = detected_line_coverage(page)
 
     # No reason to OCR page if it has no text lines
@@ -21,7 +21,7 @@ def should_ocr_page(page: Page, no_text: bool):
         detected_lines_found is False, # didn't extract text for all detected lines
     ]
 
-    return any(conditions) or settings.OCR_ALL_PAGES
+    return any(conditions) or ocr_all_pages
 
 
 def detect_bad_ocr(text, space_threshold=.7, newline_threshold=.6, alphanum_threshold=.3):

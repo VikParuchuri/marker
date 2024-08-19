@@ -8,7 +8,7 @@ def sort_table_blocks(blocks, tolerance=5):
             bbox = block.bbox
         else:
             bbox = block["bbox"]
-        group_key = round(bbox[1] / tolerance)
+        group_key = round((bbox[1] + bbox[3]) / 2 / tolerance)
         if group_key not in vertical_groups:
             vertical_groups[group_key] = []
         vertical_groups[group_key].append(block)
@@ -34,4 +34,4 @@ def replace_dots(text):
 def replace_newlines(text):
     # Replace all newlines
     newline_pattern = re.compile(r'[\r\n]+')
-    return newline_pattern.sub(' ', text.strip())
+    return newline_pattern.sub(' ', text).strip()

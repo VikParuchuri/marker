@@ -28,14 +28,14 @@ def get_batch_size():
     return 32
 
 
-def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplier=1) -> (List[Page], Dict):
+def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplier=1, ocr_all_pages=False) -> (List[Page], Dict):
     ocr_pages = 0
     ocr_success = 0
     ocr_failed = 0
     no_text = no_text_found(pages)
     ocr_idxs = []
     for pnum, page in enumerate(pages):
-        ocr_needed = should_ocr_page(page, no_text)
+        ocr_needed = should_ocr_page(page, no_text, ocr_all_pages=ocr_all_pages)
         if ocr_needed:
             ocr_idxs.append(pnum)
             ocr_pages += 1
@@ -45,7 +45,7 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplie
         return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
 
     ocr_method = settings.OCR_ENGINE
-    if ocr_method is None:
+    if ocr_method is None or ocr_method == "None":
         return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
     elif ocr_method == "surya":
         new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages, batch_multiplier=batch_multiplier)

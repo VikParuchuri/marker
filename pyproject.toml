@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "marker-pdf"
-version = "0.2.16"
+version = "0.2.17"
 description = "Convert PDF to markdown with high speed and accuracy."
 authors = ["Vik Paruchuri <github@vikas.sh>"]
 readme = "README.md"
@@ -15,6 +15,8 @@ include = [
     "convert_single.py",
     "chunk_convert.sh",
     "chunk_convert.py",
+    "marker_app.py",
+    "run_marker_app.py"
 ]
 
 [tool.poetry.dependencies]
@@ -32,7 +34,7 @@ tabulate = "^0.9.0"
 ftfy = "^6.1.1"
 texify = "^0.1.10"
 rapidfuzz = "^3.8.1"
-surya-ocr = "^0.4.15"
+surya-ocr = "^0.5.0"
 filetype = "^1.2.0"
 regex = "^2024.4.28"
 pdftext = "^0.3.10"
@@ -40,11 +42,14 @@ grpcio = "^1.63.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
+datasets = "^2.21.0"
+streamlit = "^1.37.1"
 
 [tool.poetry.scripts]
 marker = "convert:main"
 marker_single = "convert_single:main"
 marker_chunk_convert = "chunk_convert:main"
+marker_gui = "run_marker_app:run_app"
 
 [build-system]
 requires = ["poetry-core"]

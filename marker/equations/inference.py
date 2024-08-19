@@ -1,4 +1,5 @@
 from texify.inference import batch_inference
+from tqdm import tqdm
 
 from marker.settings import settings
 import os
@@ -22,7 +23,7 @@ def get_latex_batched(images, token_counts, texify_model, batch_multiplier=1):
     predictions = [""] * len(images)
     batch_size = get_batch_size() * batch_multiplier
 
-    for i in range(0, len(images), batch_size):
+    for i in tqdm(range(0, len(images), batch_size), desc="Recognizing equations"):
         # Dynamically set max length to save inference time
         min_idx = i
         max_idx = min(min_idx + batch_size, len(images))

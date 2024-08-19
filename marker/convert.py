@@ -41,11 +41,10 @@ def convert_single_pdf(
         start_page: int = None,
         metadata: Optional[Dict] = None,
         langs: Optional[List[str]] = None,
-        batch_multiplier: int = 1
+        batch_multiplier: int = 1,
+        ocr_all_pages: bool = False
 ) -> Tuple[str, Dict[str, Image.Image], Dict]:
-    # Set language needed for OCR
-    if langs is None:
-        langs = [settings.DEFAULT_LANG]
+    ocr_all_pages = ocr_all_pages or settings.OCR_ALL_PAGES
 
     if metadata:
         langs = metadata.get("languages", langs)
@@ -91,7 +90,7 @@ def convert_single_pdf(
     flush_cuda_memory()
 
     # OCR pages as needed
-    pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier)
+    pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier, ocr_all_pages=ocr_all_pages)
     flush_cuda_memory()
 
     out_meta["ocr_stats"] = ocr_stats

@@ -88,32 +88,40 @@ First, some configuration:
 
 - Inspect the settings in `marker/settings.py`.  You can override any settings with environment variables.
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-  - If using GPU, set `INFERENCE_RAM` to your GPU VRAM (per GPU).  For example, if you have 16 GB of VRAM, set `INFERENCE_RAM=16`.
-  - Depending on your document types, marker's average memory usage per task can vary slightly.  You can configure `VRAM_PER_TASK` to adjust this if you notice tasks failing with GPU out of memory errors.
-- By default, marker will use `surya` for OCR.  Surya is slower on CPU, but more accurate than tesseract.  If you want faster OCR, set `OCR_ENGINE` to `ocrmypdf`. This also requires external dependencies (see above).  If you don't want OCR at all, set `OCR_ENGINE` to `None`.
+- By default, marker will use `surya` for OCR.  Surya is slower on CPU, but more accurate than tesseract.  It also doesn't require you to specify the languages in the document.  If you want faster OCR, set `OCR_ENGINE` to `ocrmypdf`. This also requires external dependencies (see above).  If you don't want OCR at all, set `OCR_ENGINE` to `None`.
+
+## Interactive App
+
+I've included a streamlit app that lets you interactively try marker with some basic options.  Run it with:
+
+```shell
+pip install streamlit
+marker_gui
+```
 
 ## Convert a single file
 
 ```shell
-marker_single /path/to/file.pdf /path/to/output/folder --batch_multiplier 2 --max_pages 10 --langs English
+marker_single /path/to/file.pdf /path/to/output/folder --batch_multiplier 2 --max_pages 10 
 ```
 
 - `--batch_multiplier` is how much to multiply default batch sizes by if you have extra VRAM.  Higher numbers will take more VRAM, but process faster.  Set to 2 by default.  The default batch sizes will take ~3GB of VRAM.
 - `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
-- `--langs` is a comma separated list of the languages in the document, for OCR
+- `--langs` is an optional comma separated list of the languages in the document, for OCR.  Optional by default, required if you use tesseract.
+- `--ocr_all_pages` is an optional argument to force OCR on all pages of the PDF.  If this or the env var `OCR_ALL_PAGES` are true, OCR will be forced.
 
-Make sure the `DEFAULT_LANG` setting is set appropriately for your document.  The list of supported languages for OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you need more languages, you can use any language supported by [Tesseract](https://tesseract-ocr.github.io/tessdoc/Data-Files#data-files-for-version-400-november-29-2016) if you set `OCR_ENGINE` to `ocrmypdf`.  If you don't need OCR, marker can work with any language.
+The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you need more languages, you can use any language supported by [Tesseract](https://tesseract-ocr.github.io/tessdoc/Data-Files#data-files-for-version-400-november-29-2016) if you set `OCR_ENGINE` to `ocrmypdf`.  If you don't need OCR, marker can work with any language.
 
 ## Convert multiple files
 
 ```shell
-marker /path/to/input/folder /path/to/output/folder --workers 10 --max 10 --metadata_file /path/to/metadata.json --min_length 10000
+marker /path/to/input/folder /path/to/output/folder --workers 4 --max 10 --min_length 10000
 ```
 
-- `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage. Parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK` if you're using GPU.
+- `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage.  Marker will use 5GB of VRAM per worker at the peak, and 3.5GB average.
 - `--max` is the maximum number of pdfs to convert.  Omit this to convert all pdfs in the folder.
 - `--min_length` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
-- `--metadata_file` is an optional path to a json file with metadata about the pdfs.  If you provide it, it will be used to set the language for each pdf.  If not, `DEFAULT_LANG` will be used. The format is:
+- `--metadata_file` is an optional path to a json file with metadata about the pdfs.  If you provide it, it will be used to set the language for each pdf.  Setting language is optional for surya (default), but required for tesseract. The format is:
 
 ```
 {
@@ -133,7 +141,7 @@ MIN_LENGTH=10000 METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 mar
 
 - `METADATA_FILE` is an optional path to a json file with metadata about the pdfs.  See above for the format.
 - `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
-- `NUM_WORKERS` is the number of parallel processes to run on each GPU.  Per-GPU parallelism will not increase beyond `INFERENCE_RAM / VRAM_PER_TASK`.
+- `NUM_WORKERS` is the number of parallel processes to run on each GPU.
 - `MIN_LENGTH` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
 
 Note that the env variables above are specific to this script, and cannot be set in `local.env`.
@@ -199,15 +207,23 @@ git clone https://github.com/VikParuchuri/marker.git
 poetry install
 ```
 
-Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run `benchmark.py` like this:
+Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run the overall benchmark like this:
 
 ```shell
-python benchmark.py data/pdfs data/references report.json --nougat
+python benchmark/overall.py data/pdfs data/references report.json --nougat
 ```
 
 This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each.
 
 Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
+
+### Table benchmark
+
+There is a benchmark for table parsing, which you can run with:
+
+```shell
+python benchmarks/table.py test_data/tables.json
+```
 
 # Thanks
 
