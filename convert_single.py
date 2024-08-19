@@ -20,7 +20,7 @@ def main():
     parser.add_argument("output", help="Output base folder path")
     parser.add_argument("--max_pages", type=int, default=None, help="Maximum number of pages to parse")
     parser.add_argument("--start_page", type=int, default=None, help="Page to start processing at")
-    parser.add_argument("--langs", type=str, help="Languages to use for OCR, comma separated", default=None)
+    parser.add_argument("--langs", type=str, help="Optional languages to use for OCR, comma separated", default=None)
     parser.add_argument("--batch_multiplier", type=int, default=2, help="How much to increase batch sizes")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging", default=False)
     args = parser.parse_args()

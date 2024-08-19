@@ -15,10 +15,16 @@ def langs_to_ids(langs: List[str]):
 
 def replace_langs_with_codes(langs):
     if settings.OCR_ENGINE == "surya":
+        if langs is None:
+            return
         for i, lang in enumerate(langs):
             if lang.title() in LANGUAGE_TO_CODE:
                 langs[i] = LANGUAGE_TO_CODE[lang.title()]
     else:
+        if langs is None:
+            langs = [settings.DEFAULT_LANG]
+            print(f"No languages specified for tesseract, defaulting to {settings.DEFAULT_LANG}.")
+
         for i, lang in enumerate(langs):
             if lang in LANGUAGE_TO_CODE:
                 langs[i] = LANGUAGE_TO_TESSERACT_CODE[lang]
@@ -27,6 +33,8 @@ def replace_langs_with_codes(langs):
 
 def validate_langs(langs):
     if settings.OCR_ENGINE == "surya":
+        if langs is None:
+            return
         for lang in langs:
             if lang not in CODE_TO_LANGUAGE:
                 raise ValueError(f"Invalid language code {lang} for Surya OCR")

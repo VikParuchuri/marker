@@ -3170,13 +3170,13 @@ tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
 name = "surya-ocr"
-version = "0.4.15"
+version = "0.5.0"
 description = "OCR, layout, reading order, and line detection in 90+ languages"
 optional = false
 python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,!=3.8.*,>=3.9"
 files = [
-    {file = "surya_ocr-0.4.15-py3-none-any.whl", hash = "sha256:32f4719e10b2f54dccac21f8b2d65e9fde06d41a2c34a47a8c9243a84a0e3cbb"},
-    {file = "surya_ocr-0.4.15.tar.gz", hash = "sha256:17a37ce1ae9c67afa774efac55df5e07a391b84c3aa5f17133acd7b398fc4dbf"},
+    {file = "surya_ocr-0.5.0-py3-none-any.whl", hash = "sha256:e70516d74f3816c5b2a61bdf8f7eeb5fbd5670514bc5ae2eb0947d33c60c22d3"},
+    {file = "surya_ocr-0.5.0.tar.gz", hash = "sha256:a80740c2b000d9630cf3d5525043c95096efaeb6b0892254ff32339a171e789a"},
 ]
 
 [package.dependencies]
@@ -3771,4 +3771,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13,!=3.9.7"
-content-hash = "555e4829eaa849c175de3ee87ca3941b737533728b4196c9d224db2ee39e6e85"
+content-hash = "e1a4a5f18fbc4b7e3108b19910577bf3d09c2053e6bbd4c320c81990e143373d"

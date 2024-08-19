@@ -1,9 +1,5 @@
-from PIL import Image, ImageDraw
-import copy
-
 from marker.schema.bbox import rescale_bbox, box_intersection_pct
 from marker.schema.page import Page
-from marker.tables.edges import get_vertical_lines
 import numpy as np
 from sklearn.cluster import DBSCAN
 from marker.settings import settings

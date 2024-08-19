@@ -43,10 +43,6 @@ def convert_single_pdf(
         langs: Optional[List[str]] = None,
         batch_multiplier: int = 1
 ) -> Tuple[str, Dict[str, Image.Image], Dict]:
-    # Set language needed for OCR
-    if langs is None:
-        langs = [settings.DEFAULT_LANG]
-
     if metadata:
         langs = metadata.get("languages", langs)
 

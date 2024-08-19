@@ -73,8 +73,8 @@ def main():
     parser.add_argument("--chunk_idx", type=int, default=0, help="Chunk index to convert")
     parser.add_argument("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of pdfs to convert")
-    parser.add_argument("--workers", type=int, default=5, help="Number of worker processes to use")
-    parser.add_argument("--metadata_file", type=str, default=None, help="Metadata json file to use for filtering")
+    parser.add_argument("--workers", type=int, default=5, help="Number of worker processes to use.  Peak VRAM usage per process is 5GB, but avg is closer to 3.5GB.")
+    parser.add_argument("--metadata_file", type=str, default=None, help="Metadata json file to use for languages")
     parser.add_argument("--min_length", type=int, default=None, help="Minimum length of pdf to convert")
 
     args = parser.parse_args()
@@ -103,11 +103,6 @@ def main():
             metadata = json.load(f)
 
     total_processes = min(len(files_to_convert), args.workers)
-
-    # Dynamically set GPU allocation per task based on GPU ram
-    if settings.CUDA:
-        tasks_per_gpu = settings.INFERENCE_RAM // settings.VRAM_PER_TASK if settings.CUDA else 0
-        total_processes = min(tasks_per_gpu, total_processes)
 
     try:
         mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
