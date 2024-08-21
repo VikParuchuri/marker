@@ -35,3 +35,25 @@ def replace_newlines(text):
     # Replace all newlines
     newline_pattern = re.compile(r'[\r\n]+')
     return newline_pattern.sub(' ', text.strip())
+
+import PIL
+from marker.tables.schema import Rectangle
+
+def save_table_image(page_img: PIL.Image, box: Rectangle, output_path: str, padding=30):
+    """Convert the tensor to a list of Python floats and then to integers"""
+    padding = 30
+
+    # box = [int(coord) for coord in box.tolist()]
+
+    # Crop format: (left, upper, right, lower)
+    # left, upper, right, lower = box
+    cropped_image = page_img.crop(
+        (
+            box.left - padding,
+            box.top - padding,
+            box.right + padding,
+            box.bottom + padding,
+        )
+    )
+    cropped_image.save(output_path)
+    return output_path

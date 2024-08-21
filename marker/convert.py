@@ -4,11 +4,11 @@ warnings.filterwarnings(
     "ignore", category=UserWarning
 )  # Filter torch pytree user warnings
 
+from marker.tables.table import table_detection
 import pypdfium2 as pdfium  # Needs to be at the top to avoid warnings
 from PIL import Image
 
 from marker.utils import flush_cuda_memory
-from marker.tables.table import format_tables
 from marker.debug.data import dump_bbox_debug_data
 from marker.layout.layout import surya_layout, annotate_block_types
 from marker.layout.order import surya_order, sort_blocks_in_reading_order
@@ -32,7 +32,6 @@ from marker.ocr.langdetect import get_text, detect_language_text, detect_languag
 
 from typing import List, Dict, Tuple, Optional
 from marker.settings import settings
-
 def convert_single_pdf(
     fname: str,
     model_lst: List,
@@ -156,7 +155,7 @@ def convert_single_pdf(
 
     # Dump debug data if flags are set
     dump_bbox_debug_data(doc, fname, pages)
-
+    table_detection(fname, pages, max_pages=max_pages)
     # Find reading order for blocks
     # Sort blocks by reading order
     surya_order(doc, pages, order_model, batch_multiplier=batch_multiplier)
@@ -169,8 +168,8 @@ def convert_single_pdf(
     indent_blocks(pages)
 
     # Fix table blocks
-    table_count = format_tables(pages)
-    out_meta["block_stats"]["table"] = table_count
+    # table_count = format_tables(pages)
+    # out_meta["block_stats"]["table"] = table_count
 
     from marker.schema.block import Span, Line, Block
 
