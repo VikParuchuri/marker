@@ -173,6 +173,11 @@ def format_tables(pages: List[Page]):
             if len(table_rows) == 0:
                 continue
 
+            table_rows = [
+                [cell.replace('\n', ' <br> ') if '\n' in cell else cell for cell in row]
+                for row in table_rows
+            ]
+
             table_text = tabulate(table_rows, headers="firstrow", tablefmt="github", disable_numparse=True)
             table_block = Block(
                 bbox=table_box,
