@@ -68,7 +68,7 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 
 # Installation
 
-You'll need python 3.9+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
+You'll need python 3.10+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
 
 Install with:
 
