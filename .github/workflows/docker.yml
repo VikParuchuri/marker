@@ -1,0 +1,35 @@
+name: Publish Docker image
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3.0.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build the Docker image (CPU version)
+      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_USERNAME }}/marker:cpu-${{ github.sha }} --tag ${{ secrets.DOCKER_USERNAME }}/marker:latest --tag ${{ secrets.DOCKER_USERNAME }}/marker:cpu
+
+    - name: Push the Docker image (CPU version)
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/marker:cpu-${{ github.sha }}
+
+    # The following steps cause the GitHub Action to fail
+    # with an out of disk space error:
+
+    # - name: Build the Docker image (CUDA version)
+    #   run: docker build . --build-arg BASE_IMAGE=pytorch/pytorch:2.1.1-cuda12.1-cudnn8-devel --file Dockerfile --tag ${{ secrets.DOCKER_USERNAME }}/marker:cuda-${{ github.sha }} --tag ${{ secrets.DOCKER_USERNAME }}/marker:cuda-latest --tag ${{ secrets.DOCKER_USERNAME }}/marker:cuda
+
+    # - name: Push the Docker image (CUDA version)
+    #   run: docker push ${{ secrets.DOCKER_USERNAME }}/marker:cuda-${{ github.sha }}
+
