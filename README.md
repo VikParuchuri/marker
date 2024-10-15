@@ -42,7 +42,7 @@ See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instruc
 
 I want marker to be as widely accessible as possible, while still funding my development/training costs.  Research and personal usage is always okay, but there are some restrictions on commercial usage.
 
-The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
+The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. You also must not be competitive with the [Datalab API](https://www.datalab.to/).  If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
 
 # Hosted API
 
@@ -217,14 +217,6 @@ This will benchmark marker against other text extraction methods.  It sets up ba
 
 Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
 
-### Table benchmark
-
-There is a benchmark for table parsing, which you can run with:
-
-```shell
-python benchmarks/table.py test_data/tables.json
-```
-
 # Thanks
 
 This work would not have been possible without amazing open source models and datasets, including (but not limited to):
@@ -233,6 +225,5 @@ This work would not have been possible without amazing open source models and da
 - Texify
 - Pypdfium2/pdfium
 - DocLayNet from IBM
-- ByT5 from Google
 
 Thank you to the authors of these models and datasets for making them available to the community!

@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     OCR_ALL_PAGES: bool = False # Run OCR on every page even if text can be extracted
 
     ## Surya
-    SURYA_OCR_DPI: int = 96
+    SURYA_OCR_DPI: int = 192
     RECOGNITION_BATCH_SIZE: Optional[int] = None # Batch size for surya OCR defaults to 64 for cuda, 32 otherwise
 
     ## Tesseract
@@ -75,12 +75,8 @@ class Settings(BaseSettings):
     ORDER_BATCH_SIZE: Optional[int] = None  # Defaults to 12 for cuda, 6 otherwise
     ORDER_MAX_BBOXES: int = 255
 
-    # Final editing model
-    EDITOR_BATCH_SIZE: Optional[int] = None # Defaults to 6 for cuda, 12 otherwise
-    EDITOR_MAX_LENGTH: int = 1024
-    EDITOR_MODEL_NAME: str = "vikp/pdf_postprocessor_t5"
-    ENABLE_EDITOR_MODEL: bool = False # The editor model can create false positives
-    EDITOR_CUTOFF_THRESH: float = 0.9 # Ignore predictions below this probability
+    # Table models
+    SURYA_TABLE_DPI: int = 192
 
     # Debug
     DEBUG: bool = False # Enable debug logging

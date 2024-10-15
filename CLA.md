@@ -1,6 +1,6 @@
 Marker Contributor Agreement
 
-This Marker Contributor Agreement ("MCA") applies to any contribution that you make to any product or project managed by us (the "project"), and sets out the intellectual property rights you grant to us in the contributed materials. The term "us" shall mean Vikas Paruchuri. The term "you" shall mean the person or entity identified below. 
+This Marker Contributor Agreement ("MCA") applies to any contribution that you make to any product or project managed by us (the "project"), and sets out the intellectual property rights you grant to us in the contributed materials. The term "us" shall mean Endless Labs, Inc. The term "you" shall mean the person or entity identified below. 
 
 If you agree to be bound by these terms, sign by writing "I have read the CLA document and I hereby sign the CLA" in response to the CLA bot Github comment. Read this agreement carefully before signing. These terms and conditions constitute a binding legal agreement.
 
@@ -20,5 +20,5 @@ If you or your affiliates institute patent litigation against any entity (includ
    - each contribution that you submit is and shall be an original work of authorship and you can legally grant the rights set out in this MCA; 
    - to the best of your knowledge, each contribution will not violate any third party's copyrights, trademarks, patents, or other intellectual property rights; and 
    - each contribution shall be in compliance with U.S. export control laws and other applicable export and import laws.
-You agree to notify us if you become aware of any circumstance which would make any of the foregoing representations inaccurate in any respect. Vikas Paruchuri may publicly disclose your participation in the project, including the fact that you have signed the MCA. 
+You agree to notify us if you become aware of any circumstance which would make any of the foregoing representations inaccurate in any respect. Endless Labs, Inc. may publicly disclose your participation in the project, including the fact that you have signed the MCA. 
 6. This MCA is governed by the laws of the State of California and applicable U.S. Federal law. Any choice of law rules will not apply.

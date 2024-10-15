@@ -65,13 +65,22 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplie
 
 
 def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[Page], batch_multiplier=1) -> List[Optional[Page]]:
+    # Slice images in higher resolution than detection happened in
     images = [render_image(doc[pnum], dpi=settings.SURYA_OCR_DPI) for pnum in page_idxs]
+    box_scale = settings.SURYA_OCR_DPI / settings.SURYA_DETECTOR_DPI
+
     processor = rec_model.processor
     selected_pages = [p for i, p in enumerate(pages) if i in page_idxs]
 
     surya_langs = [langs] * len(page_idxs)
     detection_results = [p.text_lines.bboxes for p in selected_pages]
     polygons = [[b.polygon for b in bboxes] for bboxes in detection_results]
+
+    # Scale polygons to get correct image slices
+    for poly in polygons:
+        for p in poly:
+            for i in range(len(p)):
+                p[i] = [int(p[i][0] * box_scale), int(p[i][1] * box_scale)]
 
     results = run_recognition(images, surya_langs, rec_model, processor, polygons=polygons, batch_size=int(get_batch_size() * batch_multiplier))
 
@@ -81,14 +90,15 @@ def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[P
         ocr_results = result.text_lines
         blocks = []
         for i, line in enumerate(ocr_results):
+            scaled_bbox = [b / box_scale for b in line.bbox]
             block = Block(
-                bbox=line.bbox,
+                bbox=scaled_bbox,
                 pnum=page_idx,
                 lines=[Line(
-                    bbox=line.bbox,
+                    bbox=scaled_bbox,
                     spans=[Span(
                         text=line.text,
-                        bbox=line.bbox,
+                        bbox=scaled_bbox,
                         span_id=f"{page_idx}_{i}",
                         font="",
                         font_weight=0,
@@ -98,10 +108,11 @@ def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[P
                 )]
             )
             blocks.append(block)
+        scaled_image_bbox = [b / box_scale for b in result.image_bbox]
         page = Page(
             blocks=blocks,
             pnum=page_idx,
-            bbox=result.image_bbox,
+            bbox=scaled_image_bbox,
             rotation=0,
             text_lines=text_lines,
             ocr_method="surya"

@@ -20,7 +20,6 @@ from marker.pdf.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.equations.equations import replace_equations
 from marker.pdf.utils import find_filetype
-from marker.postprocessors.editor import edit_full_text
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
 from marker.cleaners.headings import split_heading_blocks
@@ -83,7 +82,7 @@ def convert_single_pdf(
             doc.del_page(0)
 
     # Unpack models from list
-    texify_model, layout_model, order_model, edit_model, detection_model, ocr_model = model_lst
+    texify_model, layout_model, order_model, detection_model, ocr_model, table_rec_model = model_lst
 
     # Identify text lines on pages
     surya_detection(doc, pages, detection_model, batch_multiplier=batch_multiplier)
@@ -123,7 +122,7 @@ def convert_single_pdf(
     indent_blocks(pages)
 
     # Fix table blocks
-    table_count = format_tables(pages)
+    table_count = format_tables(pages, doc, fname, detection_model, table_rec_model, ocr_model)
     out_meta["block_stats"]["table"] = table_count
 
     for page in pages:
@@ -160,14 +159,6 @@ def convert_single_pdf(
     # Replace bullet characters with a -
     full_text = replace_bullets(full_text)
 
-    # Postprocess text with editor model
-    full_text, edit_stats = edit_full_text(
-        full_text,
-        edit_model,
-        batch_multiplier=batch_multiplier
-    )
-    flush_cuda_memory()
-    out_meta["postprocess_stats"] = {"edit": edit_stats}
     doc_images = images_to_dict(pages)
 
     return full_text, doc_images, out_meta
