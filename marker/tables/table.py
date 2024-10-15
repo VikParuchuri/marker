@@ -35,7 +35,7 @@ def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
         highres_img = render_image(doc[pnum], dpi=settings.SURYA_TABLE_DPI)
 
         page_table_imgs = []
-        lowres_bbox = []
+        page_bboxes = []
 
         # Merge tables that are next to each other
         bbox = merge_tables(bbox)
@@ -47,10 +47,10 @@ def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
         for bb in bbox:
             highres_bb = rescale_bbox(page.layout.image_bbox, [0, 0, highres_img.size[0], highres_img.size[1]], bb)
             page_table_imgs.append(highres_img.crop(highres_bb))
-            lowres_bbox.append(highres_bb)
+            page_bboxes.append(highres_bb)
 
         table_imgs.extend(page_table_imgs)
-        table_bboxes.extend(lowres_bbox)
+        table_bboxes.extend(page_bboxes)
 
     table_idxs = [i for i, c in enumerate(table_counts) if c > 0]
     sel_text_lines = get_page_text_lines(
@@ -81,6 +81,7 @@ def format_tables(pages: List[Page], doc: PdfDocument, fname: str, detection_mod
     cells, needs_ocr = get_cells(table_imgs, table_boxes, img_sizes, table_text_lines, det_models, detect_boxes=settings.OCR_ALL_PAGES)
     tqdm.disable = False
 
+    # This will redo OCR if OCR is forced, since we need to redetect bounding boxes, etc.
     table_rec = recognize_tables(table_imgs, cells, needs_ocr, rec_models)
     cells = [assign_rows_columns(tr, im_size) for tr, im_size in zip(table_rec, img_sizes)]
     table_md = [formatter("markdown", cell)[0] for cell in cells]
