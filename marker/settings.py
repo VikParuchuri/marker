@@ -4,6 +4,7 @@ from dotenv import find_dotenv
 from pydantic import computed_field
 from pydantic_settings import BaseSettings
 import torch
+import os
 
 
 class Settings(BaseSettings):
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
     IMAGE_DPI: int = 96 # DPI to render images pulled from pdf at
     EXTRACT_IMAGES: bool = True # Extract images from pdfs and save them
     PAGINATE_OUTPUT: bool = False # Paginate output markdown
+    BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     @computed_field
     @property
@@ -84,9 +86,11 @@ class Settings(BaseSettings):
     HEADING_DEFAULT_LEVEL: int = 2
 
     # Debug
-    DEBUG: bool = False # Enable debug logging
-    DEBUG_DATA_FOLDER: Optional[str] = None
-    DEBUG_LEVEL: int = 0 # 0 to 2, 2 means log everything
+    DEBUG_DATA_FOLDER: str = os.path.join(BASE_DIR, "debug")
+    DEBUG: bool = False
+    FONT_DIR: str = os.path.join(BASE_DIR, "static", "fonts")
+    DEBUG_RENDER_FONT: str = os.path.join(FONT_DIR, "GoNotoCurrent-Regular.ttf")
+    FONT_DL_BASE: str = "https://github.com/satbyy/go-noto-universal/releases/download/v7.0"
 
     @computed_field
     @property

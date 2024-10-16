@@ -10,7 +10,7 @@ from PIL import Image
 
 from marker.utils import flush_cuda_memory
 from marker.tables.table import format_tables
-from marker.debug.data import dump_bbox_debug_data
+from marker.debug.data import dump_bbox_debug_data, draw_page_debug_images
 from marker.layout.layout import surya_layout, annotate_block_types
 from marker.layout.order import surya_order, sort_blocks_in_reading_order
 from marker.ocr.lang import replace_langs_with_codes, validate_langs
@@ -108,7 +108,8 @@ def convert_single_pdf(
     annotate_block_types(pages)
 
     # Dump debug data if flags are set
-    dump_bbox_debug_data(doc, fname, pages)
+    draw_page_debug_images(fname, pages)
+    dump_bbox_debug_data(fname, pages)
 
     # Find reading order for blocks
     # Sort blocks by reading order

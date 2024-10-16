@@ -62,7 +62,12 @@ def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
     out_img_sizes = []
     for i in range(len(table_counts)):
         if i in table_idxs:
-            text_lines.extend([sel_text_lines.pop(0)] * table_counts[i])
+            page_ocred = pages[i].ocr_method is not None
+            if page_ocred:
+                # This will force re-detection of cells if the page was ocred (the text lines are not accurate)
+                text_lines.extend([None] * table_counts[i])
+            else:
+                text_lines.extend([sel_text_lines.pop(0)] * table_counts[i])
             out_img_sizes.extend([img_sizes[i]] * table_counts[i])
 
     assert len(table_imgs) == len(table_bboxes) == len(text_lines) == len(out_img_sizes)

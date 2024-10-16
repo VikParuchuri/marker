@@ -146,22 +146,22 @@ def merge_lines(blocks: List[List[MergedBlock]]):
     prev_line = None
     block_text = ""
     block_type = ""
-    block_heading_level = None
+    prev_heading_level = None
 
     for idx, page in enumerate(blocks):
         for block in page:
             block_type = block.block_type
-            if block_type != prev_type and prev_type:
+            if (block_type != prev_type and prev_type) or (block.heading_level != prev_heading_level and prev_heading_level):
                 text_blocks.append(
                     FullyMergedBlock(
-                        text=block_surround(block_text, prev_type, block_heading_level),
+                        text=block_surround(block_text, prev_type, prev_heading_level),
                         block_type=prev_type
                     )
                 )
                 block_text = ""
 
             prev_type = block_type
-            block_heading_level = block.heading_level
+            prev_heading_level = block.heading_level
             # Join lines in the block together properly
             for i, line in enumerate(block.lines):
                 line_height = line.bbox[3] - line.bbox[1]
@@ -180,7 +180,7 @@ def merge_lines(blocks: List[List[MergedBlock]]):
     # Append the final block
     text_blocks.append(
         FullyMergedBlock(
-            text=block_surround(block_text, prev_type, block_heading_level),
+            text=block_surround(block_text, prev_type, prev_heading_level),
             block_type=block_type
         )
     )

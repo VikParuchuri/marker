@@ -68,7 +68,7 @@ def bucket_headings(line_heights, num_levels=settings.HEADING_LEVEL_COUNT):
     data_labels = np.concatenate([data, labels.reshape(-1, 1)], axis=1)
     data_labels = np.sort(data_labels, axis=0)
 
-    cluster_means = {label: np.mean(data[labels == label, 0]) for label in np.unique(labels)}
+    cluster_means = {label: np.mean(data_labels[data_labels[:, 1] == label, 0]) for label in np.unique(labels)}
     label_max = None
     label_min = None
     heading_ranges = []
@@ -95,15 +95,14 @@ def bucket_headings(line_heights, num_levels=settings.HEADING_LEVEL_COUNT):
     return heading_ranges
 
 
-def infer_heading_levels(pages: List[Page]):
+def infer_heading_levels(pages: List[Page], height_tol=.99):
     all_line_heights = []
     for page in pages:
         for block in page.blocks:
             if block.block_type not in ["Title", "Section-header"]:
                 continue
 
-            block_heights = [min(l.height, l.width) for l in block.lines] # Account for rotation
-            all_line_heights.extend(block_heights)
+            all_line_heights.extend([l.height for l in block.lines])
 
     heading_ranges = bucket_headings(all_line_heights)
 
@@ -112,11 +111,11 @@ def infer_heading_levels(pages: List[Page]):
             if block.block_type not in ["Title", "Section-header"]:
                 continue
 
-            block_heights = [min(l.height, l.width) for l in block.lines] # Account for rotation
+            block_heights = [l.height for l in block.lines] # Account for rotation
             avg_height = sum(block_heights) / len(block_heights)
             for idx, (min_height, max_height) in enumerate(heading_ranges):
-                if avg_height >= min_height:
-                    block.heading_level = len(heading_ranges) - idx
+                if avg_height >= min_height * height_tol:
+                    block.heading_level = idx + 1
                     break
 
             if block.heading_level is None:
