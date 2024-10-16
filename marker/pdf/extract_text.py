@@ -17,8 +17,8 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
     page_blocks = []
     span_id = 0
     for block_idx, block in enumerate(page["blocks"]):
-        block_lines = []
         for l in block["lines"]:
+            block_lines = []
             spans = []
             for i, s in enumerate(l["spans"]):
                 block_text = s["text"]
@@ -44,14 +44,16 @@ def pdftext_format_to_blocks(page, pnum: int) -> Page:
             # Only select valid lines, with positive bboxes
             if line_obj.area >= 0:
                 block_lines.append(line_obj)
-        block_obj = Block(
-            lines=block_lines,
-            bbox=block["bbox"],
-            pnum=pnum
-        )
-        # Only select blocks with lines
-        if len(block_lines) > 0:
-            page_blocks.append(block_obj)
+
+            # Each block is a single line
+            block_obj = Block(
+                lines=block_lines,
+                bbox=l["bbox"],
+                pnum=pnum
+            )
+            # Only select blocks with lines
+            if len(block_lines) > 0:
+                page_blocks.append(block_obj)
 
     page_bbox = page["bbox"]
     page_width = abs(page_bbox[2] - page_bbox[0])

@@ -1,9 +1,11 @@
+from collections import defaultdict
 from typing import List
 
 from surya.layout import batch_layout_detection
 
 from marker.pdf.images import render_image
 from marker.schema.bbox import rescale_bbox
+from marker.schema.block import bbox_from_lines
 from marker.schema.page import Page
 from marker.settings import settings
 
@@ -46,3 +48,31 @@ def annotate_block_types(pages: List[Page]):
                 j = max_intersections[i][1]
                 block_type = page.layout.bboxes[j].label
             block.block_type = block_type
+
+
+        # Merge blocks together, preserving pdf order
+        curr_layout_idx = None
+        curr_layout_block = None
+        new_blocks = []
+        for i in range(len(page.blocks)):
+            if i not in max_intersections:
+                if curr_layout_block is not None:
+                    curr_layout_block.bbox = bbox_from_lines(curr_layout_block.lines)
+                    new_blocks.append(curr_layout_block)
+                curr_layout_block = None
+                curr_layout_idx = None
+                new_blocks.append(page.blocks[i])
+            elif max_intersections[i][1] != curr_layout_idx:
+                if curr_layout_block is not None:
+                    curr_layout_block.bbox = bbox_from_lines(curr_layout_block.lines)
+                    new_blocks.append(curr_layout_block)
+                curr_layout_block = page.blocks[i].copy()
+                curr_layout_idx = max_intersections[i][1]
+            else:
+                curr_layout_block.lines.extend(page.blocks[i].lines)
+
+        if curr_layout_block is not None:
+            curr_layout_block.bbox = bbox_from_lines(curr_layout_block.lines)
+            new_blocks.append(curr_layout_block)
+
+        page.blocks = new_blocks

@@ -65,12 +65,15 @@ def dump_bbox_debug_data(doc, fname, blocks: List[Page]):
         png_image.save(img_bytes, format="WEBP", lossless=True, quality=100)
         b64_image = base64.b64encode(img_bytes.getvalue()).decode("utf-8")
 
-        page_data = page_blocks.model_dump()
-        page_data["image"] = b64_image
+        page_data = page_blocks.model_dump(exclude=["images", "layout", "text_lines"])
+        page_data["layout"] = page_blocks.layout.model_dump(exclude=["segmentation_map"])
+        page_data["text_lines"] = page_blocks.text_lines.model_dump(exclude=["heatmap", "affinity_map"])
+        #page_data["image"] = b64_image
         debug_data.append(page_data)
 
     with open(debug_file, "w+") as f:
         json.dump(debug_data, f)
+    print(f"Dumped bbox debug data to {debug_file}")
 
 
 

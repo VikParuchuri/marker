@@ -19,6 +19,7 @@ class MergedBlock(BboxElement):
     lines: List[MergedLine]
     pnum: int
     block_type: Optional[str]
+    heading_level: Optional[int] = None
 
 
 class FullyMergedBlock(BaseModel):

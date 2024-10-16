@@ -66,17 +66,19 @@ def merge_spans(pages: List[Page]) -> List[List[MergedBlock]]:
                     lines=block_lines,
                     pnum=block.pnum,
                     bbox=block.bbox,
-                    block_type=block.block_type
+                    block_type=block.block_type,
+                    heading_level=block.heading_level
                 ))
         merged_blocks.append(page_blocks)
 
     return merged_blocks
 
 
-def block_surround(text, block_type):
+def block_surround(text, block_type, heading_level):
     if block_type == "Section-header":
         if not text.startswith("#"):
-            text = "\n## " + text.strip().title() + "\n"
+            asterisks = "#" * heading_level if heading_level is not None else "##"
+            text = f"\n{asterisks} " + text.strip().title() + "\n"
     elif block_type == "Title":
         if not text.startswith("#"):
             text = "# " + text.strip().title() + "\n"
@@ -144,6 +146,7 @@ def merge_lines(blocks: List[List[MergedBlock]]):
     prev_line = None
     block_text = ""
     block_type = ""
+    block_heading_level = None
 
     for idx, page in enumerate(blocks):
         for block in page:
@@ -151,13 +154,14 @@ def merge_lines(blocks: List[List[MergedBlock]]):
             if block_type != prev_type and prev_type:
                 text_blocks.append(
                     FullyMergedBlock(
-                        text=block_surround(block_text, prev_type),
+                        text=block_surround(block_text, prev_type, block_heading_level),
                         block_type=prev_type
                     )
                 )
                 block_text = ""
 
             prev_type = block_type
+            block_heading_level = block.heading_level
             # Join lines in the block together properly
             for i, line in enumerate(block.lines):
                 line_height = line.bbox[3] - line.bbox[1]
@@ -176,7 +180,7 @@ def merge_lines(blocks: List[List[MergedBlock]]):
     # Append the final block
     text_blocks.append(
         FullyMergedBlock(
-            text=block_surround(block_text, prev_type),
+            text=block_surround(block_text, prev_type, block_heading_level),
             block_type=block_type
         )
     )

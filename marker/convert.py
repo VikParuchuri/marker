@@ -22,7 +22,7 @@ from marker.equations.equations import replace_equations
 from marker.pdf.utils import find_filetype
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
-from marker.cleaners.headings import split_heading_blocks
+from marker.cleaners.headings import split_heading_blocks, infer_heading_levels
 from marker.cleaners.fontstyle import find_bold_italic
 from marker.postprocessors.markdown import merge_spans, merge_lines, get_full_text
 from marker.cleaners.text import cleanup_text
@@ -145,6 +145,7 @@ def convert_single_pdf(
 
     # Split out headers
     split_heading_blocks(pages)
+    infer_heading_levels(pages)
     find_bold_italic(pages)
 
     # Copy to avoid changing original data

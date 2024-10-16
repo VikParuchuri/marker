@@ -78,6 +78,11 @@ class Settings(BaseSettings):
     # Table models
     SURYA_TABLE_DPI: int = 192
 
+    # Headings
+    HEADING_LEVEL_COUNT: int = 4
+    HEADING_MERGE_THRESHOLD: float = .25
+    HEADING_DEFAULT_LEVEL: int = 2
+
     # Debug
     DEBUG: bool = False # Enable debug logging
     DEBUG_DATA_FOLDER: Optional[str] = None

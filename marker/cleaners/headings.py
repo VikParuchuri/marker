@@ -1,4 +1,7 @@
+from collections import defaultdict
 from typing import List
+import numpy as np
+from sklearn.cluster import KMeans
 
 from marker.settings import settings
 from marker.schema.bbox import rescale_bbox
@@ -57,3 +60,64 @@ def split_heading_blocks(pages: List[Page]):
                 new_blocks.append(copied_block)
 
         page.blocks = new_blocks
+
+
+def bucket_headings(line_heights, num_levels=settings.HEADING_LEVEL_COUNT):
+    data = np.asarray(line_heights).reshape(-1, 1)
+    labels = KMeans(n_clusters=num_levels, random_state=0, n_init="auto").fit_predict(data)
+    data_labels = np.concatenate([data, labels.reshape(-1, 1)], axis=1)
+    data_labels = np.sort(data_labels, axis=0)
+
+    cluster_means = {label: np.mean(data[labels == label, 0]) for label in np.unique(labels)}
+    label_max = None
+    label_min = None
+    heading_ranges = []
+    prev_cluster = None
+    for row in data_labels:
+        value, label = row
+        if prev_cluster is not None and label != prev_cluster:
+            prev_cluster_mean = cluster_means[prev_cluster]
+            cluster_mean = cluster_means[label]
+            if cluster_mean * settings.HEADING_MERGE_THRESHOLD < prev_cluster_mean:
+                heading_ranges.append((label_min, label_max))
+                label_min = None
+                label_max = None
+
+        label_min = value if label_min is None else min(label_min, value)
+        label_max = value if label_max is None else max(label_max, value)
+        prev_cluster = label
+
+    if label_min is not None:
+        heading_ranges.append((label_min, label_max))
+
+    heading_ranges = sorted(heading_ranges, key=lambda x: x[0], reverse=True)
+
+    return heading_ranges
+
+
+def infer_heading_levels(pages: List[Page]):
+    all_line_heights = []
+    for page in pages:
+        for block in page.blocks:
+            if block.block_type not in ["Title", "Section-header"]:
+                continue
+
+            block_heights = [min(l.height, l.width) for l in block.lines] # Account for rotation
+            all_line_heights.extend(block_heights)
+
+    heading_ranges = bucket_headings(all_line_heights)
+
+    for page in pages:
+        for block in page.blocks:
+            if block.block_type not in ["Title", "Section-header"]:
+                continue
+
+            block_heights = [min(l.height, l.width) for l in block.lines] # Account for rotation
+            avg_height = sum(block_heights) / len(block_heights)
+            for idx, (min_height, max_height) in enumerate(heading_ranges):
+                if avg_height >= min_height:
+                    block.heading_level = len(heading_ranges) - idx
+                    break
+
+            if block.heading_level is None:
+                block.heading_level = min(len(heading_ranges), settings.HEADING_DEFAULT_LEVEL)
