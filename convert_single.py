@@ -3,8 +3,6 @@ import time
 import pypdfium2 # Needs to be at the top to avoid warnings
 import os
 
-from marker.settings import settings
-
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 
 import argparse

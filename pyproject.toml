@@ -35,7 +35,7 @@ rapidfuzz = "^3.8.1"
 surya-ocr = "^0.6.3"
 filetype = "^1.2.0"
 regex = "^2024.4.28"
-pdftext = "^0.3.15"
+pdftext = "^0.3.16"
 tabled-pdf = "^0.1.0"
 
 [tool.poetry.group.dev.dependencies]

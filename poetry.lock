@@ -2510,13 +2510,13 @@ testing = ["docopt", "pytest"]
 
 [[package]]
 name = "pdftext"
-version = "0.3.15"
+version = "0.3.16"
 description = "Extract structured text from pdfs quickly"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pdftext-0.3.15-py3-none-any.whl", hash = "sha256:3151abacd5c2cfed9975d090333b543151e14de439ebe0d228b935328d512f3d"},
-    {file = "pdftext-0.3.15.tar.gz", hash = "sha256:3c6d55781c1adfd263cdc05c39cbea2c40d4e626439ab24078f860eca65c2e6c"},
+    {file = "pdftext-0.3.16-py3-none-any.whl", hash = "sha256:c541ee95496b51325fcdeebf9390a45cd2a1f511aac21b021bb45cca4634b6b7"},
+    {file = "pdftext-0.3.16.tar.gz", hash = "sha256:a30f4fddafe1ad67fb45b18689942a78c6263ef4a53888bd107cc25c27974a9d"},
 ]
 
 [package.dependencies]
@@ -5075,4 +5075,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "4983d14f11f46193fc13b3256d1f7ed8d0877ad579cb8b30fbab8e87d3febb22"
+content-hash = "fb9aaf82b97c40f5f850b3143558d44e7f6a501eb34e40bdfdc5d3a0aa58fecf"

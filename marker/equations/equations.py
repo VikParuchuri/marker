@@ -6,7 +6,7 @@ from marker.equations.inference import get_total_texify_tokens, get_latex_batche
 from marker.pdf.images import render_bbox_image
 from marker.schema.bbox import rescale_bbox
 from marker.schema.page import Page
-from marker.schema.block import Line, Span, Block, bbox_from_lines, split_block_lines, find_insert_block
+from marker.schema.block import Line, Span, Block, split_block_lines, find_insert_block
 from marker.settings import settings
 
 

@@ -9,7 +9,7 @@ def verify_scores(file_path):
     multicolcnn_score = data["marker"]["files"]["multicolcnn.pdf"]["score"]
     switch_trans_score = data["marker"]["files"]["switch_trans.pdf"]["score"]
 
-    if multicolcnn_score <= 0.35 or switch_trans_score <= 0.39:
+    if multicolcnn_score <= 0.37 or switch_trans_score <= 0.4:
         raise ValueError("One or more scores are below the required threshold of 0.4")
 
 
