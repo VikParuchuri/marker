@@ -85,7 +85,7 @@ def block_surround(text, block_type, heading_level):
     elif block_type == "Table":
         text = "\n" + text + "\n"
     elif block_type == "List-item":
-        text = escape_markdown(text)
+        text = escape_markdown(text.rstrip()) + "\n"
     elif block_type == "Code":
         text = "\n```\n" + text + "\n```\n"
     elif block_type == "Text":
@@ -94,6 +94,8 @@ def block_surround(text, block_type, heading_level):
         if text.strip().startswith("$$") and text.strip().endswith("$$"):
             text = text.strip()
             text = "\n" + text + "\n"
+    elif block_type == "Caption":
+        text = "\n" + escape_markdown(text) + "\n"
     return text
 
 
@@ -143,7 +145,7 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
     return sep + block.text
 
 
-def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=10):
+def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
     text_blocks = []
     prev_type = None
     prev_line = None

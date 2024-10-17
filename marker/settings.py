@@ -66,7 +66,7 @@ class Settings(BaseSettings):
 
     # Layout model
     SURYA_LAYOUT_DPI: int = 96
-    BAD_SPAN_TYPES: List[str] = ["Page-footer", "Page-header"] # You can add "Caption" and "Footnote" here to get rid of those elements
+    BAD_SPAN_TYPES: List[str] = ["Page-footer", "Page-header", "Picture"] # You can add "Caption" and "Footnote" here to get rid of those elements - this just removes the text, not the image in case of Picture
     LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout3"
     BBOX_INTERSECTION_THRESH: float = 0.7 # How much the layout and pdf bboxes need to overlap to be the same
     TABLE_INTERSECTION_THRESH: float = 0.7
