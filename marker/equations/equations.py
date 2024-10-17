@@ -2,12 +2,11 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import List
 
-from marker.debug.data import dump_equation_debug_data
 from marker.equations.inference import get_total_texify_tokens, get_latex_batched
 from marker.pdf.images import render_bbox_image
 from marker.schema.bbox import rescale_bbox
 from marker.schema.page import Page
-from marker.schema.block import Line, Span, Block, bbox_from_lines, split_block_lines, find_insert_block
+from marker.schema.block import Line, Span, Block, split_block_lines, find_insert_block
 from marker.settings import settings
 
 
@@ -176,8 +175,5 @@ def replace_equations(doc, pages: List[Page], texify_model, batch_multiplier=1):
         page_start += page_equation_count
         successful_ocr += success_count
         unsuccessful_ocr += fail_count
-
-    # If debug mode is on, dump out conversions for comparison
-    dump_equation_debug_data(doc, images, converted_spans)
 
     return pages, {"successful_ocr": successful_ocr, "unsuccessful_ocr": unsuccessful_ocr, "equations": eq_count}

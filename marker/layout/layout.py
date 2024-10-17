@@ -1,9 +1,11 @@
+from collections import defaultdict
 from typing import List
 
 from surya.layout import batch_layout_detection
 
 from marker.pdf.images import render_image
 from marker.schema.bbox import rescale_bbox
+from marker.schema.block import bbox_from_lines
 from marker.schema.page import Page
 from marker.settings import settings
 
@@ -41,8 +43,56 @@ def annotate_block_types(pages: List[Page]):
 
         for i, block in enumerate(page.blocks):
             block = page.blocks[i]
-            block_type = "Text"
-            if i in max_intersections:
+            block_type = None
+            if i in max_intersections and max_intersections[i][0] > 0.0:
                 j = max_intersections[i][1]
                 block_type = page.layout.bboxes[j].label
             block.block_type = block_type
+
+        # Smarter block layout assignment - first assign same as closest block
+        # Next, fall back to text
+        for i, block in enumerate(page.blocks):
+            if block.block_type is not None:
+                continue
+            min_dist = 0
+            min_dist_idx = None
+            for j, block2 in enumerate(page.blocks):
+                if j == i or block2.block_type is None:
+                    continue
+                dist = block.distance(block2.bbox)
+                if min_dist_idx is None or dist < min_dist:
+                    min_dist = dist
+                    min_dist_idx = j
+            if min_dist_idx is not None:
+                block.block_type = page.blocks[min_dist_idx].block_type
+
+        for i, block in enumerate(page.blocks):
+            if block.block_type is None:
+                block.block_type = "text"
+
+        # Merge blocks together, preserving pdf order
+        curr_layout_idx = None
+        curr_layout_block = None
+        new_blocks = []
+        for i in range(len(page.blocks)):
+            if i not in max_intersections:
+                if curr_layout_block is not None:
+                    curr_layout_block.bbox = bbox_from_lines(curr_layout_block.lines)
+                    new_blocks.append(curr_layout_block)
+                curr_layout_block = None
+                curr_layout_idx = None
+                new_blocks.append(page.blocks[i])
+            elif max_intersections[i][1] != curr_layout_idx:
+                if curr_layout_block is not None:
+                    curr_layout_block.bbox = bbox_from_lines(curr_layout_block.lines)
+                    new_blocks.append(curr_layout_block)
+                curr_layout_block = page.blocks[i].copy()
+                curr_layout_idx = max_intersections[i][1]
+            else:
+                curr_layout_block.lines.extend(page.blocks[i].lines)
+
+        if curr_layout_block is not None:
+            curr_layout_block.bbox = bbox_from_lines(curr_layout_block.lines)
+            new_blocks.append(curr_layout_block)
+
+        page.blocks = new_blocks

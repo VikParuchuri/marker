@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "marker-pdf"
-version = "0.2.17"
+version = "0.3.0"
 description = "Convert PDF to markdown with high speed and accuracy."
 authors = ["Vik Paruchuri <github@vikas.sh>"]
 readme = "README.md"
@@ -20,25 +20,23 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13,!=3.9.7"
-scikit-learn = "^1.3.2,<=1.4.2"
+python = "^3.10"
 Pillow = "^10.1.0"
 pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
-transformers = "^4.36.2"
-numpy = "^1.26.1"
+transformers = "^4.45.2"
 python-dotenv = "^1.0.0"
-torch = "^2.2.2" # Issue with torch 2.3.0 and vision models - https://github.com/pytorch/pytorch/issues/121834
+torch = "^2.4.1"
 tqdm = "^4.66.1"
 tabulate = "^0.9.0"
 ftfy = "^6.1.1"
-texify = "^0.1.10"
+texify = "^0.2.0"
 rapidfuzz = "^3.8.1"
-surya-ocr = "^0.5.0"
+surya-ocr = "^0.6.3"
 filetype = "^1.2.0"
 regex = "^2024.4.28"
-pdftext = "^0.3.10"
-grpcio = "^1.63.0"
+pdftext = "^0.3.16"
+tabled-pdf = "^0.1.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

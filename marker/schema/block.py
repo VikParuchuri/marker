@@ -45,6 +45,7 @@ class Block(BboxElement):
     lines: List[Line]
     pnum: int
     block_type: Optional[str] = None
+    heading_level: Optional[int] = None
 
     @property
     def prelim_text(self):

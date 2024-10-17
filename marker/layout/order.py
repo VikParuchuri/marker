@@ -66,4 +66,10 @@ def sort_blocks_in_reading_order(pages: List[Page]):
             block_group = sort_block_group(block_groups[position])
             new_blocks.extend(block_group)
 
+        # Ensure we properly put footers at the end of the page
+        footer_blocks = [b for b in new_blocks if b.block_type in ["Footnote", "Page-footer"]]
+        header_blocks = [b for b in new_blocks if b.block_type in ["Page-header"]]
+        regular_blocks = [b for b in new_blocks if b.block_type not in ["Footnote", "Page-footer", "Page-header"]]
+        
+        new_blocks = header_blocks + regular_blocks + footer_blocks
         page.blocks = new_blocks

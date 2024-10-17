@@ -66,24 +66,26 @@ def merge_spans(pages: List[Page]) -> List[List[MergedBlock]]:
                     lines=block_lines,
                     pnum=block.pnum,
                     bbox=block.bbox,
-                    block_type=block.block_type
+                    block_type=block.block_type,
+                    heading_level=block.heading_level
                 ))
         merged_blocks.append(page_blocks)
 
     return merged_blocks
 
 
-def block_surround(text, block_type):
+def block_surround(text, block_type, heading_level):
     if block_type == "Section-header":
         if not text.startswith("#"):
-            text = "\n## " + text.strip().title() + "\n"
+            asterisks = "#" * heading_level if heading_level is not None else "##"
+            text = f"\n{asterisks} " + text.strip().title() + "\n"
     elif block_type == "Title":
         if not text.startswith("#"):
             text = "# " + text.strip().title() + "\n"
     elif block_type == "Table":
         text = "\n" + text + "\n"
     elif block_type == "List-item":
-        text = escape_markdown(text)
+        text = escape_markdown(text.rstrip()) + "\n"
     elif block_type == "Code":
         text = "\n```\n" + text + "\n```\n"
     elif block_type == "Text":
@@ -92,6 +94,8 @@ def block_surround(text, block_type):
         if text.strip().startswith("$$") and text.strip().endswith("$$"):
             text = text.strip()
             text = "\n" + text + "\n"
+    elif block_type == "Caption":
+        text = "\n" + escape_markdown(text) + "\n"
     return text
 
 
@@ -130,56 +134,75 @@ def line_separator(line1, line2, block_type, is_continuation=False):
         return line1 + "\n" + line2
 
 
-def block_separator(line1, line2, block_type1, block_type2):
+def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
     sep = "\n"
-    if block_type1 == "Text":
+    if prev_block.block_type == "Text":
         sep = "\n\n"
 
-    return sep + line2
+    if prev_block.page_end:
+        sep = settings.PAGE_SEPARATOR
+
+    return sep + block.text
 
 
-def merge_lines(blocks: List[List[MergedBlock]]):
+def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
     text_blocks = []
     prev_type = None
     prev_line = None
     block_text = ""
     block_type = ""
+    prev_heading_level = None
 
     for idx, page in enumerate(blocks):
         for block in page:
             block_type = block.block_type
-            if block_type != prev_type and prev_type:
+            if (block_type != prev_type and prev_type) or (block.heading_level != prev_heading_level and prev_heading_level):
                 text_blocks.append(
                     FullyMergedBlock(
-                        text=block_surround(block_text, prev_type),
-                        block_type=prev_type
+                        text=block_surround(block_text, prev_type, prev_heading_level),
+                        block_type=prev_type,
+                        page_end=False
                     )
                 )
                 block_text = ""
 
             prev_type = block_type
+            prev_heading_level = block.heading_level
             # Join lines in the block together properly
             for i, line in enumerate(block.lines):
                 line_height = line.bbox[3] - line.bbox[1]
                 prev_line_height = prev_line.bbox[3] - prev_line.bbox[1] if prev_line else 0
                 prev_line_x = prev_line.bbox[0] if prev_line else 0
+                vertical_dist = min(abs(line.bbox[1] - prev_line.bbox[3]), abs(line.bbox[3] - prev_line.bbox[1])) if prev_line else 0
                 prev_line = line
-                is_continuation = line_height == prev_line_height and line.bbox[0] == prev_line_x
+                is_continuation = line_height == prev_line_height and line.bbox[0] == prev_line_x and vertical_dist < max_block_gap
                 if block_text:
                     block_text = line_separator(block_text, line.text, block_type, is_continuation)
                 else:
                     block_text = line.text
 
-        if settings.PAGINATE_OUTPUT and idx < len(blocks) - 1:
-            block_text += "\n\n" + "-" * 16 + "\n\n" # Page separator horizontal rule
+        # Force blocks to end at page boundaries
+        if settings.PAGINATE_OUTPUT:
+            text_blocks.append(
+                FullyMergedBlock(
+                    text=block_surround(block_text, prev_type, prev_heading_level),
+                    block_type=prev_type,
+                    page_end=True
+                )
+            )
+            block_text = ""
+
 
     # Append the final block
     text_blocks.append(
         FullyMergedBlock(
-            text=block_surround(block_text, prev_type),
-            block_type=block_type
+            text=block_surround(block_text, prev_type, prev_heading_level),
+            block_type=block_type,
+            page_end=False
         )
     )
+
+    text_blocks = [block for block in text_blocks if block.text.strip()]
     return text_blocks
 
 
@@ -188,7 +211,7 @@ def get_full_text(text_blocks):
     prev_block = None
     for block in text_blocks:
         if prev_block:
-            full_text += block_separator(prev_block.text, block.text, prev_block.block_type, block.block_type)
+            full_text += block_separator(prev_block, block)
         else:
             full_text += block.text
         prev_block = block

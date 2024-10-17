@@ -58,6 +58,10 @@ def unnormalize_box(bbox, width, height):
     ]
 
 
+def get_center(bbox):
+    return [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
+
+
 class BboxElement(BaseModel):
     bbox: List[float]
 
@@ -92,6 +96,11 @@ class BboxElement(BaseModel):
         if self.area == 0:
             return 0.0
         return box_intersection_pct(self.bbox, other_bbox)
+
+    def distance(self, other_bbox: List[float]):
+        bbox_center = get_center(self.bbox)
+        other_center = get_center(other_bbox)
+        return ((bbox_center[0] - other_center[0]) ** 2 + (bbox_center[1] - other_center[1]) ** 2) ** 0.5
 
 
 def rescale_bbox(orig_dim, new_dim, bbox):

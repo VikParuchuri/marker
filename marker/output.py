@@ -30,7 +30,7 @@ def save_markdown(out_folder, fname, full_text, images, out_metadata):
     with open(markdown_filepath, "w+", encoding='utf-8') as f:
         f.write(full_text)
     with open(out_meta_filepath, "w+") as f:
-        f.write(json.dumps(out_metadata, indent=4))
+        f.write(json.dumps(out_metadata, indent=4, ensure_ascii=False))
 
     for filename, image in images.items():
         image_filepath = os.path.join(subfolder_path, filename)

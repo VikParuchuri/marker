@@ -1,155 +1,113 @@
-from marker.schema.bbox import merge_boxes, box_intersection_pct, rescale_bbox
+from tqdm import tqdm
+from pypdfium2 import PdfDocument
+from tabled.assignment import assign_rows_columns
+from tabled.formats import formatter
+from tabled.inference.detection import merge_tables
+
+from surya.input.pdflines import get_page_text_lines
+from tabled.inference.recognition import get_cells, recognize_tables
+
+from marker.pdf.images import render_image
+from marker.schema.bbox import rescale_bbox
 from marker.schema.block import Line, Span, Block
 from marker.schema.page import Page
-from tabulate import tabulate
 from typing import List
 
 from marker.settings import settings
-from marker.tables.cells import assign_cells_to_columns
-from marker.tables.utils import sort_table_blocks, replace_dots, replace_newlines
 
 
-def get_table_surya(page, table_box, space_tol=.01) -> List[List[str]]:
-    table_rows = []
-    table_row = []
-    x_position = None
-    sorted_blocks = sort_table_blocks(page.blocks)
-    for block_idx, block in enumerate(sorted_blocks):
-        sorted_lines = sort_table_blocks(block.lines)
-        for line_idx, line in enumerate(sorted_lines):
-            line_bbox = line.bbox
-            intersect_pct = box_intersection_pct(line_bbox, table_box)
-            if intersect_pct < settings.TABLE_INTERSECTION_THRESH or len(line.spans) == 0:
-                continue
-            normed_x_start = line_bbox[0] / page.width
-            normed_x_end = line_bbox[2] / page.width
+def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
+    table_imgs = []
+    table_counts = []
+    table_bboxes = []
+    img_sizes = []
 
-            cells = [[s.bbox, s.text] for s in line.spans]
-            if x_position is None or normed_x_start > x_position - space_tol:
-                # Same row
-                table_row.extend(cells)
-            else:
-                # New row
-                if len(table_row) > 0:
-                    table_rows.append(table_row)
-                table_row = cells
-            x_position = normed_x_end
-    if len(table_row) > 0:
-        table_rows.append(table_row)
-    table_rows = assign_cells_to_columns(page, table_box, table_rows)
-    return table_rows
-
-
-def get_table_pdftext(page: Page, table_box, space_tol=.01, round_factor=4) -> List[List[str]]:
-    page_width = page.width
-    table_rows = []
-    table_cell = ""
-    cell_bbox = None
-    table_row = []
-    sorted_char_blocks = sort_table_blocks(page.char_blocks)
-
-    table_width = table_box[2] - table_box[0]
-    new_line_start_x = table_box[0] + table_width * .3
-    table_width_pct = (table_width / page_width) * .95
-
-    for block_idx, block in enumerate(sorted_char_blocks):
-        sorted_lines = sort_table_blocks(block["lines"])
-        for line_idx, line in enumerate(sorted_lines):
-            line_bbox = line["bbox"]
-            intersect_pct = box_intersection_pct(line_bbox, table_box)
-            if intersect_pct < settings.TABLE_INTERSECTION_THRESH:
-                continue
-            for span in line["spans"]:
-                for char in span["chars"]:
-                    x_start, y_start, x_end, y_end = char["bbox"]
-                    x_start /= page_width
-                    x_end /= page_width
-                    fullwidth_cell = False
-
-                    if cell_bbox is not None:
-                        # Find boundaries of cell bbox before merging
-                        cell_x_start, cell_y_start, cell_x_end, cell_y_end = cell_bbox
-                        cell_x_start /= page_width
-                        cell_x_end /= page_width
-
-                        fullwidth_cell = cell_x_end - cell_x_start >= table_width_pct
-
-                    cell_content = replace_dots(replace_newlines(table_cell))
-                    if cell_bbox is None: # First char
-                        table_cell += char["char"]
-                        cell_bbox = char["bbox"]
-                    # Check if we are in the same cell, ensure cell is not full table width (like if stray text gets included in the table)
-                    elif (cell_x_start - space_tol < x_start < cell_x_end + space_tol) and not fullwidth_cell:
-                        table_cell += char["char"]
-                        cell_bbox = merge_boxes(cell_bbox, char["bbox"])
-                    # New line and cell
-                    # Use x_start < new_line_start_x to account for out-of-order cells in the pdf
-                    elif x_start < cell_x_end - space_tol and x_start < new_line_start_x:
-                        if len(table_cell) > 0:
-                            table_row.append((cell_bbox, cell_content))
-                        table_cell = char["char"]
-                        cell_bbox = char["bbox"]
-                        if len(table_row) > 0:
-                            table_row = sorted(table_row, key=lambda x: round(x[0][0] / round_factor))
-                            table_rows.append(table_row)
-                        table_row = []
-                    else: # Same line, new cell, check against cell bbox
-                        if len(table_cell) > 0:
-                            table_row.append((cell_bbox, cell_content))
-                        table_cell = char["char"]
-                        cell_bbox = char["bbox"]
-
-    if len(table_cell) > 0:
-        table_row.append((cell_bbox, replace_dots(replace_newlines(table_cell))))
-    if len(table_row) > 0:
-        table_row = sorted(table_row, key=lambda x: round(x[0][0] / round_factor))
-        table_rows.append(table_row)
-
-    total_cells = sum([len(row) for row in table_rows])
-    if total_cells > 0:
-        table_rows = assign_cells_to_columns(page, table_box, table_rows)
-        return table_rows
-    else:
-        return []
-
-
-def merge_tables(page_table_boxes):
-    # Merge tables that are next to each other
-    expansion_factor = 1.02
-    shrink_factor = .98
-    ignore_boxes = set()
-    for i in range(len(page_table_boxes)):
-        if i in ignore_boxes:
-            continue
-        for j in range(i + 1, len(page_table_boxes)):
-            if j in ignore_boxes:
-                continue
-            expanded_box1 = [page_table_boxes[i][0] * shrink_factor, page_table_boxes[i][1],
-                             page_table_boxes[i][2] * expansion_factor, page_table_boxes[i][3]]
-            expanded_box2 = [page_table_boxes[j][0] * shrink_factor, page_table_boxes[j][1],
-                             page_table_boxes[j][2] * expansion_factor, page_table_boxes[j][3]]
-            if box_intersection_pct(expanded_box1, expanded_box2) > 0:
-                page_table_boxes[i] = merge_boxes(page_table_boxes[i], page_table_boxes[j])
-                ignore_boxes.add(j)
-
-    return [b for i, b in enumerate(page_table_boxes) if i not in ignore_boxes]
-
-
-def format_tables(pages: List[Page]):
-    # Formats tables nicely into github flavored markdown
-    table_count = 0
     for page in pages:
+        pnum = page.pnum
+        # The bbox for the entire table
+        bbox = [b.bbox for b in page.layout.bboxes if b.label == "Table"]
+
+        if len(bbox) == 0:
+            table_counts.append(0)
+            img_sizes.append(None)
+            continue
+
+        highres_img = render_image(doc[pnum], dpi=settings.SURYA_TABLE_DPI)
+
+        page_table_imgs = []
+        page_bboxes = []
+
+        # Merge tables that are next to each other
+        bbox = merge_tables(bbox)
+
+        # Number of tables per page
+        table_counts.append(len(bbox))
+        img_sizes.append(highres_img.size)
+
+        for bb in bbox:
+            highres_bb = rescale_bbox(page.layout.image_bbox, [0, 0, highres_img.size[0], highres_img.size[1]], bb)
+            page_table_imgs.append(highres_img.crop(highres_bb))
+            page_bboxes.append(highres_bb)
+
+        table_imgs.extend(page_table_imgs)
+        table_bboxes.extend(page_bboxes)
+
+    table_idxs = [i for i, c in enumerate(table_counts) if c > 0]
+    sel_text_lines = get_page_text_lines(
+        fname,
+        table_idxs,
+        [hr for i, hr in enumerate(img_sizes) if i in table_idxs],
+    )
+    text_lines = []
+    out_img_sizes = []
+    for i in range(len(table_counts)):
+        if i in table_idxs:
+            page_ocred = pages[i].ocr_method is not None
+            if page_ocred:
+                # This will force re-detection of cells if the page was ocred (the text lines are not accurate)
+                text_lines.extend([None] * table_counts[i])
+            else:
+                text_lines.extend([sel_text_lines.pop(0)] * table_counts[i])
+            out_img_sizes.extend([img_sizes[i]] * table_counts[i])
+
+    assert len(table_imgs) == len(table_bboxes) == len(text_lines) == len(out_img_sizes)
+    assert sum(table_counts) == len(table_imgs)
+
+    return table_imgs, table_bboxes, table_counts, text_lines, out_img_sizes
+
+
+def format_tables(pages: List[Page], doc: PdfDocument, fname: str, detection_model, table_rec_model, ocr_model):
+    det_models = [detection_model, detection_model.processor]
+    rec_models = [table_rec_model, table_rec_model.processor, ocr_model, ocr_model.processor]
+
+    # Don't look at table cell detection tqdm output
+    tqdm.disable = True
+    table_imgs, table_boxes, table_counts, table_text_lines, img_sizes = get_table_boxes(pages, doc, fname)
+    cells, needs_ocr = get_cells(table_imgs, table_boxes, img_sizes, table_text_lines, det_models, detect_boxes=settings.OCR_ALL_PAGES)
+    tqdm.disable = False
+
+    # This will redo OCR if OCR is forced, since we need to redetect bounding boxes, etc.
+    table_rec = recognize_tables(table_imgs, cells, needs_ocr, rec_models)
+    cells = [assign_rows_columns(tr, im_size) for tr, im_size in zip(table_rec, img_sizes)]
+    table_md = [formatter("markdown", cell)[0] for cell in cells]
+
+    table_count = 0
+    for page_idx, page in enumerate(pages):
+        page_table_count = table_counts[page_idx]
+        if page_table_count == 0:
+            continue
+
         table_insert_points = {}
         blocks_to_remove = set()
         pnum = page.pnum
-
-        page_table_boxes = [b for b in page.layout.bboxes if b.label == "Table"]
-        page_table_boxes = [rescale_bbox(page.layout.image_bbox, page.bbox, b.bbox) for b in page_table_boxes]
-        page_table_boxes = merge_tables(page_table_boxes)
+        highres_size = img_sizes[table_count]
+        page_table_boxes = table_boxes[table_count:table_count + page_table_count]
 
         for table_idx, table_box in enumerate(page_table_boxes):
+            lowres_table_box = rescale_bbox([0, 0, highres_size[0], highres_size[1]], page.bbox, table_box)
+
             for block_idx, block in enumerate(page.blocks):
-                intersect_pct = block.intersection_pct(table_box)
+                intersect_pct = block.intersection_pct(lowres_table_box)
                 if intersect_pct > settings.TABLE_INTERSECTION_THRESH and block.block_type == "Table":
                     if table_idx not in table_insert_points:
                         table_insert_points[table_idx] = max(0, block_idx - len(blocks_to_remove)) # Where to insert the new table
@@ -163,17 +121,10 @@ def format_tables(pages: List[Page]):
 
         for table_idx, table_box in enumerate(page_table_boxes):
             if table_idx not in table_insert_points:
+                table_count += 1
                 continue
 
-            if page.ocr_method == "surya":
-                table_rows = get_table_surya(page, table_box)
-            else:
-                table_rows = get_table_pdftext(page, table_box)
-            # Skip empty tables
-            if len(table_rows) == 0:
-                continue
-
-            table_text = tabulate(table_rows, headers="firstrow", tablefmt="github", disable_numparse=True)
+            markdown = table_md[table_count]
             table_block = Block(
                 bbox=table_box,
                 block_type="Table",
@@ -187,7 +138,7 @@ def format_tables(pages: List[Page]):
                         font_size=0,
                         font_weight=0,
                         block_type="Table",
-                        text=table_text
+                        text=markdown
                     )]
                 )]
             )
