@@ -25,3 +25,4 @@ class MergedBlock(BboxElement):
 class FullyMergedBlock(BaseModel):
     text: str
     block_type: str
+    page_end: bool

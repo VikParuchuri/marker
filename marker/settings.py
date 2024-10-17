@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     HEADING_MERGE_THRESHOLD: float = .25
     HEADING_DEFAULT_LEVEL: int = 2
 
+    # Output
+    PAGE_SEPARATOR: str = "\n\n" + "-" * 48 + "\n\n"
+
     # Debug
     DEBUG_DATA_FOLDER: str = os.path.join(BASE_DIR, "debug")
     DEBUG: bool = False

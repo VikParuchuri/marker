@@ -132,12 +132,15 @@ def line_separator(line1, line2, block_type, is_continuation=False):
         return line1 + "\n" + line2
 
 
-def block_separator(line1, line2, block_type1, block_type2):
+def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
     sep = "\n"
-    if block_type1 == "Text":
+    if prev_block.block_type == "Text":
         sep = "\n\n"
 
-    return sep + line2
+    if prev_block.page_end:
+        sep = settings.PAGE_SEPARATOR
+
+    return sep + block.text
 
 
 def merge_lines(blocks: List[List[MergedBlock]]):
@@ -155,7 +158,8 @@ def merge_lines(blocks: List[List[MergedBlock]]):
                 text_blocks.append(
                     FullyMergedBlock(
                         text=block_surround(block_text, prev_type, prev_heading_level),
-                        block_type=prev_type
+                        block_type=prev_type,
+                        page_end=False
                     )
                 )
                 block_text = ""
@@ -174,16 +178,28 @@ def merge_lines(blocks: List[List[MergedBlock]]):
                 else:
                     block_text = line.text
 
-        if settings.PAGINATE_OUTPUT and idx < len(blocks) - 1:
-            block_text += "\n\n" + "-" * 16 + "\n\n" # Page separator horizontal rule
+        # Force blocks to end at page boundaries
+        if settings.PAGINATE_OUTPUT:
+            text_blocks.append(
+                FullyMergedBlock(
+                    text=block_surround(block_text, prev_type, prev_heading_level),
+                    block_type=prev_type,
+                    page_end=True
+                )
+            )
+            block_text = ""
+
 
     # Append the final block
     text_blocks.append(
         FullyMergedBlock(
             text=block_surround(block_text, prev_type, prev_heading_level),
-            block_type=block_type
+            block_type=block_type,
+            page_end=False
         )
     )
+
+    text_blocks = [block for block in text_blocks if block.text.strip()]
     return text_blocks
 
 
@@ -192,7 +208,7 @@ def get_full_text(text_blocks):
     prev_block = None
     for block in text_blocks:
         if prev_block:
-            full_text += block_separator(prev_block.text, block.text, prev_block.block_type, block.block_type)
+            full_text += block_separator(prev_block, block)
         else:
             full_text += block.text
         prev_block = block
