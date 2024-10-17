@@ -48,7 +48,7 @@ def nougat_prediction(pdf_filename, batch_size=1):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark PDF to MD conversion.  Needs source pdfs, and a refernece folder with the correct markdown.")
+    parser = argparse.ArgumentParser(description="Benchmark PDF to MD conversion.  Needs source pdfs, and a reference folder with the correct markdown.")
     parser.add_argument("in_folder", help="Input PDF files")
     parser.add_argument("reference_folder", help="Reference folder with reference markdown files")
     parser.add_argument("out_file", help="Output filename")
