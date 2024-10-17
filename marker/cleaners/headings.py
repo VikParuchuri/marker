@@ -63,6 +63,9 @@ def split_heading_blocks(pages: List[Page]):
 
 
 def bucket_headings(line_heights, num_levels=settings.HEADING_LEVEL_COUNT):
+    if len(line_heights) <= num_levels:
+        return []
+
     data = np.asarray(line_heights).reshape(-1, 1)
     labels = KMeans(n_clusters=num_levels, random_state=0, n_init="auto").fit_predict(data)
     data_labels = np.concatenate([data, labels.reshape(-1, 1)], axis=1)
@@ -119,5 +122,5 @@ def infer_heading_levels(pages: List[Page], height_tol=.99):
                     break
 
             if block.heading_level is None:
-                block.heading_level = min(len(heading_ranges), settings.HEADING_DEFAULT_LEVEL)
+                block.heading_level = settings.HEADING_DEFAULT_LEVEL
 

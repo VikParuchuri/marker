@@ -143,7 +143,7 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
     return sep + block.text
 
 
-def merge_lines(blocks: List[List[MergedBlock]]):
+def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=10):
     text_blocks = []
     prev_type = None
     prev_line = None
@@ -171,8 +171,9 @@ def merge_lines(blocks: List[List[MergedBlock]]):
                 line_height = line.bbox[3] - line.bbox[1]
                 prev_line_height = prev_line.bbox[3] - prev_line.bbox[1] if prev_line else 0
                 prev_line_x = prev_line.bbox[0] if prev_line else 0
+                vertical_dist = min(abs(line.bbox[1] - prev_line.bbox[3]), abs(line.bbox[3] - prev_line.bbox[1])) if prev_line else 0
                 prev_line = line
-                is_continuation = line_height == prev_line_height and line.bbox[0] == prev_line_x
+                is_continuation = line_height == prev_line_height and line.bbox[0] == prev_line_x and vertical_dist < max_block_gap
                 if block_text:
                     block_text = line_separator(block_text, line.text, block_type, is_continuation)
                 else:
