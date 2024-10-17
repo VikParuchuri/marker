@@ -120,3 +120,4 @@ def infer_heading_levels(pages: List[Page], height_tol=.99):
 
             if block.heading_level is None:
                 block.heading_level = min(len(heading_ranges), settings.HEADING_DEFAULT_LEVEL)
+

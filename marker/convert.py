@@ -1,4 +1,7 @@
 import warnings
+
+from marker.cleaners.toc import compute_toc
+
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
 import os
@@ -72,7 +75,7 @@ def convert_single_pdf(
         start_page=start_page
     )
     out_meta.update({
-        "toc": toc,
+        "pdf_toc": toc,
         "pages": len(pages),
     })
 
@@ -148,6 +151,9 @@ def convert_single_pdf(
     split_heading_blocks(pages)
     infer_heading_levels(pages)
     find_bold_italic(pages)
+
+    # Use headers to compute a table of contents
+    out_meta["computed_toc"] = compute_toc(pages)
 
     # Copy to avoid changing original data
     merged_lines = merge_spans(filtered)

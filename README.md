@@ -147,6 +147,36 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 marker_chunk_convert
 
 Note that the env variables above are specific to this script, and cannot be set in `local.env`.
 
+# Output format
+
+The output will be a markdown file, but there will also be a metadata json file that gives information about the conversion process.  It has these fields:
+
+```json
+{
+    "languages": null, // any languages that were passed in
+    "filetype": "pdf", // type of the file
+    "pdf_toc": [], // the table of contents from the pdf
+    "computed_toc": [], //the computed table of contents
+    "pages": 10, // page count
+    "ocr_stats": {
+        "ocr_pages": 0, // number of pages OCRed
+        "ocr_failed": 0, // number of pages where OCR failed
+        "ocr_success": 0,
+        "ocr_engine": "none"
+    },
+    "block_stats": {
+        "header_footer": 0,
+        "code": 0, // number of code blocks
+        "table": 2, // number of tables
+        "equations": {
+            "successful_ocr": 0,
+            "unsuccessful_ocr": 0,
+            "equations": 0
+        }
+    }
+}
+```
+
 # Troubleshooting
 
 There are some settings that you may find useful if things aren't working the way you expect:
