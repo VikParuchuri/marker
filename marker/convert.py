@@ -110,15 +110,15 @@ def convert_single_pdf(
     # Add block types in
     annotate_block_types(pages)
 
-    # Dump debug data if flags are set
-    draw_page_debug_images(fname, pages)
-    dump_bbox_debug_data(fname, pages)
-
     # Find reading order for blocks
     # Sort blocks by reading order
     surya_order(doc, pages, order_model, batch_multiplier=batch_multiplier)
     sort_blocks_in_reading_order(pages)
     flush_cuda_memory()
+
+    # Dump debug data if flags are set
+    draw_page_debug_images(fname, pages)
+    dump_bbox_debug_data(fname, pages)
 
     # Fix code blocks
     code_block_count = identify_code_blocks(pages)

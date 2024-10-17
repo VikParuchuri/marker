@@ -66,7 +66,7 @@ class Settings(BaseSettings):
 
     # Layout model
     SURYA_LAYOUT_DPI: int = 96
-    BAD_SPAN_TYPES: List[str] = ["Page-footer", "Page-header", "Picture"] # You can add "Caption" and "Footnote" here to get rid of those elements
+    BAD_SPAN_TYPES: List[str] = ["Page-footer", "Page-header"] # You can add "Caption" and "Footnote" here to get rid of those elements
     LAYOUT_MODEL_CHECKPOINT: str = "vikp/surya_layout3"
     BBOX_INTERSECTION_THRESH: float = 0.7 # How much the layout and pdf bboxes need to overlap to be the same
     TABLE_INTERSECTION_THRESH: float = 0.7
@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     PAGE_SEPARATOR: str = "\n\n" + "-" * 48 + "\n\n"
 
     # Debug
-    DEBUG_DATA_FOLDER: str = os.path.join(BASE_DIR, "debug")
+    DEBUG_DATA_FOLDER: str = os.path.join(BASE_DIR, "debug_data")
     DEBUG: bool = False
     FONT_DIR: str = os.path.join(BASE_DIR, "static", "fonts")
     DEBUG_RENDER_FONT: str = os.path.join(FONT_DIR, "GoNotoCurrent-Regular.ttf")
