@@ -16,7 +16,7 @@ Marker is a pipeline of deep learning models:
 
 - Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya), tesseract)
 - Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
-- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify)
+- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify))
 - Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor_t5))
 
 It only uses models where necessary, which improves speed and accuracy.
