@@ -115,11 +115,12 @@ def infer_heading_levels(pages: List[Page], height_tol=.99):
                 continue
 
             block_heights = [l.height for l in block.lines] # Account for rotation
-            avg_height = sum(block_heights) / len(block_heights)
-            for idx, (min_height, max_height) in enumerate(heading_ranges):
-                if avg_height >= min_height * height_tol:
-                    block.heading_level = idx + 1
-                    break
+            if len(block_heights) > 0:
+                avg_height = sum(block_heights) / len(block_heights)
+                for idx, (min_height, max_height) in enumerate(heading_ranges):
+                    if avg_height >= min_height * height_tol:
+                        block.heading_level = idx + 1
+                        break
 
             if block.heading_level is None:
                 block.heading_level = settings.HEADING_DEFAULT_LEVEL
