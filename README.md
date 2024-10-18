@@ -147,6 +147,20 @@ METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 marker_chunk_convert
 
 Note that the env variables above are specific to this script, and cannot be set in `local.env`.
 
+
+## Use from python
+
+See the `convert_single_pdf` function for additional arguments that can be passed.
+
+```python
+from marker.convert import convert_single_pdf
+from marker.models import load_all_models
+
+fpath = "FILEPATH"
+model_lst = load_all_models()
+full_text, images, out_meta = convert_single_pdf(fpath, model_lst)
+```
+
 # Output format
 
 The output will be a markdown file, but there will also be a metadata json file that gives information about the conversion process.  It has these fields:

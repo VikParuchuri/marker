@@ -63,12 +63,18 @@ def annotate_block_types(pages: List[Page]):
                 if min_dist_idx is None or dist < min_dist:
                     min_dist = dist
                     min_dist_idx = j
+                for line in block2.lines:
+                    dist = block2.distance(line.bbox)
+                    if min_dist_idx is None or dist < min_dist:
+                        min_dist = dist
+                        min_dist_idx = j
+
             if min_dist_idx is not None:
                 block.block_type = page.blocks[min_dist_idx].block_type
 
         for i, block in enumerate(page.blocks):
             if block.block_type is None:
-                block.block_type = "text"
+                block.block_type = "Text"
 
         # Merge blocks together, preserving pdf order
         curr_layout_idx = None
