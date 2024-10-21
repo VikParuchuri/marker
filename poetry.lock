@@ -1935,13 +1935,13 @@ dill = ">=0.3.8"
 
 [[package]]
 name = "narwhals"
-version = "1.9.4"
+version = "1.10.0"
 description = "Extremely lightweight compatibility layer between dataframe libraries"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "narwhals-1.9.4-py3-none-any.whl", hash = "sha256:cdd16f73268a3f0d3327aa9e4c6ab25a0b277629d6710bef58e86f40e57e5cc9"},
-    {file = "narwhals-1.9.4.tar.gz", hash = "sha256:5de1f2d7bfbe555573d945fe1d760469a05784f3e69b7bc1b5b1303aae7946a1"},
+    {file = "narwhals-1.10.0-py3-none-any.whl", hash = "sha256:c83a378960651c391e5f3d68af3a821eda74c9713073518fe0c39aefc5ad8f8e"},
+    {file = "narwhals-1.10.0.tar.gz", hash = "sha256:a380e64110c3169c4b0b592c5b64ae6dc4cce76e9d3c56edc608a8ae5994cfc1"},
 ]
 
 [package.extras]
@@ -2045,13 +2045,13 @@ files = [
 
 [[package]]
 name = "networkx"
-version = "3.4.1"
+version = "3.4.2"
 description = "Python package for creating and manipulating graphs and networks"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "networkx-3.4.1-py3-none-any.whl", hash = "sha256:e30a87b48c9a6a7cc220e732bffefaee585bdb166d13377734446ce1a0620eed"},
-    {file = "networkx-3.4.1.tar.gz", hash = "sha256:f9df45e85b78f5bd010993e897b4f1fdb242c11e015b101bd951e5c0e29982d8"},
+    {file = "networkx-3.4.2-py3-none-any.whl", hash = "sha256:df5d4365b724cf81b8c6a7312509d0c22386097011ad1abe274afd5e9d3bbc5f"},
+    {file = "networkx-3.4.2.tar.gz", hash = "sha256:307c3669428c5362aab27c8a1260aa8f47c4e91d3891f48be0141738d8d053e1"},
 ]
 
 [package.extras]
@@ -4217,13 +4217,13 @@ dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
 
 [[package]]
 name = "tabled-pdf"
-version = "0.1.1"
+version = "0.1.2"
 description = "Detect and recognize tables in PDFs and images."
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "tabled_pdf-0.1.1-py3-none-any.whl", hash = "sha256:ec40cef5d5348127ccfbbf519ec83a8f54511986944cbf391521af316904789b"},
-    {file = "tabled_pdf-0.1.1.tar.gz", hash = "sha256:1db0518881473fe33f402c59555d3d460ceed86a92b5fe0ecb07841f82760c5c"},
+    {file = "tabled_pdf-0.1.2-py3-none-any.whl", hash = "sha256:21b39b097f6055884b4f1f21f66daf75d7f27588dbc06875ad7b5b7eccb60a05"},
+    {file = "tabled_pdf-0.1.2.tar.gz", hash = "sha256:d443eca41cd126f311527507cfc5a7a45c9a69efce2ec61beb91f9caeb44de39"},
 ]
 
 [package.dependencies]
@@ -5076,4 +5076,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b5016a59dd59840e90f8e59b8d019868648d447905122c690c37dbda8369d726"
+content-hash = "5dba5f1eb047fda1b8efc029069486ccec132e44a88a3aa8533b0dd5e7b06186"

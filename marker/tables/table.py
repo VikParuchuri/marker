@@ -12,8 +12,18 @@ from marker.schema.bbox import rescale_bbox
 from marker.schema.block import Line, Span, Block
 from marker.schema.page import Page
 from typing import List
+from marker.ocr.recognition import get_batch_size as get_ocr_batch_size
+from marker.ocr.detection import get_batch_size as get_detector_batch_size
 
 from marker.settings import settings
+
+
+def get_batch_size():
+    if settings.TABLE_REC_BATCH_SIZE is not None:
+        return settings.TABLE_REC_BATCH_SIZE
+    elif settings.TORCH_DEVICE_MODEL == "cuda":
+        return 6
+    return 6
 
 
 def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
@@ -83,11 +93,11 @@ def format_tables(pages: List[Page], doc: PdfDocument, fname: str, detection_mod
     # Don't look at table cell detection tqdm output
     tqdm.disable = True
     table_imgs, table_boxes, table_counts, table_text_lines, img_sizes = get_table_boxes(pages, doc, fname)
-    cells, needs_ocr = get_cells(table_imgs, table_boxes, img_sizes, table_text_lines, det_models, detect_boxes=settings.OCR_ALL_PAGES)
+    cells, needs_ocr = get_cells(table_imgs, table_boxes, img_sizes, table_text_lines, det_models, detect_boxes=settings.OCR_ALL_PAGES, detector_batch_size=get_detector_batch_size())
     tqdm.disable = False
 
     # This will redo OCR if OCR is forced, since we need to redetect bounding boxes, etc.
-    table_rec = recognize_tables(table_imgs, cells, needs_ocr, rec_models)
+    table_rec = recognize_tables(table_imgs, cells, needs_ocr, rec_models, table_rec_batch_size=get_batch_size(), ocr_batch_size=get_ocr_batch_size())
     cells = [assign_rows_columns(tr, im_size) for tr, im_size in zip(table_rec, img_sizes)]
     table_md = [formatter("markdown", cell)[0] for cell in cells]
 

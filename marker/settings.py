@@ -79,6 +79,7 @@ class Settings(BaseSettings):
 
     # Table models
     SURYA_TABLE_DPI: int = 192
+    TABLE_REC_BATCH_SIZE: Optional[int] = None
 
     # Headings
     HEADING_LEVEL_COUNT: int = 4
