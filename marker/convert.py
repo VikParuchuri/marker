@@ -1,4 +1,7 @@
 import warnings
+
+from marker.pdf.images import render_image
+
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
 import os
@@ -82,12 +85,16 @@ def convert_single_pdf(
         for page_idx in range(start_page):
             doc.del_page(0)
 
+    max_len = min(len(pages), len(doc))
+    lowres_images = [render_image(doc[pnum], dpi=settings.SURYA_DETECTOR_DPI) for pnum in range(max_len)]
+
     # Unpack models from list
     texify_model, layout_model, order_model, detection_model, ocr_model, table_rec_model = model_lst
 
-    # Identify text lines on pages
-    surya_detection(doc, pages, detection_model, batch_multiplier=batch_multiplier)
-    flush_cuda_memory()
+    # Identify text lines, layout, reading order
+    surya_detection(lowres_images, pages, detection_model, batch_multiplier=batch_multiplier)
+    surya_layout(lowres_images, pages, layout_model, batch_multiplier=batch_multiplier)
+    surya_order(lowres_images, pages, order_model, batch_multiplier=batch_multiplier)
 
     # OCR pages as needed
     pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier, ocr_all_pages=ocr_all_pages)
@@ -98,21 +105,13 @@ def convert_single_pdf(
         print(f"Could not extract any text blocks for {fname}")
         return "", {}, out_meta
 
-    surya_layout(doc, pages, layout_model, batch_multiplier=batch_multiplier)
-    flush_cuda_memory()
-
     # Find headers and footers
     bad_span_ids = filter_header_footer(pages)
     out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
-    # Add block types in
+    # Add block types from layout and sort from reading order
     annotate_block_types(pages)
-
-    # Find reading order for blocks
-    # Sort blocks by reading order
-    surya_order(doc, pages, order_model, batch_multiplier=batch_multiplier)
     sort_blocks_in_reading_order(pages)
-    flush_cuda_memory()
 
     # Dump debug data if flags are set
     draw_page_debug_images(fname, pages)
