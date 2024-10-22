@@ -160,7 +160,7 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
                 text_blocks.append(
                     FullyMergedBlock(
                         text=block_surround(block_text, prev_type, prev_heading_level),
-                        block_type=prev_type,
+                        block_type=prev_type if prev_type else settings.DEFAULT_BLOCK_TYPE,
                         page_end=False
                     )
                 )
@@ -186,7 +186,7 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
             text_blocks.append(
                 FullyMergedBlock(
                     text=block_surround(block_text, prev_type, prev_heading_level),
-                    block_type=prev_type,
+                    block_type=prev_type if prev_type else settings.DEFAULT_BLOCK_TYPE,
                     page_end=True
                 )
             )
@@ -197,7 +197,7 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
     text_blocks.append(
         FullyMergedBlock(
             text=block_surround(block_text, prev_type, prev_heading_level),
-            block_type=block_type,
+            block_type=block_type if block_type else settings.DEFAULT_BLOCK_TYPE,
             page_end=False
         )
     )
