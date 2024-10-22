@@ -2369,9 +2369,9 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.5", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
     {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\" and python_version < \"3.11\""},
     {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\" and python_version < \"3.11\""},
-    {version = ">=1.23.5", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
 ]
 
 [[package]]
@@ -2450,8 +2450,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
-    {version = ">=1.22.4", markers = "python_version < \"3.11\""},
     {version = ">=1.23.2", markers = "python_version == \"3.11\""},
+    {version = ">=1.22.4", markers = "python_version < \"3.11\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -4175,13 +4175,13 @@ snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[
 
 [[package]]
 name = "surya-ocr"
-version = "0.6.7"
+version = "0.6.8"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "surya_ocr-0.6.7-py3-none-any.whl", hash = "sha256:cbb241dc50500d7c71d71c691749deb7941a204de0e8c5c48b00b83ee207d68b"},
-    {file = "surya_ocr-0.6.7.tar.gz", hash = "sha256:d901957cfaa5b10d8ee5db5b46b97f948e9ad7040c77a891f26e11122b6591a8"},
+    {file = "surya_ocr-0.6.8-py3-none-any.whl", hash = "sha256:f20cff626a05006af7b67a47d36a5ba94f544af5345ca7be9bce9e4703ac06fd"},
+    {file = "surya_ocr-0.6.8.tar.gz", hash = "sha256:4e3969a55b3b6b3c21ddb673c376944b5ef41313da18929b9afdc557e0eb6380"},
 ]
 
 [package.dependencies]
@@ -5076,4 +5076,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3e6592adc6a7124049ccb4e1bacbd152fa796556446c1cb826f5c7ab3af4f710"
+content-hash = "77fb61be08da44124fff5e9277e33a0f1f8c14615fb0e929a64c2e045b152563"
