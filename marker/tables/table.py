@@ -36,12 +36,6 @@ def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
         pnum = page.pnum
         # The bbox for the entire table
         bbox = [b.bbox for b in page.layout.bboxes if b.label == "Table"]
-
-        if len(bbox) == 0:
-            table_counts.append(0)
-            img_sizes.append(None)
-            continue
-
         highres_img = render_image(doc[pnum], dpi=settings.SURYA_TABLE_DPI)
 
         page_table_imgs = []
@@ -49,6 +43,12 @@ def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
 
         # Merge tables that are next to each other
         bbox = merge_tables(bbox)
+        bbox = list(filter(lambda b: b[3] - b[1] > 10 and b[2] - b[0] > 10, bbox))
+
+        if len(bbox) == 0:
+            table_counts.append(0)
+            img_sizes.append(None)
+            continue
 
         # Number of tables per page
         table_counts.append(len(bbox))

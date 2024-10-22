@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     BBOX_INTERSECTION_THRESH: float = 0.7 # How much the layout and pdf bboxes need to overlap to be the same
     TABLE_INTERSECTION_THRESH: float = 0.7
     LAYOUT_BATCH_SIZE: Optional[int] = None # Defaults to 12 for cuda, 6 otherwise
+    DEFAULT_BLOCK_TYPE: str = "Text"
 
     # Ordering model
     SURYA_ORDER_DPI: int = 96

@@ -73,7 +73,7 @@ def annotate_block_types(pages: List[Page]):
 
         for i, block in enumerate(page.blocks):
             if block.block_type is None:
-                block.block_type = "Text"
+                block.block_type = settings.DEFAULT_BLOCK_TYPE
 
         def get_layout_label(block_labels: List[str]):
             counter = Counter(block_labels)
