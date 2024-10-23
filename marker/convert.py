@@ -93,8 +93,6 @@ def convert_single_pdf(
 
     # Identify text lines, layout, reading order
     surya_detection(lowres_images, pages, detection_model, batch_multiplier=batch_multiplier)
-    surya_layout(lowres_images, pages, layout_model, batch_multiplier=batch_multiplier)
-    surya_order(lowres_images, pages, order_model, batch_multiplier=batch_multiplier)
 
     # OCR pages as needed
     pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier, ocr_all_pages=ocr_all_pages)
@@ -105,12 +103,17 @@ def convert_single_pdf(
         print(f"Could not extract any text blocks for {fname}")
         return "", {}, out_meta
 
+    surya_layout(lowres_images, pages, layout_model, batch_multiplier=batch_multiplier)
+
     # Find headers and footers
     bad_span_ids = filter_header_footer(pages)
     out_meta["block_stats"] = {"header_footer": len(bad_span_ids)}
 
-    # Add block types from layout and sort from reading order
+    # Add block types from layout
     annotate_block_types(pages)
+
+    # Sort from reading order
+    surya_order(lowres_images, pages, order_model, batch_multiplier=batch_multiplier)
     sort_blocks_in_reading_order(pages)
 
     # Dump debug data if flags are set
