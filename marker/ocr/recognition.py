@@ -79,10 +79,18 @@ def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[P
     polygons = deepcopy([[b.polygon for b in bboxes] for bboxes in detection_results])
 
     # Scale polygons to get correct image slices
-    for poly in polygons:
-        for p in poly:
+    for j, poly in enumerate(polygons):
+        skip_idxs = []
+        for z, p in enumerate(poly):
             for i in range(len(p)):
                 p[i] = [int(p[i][0] * box_scale), int(p[i][1] * box_scale)]
+            x_coords = [p[i][0] for i in range(len(p))]
+            y_coords = [p[i][1] for i in range(len(p))]
+            bbox = [min(x_coords), min(y_coords), max(x_coords), max(y_coords)]
+            if (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) == 0:
+                skip_idxs.append(z)
+        if len(skip_idxs) > 0:
+            polygons[j] = [p for i, p in enumerate(poly) if i not in skip_idxs]
 
     results = run_recognition(images, surya_langs, rec_model, processor, polygons=polygons, batch_size=int(get_batch_size() * batch_multiplier))
 
