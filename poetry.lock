@@ -4175,13 +4175,13 @@ snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[
 
 [[package]]
 name = "surya-ocr"
-version = "0.6.8"
+version = "0.6.9"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "surya_ocr-0.6.8-py3-none-any.whl", hash = "sha256:f20cff626a05006af7b67a47d36a5ba94f544af5345ca7be9bce9e4703ac06fd"},
-    {file = "surya_ocr-0.6.8.tar.gz", hash = "sha256:4e3969a55b3b6b3c21ddb673c376944b5ef41313da18929b9afdc557e0eb6380"},
+    {file = "surya_ocr-0.6.9-py3-none-any.whl", hash = "sha256:e45f862eaf26ca05e97295bf8af762d17273ebb8a2893544bb75786ca9ceb6aa"},
+    {file = "surya_ocr-0.6.9.tar.gz", hash = "sha256:f87bf532a46c16f04c173bcda41bfdf3b546b83d6a72539452ed0a71d31e8063"},
 ]
 
 [package.dependencies]
@@ -4217,13 +4217,13 @@ dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
 
 [[package]]
 name = "tabled-pdf"
-version = "0.1.2"
+version = "0.1.3"
 description = "Detect and recognize tables in PDFs and images."
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "tabled_pdf-0.1.2-py3-none-any.whl", hash = "sha256:21b39b097f6055884b4f1f21f66daf75d7f27588dbc06875ad7b5b7eccb60a05"},
-    {file = "tabled_pdf-0.1.2.tar.gz", hash = "sha256:d443eca41cd126f311527507cfc5a7a45c9a69efce2ec61beb91f9caeb44de39"},
+    {file = "tabled_pdf-0.1.3-py3-none-any.whl", hash = "sha256:17abdde596133b97d0bca1380c6376c8095f53cb7da2b5e87a4048d8cdc4f6cf"},
+    {file = "tabled_pdf-0.1.3.tar.gz", hash = "sha256:e5ee43791af85854a3d7a551935fb31acce3b1a5dfd028d16b534f7961bd3bde"},
 ]
 
 [package.dependencies]
@@ -4233,7 +4233,7 @@ pydantic-settings = ">=2.5.2,<3.0.0"
 pypdfium2 = ">=4.30.0,<5.0.0"
 python-dotenv = ">=1.0.1,<2.0.0"
 scikit-learn = ">=1.5.2,<2.0.0"
-surya-ocr = ">=0.6.6,<0.7.0"
+surya-ocr = ">=0.6.9,<0.7.0"
 tabulate = ">=0.9.0,<0.10.0"
 
 [[package]]
@@ -5076,4 +5076,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "77fb61be08da44124fff5e9277e33a0f1f8c14615fb0e929a64c2e045b152563"
+content-hash = "f0ebcf266a9dc54bc28089581ad49f14709140c205e1892cde3868976d127a73"
