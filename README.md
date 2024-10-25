@@ -212,7 +212,7 @@ Set `DEBUG=true` to save data to the `debug` subfolder in the marker root direct
 These settings can improve/change output quality:
 
 - `OCR_ALL_PAGES` will force OCR across the document.  Many PDFs have bad text embedded due to older OCR engines being used.
-- `PAGINATE_OUTPUT` will put a horizontal rule between pages.  Default: False.
+- `PAGINATE_OUTPUT` will put a horizontal rule between pages.  Default: False.  The horizontal rule will be `\n\n`, then `{PAGE_NUMBER}`, then 48 single dashes `-`, then `\n\n`.  The separator can be configured via the `PAGE_SEPARATOR` setting.
 - `EXTRACT_IMAGES` will extract images and save separately.  Default: True.
 - `BAD_SPAN_TYPES` specifies layout blocks to remove from the markdown output.
 

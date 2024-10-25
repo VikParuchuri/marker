@@ -73,6 +73,7 @@ def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
         fname,
         doc_idxs,
         [hr for i, hr in enumerate(img_sizes) if i in table_idxs],
+        # Add flatten pdf here
     )
     text_lines = []
     out_img_sizes = []

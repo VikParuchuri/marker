@@ -64,11 +64,19 @@ def merge_spans(pages: List[Page]) -> List[List[MergedBlock]]:
             if len(block_lines) > 0:
                 page_blocks.append(MergedBlock(
                     lines=block_lines,
-                    pnum=block.pnum,
+                    pnum=page.pnum,
                     bbox=block.bbox,
                     block_type=block.block_type,
                     heading_level=block.heading_level
                 ))
+        if len(page_blocks) == 0:
+            page_blocks.append(MergedBlock(
+                lines=[],
+                pnum=page.pnum,
+                bbox=page.bbox,
+                block_type="Text",
+                heading_level=None
+            ))
         merged_blocks.append(page_blocks)
 
     return merged_blocks
@@ -139,9 +147,6 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
     if prev_block.block_type == "Text":
         sep = "\n\n"
 
-    if prev_block.page_end:
-        sep = settings.PAGE_SEPARATOR
-
     return sep + block.text
 
 
@@ -152,8 +157,30 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
     block_text = ""
     block_type = ""
     prev_heading_level = None
+    pnum = None
 
     for idx, page in enumerate(blocks):
+        # Insert pagination at every page boundary
+        if settings.PAGINATE_OUTPUT:
+            if block_text:
+                text_blocks.append(
+                    FullyMergedBlock(
+                        text=block_surround(block_text, prev_type, prev_heading_level),
+                        block_type=prev_type if prev_type else settings.DEFAULT_BLOCK_TYPE,
+                        page_start=False,
+                        pnum=pnum
+                    )
+                )
+                block_text = ""
+            text_blocks.append(
+                FullyMergedBlock(
+                    text="",
+                    block_type="Text",
+                    page_start=True,
+                    pnum=page[0].pnum
+                )
+            )
+
         for block in page:
             block_type = block.block_type
             if (block_type != prev_type and prev_type) or (block.heading_level != prev_heading_level and prev_heading_level):
@@ -161,13 +188,15 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
                     FullyMergedBlock(
                         text=block_surround(block_text, prev_type, prev_heading_level),
                         block_type=prev_type if prev_type else settings.DEFAULT_BLOCK_TYPE,
-                        page_end=False
+                        page_start=False,
+                        pnum=block.pnum
                     )
                 )
                 block_text = ""
 
             prev_type = block_type
             prev_heading_level = block.heading_level
+            pnum = block.pnum
             # Join lines in the block together properly
             for i, line in enumerate(block.lines):
                 line_height = line.bbox[3] - line.bbox[1]
@@ -181,28 +210,17 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
                 else:
                     block_text = line.text
 
-        # Force blocks to end at page boundaries
-        if settings.PAGINATE_OUTPUT:
-            text_blocks.append(
-                FullyMergedBlock(
-                    text=block_surround(block_text, prev_type, prev_heading_level),
-                    block_type=prev_type if prev_type else settings.DEFAULT_BLOCK_TYPE,
-                    page_end=True
-                )
-            )
-            block_text = ""
-
-
     # Append the final block
     text_blocks.append(
         FullyMergedBlock(
             text=block_surround(block_text, prev_type, prev_heading_level),
             block_type=block_type if block_type else settings.DEFAULT_BLOCK_TYPE,
-            page_end=False
+            page_start=False,
+            pnum=pnum
         )
     )
 
-    text_blocks = [block for block in text_blocks if block.text.strip()]
+    text_blocks = [block for block in text_blocks if (block.text.strip() or block.page_start)]
     return text_blocks
 
 
@@ -210,7 +228,9 @@ def get_full_text(text_blocks):
     full_text = ""
     prev_block = None
     for block in text_blocks:
-        if prev_block:
+        if block.page_start:
+            full_text += "\n\n{" + str(block.pnum) + "}" + settings.PAGE_SEPARATOR
+        elif prev_block:
             full_text += block_separator(prev_block, block)
         else:
             full_text += block.text
