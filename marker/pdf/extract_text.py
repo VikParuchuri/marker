@@ -92,7 +92,7 @@ def get_text_blocks(doc, fname, max_pages: Optional[int] = None, start_page: Opt
 
     page_range = range(start_page, start_page + max_pages)
 
-    char_blocks = dictionary_output(fname, page_range=page_range, keep_chars=False, workers=settings.PDFTEXT_CPU_WORKERS)
+    char_blocks = dictionary_output(fname, page_range=page_range, keep_chars=False, workers=settings.PDFTEXT_CPU_WORKERS, flatten_pdf=settings.FLATTEN_PDF)
     marker_blocks = [pdftext_format_to_blocks(page, pnum) for pnum, page in enumerate(char_blocks)]
 
     return marker_blocks, toc
