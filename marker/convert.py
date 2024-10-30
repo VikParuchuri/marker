@@ -96,7 +96,6 @@ def convert_single_pdf(
 
     # OCR pages as needed
     pages, ocr_stats = run_ocr(doc, pages, langs, ocr_model, batch_multiplier=batch_multiplier, ocr_all_pages=ocr_all_pages)
-    flush_cuda_memory()
 
     out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
