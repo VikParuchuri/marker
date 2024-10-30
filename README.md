@@ -50,7 +50,7 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 
 - Supports PDFs, word documents, and powerpoints 
 - 1/4th the price of leading cloud-based competitors
-- Leverages [Modal](https://modal.com/) for high reliability without latency spikes
+- High uptime (99.99%), quality, and speed (.25s/page for 50 page doc)
 
 # Community
 
@@ -190,6 +190,25 @@ The output will be a markdown file, but there will also be a metadata json file 
     }
 }
 ```
+
+## API server
+
+There is a very simple API server you can run like this:
+
+```shell
+pip install -U uvicorn fastapi python-multipart
+marker_server --port 8001
+```
+
+This will start a fastapi server that you can access at `localhost:8001`.  You can go to `localhost:8001/docs` to see the endpoint options.
+
+Note that this is not a very robust API, and is only intended for small-scale use.  If you want to use this server, but want a more robust conversion option, you can run against the hosted [Datalab API](https://www.datalab.to/plans).  You'll need to register and get an API key, then run:
+
+```shell
+marker_server --port 8001 --api_key API_KEY
+```
+
+Note: This is not the recommended way to use the Datalab API - it's only provided as a convenience for people wrapping the marker repo.  The recommended way is to make a post request to the endpoint directly from your code vs proxying through this server.
 
 # Troubleshooting
 
