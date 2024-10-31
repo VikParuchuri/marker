@@ -1,6 +1,7 @@
 import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["IN_STREAMLIT"] = "true"
+os.environ["PDFTEXT_CPU_WORKERS"] = "1"
 
 import base64
 import io
