@@ -4353,13 +4353,13 @@ typing = ["mypy (>=1.6,<2.0)", "traitlets (>=5.11.1)"]
 
 [[package]]
 name = "texify"
-version = "0.2.0"
+version = "0.2.1"
 description = "OCR for latex images"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "texify-0.2.0-py3-none-any.whl", hash = "sha256:4cf58607438bc321c7a1f80a43a7d4924308f49d3850467a4cd665f4fac050c8"},
-    {file = "texify-0.2.0.tar.gz", hash = "sha256:4fed5946e4b334a4f59d948f7d8338dc31d609fefcab3e7661ee3195a9be4f20"},
+    {file = "texify-0.2.1-py3-none-any.whl", hash = "sha256:861c90ea6167fb6c2b334d5fcf0116dd9e1585af359463dec83115891c09dcfa"},
+    {file = "texify-0.2.1.tar.gz", hash = "sha256:bab30f8445aa60e36de122fb86deb77b3f25348a885d4d5f3c67d6b6f5bb2e81"},
 ]
 
 [package.dependencies]
@@ -5160,4 +5160,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "9c1772651d913050a693eccdbc2ccdee18db4e5ce30ff995e046624880eb5c1d"
+content-hash = "449c2fdf87e0cb345dc7cacd247c44c5c6d88eaa19e3408be8755179a4ab36aa"
