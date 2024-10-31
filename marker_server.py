@@ -4,16 +4,17 @@ import os
 
 import requests
 import uvicorn
+from pydantic import BaseModel, Field
 from starlette.responses import HTMLResponse
 
 os.environ["PDFTEXT_CPU_WORKERS"] = "1"
 
 import base64
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, Annotated
 import io
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Body
 from marker.convert import convert_single_pdf
 from marker.models import load_all_models
 
@@ -39,46 +40,67 @@ async def root():
 <h1>Marker API</h1>
 <ul>
     <li><a href="/docs">API Documentation</a></li>
-    <li><a href="/local">Run marker locally (post request only)</a></li>
-    <li><a href="/remote">Run marker remotely (post request only)</a></li>
+    <li><a href="/marker">Run marker (post request only)</a></li>
 </ul>
 """
     )
 
 
-@app.post("/remote")
-async def convert_pdf_remote(
-    filepath: str = Form(
-        ...,
-        description="The path to the PDF file, word document, or powerpoint to convert."
-    ),
-    max_pages: Optional[int] = Form(
-        None,
-        description="The maximum number of pages in the document to convert."
-    ),
-    langs: Optional[str] = Form(
-        None,
-        description="The optional languages to use if OCR is needed, comma separated.  Must be either the names or codes from https://github.com/VikParuchuri/surya/blob/master/surya/languages.py."
-    ),
-    force_ocr: bool = Form(
-        False,
-        description="Force OCR on all pages of the PDF.  Defaults to False.  This can lead to worse results if you have good text in your PDFs (which is true in most cases)."
-    ),
-    paginate: bool = Form(False,
-                          description="Whether to paginate the output.  Defaults to False.  If set to True, each page of the output will be separated by a horizontal rule that contains the page number (2 newlines, {PAGE_NUMBER}, 48 - characters, 2 newlines)."),
-    extract_images: bool = Form(True, description="Whether to extract images from the PDF.  Defaults to True.  If set to False, no images will be extracted from the PDF."),
+class CommonParams(BaseModel):
+    filepath: Annotated[
+        str,
+        Field(description="The path to the PDF file to convert.")
+    ]
+    max_pages: Annotated[
+        Optional[int],
+        Field(description="The maximum number of pages in the document to convert.", example=None)
+    ] = None
+    langs: Annotated[
+        Optional[str],
+        Field(description="The optional languages to use if OCR is needed, comma separated.  Must be either the names or codes from from https://github.com/VikParuchuri/surya/blob/master/surya/languages.py.", example=None)
+    ] = None
+    force_ocr: Annotated[
+        bool,
+        Field(description="Force OCR on all pages of the PDF.  Defaults to False.  This can lead to worse results if you have good text in your PDFs (which is true in most cases).")
+    ] = False
+    paginate: Annotated[
+        bool,
+        Field(description="Whether to paginate the output.  Defaults to False.  If set to True, each page of the output will be separated by a horizontal rule that contains the page number (2 newlines, {PAGE_NUMBER}, 48 - characters, 2 newlines).")
+    ] = False
+    extract_images: Annotated[
+        bool,
+        Field(description="Whether to extract images from the PDF.  Defaults to True.  If set to False, no images will be extracted from the PDF.")
+    ] = True
+
+
+@app.post("/marker")
+async def convert_pdf(
+    params: CommonParams
 ):
-    with open(filepath, "rb") as f:
+    if app.state.LOCAL:
+        print(f"Converting {params.filepath} locally.")
+        assert all([
+            params.extract_images is True,
+            params.paginate is False,
+        ]), "Local conversion API does not support image extraction or pagination."
+        return await convert_pdf_local(params)
+    else:
+        print(f"Converting {params.filepath} using the Datalab API.")
+        return await convert_pdf_remote(params)
+
+
+async def convert_pdf_remote(params: CommonParams):
+    with open(params.filepath, "rb") as f:
         filedata = f.read()
 
-    filename = os.path.basename(filepath)
+    filename = os.path.basename(params.filepath)
     form_data = {
         'file': (filename, filedata, 'application/pdf'),
-        'max_pages': (None, max_pages),
-        'langs': (None, langs),
-        'force_ocr': (None, force_ocr),
-        'paginate': (None, paginate),
-        'extract_images': (None, extract_images),
+        'max_pages': (None, params.max_pages),
+        'langs': (None, params.langs),
+        'force_ocr': (None, params.force_ocr),
+        'paginate': (None, params.paginate),
+        'extract_images': (None, params.extract_images),
     }
 
     headers = {"X-API-Key": app.state.API_KEY}
@@ -99,32 +121,14 @@ async def convert_pdf_remote(
     return data
 
 
-@app.post("/local")
-async def convert_pdf_local(
-    filepath: str = Form(
-        ...,
-        description="The path to the PDF file to convert."
-    ),
-    max_pages: Optional[int] = Form(
-        None,
-        description="The maximum number of pages in the PDF to convert."
-    ),
-    langs: Optional[str] = Form(
-        None,
-        description="The optional languages to use if OCR is needed, comma separated.  Must be either the names or codes from https://github.com/VikParuchuri/surya/blob/master/surya/languages.py."
-    ),
-    force_ocr: bool = Form(
-        False,
-        description="Force OCR on all pages of the PDF.  Defaults to False.  This can lead to worse results if you have good text in your PDFs (which is true in most cases)."
-    )
-):
+async def convert_pdf_local(params: CommonParams):
     try:
         full_text, images, metadata = convert_single_pdf(
-            filepath,
+            params.filepath,
             app_data["models"],
-            max_pages=max_pages,
-            langs=langs,
-            ocr_all_pages=force_ocr
+            max_pages=params.max_pages,
+            langs=params.langs,
+            ocr_all_pages=params.force_ocr
         )
     except Exception as e:
         return {

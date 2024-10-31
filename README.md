@@ -210,6 +210,20 @@ marker_server --port 8001 --api_key API_KEY
 
 Note: This is not the recommended way to use the Datalab API - it's only provided as a convenience for people wrapping the marker repo.  The recommended way is to make a post request to the endpoint directly from your code vs proxying through this server.
 
+You can send requests like this:
+
+```
+import requests
+import json
+
+post_data = {
+    'filepath': 'FILEPATH',
+    # Add other params here
+}
+
+requests.post("http://localhost:8001/marker", data=json.dumps(post_data)).json()
+```
+
 # Troubleshooting
 
 There are some settings that you may find useful if things aren't working the way you expect:
