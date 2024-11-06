@@ -125,7 +125,7 @@ def convert_single_pdf(
     indent_blocks(pages)
 
     # Fix table blocks
-    table_count = format_tables(pages, doc, fname, detection_model, table_rec_model, ocr_model)
+    table_count = format_tables(pages, doc, fname, detection_model, table_rec_model, ocr_model, batch_multiplier=batch_multiplier)
     out_meta["block_stats"]["table"] = table_count
 
     for page in pages:
