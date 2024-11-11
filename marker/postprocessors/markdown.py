@@ -108,39 +108,44 @@ def block_surround(text, block_type, heading_level):
     return text
 
 
-def line_separator(line1, line2, block_type, is_continuation=False):
-    # Should cover latin-derived languages and russian
-    lowercase_letters = r'\p{Lo}|\p{Ll}|\d'
-    hyphens = r'-—¬'
-    # Remove hyphen in current line if next line and current line appear to be joined
-    hyphen_pattern = regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL)
-    if line1 and hyphen_pattern.match(line1) and regex.match(rf"^\s?[{lowercase_letters}]", line2):
-        # Split on — or - from the right
-        line1 = regex.split(rf"[{hyphens}]\s?$", line1)[0]
-        return line1.rstrip() + line2.lstrip()
+def line_separator(block_text: str, line: MergedLine, block_type: str, new_column: bool, new_page: bool, new_block: bool) -> str:
+    line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
+    has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
+    has_numbered_item = regex.match(r"^\d+:\s+", line.text)
 
-    all_letters = r'\p{L}|\d'
-    sentence_continuations = r',;\(\—\"\'\*'
-    sentence_ends = r'。ๆ\.?!'
-    line_end_pattern = regex.compile(rf'.*[{lowercase_letters}][{sentence_continuations}]?\s?$', regex.DOTALL)
-    line_start_pattern = regex.compile(rf'^\s?[{all_letters}]', regex.DOTALL)
-    sentence_end_pattern = regex.compile(rf'.*[{sentence_ends}]\s?$', regex.DOTALL)
-
-    text_blocks = ["Text", "List-item", "Footnote", "Caption", "Figure"]
-    if block_type in ["Title", "Section-header"]:
-        return line1.rstrip() + " " + line2.lstrip()
-    elif block_type == "Formula":
-        return line1 + "\n" + line2
-    elif line_end_pattern.match(line1) and line_start_pattern.match(line2) and block_type in text_blocks:
-        return line1.rstrip() + " " + line2.lstrip()
-    elif is_continuation:
-        return line1.rstrip() + " " + line2.lstrip()
-    elif block_type in text_blocks and sentence_end_pattern.match(line1):
-        return line1 + "\n\n" + line2
-    elif block_type == "Table":
-        return line1 + "\n\n" + line2
+    if block_type in ["Text", "List-item", "Footnote", "Caption", "Figure"]:
+        if has_reference or has_numbered_item:
+            return block_text.lstrip() + "\n\n" + line.text.lstrip()
+        elif line_starts_lowercase:
+            if regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL).match(block_text):
+                # If block_text ends with a lowercase letter followed by a hyphen, remove the hyphen and join
+                return regex.split(rf"[{hyphens}]\s?$", block_text)[0].rstrip() + line.text.lstrip()
+            elif regex.compile(rf'.*[{hyphens}]\s?$', regex.DOTALL).match(block_text):
+                # If block_text ends with a hyphen, simply join without adding space
+                return block_text.rstrip() + line.text.lstrip()
+            elif new_column or new_page:
+                # If new column started or a new page, add a space before joining
+                return block_text + " " + line.text.lstrip()
+            else:
+                # Default: Join with a space
+                return block_text + " " + line.text.lstrip()
+        elif new_page and not line_starts_lowercase:
+            # For new page and line does not start lowercase, add double newlines
+            return block_text + "\n\n" + line.text.lstrip()
+        elif new_block:
+            # For new block, add double newlines
+            return block_text + "\n\n" + line.text.lstrip()
+        else:
+            # General case for joining lines with a space
+            return block_text + " " + line.text.lstrip()
+    elif block_type in ["Title", "Section-header"]:
+        return block_text + " " + line.text.lstrip()
+    elif block_type in ["Formula"]:
+        return block_text + "\n" + line.text.lstrip()
+    elif block_type in ["Code", "Table"]:
+        return block_text + "\n\n" + line.text.lstrip()
     else:
-        return line1 + "\n" + line2
+        return block_text + " " + line.text.lstrip()
 
 
 def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
@@ -153,7 +158,7 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
 lowercase_letters = r'\p{Lo}|\p{Ll}|\d'
 hyphens = r'-—¬'
 
-def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
+def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block_x_indent=10, min_newline_y_offset=11):
     text_blocks = []
     prev_type = None
     prev_line = None
@@ -206,60 +211,21 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
 
                 line_x_start, line_y_start, line_x_end, line_y_end = line.bbox
                 prev_line_x_start, prev_line_y_start, prev_line_x_end, prev_line_y_end = prev_line.bbox
-
-                min_new_block_x_indent = 10
-                min_newline_y_offset = 11
-
                 x_indent = line_x_start - prev_line_x_start
-                y_indent = prev_line_y_start - line_y_start
+                y_indent = line_y_start - prev_line_y_start
 
-                new_column_started = line_x_start > prev_line_x_end
+                new_column = line_x_start > prev_line_x_end
                 new_block = first_line_in_block or \
-                    ( # we consider it a new block when there's an x indent or x offset from the previous line and it's a new line (y offset)
+                    ( # we consider it a new block when there's an x indent from the previous line and it's a new line (y indent)
                         x_indent > min_new_block_x_indent \
-                        and abs(y_indent) > min_newline_y_offset
+                        and y_indent > min_newline_y_offset
                     )
                 new_page = first_line_in_block and first_block_in_page
+
                 if block_text:
-                    if block_type in ["Text", "List-item", "Footnote", "Caption", "Figure"]:
-                        line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
-                        has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
-                        has_numbered_item = regex.match(r"^\d+:\s+", line.text)
-                        if has_reference or has_numbered_item:
-                            block_text = block_text.lstrip() + "\n\n" + line.text.lstrip()
-                        elif line_starts_lowercase:
-                            if regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL).match(block_text):
-                                # If block_text ends with a letter followed by a hyphen, remove the hyphen and join
-                                block_text = regex.split(rf"[{hyphens}]\s?$", block_text)[0].rstrip() + line.text.lstrip()
-                            elif regex.compile(rf'.*[{hyphens}]\s?$', regex.DOTALL).match(block_text):
-                                # If block_text ends with a hyphen, simply join without adding space
-                                block_text = block_text.rstrip() + line.text.lstrip()
-                            elif new_column_started or new_page:
-                                # If new column started or a new page, add a space before joining
-                                block_text = block_text + " " + line.text.lstrip()
-                            else:
-                                # Default: Join with a space
-                                block_text = block_text + " " + line.text.lstrip()
-                        elif new_page and not line_starts_lowercase:
-                            # For new page and line does not start lowercase, add double newlines
-                            block_text = block_text + "\n\n" + line.text.lstrip()
-                        elif new_block:
-                            # For new block, add double newlines
-                            block_text = block_text + "\n\n" + line.text.lstrip()
-                        else:
-                            # General case for joining lines with a space
-                            block_text = block_text + " " + line.text.lstrip()
-                    elif block_type in ["Title", "Section-header"]:
-                        block_text = block_text + " " + line.text.lstrip()
-                    elif block_type in ["Formula"]:
-                        block_text = block_text + "\n" + line.text.lstrip()
-                    elif block_type in ["Code", "Table"]:
-                        block_text = block_text + "\n\n" + line.text.lstrip()
-                    else:
-                        block_text = block_text + " " + line.text.lstrip()
+                    block_text = line_separator(block_text, line, block_type, new_column, new_page, new_block)
                 else:
                     block_text = line.text
-
                 prev_line = line
             prev_type = block_type
             prev_heading_level = block.heading_level
