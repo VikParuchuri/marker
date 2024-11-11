@@ -239,7 +239,8 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
                     if block_type in ["Text", "List-item", "Footnote", "Caption", "Figure"]:
                         line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
                         has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
-                        if has_reference:
+                        has_numbered_item = regex.match(r"^\d+:\s+", line.text)
+                        if has_reference or has_numbered_item:
                             block_text = block_text.lstrip() + "\n" + line.text.lstrip()
                         elif line_starts_lowercase:
                             if regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL).match(block_text):
