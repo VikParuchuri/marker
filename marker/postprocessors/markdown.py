@@ -210,7 +210,7 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
 
                 min_new_block_x_indent = 10
                 min_new_block_x_offset = 5
-                min_newline_y_offset = 6
+                min_newline_y_offset = 11
                 line_height_diff_tolerance = 1
                 line_width_diff_tolerance = 1
                 x_indent_tolerance = 1
@@ -235,11 +235,13 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
                         and vertical_dist < max_block_gap
                     )
                 new_page = first_line_in_block and first_block_in_page
-
                 if block_text:
                     if block_type in ["Text", "List-item", "Footnote", "Caption", "Figure"]:
                         line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
-                        if line_starts_lowercase:
+                        has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
+                        if has_reference:
+                            block_text = block_text.lstrip() + "\n" + line.text.lstrip()
+                        elif line_starts_lowercase:
                             if regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL).match(block_text):
                                 # If block_text ends with a letter followed by a hyphen, remove the hyphen and join
                                 block_text = regex.split(rf"[{hyphens}]\s?$", block_text)[0].rstrip() + line.text.lstrip()
