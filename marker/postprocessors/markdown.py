@@ -112,6 +112,8 @@ def line_separator(block_text: str, line: MergedLine, block_type: str, new_colum
     lowercase_letters = r'\p{Ll}|\d'
     hyphens = r'-—¬'
 
+    hyphen_regex = regex.compile(rf'.*[{hyphens}]\s?$', regex.DOTALL)
+    hyphens_lowercase_regex = regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL)
     line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
     has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
     has_numbered_item = regex.match(r"^\d+:\s+", line.text)
@@ -119,21 +121,15 @@ def line_separator(block_text: str, line: MergedLine, block_type: str, new_colum
     if block_type in ["Text", "List-item", "Footnote", "Caption", "Figure"]:
         if has_reference or has_numbered_item:
             return block_text.lstrip() + "\n\n" + line.text.lstrip()
-        elif line_starts_lowercase:
-            if regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL).match(block_text):
-                # If block_text ends with a lowercase letter followed by a hyphen, remove the hyphen and join
+        elif hyphen_regex.match(block_text):
+            if line_starts_lowercase and hyphens_lowercase_regex.match(block_text):
                 return regex.split(rf"[{hyphens}]\s?$", block_text)[0].rstrip() + line.text.lstrip()
-            elif regex.compile(rf'.*[{hyphens}]\s?$', regex.DOTALL).match(block_text):
-                # If block_text ends with a hyphen, simply join without adding space
-                return block_text.rstrip() + line.text.lstrip()
-            else:
-                # Default: Join with a space
+            return block_text.rstrip() + line.text.lstrip()
+        elif new_page or new_column:
+            if line_starts_lowercase:
                 return block_text + " " + line.text.lstrip()
-        elif new_page and not line_starts_lowercase:
-            # For new page and line does not start lowercase, add double newlines
             return block_text + "\n\n" + line.text.lstrip()
         elif new_block:
-            # For new block, add double newlines
             return block_text + "\n\n" + line.text.lstrip()
         else:
             # General case for joining lines with a space
@@ -155,8 +151,9 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
 
     return sep + block.text
 
-def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block_x_indent=10, min_newline_y_offset=11):
+def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block_x_indent=11, min_newline_y_offset=11):
     text_blocks = []
+    prev_block = None
     prev_type = None
     prev_line = None
     block_text = ""
@@ -205,13 +202,15 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block
 
                 if prev_line is None:
                     prev_line = deepcopy(line)
+                if prev_block is None:
+                    prev_block = deepcopy(block)
 
                 line_x_start, line_y_start, line_x_end, line_y_end = line.bbox
                 prev_line_x_start, prev_line_y_start, prev_line_x_end, prev_line_y_end = prev_line.bbox
                 x_indent = line_x_start - prev_line_x_start
                 y_indent = line_y_start - prev_line_y_start
 
-                new_column = line_x_start > prev_line_x_end
+                new_column = line_x_start > prev_block.x_end
                 new_block = first_line_in_block or \
                     ( # we consider it a new block when there's an x indent from the previous line and it's a new line (y indent)
                         x_indent > min_new_block_x_indent \
@@ -224,6 +223,7 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block
                 else:
                     block_text = line.text
                 prev_line = line
+                prev_block = block
             prev_type = block_type
             prev_heading_level = block.heading_level
             pnum = block.pnum
