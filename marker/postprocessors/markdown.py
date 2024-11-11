@@ -206,33 +206,18 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
 
                 line_x_start, line_y_start, line_x_end, line_y_end = line.bbox
                 prev_line_x_start, prev_line_y_start, prev_line_x_end, prev_line_y_end = prev_line.bbox
-                vertical_dist = min(abs(line_y_start - prev_line_y_end), abs(line_y_end - prev_line_y_start))
 
                 min_new_block_x_indent = 10
-                min_new_block_x_offset = 5
                 min_newline_y_offset = 11
-                line_height_diff_tolerance = 1
-                line_width_diff_tolerance = 1
-                x_indent_tolerance = 1
 
                 x_indent = line_x_start - prev_line_x_start
-                x_offset = line_x_end - prev_line_x_end
                 y_indent = prev_line_y_start - line_y_start
-                y_offset = prev_line_y_end - line_y_end
-                line_height_diff = prev_line.height - line.height
-                line_width_diff = prev_line.width - line.width
 
                 new_column_started = line_x_start > prev_line_x_end
                 new_block = first_line_in_block or \
                     ( # we consider it a new block when there's an x indent or x offset from the previous line and it's a new line (y offset)
-                        (
-                            x_indent > min_new_block_x_indent
-                        ) \
+                        x_indent > min_new_block_x_indent \
                         and abs(y_indent) > min_newline_y_offset
-                    )
-                is_continuation = ( # We consider a line to be a continuation if it's the same line, and the vertical distance is small
-                    abs(line_height_diff) < line_height_diff_tolerance and abs(x_indent) < x_indent_tolerance \
-                        and vertical_dist < max_block_gap
                     )
                 new_page = first_line_in_block and first_block_in_page
                 if block_text:
