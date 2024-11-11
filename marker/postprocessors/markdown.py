@@ -109,6 +109,9 @@ def block_surround(text, block_type, heading_level):
 
 
 def line_separator(block_text: str, line: MergedLine, block_type: str, new_column: bool, new_page: bool, new_block: bool) -> str:
+    lowercase_letters = r'\p{Ll}|\d'
+    hyphens = r'-—¬'
+
     line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
     has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
     has_numbered_item = regex.match(r"^\d+:\s+", line.text)
@@ -123,9 +126,6 @@ def line_separator(block_text: str, line: MergedLine, block_type: str, new_colum
             elif regex.compile(rf'.*[{hyphens}]\s?$', regex.DOTALL).match(block_text):
                 # If block_text ends with a hyphen, simply join without adding space
                 return block_text.rstrip() + line.text.lstrip()
-            elif new_column or new_page:
-                # If new column started or a new page, add a space before joining
-                return block_text + " " + line.text.lstrip()
             else:
                 # Default: Join with a space
                 return block_text + " " + line.text.lstrip()
@@ -154,9 +154,6 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
         sep = "\n\n"
 
     return sep + block.text
-
-lowercase_letters = r'\p{Lo}|\p{Ll}|\d'
-hyphens = r'-—¬'
 
 def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block_x_indent=10, min_newline_y_offset=11):
     text_blocks = []
