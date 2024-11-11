@@ -108,40 +108,46 @@ def block_surround(text, block_type, heading_level):
     return text
 
 
-def line_separator(block_text: str, line: MergedLine, block_type: str, new_column: bool, new_page: bool, new_block: bool) -> str:
+def line_separator(block_text: str, prev_line: MergedLine, line: MergedLine, block_type: str, new_column: bool, new_page: bool, new_block: bool) -> str:
     lowercase_letters = r'\p{Ll}|\d'
     hyphens = r'-—¬'
 
     hyphen_regex = regex.compile(rf'.*[{hyphens}]\s?$', regex.DOTALL)
     hyphens_lowercase_regex = regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL)
     line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
+    prev_has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", prev_line.text)
     has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
     has_numbered_item = regex.match(r"^\d+:\s+", line.text)
+    
+    line_text = line.text.lstrip()
+    block_text = block_text.rstrip()
 
     if block_type in ["Text", "List-item", "Footnote", "Caption", "Figure"]:
         if has_reference or has_numbered_item:
-            return block_text.lstrip() + "\n\n" + line.text.lstrip()
+            return block_text + "\n\n" + line_text
         elif hyphen_regex.match(block_text):
             if line_starts_lowercase and hyphens_lowercase_regex.match(block_text):
-                return regex.split(rf"[{hyphens}]\s?$", block_text)[0].rstrip() + line.text.lstrip()
-            return block_text.rstrip() + line.text.lstrip()
+                return regex.split(rf"[{hyphens}]\s?$", block_text)[0].rstrip() + line_text
+            return block_text + line_text
         elif new_page or new_column:
             if line_starts_lowercase:
-                return block_text + " " + line.text.lstrip()
-            return block_text + "\n\n" + line.text.lstrip()
+                return block_text + " " + line_text
+            return block_text + "\n\n" + line_text
         elif new_block:
-            return block_text + "\n\n" + line.text.lstrip()
+            if prev_has_reference:
+                return block_text + " " + line_text
+            return block_text + "\n\n" + line_text
         else:
             # General case for joining lines with a space
-            return block_text + " " + line.text.lstrip()
+            return block_text + " " + line_text
     elif block_type in ["Title", "Section-header"]:
-        return block_text + " " + line.text.lstrip()
+        return block_text + " " + line_text
     elif block_type in ["Formula"]:
-        return block_text + "\n" + line.text.lstrip()
+        return block_text + "\n" + line_text
     elif block_type in ["Code", "Table"]:
-        return block_text + "\n\n" + line.text.lstrip()
+        return block_text + "\n\n" + line_text
     else:
-        return block_text + " " + line.text.lstrip()
+        return block_text + " " + line_text
 
 
 def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
@@ -151,7 +157,7 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
 
     return sep + block.text
 
-def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block_x_indent=11, min_newline_y_offset=11):
+def merge_lines(blocks: List[List[MergedBlock]], min_new_block_x_indent=11):
     text_blocks = []
     prev_block = None
     prev_type = None
@@ -207,19 +213,18 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15, min_new_block
 
                 line_x_start, line_y_start, line_x_end, line_y_end = line.bbox
                 prev_line_x_start, prev_line_y_start, prev_line_x_end, prev_line_y_end = prev_line.bbox
-                x_indent = line_x_start - prev_line_x_start
+                x_indent = line_x_start - prev_line_x_start 
                 y_indent = line_y_start - prev_line_y_start
+                new_line = y_indent > prev_line.height
 
                 new_column = line_x_start > prev_block.x_end
                 new_block = first_line_in_block or \
                     ( # we consider it a new block when there's an x indent from the previous line and it's a new line (y indent)
-                        x_indent > min_new_block_x_indent \
-                        and y_indent > min_newline_y_offset
+                        x_indent > min_new_block_x_indent and new_line
                     )
                 new_page = first_line_in_block and first_block_in_page
-
                 if block_text:
-                    block_text = line_separator(block_text, line, block_type, new_column, new_page, new_block)
+                    block_text = line_separator(block_text, prev_line, line, block_type, new_column, new_page, new_block)
                 else:
                     block_text = line.text
                 prev_line = line
