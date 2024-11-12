@@ -93,18 +93,18 @@ def get_table_boxes(pages: List[Page], doc: PdfDocument, fname):
     return table_imgs, table_bboxes, table_counts, text_lines, out_img_sizes
 
 
-def format_tables(pages: List[Page], doc: PdfDocument, fname: str, detection_model, table_rec_model, ocr_model):
+def format_tables(pages: List[Page], doc: PdfDocument, fname: str, detection_model, table_rec_model, ocr_model, batch_multiplier=1):
     det_models = [detection_model, detection_model.processor]
     rec_models = [table_rec_model, table_rec_model.processor, ocr_model, ocr_model.processor]
 
     # Don't look at table cell detection tqdm output
     tqdm.disable = True
     table_imgs, table_boxes, table_counts, table_text_lines, img_sizes = get_table_boxes(pages, doc, fname)
-    cells, needs_ocr = get_cells(table_imgs, table_boxes, img_sizes, table_text_lines, det_models, detect_boxes=settings.OCR_ALL_PAGES, detector_batch_size=get_detector_batch_size())
+    cells, needs_ocr = get_cells(table_imgs, table_boxes, img_sizes, table_text_lines, det_models, detect_boxes=settings.OCR_ALL_PAGES, detector_batch_size=int(get_detector_batch_size() * batch_multiplier))
     tqdm.disable = False
 
     # This will redo OCR if OCR is forced, since we need to redetect bounding boxes, etc.
-    table_rec = recognize_tables(table_imgs, cells, needs_ocr, rec_models, table_rec_batch_size=get_batch_size(), ocr_batch_size=get_ocr_batch_size())
+    table_rec = recognize_tables(table_imgs, cells, needs_ocr, rec_models, table_rec_batch_size=int(get_batch_size() * batch_multiplier), ocr_batch_size=int(get_ocr_batch_size() * batch_multiplier))
     cells = [assign_rows_columns(tr, im_size) for tr, im_size in zip(table_rec, img_sizes)]
     table_md = [formatter("markdown", cell)[0] for cell in cells]
 

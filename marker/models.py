@@ -3,6 +3,7 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers 
 
 
 from surya.model.detection.model import load_model as load_detection_model, load_processor as load_detection_processor
+from surya.model.layout.model import load_model as load_layout_model, load_processor as load_layout_processor
 from texify.model.model import load_model as load_texify_model
 from texify.model.processor import load_processor as load_texify_processor
 from marker.settings import settings
@@ -52,10 +53,10 @@ def setup_texify_model(device=None, dtype=None):
 
 def setup_layout_model(device=None, dtype=None):
     if device:
-        model = load_detection_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT, device=device, dtype=dtype)
+        model = load_layout_model(device=device, dtype=dtype)
     else:
-        model = load_detection_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
-    model.processor = load_detection_processor(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
+        model = load_layout_model()
+    model.processor = load_layout_processor()
     return model
 
 
