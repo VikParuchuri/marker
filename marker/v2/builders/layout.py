@@ -5,6 +5,7 @@ from surya.schema import LayoutResult
 
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
+from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
 
@@ -40,5 +41,6 @@ class LayoutBuilder(BaseBuilder):
     def add_blocks_to_pages(self, pages: List[PageGroup], layout_results: List[LayoutResult]):
         for page, layout_result in zip(pages, layout_results):
             for bbox in sorted(layout_result.bboxes, key=lambda x: x.position):
-                page.add_block(bbox.block_type, bbox.polygon)
+                block_cls = LAYOUT_BLOCK_REGISTRY[bbox.block_type]
+                page.add_block(block_cls, bbox.polygon)
 

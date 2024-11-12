@@ -14,8 +14,6 @@ from marker.v2.schema.blocks.sectionheader import SectionHeader
 from marker.v2.schema.blocks.table import Table
 from marker.v2.schema.blocks.text import Text
 from marker.v2.schema.blocks.toc import TableOfContents
+from marker.v2.schema.util import build_block_registry
 
-LAYOUT_BLOCK_REGISTRY = {
-    b.block_type: b for b in
-    [Caption, Code, Figure, Footnote, Form, Equation, Handwriting, InlineMath, ListItem, PageFooter, PageHeader, Picture, SectionHeader, Table, Text, TableOfContents]
-}
+LAYOUT_BLOCK_REGISTRY = build_block_registry()

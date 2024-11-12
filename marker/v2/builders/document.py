@@ -1,6 +1,6 @@
 from marker.v2.builders import BaseBuilder
 from marker.v2.builders.layout import LayoutBuilder
-from marker.v2.providers.base import BaseProvider
+from marker.v2.providers import BaseProvider
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
 from marker.settings import settings

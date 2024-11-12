@@ -1,3 +1,5 @@
+from typing import List
+
 from marker.v2.schema import Block
 from PIL import Image
 
@@ -9,11 +11,11 @@ class PageGroup(Block):
     block_type = "Page"
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
+    children: List[Block]
 
-    def add_block(self, block_type: str, polygon: PolygonBox):
+    def add_block(self, block_cls: Block, polygon: PolygonBox) -> Block:
         max_id = max([b.block_id for b in self.blocks], default=0)
 
-        block_cls = LAYOUT_BLOCK_REGISTRY[block_type]
         block = block_cls(
             polygon=polygon,
             block_id=max_id + 1,
@@ -23,3 +25,10 @@ class PageGroup(Block):
             self.children.append(block)
         else:
             self.children = [block]
+
+        return block
+
+    def get_block(self, block_id: str) -> Block | None:
+        for block in self.children:
+            if block._id == block_id:
+                return block

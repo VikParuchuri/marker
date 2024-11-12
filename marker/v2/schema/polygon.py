@@ -1,3 +1,4 @@
+from __future__ import annotations
 import copy
 from typing import List
 
@@ -30,6 +31,10 @@ class PolygonBox(BaseModel):
     def area(self):
         return self.width * self.height
 
+    @property
+    def center(bbox):
+        return [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
+
     @computed_field
     @property
     def bbox(self) -> List[float]:
@@ -39,6 +44,23 @@ class PolygonBox(BaseModel):
         if box[1] > box[3]:
             box[1], box[3] = box[3], box[1]
         return box
+
+    def minimum_gap(self, other: PolygonBox):
+        if self.intersection_pct(other.bbox) > 0:
+            return 0
+
+        x_dist = min(abs(self.bbox[0] - other.bbox[2]), abs(self.bbox[2] - other.bbox[0]))
+        y_dist = min(abs(self.bbox[1] - other.bbox[3]), abs(self.bbox[3] - other.bbox[1]))
+
+        if x_dist == 0 or self.overlap_x(other) > 0:
+            return y_dist
+        if y_dist == 0 or self.overlap_y(other) > 0:
+            return x_dist
+
+        return (x_dist ** 2 + y_dist ** 2) ** 0.5
+
+    def center_distance(self, other: PolygonBox):
+        return ((self.center[0] - other.center[0]) ** 2 + (self.center[1] - other.center[1]) ** 2) ** 0.5
 
     def rescale(self, processor_size, image_size):
         # Point is in x, y format
@@ -68,10 +90,14 @@ class PolygonBox(BaseModel):
         y2 = max(self.bbox[3], other.bbox[3])
         self.polygon = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]
 
-    def intersection_area(self, other, x_margin=0, y_margin=0):
-        x_overlap = max(0, min(self.bbox[2] + x_margin, other.bbox[2] + x_margin) - max(self.bbox[0] - x_margin, other.bbox[0] - x_margin))
-        y_overlap = max(0, min(self.bbox[3] + y_margin, other.bbox[3] + y_margin) - max(self.bbox[1] - y_margin, other.bbox[1] - y_margin))
-        return x_overlap * y_overlap
+    def overlap_x(self, other):
+        return max(0, min(self.bbox[2], other.bbox[2]) - max(self.bbox[0], other.bbox[0]))
+
+    def overlap_y(self, other):
+        return max(0, min(self.bbox[3], other.bbox[3]) - max(self.bbox[1], other.bbox[1]))
+
+    def intersection_area(self, other):
+        return self.overlap_x(other) * self.overlap_y(other)
 
     def intersection_pct(self, other, x_margin=0, y_margin=0):
         assert 0 <= x_margin <= 1

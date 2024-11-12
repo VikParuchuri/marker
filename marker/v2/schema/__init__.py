@@ -10,8 +10,7 @@ class Block(BaseModel):
     block_type: Optional[str] = None
     block_id: Optional[int] = None
     page_id: Optional[int] = None
-
-    children: List[Block]
+    structure: List[str] | None = None # The top-level page structure, which is the block ids in order
 
     @property
     def _id(self):

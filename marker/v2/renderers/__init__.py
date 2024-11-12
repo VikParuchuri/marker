@@ -1,0 +1,2 @@
+class BaseRenderer:
+    pass
