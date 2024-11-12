@@ -87,6 +87,14 @@ class BboxElement(BaseModel):
     @property
     def y_start(self):
         return self.bbox[1]
+    
+    @property
+    def x_end(self):
+        return self.bbox[2]
+    
+    @property
+    def y_end(self):
+        return self.bbox[3]
 
     @property
     def area(self):

@@ -3,6 +3,7 @@ from marker.schema.page import Page
 import re
 import regex
 from typing import List
+from copy import deepcopy
 
 from marker.settings import settings
 
@@ -107,39 +108,46 @@ def block_surround(text, block_type, heading_level):
     return text
 
 
-def line_separator(line1, line2, block_type, is_continuation=False):
-    # Should cover latin-derived languages and russian
-    lowercase_letters = r'\p{Lo}|\p{Ll}|\d'
+def line_separator(block_text: str, prev_line: MergedLine, line: MergedLine, block_type: str, new_column: bool, new_page: bool, new_block: bool) -> str:
+    lowercase_letters = r'\p{Ll}|\d'
     hyphens = r'-—¬'
-    # Remove hyphen in current line if next line and current line appear to be joined
-    hyphen_pattern = regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL)
-    if line1 and hyphen_pattern.match(line1) and regex.match(rf"^\s?[{lowercase_letters}]", line2):
-        # Split on — or - from the right
-        line1 = regex.split(rf"[{hyphens}]\s?$", line1)[0]
-        return line1.rstrip() + line2.lstrip()
 
-    all_letters = r'\p{L}|\d'
-    sentence_continuations = r',;\(\—\"\'\*'
-    sentence_ends = r'。ๆ\.?!'
-    line_end_pattern = regex.compile(rf'.*[{lowercase_letters}][{sentence_continuations}]?\s?$', regex.DOTALL)
-    line_start_pattern = regex.compile(rf'^\s?[{all_letters}]', regex.DOTALL)
-    sentence_end_pattern = regex.compile(rf'.*[{sentence_ends}]\s?$', regex.DOTALL)
+    hyphen_regex = regex.compile(rf'.*[{hyphens}]\s?$', regex.DOTALL)
+    hyphens_lowercase_regex = regex.compile(rf'.*[{lowercase_letters}][{hyphens}]\s?$', regex.DOTALL)
+    line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", line.text)
+    prev_has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", prev_line.text)
+    has_reference = regex.match(r"^\[\d+\]\s+[A-Z]", line.text)
+    has_numbered_item = regex.match(r"^\d+:\s+", line.text)
+    
+    line_text = line.text.lstrip()
+    block_text = block_text.rstrip()
 
-    text_blocks = ["Text", "List-item", "Footnote", "Caption", "Figure"]
-    if block_type in ["Title", "Section-header"]:
-        return line1.rstrip() + " " + line2.lstrip()
-    elif block_type == "Formula":
-        return line1 + "\n" + line2
-    elif line_end_pattern.match(line1) and line_start_pattern.match(line2) and block_type in text_blocks:
-        return line1.rstrip() + " " + line2.lstrip()
-    elif is_continuation:
-        return line1.rstrip() + " " + line2.lstrip()
-    elif block_type in text_blocks and sentence_end_pattern.match(line1):
-        return line1 + "\n\n" + line2
-    elif block_type == "Table":
-        return line1 + "\n\n" + line2
+    if block_type in ["Text", "List-item", "Footnote", "Caption", "Figure"]:
+        if has_reference or has_numbered_item:
+            return block_text + "\n\n" + line_text
+        elif hyphen_regex.match(block_text):
+            if line_starts_lowercase and hyphens_lowercase_regex.match(block_text):
+                return regex.split(rf"[{hyphens}]\s?$", block_text)[0].rstrip() + line_text
+            return block_text + line_text
+        elif new_page or new_column:
+            if line_starts_lowercase:
+                return block_text + " " + line_text
+            return block_text + "\n\n" + line_text
+        elif new_block:
+            if prev_has_reference:
+                return block_text + " " + line_text
+            return block_text + "\n\n" + line_text
+        else:
+            # General case for joining lines with a space
+            return block_text + " " + line_text
+    elif block_type in ["Title", "Section-header"]:
+        return block_text + " " + line_text
+    elif block_type in ["Formula"]:
+        return block_text + "\n" + line_text
+    elif block_type in ["Code", "Table"]:
+        return block_text + "\n\n" + line_text
     else:
-        return line1 + "\n" + line2
+        return block_text + " " + line_text
 
 
 def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
@@ -149,9 +157,9 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
 
     return sep + block.text
 
-
-def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
+def merge_lines(blocks: List[List[MergedBlock]], min_new_block_x_indent_percent=5.0):
     text_blocks = []
+    prev_block = None
     prev_type = None
     prev_line = None
     block_text = ""
@@ -159,7 +167,7 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
     prev_heading_level = None
     pnum = None
 
-    for idx, page in enumerate(blocks):
+    for page_id, page in enumerate(blocks):
         # Insert pagination at every page boundary
         if settings.PAGINATE_OUTPUT:
             if block_text:
@@ -180,8 +188,8 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
                     pnum=page[0].pnum
                 )
             )
-
-        for block in page:
+        for block_id, block in enumerate(page):
+            first_block_in_page = block_id == 0
             block_type = block.block_type
             if (block_type != prev_type and prev_type) or (block.heading_level != prev_heading_level and prev_heading_level):
                 text_blocks.append(
@@ -193,23 +201,31 @@ def merge_lines(blocks: List[List[MergedBlock]], max_block_gap=15):
                     )
                 )
                 block_text = ""
-
+            # Join lines in the block together properly
+            for line_id, line in enumerate(block.lines):
+                first_line_in_block = line_id == 0
+                if prev_line is None:
+                    prev_line = deepcopy(line)
+                if prev_block is None:
+                    prev_block = deepcopy(block)
+                x_indent = line.x_start - prev_line.x_start 
+                y_indent = line.y_start - prev_line.y_start
+                new_line = y_indent > prev_line.height
+                new_column = line.x_start > prev_block.x_end
+                new_block = first_line_in_block or \
+                    ( # we consider it a new block when there's an x indent from the previous line and it's a new line (y indent)
+                        ((x_indent/block.width) * 100) > min_new_block_x_indent_percent and new_line
+                    )
+                new_page = first_line_in_block and first_block_in_page
+                if block_text:
+                    block_text = line_separator(block_text, prev_line, line, block_type, new_column, new_page, new_block)
+                else:
+                    block_text = line.text
+                prev_line = line
+                prev_block = block
             prev_type = block_type
             prev_heading_level = block.heading_level
             pnum = block.pnum
-            # Join lines in the block together properly
-            for i, line in enumerate(block.lines):
-                line_height = line.bbox[3] - line.bbox[1]
-                prev_line_height = prev_line.bbox[3] - prev_line.bbox[1] if prev_line else 0
-                prev_line_x = prev_line.bbox[0] if prev_line else 0
-                vertical_dist = min(abs(line.bbox[1] - prev_line.bbox[3]), abs(line.bbox[3] - prev_line.bbox[1])) if prev_line else 0
-                prev_line = line
-                is_continuation = line_height == prev_line_height and line.bbox[0] == prev_line_x and vertical_dist < max_block_gap
-                if block_text:
-                    block_text = line_separator(block_text, line.text, block_type, is_continuation)
-                else:
-                    block_text = line.text
-
     # Append the final block
     text_blocks.append(
         FullyMergedBlock(
