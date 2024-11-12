@@ -1,4 +1,4 @@
-from marker.v2.schema.baseblock import Block
+from marker.v2.schema import Block
 
 
 class ListGroup(Block):

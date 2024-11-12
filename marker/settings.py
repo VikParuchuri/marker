@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # General
     TORCH_DEVICE: Optional[str] = None # Note: MPS device does not work for text detection, and will default to CPU
     IMAGE_DPI: int = 96 # DPI to render images pulled from pdf at
+    HIGHRES_IMAGE_DPI: int = 192 # DPI to render high resolution images at
     EXTRACT_IMAGES: bool = True # Extract images from pdfs and save them
     PAGINATE_OUTPUT: bool = False # Paginate output markdown
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

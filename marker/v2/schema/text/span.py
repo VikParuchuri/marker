@@ -1,6 +1,6 @@
 from typing import Optional, Literal
 
-from marker.v2.schema.baseblock import Block
+from marker.v2.schema import Block
 
 
 class Span(Block):
