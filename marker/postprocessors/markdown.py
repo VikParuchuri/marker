@@ -201,23 +201,17 @@ def merge_lines(blocks: List[List[MergedBlock]], min_new_block_x_indent=11):
                     )
                 )
                 block_text = ""
-
             # Join lines in the block together properly
             for line_id, line in enumerate(block.lines):
                 first_line_in_block = line_id == 0
-
                 if prev_line is None:
                     prev_line = deepcopy(line)
                 if prev_block is None:
                     prev_block = deepcopy(block)
-
-                line_x_start, line_y_start, line_x_end, line_y_end = line.bbox
-                prev_line_x_start, prev_line_y_start, prev_line_x_end, prev_line_y_end = prev_line.bbox
-                x_indent = line_x_start - prev_line_x_start 
-                y_indent = line_y_start - prev_line_y_start
+                x_indent = line.x_start - prev_line.x_start 
+                y_indent = line.y_start - prev_line.y_start
                 new_line = y_indent > prev_line.height
-
-                new_column = line_x_start > prev_block.x_end
+                new_column = line.x_start > prev_block.x_end
                 new_block = first_line_in_block or \
                     ( # we consider it a new block when there's an x indent from the previous line and it's a new line (y indent)
                         x_indent > min_new_block_x_indent and new_line
