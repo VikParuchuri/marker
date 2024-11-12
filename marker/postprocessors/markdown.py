@@ -157,7 +157,7 @@ def block_separator(prev_block: FullyMergedBlock, block: FullyMergedBlock):
 
     return sep + block.text
 
-def merge_lines(blocks: List[List[MergedBlock]], min_new_block_x_indent=11):
+def merge_lines(blocks: List[List[MergedBlock]], min_new_block_x_indent_percent=5.0):
     text_blocks = []
     prev_block = None
     prev_type = None
@@ -214,7 +214,7 @@ def merge_lines(blocks: List[List[MergedBlock]], min_new_block_x_indent=11):
                 new_column = line.x_start > prev_block.x_end
                 new_block = first_line_in_block or \
                     ( # we consider it a new block when there's an x indent from the previous line and it's a new line (y indent)
-                        x_indent > min_new_block_x_indent and new_line
+                        ((x_indent/block.width) * 100) > min_new_block_x_indent_percent and new_line
                     )
                 new_page = first_line_in_block and first_block_in_page
                 if block_text:
