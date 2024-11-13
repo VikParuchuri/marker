@@ -2,4 +2,4 @@ from marker.v2.schema import Block
 
 
 class ListGroup(Block):
-    pass
+    block_type: str = "ListGroup"
