@@ -1,5 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ProviderConfig(BaseModel):
-    pass
+    model_config = ConfigDict(arbitrary_types_allowed=True)

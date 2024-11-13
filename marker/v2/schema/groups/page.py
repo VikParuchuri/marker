@@ -8,7 +8,7 @@ from marker.v2.schema.polygon import PolygonBox
 
 
 class PageGroup(Block):
-    block_type = "Page"
+    block_type: str = "Page"
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
     children: List[Block]

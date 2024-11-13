@@ -63,7 +63,7 @@ class PdfProvider(BaseProvider):
         self.doc = pdfium.PdfDocument(self.filepath)
         page_char_blocks = dictionary_output(
             self.filepath,
-            page_range=range(*self.config.page_range) if self.config.page_range else None,
+            page_range=self.config.page_range,
             keep_chars=False,
             workers=self.config.pdftext_workers,
             flatten_pdf=self.config.flatten_pdf
