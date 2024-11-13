@@ -8,18 +8,18 @@ from marker.v2.schema.polygon import PolygonBox
 
 
 class PageGroup(Block):
-    block_type = "Page"
+    block_type: str = "Page"
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
-    children: List[Block]
+    children: List[Block] | None = None
 
     def add_block(self, block_cls: Block, polygon: PolygonBox) -> Block:
-        max_id = max([b.block_id for b in self.blocks], default=0)
+        max_id = max([b.block_id for b in self.children or []], default=0)
 
         block = block_cls(
             polygon=polygon,
             block_id=max_id + 1,
-            page_id=self.block_id,
+            page_id=self.page_id,
         )
         if isinstance(self.children, list):
             self.children.append(block)

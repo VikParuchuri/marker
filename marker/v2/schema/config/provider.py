@@ -1,7 +1,9 @@
-from pydantic import BaseModel
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class ProviderConfig(BaseModel):
-    share_model_memory: bool = False
-    model_device: str = "cpu"
-    batch_size: int = 1
+    page_range: Optional[range] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)

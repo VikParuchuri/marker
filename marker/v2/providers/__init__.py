@@ -20,5 +20,8 @@ class BaseProvider:
     def get_image(self, idx: int, dpi: int):
         pass
 
+    def get_page_bbox(self, idx: int) -> List[float]:
+        pass
+
     def get_page_lines(self, idx: int) -> List[Line]:
         pass
