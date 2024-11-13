@@ -4,6 +4,8 @@ from marker.v2.schema import Block
 
 
 class Span(Block):
+    block_type: str = "Span"
+
     text: str
     font: str
     font_weight: float

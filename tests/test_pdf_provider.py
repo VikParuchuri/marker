@@ -16,7 +16,7 @@ def test_pdf_provider():
 
     # for line in provider.get_page_lines(0):
     #     for span in line.spans:
-    #         print(f"{span.text=} {span.formats=}")
+    #         print(f"{span=}")
 
 
 if __name__ == "__main__":
