@@ -8,10 +8,11 @@ from marker.v2.builders import BaseBuilder
 from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
+from marker.v2.schema.polygon import PolygonBox
 
 
 class LayoutBuilder(BaseBuilder):
-    def __init__(self, layout_model, config):
+    def __init__(self, layout_model, config=None):
         self.layout_model = layout_model
 
         super().__init__(config)
@@ -41,6 +42,5 @@ class LayoutBuilder(BaseBuilder):
     def add_blocks_to_pages(self, pages: List[PageGroup], layout_results: List[LayoutResult]):
         for page, layout_result in zip(pages, layout_results):
             for bbox in sorted(layout_result.bboxes, key=lambda x: x.position):
-                block_cls = LAYOUT_BLOCK_REGISTRY[bbox.block_type]
-                page.add_block(block_cls, bbox.polygon)
-
+                block_cls = LAYOUT_BLOCK_REGISTRY[bbox.label]
+                page.add_block(block_cls, PolygonBox(polygon=bbox.polygon))

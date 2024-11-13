@@ -109,5 +109,9 @@ class PdfProvider(BaseProvider):
         image = image.convert("RGB")
         return image
 
+    def get_page_bbox(self, idx: int) -> List[float]:
+        page = self.doc[idx]
+        return page.get_bbox()
+
     def get_page_lines(self, idx: int) -> List[Line]:
         return self.page_lines[idx]
