@@ -22,6 +22,9 @@ class PdfProvider(BaseProvider):
     def __len__(self) -> int:
         return len(self.doc)
 
+    def __del__(self):
+        self.doc.close()
+
     def font_flags_to_format(self, flags: int) -> List[str]:
         flag_map = {
             1: "FixedPitch",

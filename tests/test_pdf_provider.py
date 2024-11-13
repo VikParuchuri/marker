@@ -1,9 +1,20 @@
+import tempfile
+
+import datasets
+
 from marker.v2.providers.pdf import PdfProvider
 from marker.v2.schema.config.pdf import PdfProviderConfig
 
 
 def test_pdf_provider():
-    provider = PdfProvider("/home/ubuntu/surya-test/pdfs/adversarial.pdf", PdfProviderConfig())
+    dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
+    idx = dataset['filename'].index('adversarial.pdf')
+
+    temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf")
+    temp_pdf.write(dataset['pdf'][idx])
+    temp_pdf.flush()
+
+    provider = PdfProvider(temp_pdf.name, PdfProviderConfig())
     assert len(provider) == 12
     assert provider.get_image(0, 72).size == (612, 792)
     assert provider.get_image(0, 96).size == (816, 1056)

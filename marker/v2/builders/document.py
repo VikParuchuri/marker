@@ -28,4 +28,3 @@ class DocumentBuilder(BaseBuilder):
         ]
 
         return Document(filepath=provider.filepath, pages=initial_pages)
-
