@@ -2,4 +2,4 @@ from marker.v2.schema import Block
 
 
 class Equation(Block):
-    block_type = "Equation"
+    block_type: str = "Equation"
