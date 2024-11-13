@@ -22,7 +22,7 @@ class DocumentBuilder(BaseBuilder):
 
         initial_pages = [
             PageGroup(
-                pnum=i,
+                page_id=i,
                 lowres_image=provider.get_image(i, settings.IMAGE_DPI),
                 highres_image=provider.get_image(i, settings.HIGHRES_IMAGE_DPI),
                 polygon=PolygonBox.from_bbox(provider.get_page_bbox(i))

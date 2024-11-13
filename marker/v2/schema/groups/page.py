@@ -19,7 +19,7 @@ class PageGroup(Block):
         block = block_cls(
             polygon=polygon,
             block_id=max_id + 1,
-            page_id=self.block_id,
+            page_id=self.page_id,
         )
         if isinstance(self.children, list):
             self.children.append(block)
