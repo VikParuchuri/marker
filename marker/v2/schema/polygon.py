@@ -112,3 +112,7 @@ class PolygonBox(BaseModel):
 
         intersection = self.intersection_area(other, x_margin, y_margin)
         return intersection / self.area
+
+    @classmethod
+    def from_bbox(cls, bbox: List[float]):
+        return cls(polygon=[[bbox[0], bbox[1]], [bbox[2], bbox[1]], [bbox[2], bbox[3]], [bbox[0], bbox[3]]])
