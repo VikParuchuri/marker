@@ -45,20 +45,21 @@ class LayoutBuilder(BaseBuilder):
 
     def add_blocks_to_pages(self, pages: List[PageGroup], layout_results: List[LayoutResult]):
         for page, layout_result in zip(pages, layout_results):
+            layout_page_size = PolygonBox.from_bbox(layout_result.image_bbox).size
+            provider_page_size = page.polygon.size
             for bbox in sorted(layout_result.bboxes, key=lambda x: x.position):
                 block_cls = LAYOUT_BLOCK_REGISTRY[bbox.label]
                 layout_block = page.add_block(block_cls, PolygonBox(polygon=bbox.polygon))
+                layout_block.polygon = layout_block.polygon.rescale(layout_page_size, provider_page_size)
                 page.add_structure(layout_block)
 
     def merge_blocks(self, document_pages: List[PageGroup], provider: PdfProvider):
         provider_page_lines = provider.page_lines
         for idx, (document_page, provider_lines) in enumerate(zip(document_pages, provider_page_lines.values())):
             all_line_idxs = set(range(len(provider_lines)))
-            page_size = provider.doc[idx].get_size()
             max_intersections = {}
             for line_idx, line in enumerate(provider_lines):
                 for block_idx, block in enumerate(document_page.children):
-                    line.polygon.rescale(page_size, document_page.polygon.size)
                     intersection_pct = line.polygon.intersection_pct(block.polygon)
                     if line_idx not in max_intersections:
                         max_intersections[line_idx] = (intersection_pct, block_idx)
