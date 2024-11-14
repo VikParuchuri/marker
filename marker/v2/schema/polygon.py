@@ -131,9 +131,21 @@ class PolygonBox(BaseModel):
     def merge(self, others: List[PolygonBox]) -> PolygonBox:
         corners = []
         for i in range(len(self.polygon)):
-            min_x = min([self.polygon[i][0]] + [other.polygon[i][0] for other in others])
-            min_y = min([self.polygon[i][1]] + [other.polygon[i][1] for other in others])
-            corners.append([min_x, min_y])
+            x_coords = [self.polygon[i][0]] + [other.polygon[i][0] for other in others]
+            y_coords = [self.polygon[i][1]] + [other.polygon[i][1] for other in others]
+            min_x = min(x_coords)
+            min_y = min(y_coords)
+            max_x = max(x_coords)
+            max_y = max(y_coords)
+
+            if i == 0:
+                corners.append([min_x, min_y])
+            elif i == 1:
+                corners.append([max_x, min_y])
+            elif i == 2:
+                corners.append([max_x, max_y])
+            elif i == 3:
+                corners.append([min_x, max_y])
         return PolygonBox(polygon=corners)
 
     @classmethod

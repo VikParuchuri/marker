@@ -71,6 +71,7 @@ class LayoutBuilder(BaseBuilder):
                     block_idx = max_intersections[line_idx][1]
                     block: Block = document_page.children[block_idx]
                     block.add_structure(line)
+                    block.polygon = block.polygon.merge([line.polygon])
                     assigned_line_idxs.add(line_idx)
                     for span in spans:
                         document_page.add_full_block(span)
@@ -90,6 +91,7 @@ class LayoutBuilder(BaseBuilder):
                     document_page.add_full_block(line)
                     nearest_block = document_page.children[min_dist_idx]
                     nearest_block.add_structure(line)
+                    nearest_block.polygon = nearest_block.polygon.merge([line.polygon])
                     assigned_line_idxs.add(line_idx)
                     for span in spans:
                         document_page.add_full_block(span)
