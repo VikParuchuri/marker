@@ -3,6 +3,7 @@ from typing import List
 from PIL import Image
 
 from marker.v2.schema.blocks import Block
+from marker.v2.schema.blocks import BlockId
 from marker.v2.schema.polygon import PolygonBox
 
 
@@ -40,7 +41,7 @@ class PageGroup(Block):
         self.add_child(block)
         return block
 
-    def get_block(self, block_id: str) -> Block | None:
+    def get_block(self, block_id: BlockId) -> Block | None:
         for block in self.children:
             if block._id == block_id:
                 return block

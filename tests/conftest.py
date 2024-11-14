@@ -48,11 +48,12 @@ def table_rec_model():
 
 @pytest.fixture(scope="function")
 def pdf_document(request, layout_model) -> Document:
-    marker = request.node.get_closest_marker("filename")
-    if marker is None:
+    mark = request.node.get_closest_marker("filename")
+    if mark is None:
         filename = "adversarial.pdf"
     else:
-        filename = marker.args[0]
+        filename = mark.args[0]
+
     dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
     idx = dataset['filename'].index(filename)
 

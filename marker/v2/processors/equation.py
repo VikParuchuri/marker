@@ -50,7 +50,7 @@ class EquationProcessor(BaseProcessor):
             if not all(conditions):
                 continue
 
-            block = document.get_block_by_id(equation_d["block_id"])
+            block = document.get_block(equation_d["block_id"])
             block.latex = prediction
 
     def get_batch_size(self):

@@ -52,12 +52,11 @@ class PolygonBox(BaseModel):
     @computed_field
     @property
     def bbox(self) -> List[float]:
-        box = [self.polygon[0][0], self.polygon[0][1], self.polygon[1][0], self.polygon[2][1]]
-        if box[0] > box[2]:
-            box[0], box[2] = box[2], box[0]
-        if box[1] > box[3]:
-            box[1], box[3] = box[3], box[1]
-        return box
+        min_x = min([corner[0] for corner in self.polygon])
+        min_y = min([corner[1] for corner in self.polygon])
+        max_x = max([corner[0] for corner in self.polygon])
+        max_y = max([corner[1] for corner in self.polygon])
+        return [min_x, min_y, max_x, max_y]
 
     def expand(self, x_margin: float, y_margin: float) -> PolygonBox:
         new_polygon = []
