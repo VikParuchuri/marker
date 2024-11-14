@@ -1,3 +1,4 @@
+from marker.v2.providers.pdf import PdfProvider
 import tempfile
 
 import datasets
@@ -7,7 +8,6 @@ from marker.v2.models import setup_layout_model, setup_texify_model, setup_recog
     setup_detection_model
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
-from marker.v2.providers.pdf import PdfProvider
 from marker.v2.schema.document import Document
 
 

@@ -1,11 +1,12 @@
+from marker.v2.providers.pdf import PdfProvider
+import tempfile
+
 import datasets
 from surya.model.layout.model import load_model
 from surya.model.layout.processor import load_processor
-import tempfile
 
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
-from marker.v2.providers.pdf import PdfProvider
 from marker.v2.schema.document import Document
 
 

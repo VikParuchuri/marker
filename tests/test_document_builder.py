@@ -1,30 +1,8 @@
-from marker.v2.providers.pdf import PdfProvider  # this needs to be at the top, long story
-
-import tempfile
-
-import datasets
-
-from marker.v2.builders.document import DocumentBuilder
-from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.schema.text.line import Line
 
 
-def test_document_builder(layout_model):
-    dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
-    idx = dataset['filename'].index('adversarial.pdf')
-
-    temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf")
-    temp_pdf.write(dataset['pdf'][idx])
-    temp_pdf.flush()
-
-    provider = PdfProvider(temp_pdf.name)
-    layout_builer = LayoutBuilder(layout_model)
-    builder = DocumentBuilder()
-
-    document = builder(provider, layout_builer)
-    assert len(document.pages) == len(provider)
-
-    first_page = document.pages[0]
+def test_document_builder(pdf_document):
+    first_page = pdf_document.pages[0]
     assert first_page.structure[0] == '/page/0/Section-header/0'
 
     first_block = first_page.get_block(first_page.structure[0])
@@ -49,10 +27,6 @@ def test_document_builder(layout_model):
 
 
 if __name__ == "__main__":
-    from surya.model.layout.model import load_model
-    from surya.model.layout.processor import load_processor
+    from tests.utils import setup_pdf_document
 
-    layout_model = load_model()
-    layout_model.processor = load_processor()
-
-    test_document_builder(layout_model)
+    test_document_builder(setup_pdf_document("adversarial.pdf"))
