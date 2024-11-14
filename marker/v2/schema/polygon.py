@@ -52,12 +52,11 @@ class PolygonBox(BaseModel):
     @computed_field
     @property
     def bbox(self) -> List[float]:
-        box = [self.polygon[0][0], self.polygon[0][1], self.polygon[1][0], self.polygon[2][1]]
-        if box[0] > box[2]:
-            box[0], box[2] = box[2], box[0]
-        if box[1] > box[3]:
-            box[1], box[3] = box[3], box[1]
-        return box
+        min_x = min([corner[0] for corner in self.polygon])
+        min_y = min([corner[1] for corner in self.polygon])
+        max_x = max([corner[0] for corner in self.polygon])
+        max_y = max([corner[1] for corner in self.polygon])
+        return [min_x, min_y, max_x, max_y]
 
     def expand(self, x_margin: float, y_margin: float) -> PolygonBox:
         new_polygon = []
@@ -131,9 +130,21 @@ class PolygonBox(BaseModel):
     def merge(self, others: List[PolygonBox]) -> PolygonBox:
         corners = []
         for i in range(len(self.polygon)):
-            min_x = min([self.polygon[i][0]] + [other.polygon[i][0] for other in others])
-            min_y = min([self.polygon[i][1]] + [other.polygon[i][1] for other in others])
-            corners.append([min_x, min_y])
+            x_coords = [self.polygon[i][0]] + [other.polygon[i][0] for other in others]
+            y_coords = [self.polygon[i][1]] + [other.polygon[i][1] for other in others]
+            min_x = min(x_coords)
+            min_y = min(y_coords)
+            max_x = max(x_coords)
+            max_y = max(y_coords)
+
+            if i == 0:
+                corners.append([min_x, min_y])
+            elif i == 1:
+                corners.append([max_x, min_y])
+            elif i == 2:
+                corners.append([max_x, max_y])
+            elif i == 3:
+                corners.append([min_x, max_y])
         return PolygonBox(polygon=corners)
 
     @classmethod
