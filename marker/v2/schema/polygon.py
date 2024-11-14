@@ -103,7 +103,7 @@ class PolygonBox(BaseModel):
         for corner in new_corners:
             corner[0] = corner[0] * width_scaler
             corner[1] = corner[1] * height_scaler
-        self.polygon = new_corners
+        return PolygonBox(polygon=new_corners)
 
     def fit_to_bounds(self, bounds):
         new_corners = copy.deepcopy(self.polygon)
@@ -112,7 +112,7 @@ class PolygonBox(BaseModel):
             corner[1] = max(min(corner[1], bounds[3]), bounds[1])
         self.polygon = new_corners
 
-    def overlap_x(self, other):
+    def overlap_x(self, other: PolygonBox):
         return max(0, min(self.bbox[2], other.bbox[2]) - max(self.bbox[0], other.bbox[0]))
 
     def overlap_y(self, other: PolygonBox):
@@ -121,7 +121,7 @@ class PolygonBox(BaseModel):
     def intersection_area(self, other: PolygonBox):
         return self.overlap_x(other) * self.overlap_y(other)
 
-    def intersection_pct(self, other):
+    def intersection_pct(self, other: PolygonBox):
         if self.area == 0:
             return 0
 
