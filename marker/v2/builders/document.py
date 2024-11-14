@@ -14,10 +14,10 @@ class DocumentBuilder(BaseBuilder):
         return document
 
     def build_document(self, provider: PdfProvider):
-        if provider.config.page_range is None:
+        if provider.page_range is None:
             page_range = range(len(provider))
         else:
-            page_range = provider.config.page_range
+            page_range = provider.page_range
             assert max(page_range) < len(provider) and min(page_range) >= 0, "Invalid page range"
 
         initial_pages = [

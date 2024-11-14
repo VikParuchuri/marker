@@ -1,6 +1,6 @@
 from typing import List, Literal
 
-from marker.v2.schema import Block
+from marker.v2.schema.blocks import Block
 
 
 class Span(Block):

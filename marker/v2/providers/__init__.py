@@ -1,20 +1,17 @@
-from typing import List
+from typing import List, Optional
 
-from marker.v2.schema.config.provider import ProviderConfig
+from pydantic import BaseModel
+
 from marker.v2.schema.text.line import Line
+from marker.v2.util import assign_config
 
 
 class BaseProvider:
-    def __init__(self, filepath: str, config: ProviderConfig):
+    def __init__(self, filepath: str, config: Optional[BaseModel | dict] = None):
+        assign_config(self, config)
         self.filepath = filepath
-        self.config = config
-
-        self.setup()
 
     def __len__(self):
-        pass
-
-    def setup(self):
         pass
 
     def get_image(self, idx: int, dpi: int):

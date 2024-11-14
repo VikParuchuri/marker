@@ -6,7 +6,6 @@ import datasets
 
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
-from marker.v2.schema.config.pdf import PdfProviderConfig
 from marker.v2.schema.text.line import Line
 
 
@@ -18,7 +17,7 @@ def test_document_builder(layout_model):
     temp_pdf.write(dataset['pdf'][idx])
     temp_pdf.flush()
 
-    provider = PdfProvider(temp_pdf.name, PdfProviderConfig())
+    provider = PdfProvider(temp_pdf.name)
     layout_builer = LayoutBuilder(layout_model)
     builder = DocumentBuilder()
 
