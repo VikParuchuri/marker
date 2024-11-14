@@ -46,7 +46,7 @@ def table_rec_model():
     del table_rec_m
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def pdf_document(request, layout_model) -> Document:
     marker = request.node.get_closest_marker("filename")
     if marker is None:
