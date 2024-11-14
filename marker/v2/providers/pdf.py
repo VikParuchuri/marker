@@ -1,4 +1,5 @@
 import functools
+from typing import Dict, List, Tuple
 from typing import Dict, List, Optional
 
 import pypdfium2 as pdfium
@@ -10,6 +11,9 @@ from marker.v2.providers import BaseProvider
 from marker.v2.schema.polygon import PolygonBox
 from marker.v2.schema.text.line import Line, Span
 
+PdfPageProviderLine = Tuple[List[Line], List[List[Span]]]
+PdfPageProviderLines = Dict[int, PdfPageProviderLine]
+
 
 class PdfProvider(BaseProvider):
     page_range: List[int] | None = None
@@ -19,7 +23,7 @@ class PdfProvider(BaseProvider):
     def __init__(self, filepath: str, config: Optional[BaseModel] = None):
         super().__init__(filepath, config)
 
-        self.page_lines: Dict[int, List[Line]] = {}
+        self.page_lines: PdfPageProviderLines = {}
         self.doc: pdfium.PdfDocument
 
         self.setup()
@@ -79,6 +83,7 @@ class PdfProvider(BaseProvider):
         for page in page_char_blocks:
             page_id = page["page"]
             lines: List[Line] = []
+            line_spans: List[List[Span]] = []
             for block in page["blocks"]:
                 for line in block["lines"]:
                     spans: List[Span] = []
@@ -101,11 +106,11 @@ class PdfProvider(BaseProvider):
                     lines.append(
                         Line(
                             polygon=PolygonBox.from_bbox(line["bbox"]),
-                            spans=spans,
                             page_id=page_id,
                         )
                     )
-            self.page_lines[page_id] = lines
+                    line_spans.append(spans)
+            self.page_lines[page_id] = (lines, line_spans)
 
     @ functools.lru_cache(maxsize=None)
     def get_image(self, idx: int, dpi: int) -> Image.Image:
@@ -118,5 +123,5 @@ class PdfProvider(BaseProvider):
         page = self.doc[idx]
         return page.get_bbox()
 
-    def get_page_lines(self, idx: int) -> List[Line]:
+    def get_page_lines(self, idx: int) -> PdfPageProviderLine:
         return self.page_lines[idx]

@@ -17,8 +17,9 @@ def test_pdf_provider():
     assert len(provider) == 12
     assert provider.get_image(0, 72).size == (612, 792)
     assert provider.get_image(0, 96).size == (816, 1056)
-    line = provider.get_page_lines(0)[0]
-    spans = line.spans
+    lines, spans_list = provider.get_page_lines(0)
+    assert len(spans_list) == 93
+    spans = spans_list[0]
     assert len(spans) == 1
     assert spans[0].text == "Subspace Adversarial Training"
     assert spans[0].font == "NimbusRomNo9L-Medi"

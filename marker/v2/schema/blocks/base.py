@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
 
-from marker.v2.schema import PolygonBox
+from marker.v2.schema.polygon import PolygonBox
 
 
 class Block(BaseModel):

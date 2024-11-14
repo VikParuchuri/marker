@@ -25,29 +25,23 @@ def test_document_builder(layout_model):
     assert len(document.pages) == len(provider)
 
     first_page = document.pages[0]
-    assert first_page.structure[0] == '/page/0/block/0'
+    assert first_page.structure[0] == '/page/0/Section-header/0'
 
-    first_block = first_page.get_block('/page/0/block/0')
+    first_block = first_page.get_block(first_page.structure[0])
     assert first_block.block_type == 'Section-header'
-    assert first_block.structure[0] == '/page/0/block/15'
-
-    first_text_block: Line = first_page.get_block('/page/0/block/15')
+    first_text_block: Line = first_page.get_block(first_block.structure[0])
     assert first_text_block.block_type == 'Line'
-
-    first_span = first_text_block.spans[0]
+    first_span = first_page.get_block(first_text_block.structure[0])
     assert first_span.block_type == 'Span'
     assert first_span.text == 'Subspace Adversarial Training'
     assert first_span.font == 'NimbusRomNo9L-Medi'
     assert first_span.formats == ['plain']
 
-    last_block = first_page.get_block('/page/0/block/14')
+    last_block = first_page.get_block(first_page.structure[-1])
     assert last_block.block_type == 'Text'
-    assert last_block.structure[-1] == '/page/0/block/106'
-
-    last_text_block: Line = first_page.get_block('/page/0/block/106')
+    last_text_block: Line = first_page.get_block(last_block.structure[-1])
     assert last_text_block.block_type == 'Line'
-
-    last_span = last_text_block.spans[-1]
+    last_span = first_page.get_block(last_text_block.structure[-1])
     assert last_span.block_type == 'Span'
     assert last_span.text == 'prove the quality of single-step AT solutions. However,'
     assert last_span.font == 'NimbusRomNo9L-Regu'
