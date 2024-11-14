@@ -16,8 +16,14 @@ class Block(BaseModel):
 
     @property
     def _id(self):
-        page_path = f"/page/{self.pnum}"
-        if self.block_num is not None:
-            return f"{page_path}/block/{self.block_num}"
+        page_path = f"/page/{self.page_id}"
+        if self.block_id is not None:
+            return f"{page_path}/block/{self.block_id}"
         else:
             return page_path
+
+    def add_structure(self, block: Block):
+        if self.structure is None:
+            self.structure = [block._id]
+        else:
+            self.structure.append(block._id)

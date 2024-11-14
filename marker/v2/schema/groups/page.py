@@ -1,9 +1,8 @@
 from typing import List
 
-from marker.v2.schema import Block
 from PIL import Image
 
-from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY
+from marker.v2.schema import Block
 from marker.v2.schema.polygon import PolygonBox
 
 
@@ -13,22 +12,33 @@ class PageGroup(Block):
     highres_image: Image.Image | None = None
     children: List[Block] | None = None
 
-    def add_block(self, block_cls: Block, polygon: PolygonBox) -> Block:
-        max_id = max([b.block_id for b in self.children or []], default=0)
+    def incr_block_id(self):
+        if self.block_id is None:
+            self.block_id = 0
+        else:
+            self.block_id += 1
 
+    def add_child(self, block: Block):
+        if self.children is None:
+            self.children = [block]
+        else:
+            self.children.append(block)
+
+    def add_block(self, block_cls: type[Block], polygon: PolygonBox) -> Block:
+        self.incr_block_id()
         block = block_cls(
             polygon=polygon,
-            block_id=max_id + 1,
+            block_id=self.block_id,
             page_id=self.page_id,
         )
-        if isinstance(self.children, list):
-            self.children.append(block)
-        else:
-            self.children = [block]
-
+        self.add_child(block)
         return block
 
-    def get_block(self, block_id: str) -> Block | None:
-        for block in self.children:
-            if block._id == block_id:
-                return block
+    def add_full_block(self, block: Block) -> Block:
+        self.incr_block_id()
+        block.block_id = self.block_id
+        self.add_child(block)
+        return block
+
+    def get_block(self, block_id: int) -> Block | None:
+        return self.children[block_id]
