@@ -69,26 +69,28 @@ class Block(BaseModel):
         from marker.v2.schema.text.span import Span
 
         if self.structure is None:
-            return ""
+            if isinstance(self, Span):
+                return self.text
+            else:
+                return ""
 
         text = ""
         for block_id in self.structure:
             block = document.get_block(block_id)
-            if isinstance(block, Span):
-                text += block.text
-            else:
-                text += block.raw_text(document)
-                if isinstance(block, Line):
-                    text += "\n"
+            text += block.raw_text(document)
+            if isinstance(block, Line):
+                text += "\n"
         return text
 
     def render(self, document, renderer_list: list):
         child_blocks = []
-        for block_id in self.structure:
-            block = document.get_block(block_id)
-            if not block.rendered:
-                block.render(renderer_list)
-            child_blocks.append(block)
+        if self.structure is not None and len(self.structure) > 0:
+            for block_id in self.structure:
+                block = document.get_block(block_id)
+                if not block.rendered:
+                    block.render(document, renderer_list)
+                child_blocks.append(block)
 
-        renderer = renderer_for_block(self, renderer_list)
-        self.rendered = renderer(self, child_blocks)
+        renderer_cls = renderer_for_block(self, renderer_list)
+        renderer = renderer_cls()
+        self.rendered = renderer(document, self, child_blocks)
