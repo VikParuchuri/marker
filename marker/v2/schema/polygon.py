@@ -103,7 +103,7 @@ class PolygonBox(BaseModel):
         for corner in new_corners:
             corner[0] = corner[0] * width_scaler
             corner[1] = corner[1] * height_scaler
-        self.polygon = new_corners
+        return PolygonBox(polygon=new_corners)
 
     def fit_to_bounds(self, bounds):
         new_corners = copy.deepcopy(self.polygon)

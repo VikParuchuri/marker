@@ -23,6 +23,8 @@ class Block(BaseModel):
             return page_path
 
     def add_structure(self, block: Block):
+        self.polygon = self.polygon.merge([block.polygon])
+
         if self.structure is None:
             self.structure = [block._id]
         else:
