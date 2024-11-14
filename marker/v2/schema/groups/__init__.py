@@ -1,4 +1,4 @@
-from marker.v2.schema import Block
+from marker.v2.schema.blocks import Block
 from marker.v2.schema.groups.figure import FigureGroup
 from marker.v2.schema.groups.table import TableGroup
 from marker.v2.schema.groups.list import ListGroup

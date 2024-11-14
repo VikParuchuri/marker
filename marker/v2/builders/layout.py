@@ -14,6 +14,8 @@ from marker.v2.schema.text.line import Line
 
 
 class LayoutBuilder(BaseBuilder):
+    batch_size = None
+
     def __init__(self, layout_model, config=None):
         self.layout_model = layout_model
 
@@ -24,10 +26,9 @@ class LayoutBuilder(BaseBuilder):
         self.add_blocks_to_pages(document.pages, layout_results)
         self.merge_blocks(document.pages, provider)
 
-    @classmethod
-    def get_batch_size(cls):
-        if settings.LAYOUT_BATCH_SIZE is not None:
-            return settings.LAYOUT_BATCH_SIZE
+    def get_batch_size(self):
+        if self.batch_size is not None:
+            return self.batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 6
         return 6
@@ -38,7 +39,7 @@ class LayoutBuilder(BaseBuilder):
             [p.lowres_image for p in pages],
             self.layout_model,
             processor,
-            batch_size=int(LayoutBuilder.get_batch_size())
+            batch_size=int(self.get_batch_size())
         )
         return layout_results
 

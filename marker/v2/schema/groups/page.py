@@ -2,7 +2,7 @@ from typing import List
 
 from PIL import Image
 
-from marker.v2.schema import Block
+from marker.v2.schema.blocks import Block
 from marker.v2.schema.polygon import PolygonBox
 
 
