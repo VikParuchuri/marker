@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from pydantic import BaseModel
@@ -16,3 +18,7 @@ class Document(BaseModel):
             if block:
                 return block
         return None
+
+    def render(self, renderer_lst):
+        for page in self.pages:
+            page.render(self, renderer_lst)

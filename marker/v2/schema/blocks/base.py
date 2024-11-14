@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from pydantic import BaseModel, ConfigDict
 
+from marker.v2.renderers.util import renderer_for_block
 from marker.v2.schema.polygon import PolygonBox
 
 
@@ -32,6 +33,7 @@ class Block(BaseModel):
     block_id: Optional[int] = None
     page_id: Optional[int] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
+    rendered: Any | None = None # The rendered output of the block
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -79,3 +81,14 @@ class Block(BaseModel):
                 if isinstance(block, Line):
                     text += "\n"
         return text
+
+    def render(self, document, renderer_list: list):
+        child_blocks = []
+        for block_id in self.structure:
+            block = document.get_block(block_id)
+            if not block.rendered:
+                block.render(renderer_list)
+            child_blocks.append(block)
+
+        renderer = renderer_for_block(self, renderer_list)
+        self.rendered = renderer(self, child_blocks)
