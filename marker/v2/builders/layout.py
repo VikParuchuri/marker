@@ -46,7 +46,8 @@ class LayoutBuilder(BaseBuilder):
         for page, layout_result in zip(pages, layout_results):
             for bbox in sorted(layout_result.bboxes, key=lambda x: x.position):
                 block_cls = LAYOUT_BLOCK_REGISTRY[bbox.label]
-                page.add_block(block_cls, PolygonBox(polygon=bbox.polygon))
+                layout_block = page.add_block(block_cls, PolygonBox(polygon=bbox.polygon))
+                page.add_structure(layout_block)
 
     def merge_blocks(self, document_pages: List[PageGroup], provider: PdfProvider):
         provider_page_lines = provider.page_lines
@@ -77,8 +78,6 @@ class LayoutBuilder(BaseBuilder):
                 min_dist_idx = None
                 line: Line = provider_lines[line_idx]
                 for block_idx, block in enumerate(document_page.children):
-                    if block_idx == line_idx or block.block_type is None:
-                        continue
                     dist = line.polygon.center_distance(block.polygon)
                     if min_dist_idx is None or dist < min_dist:
                         min_dist = dist
@@ -93,5 +92,6 @@ class LayoutBuilder(BaseBuilder):
             for line_idx in all_line_idxs.difference(assigned_line_idxs):
                 line: Line = provider_lines[line_idx]
                 document_page.add_full_block(line)
+                # How do we add structure for when layout doesn't detect text?, squeeze between nearest block?
                 text_block = document_page.add_block(Text, polygon=line.polygon)
                 text_block.add_structure(line)
