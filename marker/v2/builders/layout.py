@@ -5,12 +5,11 @@ from surya.schema import LayoutResult
 
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
-from marker.v2.providers.pdf import PdfProvider
+from marker.v2.providers.pdf import PdfPageProviderLines, PdfProvider
 from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY, Block, Text
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
 from marker.v2.schema.polygon import PolygonBox
-from marker.v2.schema.text.line import Line
 
 
 class LayoutBuilder(BaseBuilder):
@@ -22,7 +21,7 @@ class LayoutBuilder(BaseBuilder):
     def __call__(self, document: Document, provider: PdfProvider):
         layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
-        self.merge_blocks(document.pages, provider)
+        self.merge_blocks(document.pages, provider.page_lines)
 
     @classmethod
     def get_batch_size(cls):
@@ -52,12 +51,11 @@ class LayoutBuilder(BaseBuilder):
                 layout_block.polygon = layout_block.polygon.rescale(layout_page_size, provider_page_size)
                 page.add_structure(layout_block)
 
-    def merge_blocks(self, document_pages: List[PageGroup], provider: PdfProvider):
-        provider_page_lines = provider.page_lines
-        for idx, (document_page, provider_lines) in enumerate(zip(document_pages, provider_page_lines.values())):
-            all_line_idxs = set(range(len(provider_lines)))
+    def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: PdfPageProviderLines):
+        for document_page, provider_lines in zip(document_pages, provider_page_lines.values()):
+            provider_line_idxs = set(range(len(provider_lines)))
             max_intersections = {}
-            for line_idx, line in enumerate(provider_lines):
+            for line_idx, (line, spans) in enumerate(zip(*provider_lines)):
                 for block_idx, block in enumerate(document_page.children):
                     intersection_pct = line.polygon.intersection_pct(block.polygon)
                     if line_idx not in max_intersections:
@@ -66,18 +64,21 @@ class LayoutBuilder(BaseBuilder):
                         max_intersections[line_idx] = (intersection_pct, block_idx)
 
             assigned_line_idxs = set()
-            for line_idx, line in enumerate(provider_lines):
+            for line_idx, (line, spans) in enumerate(zip(*provider_lines)):
                 if line_idx in max_intersections and max_intersections[line_idx][0] > 0.0:
                     document_page.add_full_block(line)
                     block_idx = max_intersections[line_idx][1]
                     block: Block = document_page.children[block_idx]
                     block.add_structure(line)
                     assigned_line_idxs.add(line_idx)
+                    for span in spans:
+                        document_page.add_full_block(span)
+                        line.add_structure(span)
 
-            for line_idx in all_line_idxs.difference(assigned_line_idxs):
+            for line_idx in provider_line_idxs.difference(assigned_line_idxs):
                 min_dist = None
                 min_dist_idx = None
-                line: Line = provider_lines[line_idx]
+                (line, spans) = provider_lines[line_idx]
                 for block_idx, block in enumerate(document_page.children):
                     dist = line.polygon.center_distance(block.polygon)
                     if min_dist_idx is None or dist < min_dist:
@@ -89,10 +90,15 @@ class LayoutBuilder(BaseBuilder):
                     nearest_block = document_page.children[min_dist_idx]
                     nearest_block.add_structure(line)
                     assigned_line_idxs.add(line_idx)
+                    for span in spans:
+                        document_page.add_full_block(span)
+                        line.add_structure(span)
 
-            for line_idx in all_line_idxs.difference(assigned_line_idxs):
-                line: Line = provider_lines[line_idx]
+            for line_idx in provider_line_idxs.difference(assigned_line_idxs):
+                line, spans = provider_lines[line_idx]
                 document_page.add_full_block(line)
-                # How do we add structure for when layout doesn't detect text?, squeeze between nearest block?
                 text_block = document_page.add_block(Text, polygon=line.polygon)
                 text_block.add_structure(line)
+                for span in spans:
+                    document_page.add_full_block(span)
+                    text_block.add_structure(span)
