@@ -1,12 +1,13 @@
 import functools
 from typing import Dict, List, Tuple
+from typing import Dict, List, Optional
 
 import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
 from PIL import Image
+from pydantic import BaseModel
 
 from marker.v2.providers import BaseProvider
-from marker.v2.schema.config.pdf import PdfProviderConfig
 from marker.v2.schema.polygon import PolygonBox
 from marker.v2.schema.text.line import Line, Span
 
@@ -15,11 +16,14 @@ PdfPageProviderLines = Dict[int, PdfPageProviderLine]
 
 
 class PdfProvider(BaseProvider):
-    def __init__(self, filepath: str, config: PdfProviderConfig):
-        self.filepath = filepath
-        self.config = config
-        self.page_lines: PdfPageProviderLines = {}
+    page_range: List[int] | None = None
+    pdftext_workers: int = 4
+    flatten_pdf: bool = True
 
+    def __init__(self, filepath: str, config: Optional[BaseModel] = None):
+        super().__init__(filepath, config)
+
+        self.page_lines: PdfPageProviderLines = {}
         self.doc: pdfium.PdfDocument
 
         self.setup()
@@ -71,10 +75,10 @@ class PdfProvider(BaseProvider):
         self.doc = pdfium.PdfDocument(self.filepath)
         page_char_blocks = dictionary_output(
             self.filepath,
-            page_range=self.config.page_range,
+            page_range=self.page_range,
             keep_chars=False,
-            workers=self.config.pdftext_workers,
-            flatten_pdf=self.config.flatten_pdf
+            workers=self.pdftext_workers,
+            flatten_pdf=self.flatten_pdf
         )
         for page in page_char_blocks:
             page_id = page["page"]

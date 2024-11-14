@@ -3,7 +3,6 @@ import tempfile
 import datasets
 
 from marker.v2.providers.pdf import PdfProvider
-from marker.v2.schema.config.pdf import PdfProviderConfig
 
 
 def test_pdf_provider():
@@ -14,7 +13,7 @@ def test_pdf_provider():
     temp_pdf.write(dataset['pdf'][idx])
     temp_pdf.flush()
 
-    provider = PdfProvider(temp_pdf.name, PdfProviderConfig())
+    provider = PdfProvider(temp_pdf.name)
     assert len(provider) == 12
     assert provider.get_image(0, 72).size == (612, 792)
     assert provider.get_image(0, 96).size == (816, 1056)
