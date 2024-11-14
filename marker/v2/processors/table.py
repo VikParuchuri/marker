@@ -53,10 +53,10 @@ class TableProcessor(BaseProcessor):
                     "img_size": page.highres_image.size
                 })
 
-        lst_format = zip(
-                *(t[key] for key in ["table_image", "table_bbox", "img_size", "text_lines"])
-                for t in table_data
-            )
+        lst_format = zip(*(
+            [t[key] for t in table_data]
+            for key in ["table_image", "table_bbox", "img_size", "text_lines"]
+        ))
 
         cells, needs_ocr = get_cells(
             *lst_format,

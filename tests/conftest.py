@@ -2,9 +2,9 @@ import tempfile
 
 import datasets
 import pytest
-from surya.model.layout.model import load_model
-from surya.model.layout.processor import load_processor
 
+from marker.v2.models import setup_layout_model, setup_texify_model, setup_recognition_model, setup_table_rec_model, \
+    setup_detection_model
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.providers.pdf import PdfProvider
@@ -13,10 +13,37 @@ from marker.v2.schema.document import Document
 
 @pytest.fixture(scope="session")
 def layout_model():
-    layout_model = load_model()
-    layout_model.processor = load_processor()
-    yield layout_model
-    del layout_model
+    layout_m = setup_layout_model()
+    yield layout_m
+    del layout_m
+
+
+@pytest.fixture(scope="session")
+def detection_model():
+    detection_m = setup_detection_model()
+    yield detection_m
+    del detection_m
+
+
+@pytest.fixture(scope="session")
+def texify_model():
+    texify_m = setup_texify_model()
+    yield texify_m
+    del texify_m
+
+
+@pytest.fixture(scope="session")
+def recognition_model():
+    ocr_m = setup_recognition_model()
+    yield ocr_m
+    del ocr_m
+
+
+@pytest.fixture(scope="session")
+def table_rec_model():
+    table_rec_m = setup_table_rec_model()
+    yield table_rec_m
+    del table_rec_m
 
 
 @pytest.fixture(scope="session")
