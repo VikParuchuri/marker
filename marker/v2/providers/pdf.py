@@ -17,6 +17,8 @@ class PdfProvider(BaseProvider):
         self.config = config
         self.page_lines: Dict[int, List[Line]] = {}
 
+        self.doc: pdfium.PdfDocument
+
         self.setup()
 
     def __len__(self) -> int:

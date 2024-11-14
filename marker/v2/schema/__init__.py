@@ -21,3 +21,9 @@ class Block(BaseModel):
             return f"{page_path}/block/{self.block_id}"
         else:
             return page_path
+
+    def add_structure(self, block: Block):
+        if self.structure is None:
+            self.structure = [block._id]
+        else:
+            self.structure.append(block._id)

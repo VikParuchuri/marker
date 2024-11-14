@@ -42,8 +42,12 @@ class PolygonBox(BaseModel):
         return self.width * self.height
 
     @property
-    def center(bbox):
-        return [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
+    def center(self):
+        return [(self.bbox[0] + self.bbox[2]) / 2, (self.bbox[1] + self.bbox[3]) / 2]
+
+    @property
+    def size(self):
+        return [self.width, self.height]
 
     @computed_field
     @property
@@ -97,8 +101,8 @@ class PolygonBox(BaseModel):
 
         new_corners = copy.deepcopy(self.polygon)
         for corner in new_corners:
-            corner[0] = int(corner[0] * width_scaler)
-            corner[1] = int(corner[1] * height_scaler)
+            corner[0] = corner[0] * width_scaler
+            corner[1] = corner[1] * height_scaler
         self.polygon = new_corners
 
     def fit_to_bounds(self, bounds):
@@ -111,10 +115,10 @@ class PolygonBox(BaseModel):
     def overlap_x(self, other):
         return max(0, min(self.bbox[2], other.bbox[2]) - max(self.bbox[0], other.bbox[0]))
 
-    def overlap_y(self, other):
+    def overlap_y(self, other: PolygonBox):
         return max(0, min(self.bbox[3], other.bbox[3]) - max(self.bbox[1], other.bbox[1]))
 
-    def intersection_area(self, other):
+    def intersection_area(self, other: PolygonBox):
         return self.overlap_x(other) * self.overlap_y(other)
 
     def intersection_pct(self, other):
