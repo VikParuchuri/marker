@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 
+from pydantic import BaseModel
 from surya.model.layout.model import load_model
 from surya.model.layout.processor import load_processor
 
@@ -11,16 +12,17 @@ from marker.v2.providers.pdf import PdfProvider
 
 
 class PdfConverter(BaseConverter):
-    filepath: str
-    page_range: List[int] | None = None
-
-    def __call__(self):
-        pdf_provider = PdfProvider(self.filepath)
+    def __init__(self, config: Optional[BaseModel] = None):
+        super().__init__(config)
 
         layout_model = load_model()
         layout_model.processor = load_processor()
-        layout_builder = LayoutBuilder(layout_model)
+        self.layout_model = layout_model
 
+    def __call__(self, filepath: str, page_range: List[int] | None = None):
+        pdf_provider = PdfProvider(filepath, {"page_range": page_range})
+
+        layout_builder = LayoutBuilder(self.layout_model)
         document = DocumentBuilder()(pdf_provider, layout_builder)
         StructureBuilder()(document)
 

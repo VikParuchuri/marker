@@ -7,7 +7,7 @@ from marker.v2.util import assign_config
 
 
 class BaseProvider:
-    def __init__(self, filepath: str, config: Optional[BaseModel] = None):
+    def __init__(self, filepath: str, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
         self.filepath = filepath
 
