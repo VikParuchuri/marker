@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -13,6 +13,7 @@ class Block(BaseModel):
     block_id: Optional[int] = None
     page_id: Optional[int] = None
     structure: List[str] | None = None  # The top-level page structure, which is the block ids in order
+    text_extraction_method: Optional[str] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
