@@ -31,7 +31,7 @@ class StructureBuilder(BaseBuilder):
             for j, prev_block in enumerate(page.children[:i][::-1]):
                 if all([
                     prev_block.block_type in ["Caption", "Footnote"],
-                    prev_block.minimum_gap(block) < self.gap_threshold
+                    prev_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
                 ]):
                     block_structure.insert(prev_block._id, 0)
                     selected_polygons.append(prev_block.polygon)
@@ -42,7 +42,7 @@ class StructureBuilder(BaseBuilder):
             for j, next_block in enumerate(page.children[i + 1:]):
                 if all([
                     next_block.block_type in ["Caption", "Footnote"],
-                    next_block.minimum_gap(block) < self.gap_threshold
+                    next_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
                 ]):
                     block_structure.append(next_block._id)
                     selected_polygons.append(next_block.polygon)
@@ -71,7 +71,7 @@ class StructureBuilder(BaseBuilder):
             for j, next_block in enumerate(page.children[i + 1:]):
                 if all([
                     next_block.block_type == "ListItem",
-                    next_block.minimum_gap(block) < self.gap_threshold
+                    next_block.polygon.minimum_gap(block) < self.gap_threshold
                 ]):
                     block_structure.append(next_block._id)
                     selected_polygons.append(next_block.polygon)

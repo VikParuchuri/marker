@@ -1,3 +1,5 @@
+from typing import List
+
 from surya.model.layout.model import load_model
 from surya.model.layout.processor import load_processor
 
@@ -10,6 +12,9 @@ from marker.v2.schema.config.pdf import PdfProviderConfig
 
 
 class PdfConverter(BaseConverter):
+    filepath: str
+    page_range: List[int] | None = None
+
     def __call__(self):
         pdf_provider = PdfProvider(self.config.filepath, PdfProviderConfig())
 

@@ -17,6 +17,16 @@ class PolygonBox(BaseModel):
         for corner in v:
             if len(corner) != 2:
                 raise ValueError('corner must have 2 elements')
+
+        min_x = min([corner[0] for corner in v])
+        min_y = min([corner[1] for corner in v])
+
+        # Ensure corners are clockwise from top left
+        corner_error = f" .Corners are {v}"
+        assert v[2][1] >= min_y, f'bottom right corner should have a greater y value than top right corner' + corner_error
+        assert v[3][1] >= min_y, 'bottom left corner should have a greater y value than top left corner' + corner_error
+        assert v[1][0] >= min_x, 'top right corner should have a greater x value than top left corner' + corner_error
+        assert v[2][0] >= min_x, 'bottom right corner should have a greater x value than bottom left corner' + corner_error
         return v
 
     @property
@@ -45,8 +55,23 @@ class PolygonBox(BaseModel):
             box[1], box[3] = box[3], box[1]
         return box
 
+    def expand(self, x_margin: float, y_margin: float) -> PolygonBox:
+        new_polygon = []
+        x_margin = x_margin * self.width
+        y_margin = y_margin * self.height
+        for idx, poly in self.polygon:
+            if idx == 0:
+                new_polygon.append([poly[0] - x_margin, poly[1] - y_margin])
+            elif idx == 1:
+                new_polygon.append([poly[0] + x_margin, poly[1] - y_margin])
+            elif idx == 2:
+                new_polygon.append([poly[0] + x_margin, poly[1] + y_margin])
+            elif idx == 3:
+                new_polygon.append([poly[0] - x_margin, poly[1] + y_margin])
+        return PolygonBox(polygon=new_polygon)
+
     def minimum_gap(self, other: PolygonBox):
-        if self.intersection_pct(other.bbox) > 0:
+        if self.intersection_pct(other) > 0:
             return 0
 
         x_dist = min(abs(self.bbox[0] - other.bbox[2]), abs(self.bbox[2] - other.bbox[0]))
@@ -62,11 +87,11 @@ class PolygonBox(BaseModel):
     def center_distance(self, other: PolygonBox):
         return ((self.center[0] - other.center[0]) ** 2 + (self.center[1] - other.center[1]) ** 2) ** 0.5
 
-    def rescale(self, processor_size, image_size):
+    def rescale(self, old_size, new_size):
         # Point is in x, y format
-        page_width, page_height = processor_size
+        page_width, page_height = old_size
+        img_width, img_height = new_size
 
-        img_width, img_height = image_size
         width_scaler = img_width / page_width
         height_scaler = img_height / page_height
 
@@ -92,18 +117,11 @@ class PolygonBox(BaseModel):
     def intersection_area(self, other):
         return self.overlap_x(other) * self.overlap_y(other)
 
-    def intersection_pct(self, other, x_margin=0, y_margin=0):
-        assert 0 <= x_margin <= 1
-        assert 0 <= y_margin <= 1
+    def intersection_pct(self, other):
         if self.area == 0:
             return 0
 
-        if x_margin:
-            x_margin = int(min(self.width, other.width) * x_margin)
-        if y_margin:
-            y_margin = int(min(self.height, other.height) * y_margin)
-
-        intersection = self.intersection_area(other, x_margin, y_margin)
+        intersection = self.intersection_area(other)
         return intersection / self.area
 
     def merge(self, others: List[PolygonBox]) -> PolygonBox:
