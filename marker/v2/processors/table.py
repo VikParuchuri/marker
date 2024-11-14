@@ -75,7 +75,7 @@ class TableProcessor(BaseProcessor):
         )
 
         for table_d, table_res in zip(table_data, tables):
-            block = document.get_block_by_id(table_d["block_id"])
+            block = document.get_block(table_d["block_id"])
             cells = assign_rows_columns(table_res, table_d["img_size"])
             block.cells = cells
 
