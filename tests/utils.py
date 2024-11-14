@@ -6,7 +6,6 @@ import tempfile
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.providers.pdf import PdfProvider
-from marker.v2.schema.config.pdf import PdfProviderConfig
 from marker.v2.schema.document import Document
 
 
@@ -21,7 +20,7 @@ def setup_pdf_document(filename: str) -> Document:
     layout_model = load_model()
     layout_model.processor = load_processor()
 
-    provider = PdfProvider(temp_pdf.name, PdfProviderConfig())
+    provider = PdfProvider(temp_pdf.name)
     layout_builder = LayoutBuilder(layout_model)
     builder = DocumentBuilder()
     document = builder(provider, layout_builder)

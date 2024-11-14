@@ -8,7 +8,6 @@ from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.builders.structure import StructureBuilder
 from marker.v2.converters import BaseConverter
 from marker.v2.providers.pdf import PdfProvider
-from marker.v2.schema.config.pdf import PdfProviderConfig
 
 
 class PdfConverter(BaseConverter):
@@ -16,7 +15,7 @@ class PdfConverter(BaseConverter):
     page_range: List[int] | None = None
 
     def __call__(self):
-        pdf_provider = PdfProvider(self.config.filepath, PdfProviderConfig())
+        pdf_provider = PdfProvider(self.filepath)
 
         layout_model = load_model()
         layout_model.processor = load_processor()
