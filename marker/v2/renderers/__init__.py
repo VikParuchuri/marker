@@ -17,6 +17,6 @@ class BaseRenderer:
             for k in config.model_fields:
                 setattr(self, k, config[k])
 
-    def __call__(self, document, block, children=None):
+    def __call__(self, document_output):
         # Children are in reading order
         raise NotImplementedError

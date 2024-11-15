@@ -4,9 +4,14 @@ from typing import List
 
 from pydantic import BaseModel
 
-from marker.v2.schema.blocks import BlockId
+from marker.v2.schema.blocks import BlockId, BlockOutput
 from marker.v2.schema.groups.page import PageGroup
-from marker.v2.renderers.util import renderer_for_block
+
+
+class DocumentOutput(BaseModel):
+    children: List[BlockOutput]
+    html: str
+    block_type: str = "Document"
 
 
 class Document(BaseModel):
@@ -21,12 +26,18 @@ class Document(BaseModel):
                 return block
         return None
 
-    def render(self, renderer_lst: list | None = None):
-        if renderer_lst is None:
-            renderer_lst = []
+    def assemble_html(self, child_blocks):
+        template = ""
+        for c in child_blocks:
+            template += f"<content-ref src='{c.id}'></content-ref>"
+        return template
 
+    def render(self):
+        child_content = []
         for page in self.pages:
-            page.render(self, renderer_lst)
+            child_content.append(page.render(self))
 
-        doc_renderer = renderer_for_block(self, renderer_lst)
-        return doc_renderer(self, self, self.pages)
+        return DocumentOutput(
+            children=child_content,
+            html=self.assemble_html(child_content)
+        )

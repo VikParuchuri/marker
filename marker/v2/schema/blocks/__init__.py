@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from marker.v2.schema.blocks.base import Block, BlockId
+from marker.v2.schema.blocks.base import Block, BlockId, BlockOutput
 from marker.v2.schema.blocks.caption import Caption
 from marker.v2.schema.blocks.code import Code
 from marker.v2.schema.blocks.figure import Figure
