@@ -44,11 +44,11 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplie
 
     # No pages need OCR
     if ocr_pages == 0:
-        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
+        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none", "ocr_idxs": ocr_idxs}
 
     ocr_method = settings.OCR_ENGINE
     if ocr_method is None or ocr_method == "None":
-        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none"}
+        return pages, {"ocr_pages": 0, "ocr_failed": 0, "ocr_success": 0, "ocr_engine": "none", "ocr_idxs": ocr_idxs}
     elif ocr_method == "surya":
         new_pages = surya_recognition(doc, ocr_idxs, langs, rec_model, pages, batch_multiplier=batch_multiplier)
     elif ocr_method == "ocrmypdf":
@@ -63,7 +63,7 @@ def run_ocr(doc, pages: List[Page], langs: List[str], rec_model, batch_multiplie
             ocr_success += 1
             pages[orig_idx] = page
 
-    return pages, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success, "ocr_engine": ocr_method}
+    return pages, {"ocr_pages": ocr_pages, "ocr_failed": ocr_failed, "ocr_success": ocr_success, "ocr_engine": ocr_method, "ocr_idxs": ocr_idxs}
 
 
 def surya_recognition(doc, page_idxs, langs: List[str], rec_model, pages: List[Page], batch_multiplier=1) -> List[Optional[Page]]:
