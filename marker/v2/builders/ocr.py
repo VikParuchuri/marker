@@ -42,7 +42,7 @@ class OcrBuilder(BaseBuilder):
                     "Caption", "Code", "Footnote",
                     "Form", "Handwriting", "List-item",
                     "Page-footer", "Page-header",
-                    "Section-header", "Text"
+                    "SectionHeader", "Text"
                 ]:
                     if block.structure is None:
                         block.text_extraction_method = "surya"

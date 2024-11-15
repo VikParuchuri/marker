@@ -3,10 +3,10 @@ from marker.v2.schema.text.line import Line
 
 def test_document_builder(pdf_document):
     first_page = pdf_document.pages[0]
-    assert first_page.structure[0] == '/page/0/Section-header/0'
+    assert first_page.structure[0] == '/page/0/SectionHeader/0'
 
     first_block = first_page.get_block(first_page.structure[0])
-    assert first_block.block_type == 'Section-header'
+    assert first_block.block_type == 'SectionHeader'
     assert first_block.text_extraction_method == 'pdftext'
 
     first_text_block: Line = first_page.get_block(first_block.structure[0])
