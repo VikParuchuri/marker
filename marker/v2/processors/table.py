@@ -47,7 +47,7 @@ class TableProcessor(BaseProcessor):
                     )
 
                 table_data.append({
-                    "block_id": block._id,
+                    "block_id": block.id,
                     "table_image": image,
                     "table_bbox": image_poly.bbox,
                     "text_lines": text_lines,
