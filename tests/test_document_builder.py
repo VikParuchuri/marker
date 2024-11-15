@@ -8,8 +8,10 @@ def test_document_builder(pdf_document):
     first_block = first_page.get_block(first_page.structure[0])
     assert first_block.block_type == 'Section-header'
     assert first_block.text_extraction_method == 'pdftext'
+
     first_text_block: Line = first_page.get_block(first_block.structure[0])
     assert first_text_block.block_type == 'Line'
+
     first_span = first_page.get_block(first_text_block.structure[0])
     assert first_span.block_type == 'Span'
     assert first_span.text == 'Subspace Adversarial Training'
@@ -18,8 +20,10 @@ def test_document_builder(pdf_document):
 
     last_block = first_page.get_block(first_page.structure[-1])
     assert last_block.block_type == 'Text-inline-math'
+
     last_text_block: Line = first_page.get_block(last_block.structure[-1])
     assert last_text_block.block_type == 'Line'
+
     last_span = first_page.get_block(last_text_block.structure[-1])
     assert last_span.block_type == 'Span'
     assert last_span.text == 'prove the quality of single-step AT solutions. However,'
