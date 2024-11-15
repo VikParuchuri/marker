@@ -35,7 +35,10 @@ class PdfProvider(BaseProvider):
     def __del__(self):
         self.doc.close()
 
-    def font_flags_to_format(self, flags: int) -> Set[str]:
+    def font_flags_to_format(self, flags: int | None) -> Set[str]:
+        if flags is None:
+            return {"plain"}
+
         flag_map = {
             1: "FixedPitch",
             2: "Serif",
@@ -72,8 +75,11 @@ class PdfProvider(BaseProvider):
                 formats.add("plain")
         return formats
 
-    def font_names_to_format(self, font_name: str) -> Set[str]:
+    def font_names_to_format(self, font_name: str | None) -> Set[str]:
         formats = set()
+        if font_name is None:
+            return formats
+
         if "bold" in font_name.lower():
             formats.add("bold")
         if "ital" in font_name.lower():
@@ -97,16 +103,19 @@ class PdfProvider(BaseProvider):
                 for line in block["lines"]:
                     spans: List[Span] = []
                     for span in line["spans"]:
-                        if not span["text"].strip():
+                        if not span["text"]:
                             continue
                         font_formats = self.font_flags_to_format(span["font"]["flags"]).union(self.font_names_to_format(span["font"]["name"]))
+                        font_name = span["font"]["name"] or "Unknown"
+                        font_weight = span["font"]["weight"] or 0
+                        font_size = span["font"]["size"] or 0
                         spans.append(
                             Span(
                                 polygon=PolygonBox.from_bbox(span["bbox"]),
-                                text=span["text"].strip(),
-                                font=span["font"]["name"],
-                                font_weight=span["font"]["weight"],
-                                font_size=span["font"]["size"],
+                                text=span["text"],
+                                font=font_name,
+                                font_weight=font_weight,
+                                font_size=font_size,
                                 minimum_position=span["char_start_idx"],
                                 maximum_position=span["char_end_idx"],
                                 formats=list(font_formats),

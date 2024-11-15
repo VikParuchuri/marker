@@ -100,21 +100,21 @@ class Block(BaseModel):
                 text += "\n"
         return text
 
-    def assemble_html(self, child_blocks):
+    def assemble_html(self, child_blocks, parent_structure=None):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
         return template
 
-    def render(self, document):
+    def render(self, document, parent_structure):
         child_content = []
         if self.structure is not None and len(self.structure) > 0:
             for block_id in self.structure:
                 block = document.get_block(block_id)
-                child_content.append(block.render(document))
+                child_content.append(block.render(document, self.structure))
 
         return BlockOutput(
-            html=self.assemble_html(child_content),
+            html=self.assemble_html(child_content, parent_structure),
             polygon=self.polygon,
             id=self.id,
             children=child_content

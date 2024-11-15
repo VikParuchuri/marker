@@ -35,7 +35,7 @@ class Document(BaseModel):
     def render(self):
         child_content = []
         for page in self.pages:
-            child_content.append(page.render(self))
+            child_content.append(page.render(self, None))
 
         return DocumentOutput(
             children=child_content,
