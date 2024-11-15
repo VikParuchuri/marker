@@ -52,6 +52,7 @@ class Block(BaseModel):
     page_id: Optional[int] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
     rendered: Any | None = None # The rendered output of the block
+    text_extraction_method: str = "pdftext"
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

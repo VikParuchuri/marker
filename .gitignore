@@ -9,6 +9,7 @@ wandb
 report.json
 benchmark_data
 debug_data
+temp.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

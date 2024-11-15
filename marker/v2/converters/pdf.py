@@ -37,8 +37,8 @@ class PdfConverter(BaseConverter):
         equation_processor(document)
 
         # TODO: re-enable once we add OCR method
-        #table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
-        #table_processor(document)
+        table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
+        table_processor(document)
 
         renderer = MarkdownRenderer()
         document_output = document.render()

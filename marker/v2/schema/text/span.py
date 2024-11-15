@@ -26,10 +26,15 @@ class Span(Block):
         text = self.text
         text = text.replace("-\n", "")  # Remove hyphenated line breaks
 
+        # Remove trailing newlines
         replaced_newline = False
         while len(text) > 0 and text[-1] in ["\n", "\r"]:
             text = text[:-1]
             replaced_newline = True
+
+        # Remove leading newlines
+        while len(text) > 0 and text[0] in ["\n", "\r"]:
+            text = text[1:]
 
         if replaced_newline:
             text += " "
