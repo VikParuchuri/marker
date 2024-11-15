@@ -19,7 +19,7 @@ def test_document_builder(pdf_document):
     assert first_span.formats == ['plain']
 
     last_block = first_page.get_block(first_page.structure[-1])
-    assert last_block.block_type == 'Text-inline-math'
+    assert last_block.block_type == 'Text'
 
     last_text_block: Line = first_page.get_block(last_block.structure[-1])
     assert last_text_block.block_type == 'Line'
