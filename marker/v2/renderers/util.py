@@ -5,4 +5,4 @@ def renderer_for_block(block, renderer_list: list):
         if renderer.block_type == block.block_type:
             return renderer
 
-    return DefaultRenderer
+    return DefaultRenderer()

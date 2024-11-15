@@ -12,6 +12,7 @@ from marker.v2.renderers.util import renderer_for_block
 class Document(BaseModel):
     filepath: str
     pages: List[PageGroup]
+    block_type: str = "Document"
 
     def get_block(self, block_id: BlockId):
         for page in self.pages:
@@ -27,6 +28,5 @@ class Document(BaseModel):
         for page in self.pages:
             page.render(self, renderer_lst)
 
-        doc_renderer_cls = renderer_for_block(self, renderer_lst)
-        doc_renderer = doc_renderer_cls()
+        doc_renderer = renderer_for_block(self, renderer_lst)
         return doc_renderer(self, self, self.pages)

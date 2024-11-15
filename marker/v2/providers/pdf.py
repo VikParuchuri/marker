@@ -1,5 +1,5 @@
 import functools
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 from typing import Dict, List, Optional
 
 import pypdfium2 as pdfium
@@ -34,7 +34,7 @@ class PdfProvider(BaseProvider):
     def __del__(self):
         self.doc.close()
 
-    def font_flags_to_format(self, flags: int) -> List[str]:
+    def font_flags_to_format(self, flags: int) -> Set[str]:
         flag_map = {
             1: "FixedPitch",
             2: "Serif",
@@ -69,7 +69,15 @@ class PdfProvider(BaseProvider):
                 formats.add("bold")
             if set_flags & {"FixedPitch", "Serif", "Script", "Nonsymbolic", "AllCap", "SmallCap", "UseExternAttr"}:
                 formats.add("plain")
-        return list(formats)
+        return formats
+
+    def font_names_to_format(self, font_name: str) -> Set[str]:
+        formats = set()
+        if "bold" in font_name.lower():
+            formats.add("bold")
+        if "ital" in font_name.lower():
+            formats.add("italic")
+        return formats
 
     def setup(self):
         self.doc = pdfium.PdfDocument(self.filepath)
@@ -90,6 +98,7 @@ class PdfProvider(BaseProvider):
                     for span in line["spans"]:
                         if not span["text"].strip():
                             continue
+                        font_formats = self.font_flags_to_format(span["font"]["flags"]).union(self.font_names_to_format(span["font"]["name"]))
                         spans.append(
                             Span(
                                 polygon=PolygonBox.from_bbox(span["bbox"]),
@@ -99,7 +108,7 @@ class PdfProvider(BaseProvider):
                                 font_size=span["font"]["size"],
                                 minimum_position=span["char_start_idx"],
                                 maximum_position=span["char_end_idx"],
-                                formats=self.font_flags_to_format(span["font"]["flags"]),
+                                formats=list(font_formats),
                                 page_id=page_id,
                             )
                         )
