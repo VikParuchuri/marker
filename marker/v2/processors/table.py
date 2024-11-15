@@ -25,7 +25,7 @@ class TableProcessor(BaseProcessor):
         self.table_rec_model = table_rec_model
 
     def __call__(self, document: Document):
-        filepath = document.filepath # Path to original pdf file
+        filepath = document.filepath  # Path to original pdf file
 
         table_data = []
         for page in document.pages:
@@ -35,7 +35,7 @@ class TableProcessor(BaseProcessor):
                 image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.highres_image.size)
                 image = page.highres_image.crop(image_poly.bbox).convert("RGB")
 
-                if block.text_extraction_method == "ocr":
+                if block.text_extraction_method == "surya":
                     text_lines = None
                 else:
                     text_lines = get_page_text_lines(

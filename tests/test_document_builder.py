@@ -7,6 +7,7 @@ def test_document_builder(pdf_document):
 
     first_block = first_page.get_block(first_page.structure[0])
     assert first_block.block_type == 'Section-header'
+    assert first_block.text_extraction_method == 'pdftext'
     first_text_block: Line = first_page.get_block(first_block.structure[0])
     assert first_text_block.block_type == 'Line'
     first_span = first_page.get_block(first_text_block.structure[0])
@@ -16,7 +17,7 @@ def test_document_builder(pdf_document):
     assert first_span.formats == ['plain']
 
     last_block = first_page.get_block(first_page.structure[-1])
-    assert last_block.block_type == 'Text'
+    assert last_block.block_type == 'Text-inline-math'
     last_text_block: Line = first_page.get_block(last_block.structure[-1])
     assert last_text_block.block_type == 'Line'
     last_span = first_page.get_block(last_text_block.structure[-1])

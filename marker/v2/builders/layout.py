@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from surya.layout import batch_layout_detection
 from surya.schema import LayoutResult
@@ -20,10 +20,11 @@ class LayoutBuilder(BaseBuilder):
 
         super().__init__(config)
 
-    def __call__(self, document: Document, provider: PdfProvider):
+    def __call__(self, document: Document, provider: Optional[PdfProvider] = None):
         layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
-        self.merge_blocks(document.pages, provider.page_lines)
+        if provider is not None:
+            self.merge_blocks(document.pages, provider.page_lines)
 
     def get_batch_size(self):
         if self.batch_size is not None:
@@ -70,6 +71,7 @@ class LayoutBuilder(BaseBuilder):
                     document_page.add_full_block(line)
                     block_idx = max_intersections[line_idx][1]
                     block: Block = document_page.children[block_idx]
+                    block.text_extraction_method = "pdftext"
                     block.add_structure(line)
                     block.polygon = block.polygon.merge([line.polygon])
                     assigned_line_idxs.add(line_idx)
@@ -90,6 +92,7 @@ class LayoutBuilder(BaseBuilder):
                 if min_dist_idx is not None:
                     document_page.add_full_block(line)
                     nearest_block = document_page.children[min_dist_idx]
+                    nearest_block.text_extraction_method = "pdftext"
                     nearest_block.add_structure(line)
                     nearest_block.polygon = nearest_block.polygon.merge([line.polygon])
                     assigned_line_idxs.add(line_idx)
@@ -101,6 +104,7 @@ class LayoutBuilder(BaseBuilder):
                 line, spans = provider_lines[line_idx]
                 document_page.add_full_block(line)
                 text_block = document_page.add_block(Text, polygon=line.polygon)
+                text_block.text_extraction_method = "pdftext"
                 text_block.add_structure(line)
                 for span in spans:
                     document_page.add_full_block(span)

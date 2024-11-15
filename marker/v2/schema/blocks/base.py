@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -22,7 +22,9 @@ class BlockId(BaseModel):
         return str(self)
 
     def __eq__(self, other):
-        if not isinstance(other, BlockId):
+        if isinstance(other, str):
+            return str(self) == other
+        elif not isinstance(other, BlockId):
             return NotImplemented
         return self.page_id == other.page_id and self.block_id == other.block_id and self.block_type == other.block_type
 
@@ -32,7 +34,7 @@ class Block(BaseModel):
     block_type: Optional[str] = None
     block_id: Optional[int] = None
     page_id: Optional[int] = None
-    text_extraction_method: Optional[str] = None
+    text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
     rendered: Any | None = None  # The rendered output of the block
 

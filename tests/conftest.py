@@ -8,6 +8,7 @@ from marker.v2.models import setup_layout_model, setup_texify_model, setup_recog
     setup_detection_model
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
+from marker.v2.builders.ocr import OcrBuilder
 from marker.v2.schema.document import Document
 
 
@@ -47,7 +48,7 @@ def table_rec_model():
 
 
 @pytest.fixture(scope="function")
-def pdf_document(request, layout_model) -> Document:
+def pdf_document(request, layout_model, recognition_model) -> Document:
     mark = request.node.get_closest_marker("filename")
     if mark is None:
         filename = "adversarial.pdf"
@@ -63,6 +64,7 @@ def pdf_document(request, layout_model) -> Document:
 
     provider = PdfProvider(temp_pdf.name)
     layout_builder = LayoutBuilder(layout_model)
+    ocr_builder = OcrBuilder(recognition_model)
     builder = DocumentBuilder()
-    document = builder(provider, layout_builder)
+    document = builder(provider, layout_builder, ocr_builder)
     return document
