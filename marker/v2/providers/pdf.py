@@ -1,12 +1,12 @@
 import functools
-from typing import Dict, List, Tuple
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
 from PIL import Image
 from pydantic import BaseModel
 
+from marker.ocr.heuristics import detect_bad_ocr
 from marker.v2.providers import BaseProvider
 from marker.v2.schema.polygon import PolygonBox
 from marker.v2.schema.text.line import Line, Span
@@ -110,7 +110,22 @@ class PdfProvider(BaseProvider):
                         )
                     )
                     line_spans.append(spans)
-            self.page_lines[page_id] = (lines, line_spans)
+            if self.check_line_spans(line_spans):
+                self.page_lines[page_id] = (lines, line_spans)
+
+    def check_line_spans(self, line_spans_list: List[List[Span]]) -> bool:
+        if not len(sum(line_spans_list, [])):
+            return False
+        text = ""
+        for line_spans in line_spans_list:
+            for span in line_spans:
+                text = text + " " + span.text
+            text = text + "\n"
+        if len(text.strip()) == 0:
+            return False
+        if detect_bad_ocr(text):
+            return False
+        return True
 
     @ functools.lru_cache(maxsize=None)
     def get_image(self, idx: int, dpi: int) -> Image.Image:

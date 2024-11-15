@@ -1,3 +1,5 @@
+from marker.v2.providers.pdf import PdfProvider
+
 import tempfile
 from typing import List, Optional
 
@@ -10,7 +12,6 @@ from marker.v2.builders.structure import StructureBuilder
 from marker.v2.converters import BaseConverter
 from marker.v2.processors.equation import EquationProcessor
 from marker.v2.processors.table import TableProcessor
-from marker.v2.providers.pdf import PdfProvider
 from marker.v2.models import setup_layout_model, setup_texify_model, setup_recognition_model, setup_table_rec_model, \
     setup_detection_model
 
@@ -36,8 +37,8 @@ class PdfConverter(BaseConverter):
         equation_processor(document)
 
         # TODO: re-enable once we add OCR method
-        #table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
-        #table_processor(document)
+        # table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
+        # table_processor(document)
 
         rendered = document.render()
         return rendered
@@ -55,5 +56,3 @@ if __name__ == "__main__":
         rendered = converter(temp_pdf.name)
 
         print(rendered)
-
-
