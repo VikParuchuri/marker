@@ -7,11 +7,12 @@ from tabled.inference.recognition import get_cells, recognize_tables
 
 from marker.settings import settings
 from marker.v2.processors import BaseProcessor
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
 
 
 class TableProcessor(BaseProcessor):
-    block_type = "Table"
+    block_type = BlockTypes.Table
     detect_boxes = False
     detector_batch_size = None
     table_rec_batch_size = None

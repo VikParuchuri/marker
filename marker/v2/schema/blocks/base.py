@@ -92,6 +92,5 @@ class Block(BaseModel):
                     block.render(document, renderer_list)
                 child_blocks.append(block)
 
-        renderer_cls = renderer_for_block(self, renderer_list)
-        renderer = renderer_cls()
+        renderer = renderer_for_block(self, renderer_list)
         self.rendered = renderer(document, self, child_blocks)

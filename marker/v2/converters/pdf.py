@@ -15,6 +15,8 @@ from marker.v2.processors.equation import EquationProcessor
 from marker.v2.processors.table import TableProcessor
 from marker.v2.models import setup_layout_model, setup_texify_model, setup_recognition_model, setup_table_rec_model, \
     setup_detection_model
+from marker.v2.renderers.line import LineRenderer
+from marker.v2.renderers.span import SpanRenderer
 
 
 class PdfConverter(BaseConverter):
@@ -42,7 +44,8 @@ class PdfConverter(BaseConverter):
         # table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
         # table_processor(document)
 
-        rendered = document.render()
+        renderer_lst = [SpanRenderer(), LineRenderer()]
+        rendered = document.render(renderer_lst)
         return rendered
 
 

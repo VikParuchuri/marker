@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
 from marker.v2.builders import BaseBuilder
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups import GROUP_BLOCK_REGISTRY, ListGroup
 from marker.v2.schema.groups.page import PageGroup
@@ -22,7 +23,7 @@ class StructureBuilder(BaseBuilder):
     def group_caption_blocks(self, page: PageGroup):
         for i, block_id in enumerate(page.structure):
             block = page.get_block(block_id)
-            if block.block_type not in ["Table", "Figure", "Picture"]:
+            if block.block_type not in [BlockTypes.Table, BlockTypes.Figure, BlockTypes.Picture]:
                 continue
 
             block_structure = [block_id]
@@ -30,7 +31,7 @@ class StructureBuilder(BaseBuilder):
             for j, prev_block_id in enumerate(page.structure[:i][::-1]):
                 prev_block = page.get_block(prev_block_id)
                 if all([
-                    prev_block.block_type in ["Caption", "Footnote"],
+                    prev_block.block_type in [BlockTypes.Caption, BlockTypes.Footnote],
                     prev_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
                 ]):
                     block_structure.insert(0, prev_block_id)
@@ -41,7 +42,7 @@ class StructureBuilder(BaseBuilder):
             for j, next_block_id in enumerate(page.structure[i + 1:]):
                 next_block = page.get_block(next_block_id)
                 if all([
-                    next_block.block_type in ["Caption", "Footnote"],
+                    next_block.block_type in [BlockTypes.Caption, BlockTypes.Footnote],
                     next_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
                 ]):
                     block_structure.append(next_block_id)
@@ -63,7 +64,7 @@ class StructureBuilder(BaseBuilder):
     def group_lists(self, page: PageGroup):
         for i, block_id in enumerate(page.structure):
             block = page.get_block(block_id)
-            if block.block_type not in ["ListItem"]:
+            if block.block_type not in [BlockTypes.ListItem]:
                 continue
             block_structure = [block_id]
             selected_polygons = [block.polygon]
@@ -71,7 +72,7 @@ class StructureBuilder(BaseBuilder):
             for j, next_block_id in enumerate(page.structure[i + 1:]):
                 next_block = page.get_block(next_block_id)
                 if all([
-                    next_block.block_type == "ListItem",
+                    next_block.block_type == BlockTypes.ListItem,
                     next_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
                 ]):
                     block_structure.append(next_block_id)
