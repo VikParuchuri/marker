@@ -5,7 +5,9 @@ from marker.v2.schema import BlockTypes
 
 class HTMLRenderer(BaseRenderer):
     remove_blocks: list = [BlockTypes.PageHeader, BlockTypes.PageFooter]
-    def extract_html(self, document_output):
+    image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
+
+    def extract_html(self, document, document_output):
         soup = BeautifulSoup(document_output.html, 'html.parser')
 
         content_refs = soup.find_all('content-ref')
@@ -14,7 +16,7 @@ class HTMLRenderer(BaseRenderer):
             src = ref.get('src')
             for item in document_output.children:
                 if item.id == src:
-                    content = self.extract_html(item)
+                    content = self.extract_html(document, item)
                     ref_block_type = item.id.block_type
                     break
 
@@ -25,6 +27,7 @@ class HTMLRenderer(BaseRenderer):
 
         return str(soup)
 
-    def __call__(self, document_output):
-        full_html = self.extract_html(document_output)
+    def __call__(self, document):
+        document_output = document.render()
+        full_html = self.extract_html(document, document_output)
         return full_html

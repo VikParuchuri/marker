@@ -36,13 +36,11 @@ class PdfConverter(BaseConverter):
         equation_processor = EquationProcessor(self.texify_model)
         equation_processor(document)
 
-        # TODO: re-enable once we add OCR method
         table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
         table_processor(document)
 
         renderer = MarkdownRenderer()
-        document_output = document.render()
-        return renderer(document_output)
+        return renderer(document)
 
 
 if __name__ == "__main__":
@@ -56,6 +54,7 @@ if __name__ == "__main__":
         converter = PdfConverter()
         rendered = converter(temp_pdf.name)
 
-        print(rendered)
+        with open("temp.md", "w+") as f:
+            f.write(rendered)
 
 

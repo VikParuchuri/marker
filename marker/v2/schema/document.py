@@ -20,10 +20,10 @@ class Document(BaseModel):
     block_type: str = "Document"
 
     def get_block(self, block_id: BlockId):
-        for page in self.pages:
-            block = page.get_block(block_id)
-            if block:
-                return block
+        page = [p for p in self.pages if p.page_id == block_id.page_id][0]
+        block = page.get_block(block_id)
+        if block:
+            return block
         return None
 
     def assemble_html(self, child_blocks):
