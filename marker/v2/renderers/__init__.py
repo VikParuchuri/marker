@@ -1,6 +1,12 @@
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel
+
+
+class RenderFormat(str, Enum):
+    json = "json"
+    markdown = "markdown"
 
 
 class BaseRenderer:

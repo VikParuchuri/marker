@@ -13,3 +13,11 @@ class Span(Block):
     minimum_position: int
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
+
+    @property
+    def bold(self):
+        return 'bold' in self.formats
+
+    @property
+    def italic(self):
+        return 'italic' in self.formats
