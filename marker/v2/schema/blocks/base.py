@@ -2,10 +2,16 @@ from __future__ import annotations
 
 from typing import Optional, List, Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
-from marker.v2.renderers.util import renderer_for_block
 from marker.v2.schema.polygon import PolygonBox
+
+
+class BlockOutput(BaseModel):
+    html: str
+    polygon: PolygonBox
+    id: BlockId
+    children: List[BlockOutput] | None = None
 
 
 class BlockId(BaseModel):
@@ -22,9 +28,21 @@ class BlockId(BaseModel):
         return str(self)
 
     def __eq__(self, other):
-        if not isinstance(other, BlockId):
+        if not isinstance(other, (BlockId, str)):
             return NotImplemented
-        return self.page_id == other.page_id and self.block_id == other.block_id and self.block_type == other.block_type
+
+        if isinstance(other, str):
+            return str(self) == other
+        else:
+            return self.page_id == other.page_id and self.block_id == other.block_id and self.block_type == other.block_type
+
+    @field_validator("block_type")
+    @classmethod
+    def validate_block_type(cls, v):
+        from marker.v2.schema import BlockTypes
+        if not hasattr(BlockTypes, v):
+            raise ValueError(f"Invalid block type: {v}")
+        return v
 
 
 class Block(BaseModel):
@@ -38,7 +56,7 @@ class Block(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
-    def _id(self) -> BlockId:
+    def id(self) -> BlockId:
         return BlockId(
             page_id=self.page_id,
             block_id=self.block_id,
@@ -49,9 +67,9 @@ class Block(BaseModel):
         self.polygon = self.polygon.merge([block.polygon])
 
         if self.structure is None:
-            self.structure = [block._id]
+            self.structure = [block.id]
         else:
-            self.structure.append(block._id)
+            self.structure.append(block.id)
 
     def update_structure_item(self, old_id: BlockId, new_id: BlockId):
         if self.structure is not None:
@@ -82,14 +100,22 @@ class Block(BaseModel):
                 text += "\n"
         return text
 
-    def render(self, document, renderer_list: list):
-        child_blocks = []
+    def assemble_html(self, child_blocks):
+        template = ""
+        for c in child_blocks:
+            template += f"<content-ref src='{c.id}'></content-ref>"
+        return template
+
+    def render(self, document):
+        child_content = []
         if self.structure is not None and len(self.structure) > 0:
             for block_id in self.structure:
                 block = document.get_block(block_id)
-                if not block.rendered:
-                    block.render(document, renderer_list)
-                child_blocks.append(block)
+                child_content.append(block.render(document))
 
-        renderer = renderer_for_block(self, renderer_list)
-        self.rendered = renderer(document, self, child_blocks)
+        return BlockOutput(
+            html=self.assemble_html(child_content),
+            polygon=self.polygon,
+            id=self.id,
+            children=child_content
+        )

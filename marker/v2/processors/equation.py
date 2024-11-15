@@ -35,7 +35,7 @@ class EquationProcessor(BaseProcessor):
 
                 equation_data.append({
                     "image": image,
-                    "block_id": block._id,
+                    "block_id": block.id,
                     "token_count": token_count
                 })
 

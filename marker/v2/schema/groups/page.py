@@ -43,5 +43,5 @@ class PageGroup(Block):
 
     def get_block(self, block_id: BlockId) -> Block | None:
         for block in self.children:
-            if block._id == block_id:
+            if block.id == block_id:
                 return block

@@ -9,7 +9,8 @@ from pydantic import BaseModel
 
 from marker.v2.providers import BaseProvider
 from marker.v2.schema.polygon import PolygonBox
-from marker.v2.schema.text.line import Line, Span
+from marker.v2.schema.text.line import Line
+from marker.v2.schema.text.span import Span
 
 PdfPageProviderLine = Tuple[List[Line], List[List[Span]]]
 PdfPageProviderLines = Dict[int, PdfPageProviderLine]

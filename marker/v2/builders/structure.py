@@ -58,7 +58,7 @@ class StructureBuilder(BaseBuilder):
                 group_block.structure = block_structure
 
                 # Update the structure of the page to reflect the new block
-                page.update_structure_item(block_id, group_block._id)
+                page.update_structure_item(block_id, group_block.id)
                 page.remove_structure_items(block_structure)
 
     def group_lists(self, page: PageGroup):
@@ -86,5 +86,5 @@ class StructureBuilder(BaseBuilder):
                 group_block.structure = block_structure
 
                 # Update the structure of the page to reflect the new block
-                page.update_structure_item(block_id, group_block._id)
+                page.update_structure_item(block_id, group_block.id)
                 page.remove_structure_items(block_structure)

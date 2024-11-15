@@ -21,3 +21,11 @@ class Span(Block):
     @property
     def italic(self):
         return 'italic' in self.formats
+
+    def assemble_html(self, child_blocks):
+        if len(self.text) > 3:
+            if self.italic:
+                return f"<i>{self.text}</i>"
+            elif self.bold:
+                return f"<b>{self.text}</b>"
+        return self.text
