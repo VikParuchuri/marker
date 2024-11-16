@@ -33,6 +33,7 @@ class TableProcessor(BaseProcessor):
             for block in page.children:
                 if block.block_type != self.block_type:
                     continue
+
                 image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.highres_image.size)
                 image = page.highres_image.crop(image_poly.bbox).convert("RGB")
 
@@ -42,9 +43,9 @@ class TableProcessor(BaseProcessor):
                     text_lines = get_page_text_lines(
                         filepath,
                         [page.page_id],
-                        page.highres_image.size,
+                        [page.highres_image.size],
                         flatten_pdf=True
-                    )
+                    )[0]
 
                 table_data.append({
                     "block_id": block.id,
@@ -54,10 +55,7 @@ class TableProcessor(BaseProcessor):
                     "img_size": page.highres_image.size
                 })
 
-        lst_format = zip(*(
-            [t[key] for t in table_data]
-            for key in ["table_image", "table_bbox", "img_size", "text_lines"]
-        ))
+        lst_format = [[t[key] for t in table_data] for key in ["table_image", "table_bbox", "img_size", "text_lines"]]
 
         cells, needs_ocr = get_cells(
             *lst_format,
