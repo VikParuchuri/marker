@@ -35,4 +35,5 @@ def test_document_builder(pdf_document):
 if __name__ == "__main__":
     from tests.utils import setup_pdf_document
 
-    test_document_builder(setup_pdf_document("adversarial.pdf"))
+    pdf_document = setup_pdf_document("adversarial.pdf")
+    test_document_builder(pdf_document)

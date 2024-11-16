@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
-from marker.v2.builders.ocr import OcrBuilder
 from marker.v2.builders.structure import StructureBuilder
 from marker.v2.converters import BaseConverter
 from marker.v2.processors.equation import EquationProcessor
@@ -29,11 +28,10 @@ class PdfConverter(BaseConverter):
         self.detection_model = setup_detection_model()
 
     def __call__(self, filepath: str, page_range: List[int] | None = None):
-        pdf_provider = PdfProvider(filepath, {"page_range": page_range})
+        pdf_provider = PdfProvider(filepath, self.detection_model, self.recognition_model, {"page_range": page_range})
 
         layout_builder = LayoutBuilder(self.layout_model)
-        ocr_builder = OcrBuilder(self.recognition_model)
-        document = DocumentBuilder()(pdf_provider, layout_builder, ocr_builder)
+        document = DocumentBuilder()(pdf_provider, layout_builder)
         StructureBuilder()(document)
 
         equation_processor = EquationProcessor(self.texify_model)
