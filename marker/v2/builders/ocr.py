@@ -1,7 +1,6 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
-from surya.detection import batch_text_detection
-from surya.ocr import run_recognition
+from surya.ocr import run_ocr
 
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
@@ -28,9 +27,8 @@ class OcrBuilder(BaseBuilder):
         self.recognition_model = recognition_model
 
     def __call__(self, document: Document, provider: PdfProvider):
-        detected_page_lines = self.text_detection(document, provider)
-        detected_line_spans = self.ocr_extraction(detected_page_lines, document, provider)
-        self.merge_blocks(document, detected_page_lines, detected_line_spans)
+        page_lines, page_spans = self.ocr_extraction(document, provider)
+        self.merge_blocks(document, page_lines, page_spans)
 
     def get_recognition_batch_size(self):
         if self.recognition_batch_size is not None:
@@ -48,70 +46,44 @@ class OcrBuilder(BaseBuilder):
             return 4
         return 4
 
-    def text_detection(self, document: Document, provider: PdfProvider) -> PageLines:
-        page_lines: PageLines = {}
+    def ocr_extraction(self, document: Document, provider: PdfProvider) -> Tuple[PageLines, PageSpans]:
         page_list = [page for page in document.pages if page.text_extraction_method == "surya"]
-
-        page_detection_results = batch_text_detection(
-            [page.lowres_image for page in page_list],
-            self.detection_model,
-            self.detection_model.processor,
-            batch_size=int(self.get_detection_batch_size())
-        )
-
-        page_ids = [page.page_id for page in page_list]
-        for page_id, page_detection_result in zip(page_ids, page_detection_results):
-            image_size = PolygonBox.from_bbox(page_detection_result.image_bbox).size
-            page_size = provider.get_page_bbox(page_id).size
-            lines: List[Line] = []
-            for line in page_detection_result.bboxes:
-                polygon = PolygonBox(polygon=line.polygon).rescale(image_size, page_size)
-                lines.append(Line(polygon=polygon, page_id=page_id))
-            page_lines[page_id] = lines
-        return page_lines
-
-    def ocr_extraction(self, page_lines: PageLines, document: Document, provider: PdfProvider):
-        page_id_list: List[int] = []
-        ocr_bbox_page_list: List[List[List[int]]] = []
-        ocr_page_line_idx_list: List[List[int]] = []
-
-        for page_id, lines in page_lines.items():
-            page_size = provider.get_page_bbox(page_id).size
-            image_size = document.pages[page_id].highres_image.size
-            ocr_bbox_list = []
-            ocr_line_idx_list = []
-            for line_idx, line in enumerate(lines):
-                ocr_polygon = line.polygon.rescale(page_size, image_size)
-                if ocr_polygon.area > 0:
-                    ocr_bbox_list.append(list(map(int, ocr_polygon.bbox)))
-                    ocr_line_idx_list.append(line_idx)
-            if len(ocr_bbox_list):
-                ocr_bbox_page_list.append(ocr_bbox_list)
-                ocr_page_line_idx_list.append(ocr_line_idx_list)
-                page_id_list.append(page_id)
-
-        recognition_results = run_recognition(
-            images=[document.pages[i].highres_image for i in page_id_list],
-            langs=[None] * len(page_id_list),
+        recognition_results = run_ocr(
+            images=[page.lowres_image for page in page_list],
+            langs=[None] * len(page_list),
+            det_model=self.detection_model,
+            det_processor=self.detection_model.processor,
             rec_model=self.recognition_model,
             rec_processor=self.recognition_model.processor,
-            bboxes=ocr_bbox_page_list,
-            batch_size=int(self.get_recognition_batch_size())
+            batch_size=int(self.get_recognition_batch_size()),
+            highres_images=[page.highres_image for page in page_list]
         )
 
+        page_lines = {}
         page_spans = {}
-        for (page_id, ocr_page_line_idxs, recognition_result) in zip(page_id_list, ocr_page_line_idx_list, recognition_results):
-            if page_id not in page_spans:
-                page_spans[page_id] = {}
+
+        for page_id, recognition_result in zip((page.page_id for page in page_list), recognition_results):
+            page_spans.setdefault(page_id, {})
+            page_lines.setdefault(page_id, [])
+
+            page_size = provider.get_page_bbox(page_id).size
             line_spans = page_spans[page_id]
-            for ocr_line_idx, ocr_line in zip(ocr_page_line_idxs, recognition_result.text_lines):
-                if ocr_line_idx not in line_spans:
-                    line_spans[ocr_line_idx] = []
+
+            for ocr_line_idx, ocr_line in enumerate(recognition_result.text_lines):
+                image_polygon = PolygonBox.from_bbox(recognition_result.image_bbox)
+                polygon = PolygonBox.from_bbox(ocr_line.bbox).rescale(image_polygon.size, page_size)
+
+                page_lines[page_id].append(Line(
+                    polygon=polygon,
+                    page_id=page_id,
+                ))
+
+                line_spans.setdefault(ocr_line_idx, [])
                 line_spans[ocr_line_idx].append(Span(
                     text=ocr_line.text,
                     formats=['plain'],
                     page_id=page_id,
-                    polygon=PolygonBox.from_bbox(ocr_line.bbox),
+                    polygon=polygon,
                     minimum_position=0,
                     maximum_position=0,
                     font='',
@@ -119,7 +91,7 @@ class OcrBuilder(BaseBuilder):
                     font_size=0,
                 ))
 
-        return page_spans
+        return page_lines, page_spans
 
     def merge_blocks(self, document: Document, page_lines: PageLines, page_spans: PageSpans):
         ocred_pages = [page for page in document.pages if page.text_extraction_method == "surya"]
