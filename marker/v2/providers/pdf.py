@@ -58,6 +58,7 @@ class PdfProvider(BaseProvider):
             [self.get_image(i, settings.IMAGE_DPI) for i in self.page_range],
             self.detection_model,
             self.detection_model.processor,
+            batch_size=4
         )
         for page_id, page_detection_result in enumerate(page_detection_results):
             image_size = PolygonBox.from_bbox(page_detection_result.image_bbox).size
@@ -97,6 +98,7 @@ class PdfProvider(BaseProvider):
             rec_model=self.ocr_model,
             rec_processor=self.ocr_model.processor,
             bboxes=ocr_bbox_page_list,
+            batch_size=32
         )
 
         for (page_id, ocr_page_line_idxs, recognition_result) in zip(page_id_list, ocr_page_line_idx_list, recognition_results):
