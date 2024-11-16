@@ -12,7 +12,6 @@ class PageGroup(Block):
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
     children: List[Block] | None = None
-    needs_ocr: bool = False
 
     def incr_block_id(self):
         if self.block_id is None:

@@ -57,7 +57,7 @@ class LayoutBuilder(BaseBuilder):
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: PageLines, provider_page_spans: PageSpans):
         for document_page, provider_lines in zip(document_pages, provider_page_lines.values()):
             if not self.check_layout_coverage(document_page, provider_lines):
-                document_page.needs_ocr = True
+                document_page.text_extraction_method = "surya"
                 continue
 
             line_spans = provider_page_spans[document_page.page_id]
@@ -79,9 +79,9 @@ class LayoutBuilder(BaseBuilder):
                     block: Block = document_page.children[block_idx]
                     block.add_structure(line)
                     block.polygon = block.polygon.merge([line.polygon])
+                    block.text_extraction_method = "pdftext"
                     assigned_line_idxs.add(line_idx)
                     for span in line_spans[line_idx]:
-                        block.text_extraction_method = span.text_extraction_method
                         document_page.add_full_block(span)
                         line.add_structure(span)
 
@@ -100,9 +100,9 @@ class LayoutBuilder(BaseBuilder):
                     nearest_block = document_page.children[min_dist_idx]
                     nearest_block.add_structure(line)
                     nearest_block.polygon = nearest_block.polygon.merge([line.polygon])
+                    nearest_block.text_extraction_method = "pdftext"
                     assigned_line_idxs.add(line_idx)
                     for span in line_spans[line_idx]:
-                        nearest_block.text_extraction_method = span.text_extraction_method
                         document_page.add_full_block(span)
                         line.add_structure(span)
 
@@ -110,9 +110,9 @@ class LayoutBuilder(BaseBuilder):
                 line = provider_lines[line_idx]
                 document_page.add_full_block(line)
                 text_block = document_page.add_block(Text, polygon=line.polygon)
+                text_block.text_extraction_method = "pdftext"
                 text_block.add_structure(line)
                 for span in line_spans[line_idx]:
-                    text_block.text_extraction_method = span.text_extraction_method
                     document_page.add_full_block(span)
                     text_block.add_structure(span)
 

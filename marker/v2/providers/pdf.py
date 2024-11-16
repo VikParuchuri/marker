@@ -133,7 +133,7 @@ class PdfProvider(BaseProvider):
                                 text_extraction_method="pdftext"
                             )
                         )
-                    lines.append(Line(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id, origin="pdftext"))
+                    lines.append(Line(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id))
                     line_spans[len(lines) - 1] = spans
             if self.check_line_spans(line_spans):
                 page_lines[page_id] = lines

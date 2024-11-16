@@ -50,21 +50,23 @@ class OcrBuilder(BaseBuilder):
 
     def text_detection(self, document: Document, provider: PdfProvider) -> PageLines:
         page_lines: PageLines = {}
+        page_list = [page for page in document.pages if page.text_extraction_method == "surya"]
+
         page_detection_results = batch_text_detection(
-            [page.lowres_image for page in document.pages if page.needs_ocr],
+            [page.lowres_image for page in page_list],
             self.detection_model,
             self.detection_model.processor,
             batch_size=int(self.get_detection_batch_size())
         )
 
-        page_ids = [page.page_id for page in document.pages if page.needs_ocr]
+        page_ids = [page.page_id for page in page_list]
         for page_id, page_detection_result in zip(page_ids, page_detection_results):
             image_size = PolygonBox.from_bbox(page_detection_result.image_bbox).size
             page_size = provider.get_page_bbox(page_id).size
             lines: List[Line] = []
             for line in page_detection_result.bboxes:
                 polygon = PolygonBox(polygon=line.polygon).rescale(image_size, page_size)
-                lines.append(Line(polygon=polygon, page_id=page_id, origin="surya"))
+                lines.append(Line(polygon=polygon, page_id=page_id))
             page_lines[page_id] = lines
         return page_lines
 
@@ -115,13 +117,12 @@ class OcrBuilder(BaseBuilder):
                     font='',
                     font_weight=0,
                     font_size=0,
-                    text_extraction_method="surya"
                 ))
 
         return page_spans
 
     def merge_blocks(self, document: Document, page_lines: PageLines, page_spans: PageSpans):
-        ocred_pages = [page for page in document.pages if page.needs_ocr]
+        ocred_pages = [page for page in document.pages if page.text_extraction_method == "surya"]
         for document_page, lines, line_spans in zip(ocred_pages, page_lines.values(), page_spans.values()):
 
             line_idxs = set(range(len(lines)))
@@ -142,9 +143,9 @@ class OcrBuilder(BaseBuilder):
                     block: Block = document_page.children[block_idx]
                     block.add_structure(line)
                     block.polygon = block.polygon.merge([line.polygon])
+                    block.text_extraction_method = "surya"
                     assigned_line_idxs.add(line_idx)
                     for span in line_spans[line_idx]:
-                        block.text_extraction_method = span.text_extraction_method
                         document_page.add_full_block(span)
                         line.add_structure(span)
 
@@ -163,8 +164,8 @@ class OcrBuilder(BaseBuilder):
                     nearest_block = document_page.children[min_dist_idx]
                     nearest_block.add_structure(line)
                     nearest_block.polygon = nearest_block.polygon.merge([line.polygon])
+                    nearest_block.text_extraction_method = "surya"
                     assigned_line_idxs.add(line_idx)
                     for span in line_spans[line_idx]:
-                        nearest_block.text_extraction_method = span.text_extraction_method
                         document_page.add_full_block(span)
                         line.add_structure(span)

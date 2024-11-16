@@ -1,5 +1,4 @@
 import re
-from typing import Literal, Optional
 
 import regex
 
@@ -34,7 +33,6 @@ def strip_trailing_hyphens(line_text, next_line_text, line_html) -> str:
 
 class Line(Block):
     block_type: BlockTypes = BlockTypes.Line
-    origin: Optional[Literal["pdftext", "surya"]] = None
 
     def assemble_html(self, document, child_blocks, parent_structure):
         template = ""
