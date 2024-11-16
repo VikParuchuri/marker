@@ -8,8 +8,6 @@ from marker.v2.schema.groups.page import PageGroup
 
 
 class DocumentBuilder(BaseBuilder):
-    force_ocr: bool = False
-
     def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, ocr_builder: OcrBuilder):
         document = self.build_document(provider)
         layout_builder(document, provider)
