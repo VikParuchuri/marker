@@ -1,16 +1,17 @@
-from typing import List, Optional
+from typing import List
 
 from surya.layout import batch_layout_detection
 from surya.schema import LayoutResult
 
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
-from marker.v2.providers.pdf import PdfProvider, PageLines, PageSpans
+from marker.v2.providers.pdf import PageLines, PageSpans, PdfProvider
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY, Block, Text
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
 from marker.v2.schema.polygon import PolygonBox
+from marker.v2.schema.text.line import Line
 
 
 class LayoutBuilder(BaseBuilder):
@@ -55,6 +56,10 @@ class LayoutBuilder(BaseBuilder):
 
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: PageLines, provider_page_spans: PageSpans):
         for document_page, provider_lines in zip(document_pages, provider_page_lines.values()):
+            if not self.check_layout_coverage(document_page, provider_lines):
+                document_page.needs_ocr = True
+                continue
+
             line_spans = provider_page_spans[document_page.page_id]
             provider_line_idxs = set(range(len(provider_lines)))
             max_intersections = {}
@@ -110,3 +115,21 @@ class LayoutBuilder(BaseBuilder):
                     text_block.text_extraction_method = span.text_extraction_method
                     document_page.add_full_block(span)
                     text_block.add_structure(span)
+
+    def check_layout_coverage(
+        self,
+        document_page: PageGroup,
+        provider_lines: List[Line],
+        coverage_threshold=0.6
+    ):
+        layout_area = 0
+        provider_area = 0
+        for layout_block_id in document_page.structure:
+            layout_block = document_page.get_block(layout_block_id)
+            if layout_block.block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table]:
+                continue
+            layout_area += layout_block.polygon.area
+            for provider_line in provider_lines:
+                provider_area += layout_block.polygon.intersection_area(provider_line.polygon)
+        coverage_ratio = provider_area / layout_area if layout_area > 0 else 0
+        return coverage_ratio >= coverage_threshold

@@ -5,11 +5,8 @@ import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
 from PIL import Image
 from pydantic import BaseModel
-from surya.detection import batch_text_detection
-from surya.ocr import run_recognition
 
 from marker.ocr.heuristics import detect_bad_ocr
-from marker.settings import settings
 from marker.v2.providers import BaseProvider
 from marker.v2.schema.polygon import PolygonBox
 from marker.v2.schema.text.line import Line
@@ -24,26 +21,21 @@ class PdfProvider(BaseProvider):
     page_range: List[int] | None = None
     pdftext_workers: int = 4
     flatten_pdf: bool = True
+    force_ocr: bool = False
 
-    def __init__(self, filepath: str, detection_model, ocr_model, config: Optional[BaseModel] = None):
+    def __init__(self, filepath: str, config: Optional[BaseModel] = None):
         super().__init__(filepath, config)
 
-        self.detection_model = detection_model
-        self.ocr_model = ocr_model
-
-        self.page_lines: PageLines = {}
-        self.page_spans: PageSpans = {}
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
+        self.page_lines: PageLines = {i: [] for i in range(len(self.doc))}
+        self.page_spans: PageSpans = {i: {} for i in range(len(self.doc))}
 
         if self.page_range is None:
             self.page_range = range(len(self.doc))
         assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, "Invalid page range"
 
-    def process_document(self):
-        pdftext_page_lines, pdftext_page_spans = self.pdftext_extraction()
-        detection_page_lines = self.text_detection()
-        self.page_lines, merged_page_spans = self.merge_lines(detection_page_lines, pdftext_page_lines, pdftext_page_spans)
-        self.page_spans = self.ocr_extraction(merged_page_spans)
+        if not self.force_ocr:
+            self.page_lines, self.page_spans = self.pdftext_extraction()
 
     def __len__(self) -> int:
         return len(self.doc)
@@ -51,119 +43,6 @@ class PdfProvider(BaseProvider):
     def __del__(self):
         if self.doc is not None:
             self.doc.close()
-
-    def text_detection(self) -> PageLines:
-        page_lines: PageLines = {}
-        page_detection_results = batch_text_detection(
-            [self.get_image(i, settings.IMAGE_DPI) for i in self.page_range],
-            self.detection_model,
-            self.detection_model.processor,
-            batch_size=4
-        )
-        for page_id, page_detection_result in enumerate(page_detection_results):
-            image_size = PolygonBox.from_bbox(page_detection_result.image_bbox).size
-            page_size = self.get_page_bbox(page_id).size
-            lines: List[Line] = []
-            for line in page_detection_result.bboxes:
-                polygon = PolygonBox(polygon=line.polygon).rescale(image_size, page_size)
-                lines.append(Line(polygon=polygon, page_id=page_id, origin="surya"))
-            page_lines[page_id] = lines
-        return page_lines
-
-    def ocr_extraction(self, page_spans: PageSpans):
-        page_id_list: List[int] = []
-        ocr_bbox_page_list: List[List[List[int]]] = []
-        ocr_page_line_idx_list: List[List[int]] = []
-
-        for page_id, lines in self.page_lines.items():
-            page_size = self.get_page_bbox(page_id).size
-            image_size = self.get_image(page_id, settings.IMAGE_DPI).size
-            ocr_bbox_list = []
-            ocr_line_idx_list = []
-            line_spans = page_spans[page_id]
-            for line_idx, line in enumerate(lines):
-                if not line_spans[line_idx] and line.origin == "surya":
-                    ocr_polygon = line.polygon.rescale(page_size, image_size)
-                    if ocr_polygon.area > 0:
-                        ocr_bbox_list.append(list(map(int, ocr_polygon.bbox)))
-                        ocr_line_idx_list.append(line_idx)
-            if len(ocr_bbox_list):
-                ocr_bbox_page_list.append(ocr_bbox_list)
-                ocr_page_line_idx_list.append(ocr_line_idx_list)
-                page_id_list.append(page_id)
-
-        recognition_results = run_recognition(
-            images=[self.get_image(i, settings.IMAGE_DPI) for i in page_id_list],
-            langs=[None] * len(page_id_list),
-            rec_model=self.ocr_model,
-            rec_processor=self.ocr_model.processor,
-            bboxes=ocr_bbox_page_list,
-            batch_size=32
-        )
-
-        for (page_id, ocr_page_line_idxs, recognition_result) in zip(page_id_list, ocr_page_line_idx_list, recognition_results):
-            line_spans = page_spans[page_id]
-            for ocr_line_idx, ocr_line in zip(ocr_page_line_idxs, recognition_result.text_lines):
-                line_spans[ocr_line_idx].append(Span(
-                    text=ocr_line.text,
-                    formats=['plain'],
-                    page_id=page_id,
-                    polygon=PolygonBox.from_bbox(ocr_line.bbox),
-                    minimum_position=0,
-                    maximum_position=0,
-                    font='',
-                    font_weight=0,
-                    font_size=0,
-                    text_extraction_method="surya"
-                ))
-
-        return page_spans
-
-    def merge_lines(
-        self,
-        detection_page_lines: PageLines,
-        pdftext_page_lines: PageLines,
-        pdftext_page_spans: PageSpans
-    ):
-        page_lines: PageLines = {}
-        page_spans: PageSpans = {}
-        for page_id, (detection_lines, pdftext_lines, pdftext_spans) in enumerate(zip(detection_page_lines.values(), pdftext_page_lines.values(), pdftext_page_spans.values())):
-            page_lines[page_id] = []
-            line_spans = {}
-
-            # if we don't pass these checks, we don't include any data from pdftext
-            if not (self.check_line_coverage(detection_lines, pdftext_lines) and self.check_line_spans(pdftext_spans)):
-                page_lines[page_id] = detection_lines
-                page_spans[page_id] = {i: [] for i in range(len(detection_lines))}
-                continue
-
-            all_lines = []
-            for pdftext_idx, pdftext_line in enumerate(pdftext_lines):
-                matched = False
-                for detection_idx, detection_line in enumerate(detection_lines):
-                    if detection_line.polygon.intersection_pct(pdftext_line.polygon) > 0:
-                        detection_line.polygon = detection_line.polygon.merge([pdftext_line.polygon])
-                        matched = True
-
-                        all_lines.append(detection_line)
-                        span_idx = len(all_lines) - 1
-                        if span_idx not in line_spans:
-                            line_spans[span_idx] = []
-                        line_spans[span_idx].extend(pdftext_spans[pdftext_idx])
-                        break
-
-                if not matched:
-                    all_lines.append(pdftext_line)
-                    line_spans[len(all_lines) - 1] = pdftext_spans[pdftext_idx]
-
-            for line_idx in range(len(all_lines)):
-                if line_idx not in line_spans:
-                    line_spans[line_idx] = []
-
-            page_lines[page_id] = all_lines
-            page_spans[page_id] = line_spans
-
-        return page_lines, page_spans
 
     def font_flags_to_format(self, flags: int | None) -> Set[str]:
         if flags is None:
@@ -256,8 +135,9 @@ class PdfProvider(BaseProvider):
                         )
                     lines.append(Line(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id, origin="pdftext"))
                     line_spans[len(lines) - 1] = spans
-            page_lines[page_id] = lines
-            page_spans[page_id] = line_spans
+            if self.check_line_spans(line_spans):
+                page_lines[page_id] = lines
+                page_spans[page_id] = line_spans
         return page_lines, page_spans
 
     def check_line_spans(self, page_spans: LineSpans) -> bool:
@@ -273,33 +153,6 @@ class PdfProvider(BaseProvider):
         if detect_bad_ocr(text):
             return False
         return True
-
-    def check_line_coverage(
-        self,
-        detection_lines: List[Line],
-        pdftext_lines: List[Line],
-        intersection_threshold=0.5,
-        detection_threshold=0.4,
-        difference_threshold=0.5
-    ):
-        # If there are no detection lines, we return True as there's nothing to cover
-        if not detection_lines:
-            return True
-
-        # if there are fewer pdftext lines than detection lines, we return False
-        if len(pdftext_lines) < difference_threshold * len(detection_lines):
-            return False
-
-        intersecting_lines = 0
-        for detected_line in detection_lines:
-            for pdftext_line in pdftext_lines:
-                intersection_pct = detected_line.polygon.intersection_pct(pdftext_line.polygon)
-                if intersection_pct > intersection_threshold:
-                    intersecting_lines += 1
-                    break  # Move to the next detected line once it's covered
-
-        coverage_ratio = intersecting_lines / len(detection_lines)
-        return coverage_ratio >= detection_threshold
 
     @functools.lru_cache(maxsize=None)
     def get_image(self, idx: int, dpi: int) -> Image.Image:
