@@ -3,7 +3,7 @@ from marker.v2.schema.blocks import Block, BlockOutput
 
 
 class Line(Block):
-    block_type: BlockTypes = BlockTypes.Span
+    block_type: BlockTypes = BlockTypes.Line
 
     def assemble_html(self, child_blocks):
         template = ""
