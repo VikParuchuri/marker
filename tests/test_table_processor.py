@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from tabled.schema import SpanTableCell
 
+from marker.v2.schema import BlockTypes
 from marker.v2.processors.table import TableProcessor
 
 
@@ -13,7 +14,7 @@ def test_table_processor(pdf_document, detection_model, recognition_model, table
     processor(new_document)
 
     for block in new_document.pages[0].children:
-        if block.block_type == "Table":
+        if block.block_type == BlockTypes.Table:
             assert block.cells is not None
             assert len(block.cells) > 0
             assert isinstance(block.cells[0], SpanTableCell)

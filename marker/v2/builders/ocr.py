@@ -4,11 +4,13 @@ from surya.ocr import run_recognition
 
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import BlockId
-from marker.v2.schema.text.line import Line, Span
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
 from marker.v2.schema.polygon import PolygonBox
+from marker.v2.schema.text.line import Line
+from marker.v2.schema.text.span import Span
 
 
 class OcrBuilder(BaseBuilder):
@@ -39,17 +41,17 @@ class OcrBuilder(BaseBuilder):
             ocr_page_block_id_list = []
             for block in page.children:
                 if block.block_type in [
-                    "Caption", "Code", "Footnote",
-                    "Form", "Handwriting", "List-item",
-                    "Page-footer", "Page-header",
-                    "SectionHeader", "Text"
+                    BlockTypes.Caption, BlockTypes.Code, BlockTypes.Footnote,
+                    BlockTypes.Form, BlockTypes.Handwriting, BlockTypes.ListItem,
+                    BlockTypes.PageFooter, BlockTypes.PageHeader,
+                    BlockTypes.SectionHeader, BlockTypes.Text
                 ]:
                     if block.structure is None:
                         block.text_extraction_method = "surya"
                         block_polygon = block.polygon.rescale(page.polygon.size, page.highres_image.size)
                         bbox = list(map(round, block_polygon.bbox))
                         ocr_page_bbox_list.append(bbox)
-                        ocr_page_block_id_list.append(block._id)
+                        ocr_page_block_id_list.append(block.id)
             ocr_bbox_list.append(ocr_page_bbox_list)
             ocr_block_id_list.append(ocr_page_block_id_list)
 

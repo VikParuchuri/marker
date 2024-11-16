@@ -6,6 +6,7 @@ from surya.schema import LayoutResult
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
 from marker.v2.providers.pdf import PdfPageProviderLines, PdfProvider
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY, Block, Text
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
@@ -48,7 +49,7 @@ class LayoutBuilder(BaseBuilder):
             layout_page_size = PolygonBox.from_bbox(layout_result.image_bbox).size
             provider_page_size = page.polygon.size
             for bbox in sorted(layout_result.bboxes, key=lambda x: x.position):
-                block_cls = LAYOUT_BLOCK_REGISTRY[bbox.label]
+                block_cls = LAYOUT_BLOCK_REGISTRY[BlockTypes[bbox.label]]
                 layout_block = page.add_block(block_cls, PolygonBox(polygon=bbox.polygon))
                 layout_block.polygon = layout_block.polygon.rescale(layout_page_size, provider_page_size)
                 page.add_structure(layout_block)

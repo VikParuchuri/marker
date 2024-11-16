@@ -1,8 +1,9 @@
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block, BlockOutput
 
 
 class Line(Block):
-    block_type: str = "Line"
+    block_type: BlockTypes = BlockTypes.Span
 
     def assemble_html(self, child_blocks):
         template = ""

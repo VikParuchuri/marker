@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from marker.v2.schema import BlockTypes
+
 
 class RenderFormat(str, Enum):
     json = "json"
@@ -10,7 +12,7 @@ class RenderFormat(str, Enum):
 
 
 class BaseRenderer:
-    block_type: str | None = None
+    block_type: BlockTypes | None = None
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         if config:

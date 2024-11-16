@@ -2,13 +2,13 @@ from typing import List
 
 from PIL import Image
 
-from marker.v2.schema.blocks import Block
-from marker.v2.schema.blocks import BlockId
+from marker.v2.schema import BlockTypes
+from marker.v2.schema.blocks import Block, BlockId
 from marker.v2.schema.polygon import PolygonBox
 
 
 class PageGroup(Block):
-    block_type: str = "Page"
+    block_type: BlockTypes = BlockTypes.Page
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
     children: List[Block] | None = None

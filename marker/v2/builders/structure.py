@@ -52,7 +52,7 @@ class StructureBuilder(BaseBuilder):
 
             if len(block_structure) > 1:
                 # Create a merged block
-                new_block_cls = GROUP_BLOCK_REGISTRY[block.block_type + "Group"]
+                new_block_cls = GROUP_BLOCK_REGISTRY[BlockTypes[block.block_type + "Group"]]
                 new_polygon = block.polygon.merge(selected_polygons)
                 group_block = page.add_block(new_block_cls, new_polygon)
                 group_block.structure = block_structure

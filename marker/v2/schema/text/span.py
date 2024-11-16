@@ -1,10 +1,11 @@
 from typing import List, Literal
 
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 
 
 class Span(Block):
-    block_type: str = "Span"
+    block_type: BlockTypes = BlockTypes.Span
 
     text: str
     font: str
