@@ -65,6 +65,8 @@ class LayoutBuilder(BaseBuilder):
             max_intersections = {}
             for line_idx, line in enumerate(provider_lines):
                 for block_idx, block in enumerate(document_page.children):
+                    if block.block_type in [BlockTypes.Line, BlockTypes.Span]:
+                        continue
                     intersection_pct = line.polygon.intersection_pct(block.polygon)
                     if line_idx not in max_intersections:
                         max_intersections[line_idx] = (intersection_pct, block_idx)
@@ -90,6 +92,8 @@ class LayoutBuilder(BaseBuilder):
                 min_dist_idx = None
                 line = provider_lines[line_idx]
                 for block_idx, block in enumerate(document_page.children):
+                    if block.block_type in [BlockTypes.Line, BlockTypes.Span]:
+                        continue
                     dist = line.polygon.center_distance(block.polygon)
                     if min_dist_idx is None or dist < min_dist:
                         min_dist = dist
@@ -110,6 +114,7 @@ class LayoutBuilder(BaseBuilder):
                 line = provider_lines[line_idx]
                 document_page.add_full_block(line)
                 text_block = document_page.add_block(Text, polygon=line.polygon)
+                document_page.add_structure(text_block)
                 text_block.text_extraction_method = "pdftext"
                 text_block.add_structure(line)
                 for span in line_spans[line_idx]:

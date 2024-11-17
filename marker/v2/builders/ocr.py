@@ -5,6 +5,7 @@ from surya.ocr import run_ocr
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
 from marker.v2.providers.pdf import PdfProvider
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 from marker.v2.schema.document import Document
 from marker.v2.schema.polygon import PolygonBox
@@ -101,6 +102,8 @@ class OcrBuilder(BaseBuilder):
             max_intersections = {}
             for line_idx, line in enumerate(lines):
                 for block_idx, block in enumerate(document_page.children):
+                    if block.block_type in [BlockTypes.Line, BlockTypes.Span]:
+                        continue
                     intersection_pct = line.polygon.intersection_pct(block.polygon)
                     if line_idx not in max_intersections:
                         max_intersections[line_idx] = (intersection_pct, block_idx)
@@ -126,6 +129,8 @@ class OcrBuilder(BaseBuilder):
                 min_dist_idx = None
                 line = lines[line_idx]
                 for block_idx, block in enumerate(document_page.children):
+                    if block.block_type in [BlockTypes.Line, BlockTypes.Span]:
+                        continue
                     dist = line.polygon.center_distance(block.polygon)
                     if min_dist_idx is None or dist < min_dist:
                         min_dist = dist
