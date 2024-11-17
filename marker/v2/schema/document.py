@@ -21,8 +21,7 @@ class Document(BaseModel):
     block_type: BlockTypes = BlockTypes.Document
 
     def get_block(self, block_id: BlockId):
-        page = [p for p in self.pages if p.page_id == block_id.page_id][0]
-        block = page.get_block(block_id)
+        block = self.pages[block_id.page_id].get_block(block_id)
         if block:
             return block
         return None
