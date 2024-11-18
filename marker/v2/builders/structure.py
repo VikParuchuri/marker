@@ -1,12 +1,9 @@
-from typing import Optional
-
-from pydantic import BaseModel
-
 from marker.v2.builders import BaseBuilder
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
-from marker.v2.schema.groups import GROUP_BLOCK_REGISTRY, ListGroup
+from marker.v2.schema.groups import ListGroup
 from marker.v2.schema.groups.page import PageGroup
+from marker.v2.schema.registry import BLOCK_REGISTRY
 
 
 class StructureBuilder(BaseBuilder):
@@ -52,7 +49,7 @@ class StructureBuilder(BaseBuilder):
 
             if len(block_structure) > 1:
                 # Create a merged block
-                new_block_cls = GROUP_BLOCK_REGISTRY[BlockTypes[block.block_type.name + "Group"]]
+                new_block_cls = BLOCK_REGISTRY[BlockTypes[block.block_type.name + "Group"]]
                 new_polygon = block.polygon.merge(selected_polygons)
                 group_block = page.add_block(new_block_cls, new_polygon)
                 group_block.structure = block_structure
