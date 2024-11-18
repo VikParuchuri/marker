@@ -7,7 +7,7 @@ from marker.settings import settings
 from marker.v2.builders import BaseBuilder
 from marker.v2.providers.pdf import PageLines, PageSpans, PdfProvider
 from marker.v2.schema import BlockTypes
-from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY, Block, Text
+from marker.v2.schema.blocks import LAYOUT_BLOCK_REGISTRY
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
 from marker.v2.schema.polygon import PolygonBox
@@ -59,56 +59,8 @@ class LayoutBuilder(BaseBuilder):
             if not self.check_layout_coverage(document_page, provider_lines):
                 document_page.text_extraction_method = "surya"
                 continue
-
             line_spans = provider_page_spans[document_page.page_id]
-            provider_line_idxs = set(range(len(provider_lines)))
-            max_intersections = {}
-            for line_idx, line in enumerate(provider_lines):
-                for block_idx, block in enumerate(document_page.children):
-                    if block.block_type in [BlockTypes.Line, BlockTypes.Span]:
-                        continue
-                    intersection_pct = line.polygon.intersection_pct(block.polygon)
-                    if line_idx not in max_intersections:
-                        max_intersections[line_idx] = (intersection_pct, block_idx)
-                    elif intersection_pct > max_intersections[line_idx][0]:
-                        max_intersections[line_idx] = (intersection_pct, block_idx)
-
-            assigned_line_idxs = set()
-            for line_idx, line in enumerate(provider_lines):
-                if line_idx in max_intersections and max_intersections[line_idx][0] > 0.0:
-                    document_page.add_full_block(line)
-                    block_idx = max_intersections[line_idx][1]
-                    block: Block = document_page.children[block_idx]
-                    block.add_structure(line)
-                    block.polygon = block.polygon.merge([line.polygon])
-                    block.text_extraction_method = "pdftext"
-                    assigned_line_idxs.add(line_idx)
-                    for span in line_spans[line_idx]:
-                        document_page.add_full_block(span)
-                        line.add_structure(span)
-
-            for line_idx in provider_line_idxs.difference(assigned_line_idxs):
-                min_dist = None
-                min_dist_idx = None
-                line = provider_lines[line_idx]
-                for block_idx, block in enumerate(document_page.children):
-                    if block.block_type in [BlockTypes.Line, BlockTypes.Span]:
-                        continue
-                    dist = line.polygon.center_distance(block.polygon)
-                    if min_dist_idx is None or dist < min_dist:
-                        min_dist = dist
-                        min_dist_idx = block_idx
-
-                if min_dist_idx is not None:
-                    document_page.add_full_block(line)
-                    nearest_block = document_page.children[min_dist_idx]
-                    nearest_block.add_structure(line)
-                    nearest_block.polygon = nearest_block.polygon.merge([line.polygon])
-                    nearest_block.text_extraction_method = "pdftext"
-                    assigned_line_idxs.add(line_idx)
-                    for span in line_spans[line_idx]:
-                        document_page.add_full_block(span)
-                        line.add_structure(span)
+            document_page.merge_blocks(provider_lines, line_spans, text_extraction_method="pdftext")
 
     def check_layout_coverage(
         self,
