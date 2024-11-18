@@ -48,6 +48,9 @@ class BlockId(BaseModel):
             raise ValueError(f"Invalid block type: {v}")
         return v
 
+    def to_path(self):
+        return str(self).replace('/', '_')
+
 
 class Block(BaseModel):
     polygon: PolygonBox

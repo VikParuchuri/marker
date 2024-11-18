@@ -27,7 +27,8 @@ def strip_trailing_hyphens(line_text, next_line_text, line_html) -> str:
     next_line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", next_line_text)
 
     if hyphen_regex.match(line_text) and next_line_starts_lowercase:
-        return replace_last(line_html, rf'[{HYPHENS}]', "")
+        line_html = replace_last(line_html, rf'[{HYPHENS}]', "")
+
     return line_html
 
 

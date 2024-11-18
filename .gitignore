@@ -10,6 +10,7 @@ report.json
 benchmark_data
 debug_data
 temp.md
+temp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

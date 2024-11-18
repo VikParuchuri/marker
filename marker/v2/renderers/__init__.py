@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from marker.v2.schema import BlockTypes
 
 
+
 class BaseRenderer:
     block_type: BlockTypes | None = None
 

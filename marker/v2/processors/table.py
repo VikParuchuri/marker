@@ -12,7 +12,7 @@ from marker.v2.schema.document import Document
 
 
 class TableProcessor(BaseProcessor):
-    block_type = BlockTypes.Table
+    block_types = (BlockTypes.Table, BlockTypes.TableOfContents, BlockTypes.Form)
     detect_boxes = False
     detector_batch_size = None
     table_rec_batch_size = None
@@ -31,7 +31,7 @@ class TableProcessor(BaseProcessor):
         table_data = []
         for page in document.pages:
             for block in page.children:
-                if block.block_type != self.block_type:
+                if block.block_type not in self.block_types:
                     continue
 
                 image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.highres_image.size)

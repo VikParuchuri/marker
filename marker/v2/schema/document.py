@@ -21,10 +21,16 @@ class Document(BaseModel):
     block_type: BlockTypes = BlockTypes.Document
 
     def get_block(self, block_id: BlockId):
-        block = self.pages[block_id.page_id].get_block(block_id)
+        page = self.get_page(block_id.page_id)
+        block = page.get_block(block_id)
         if block:
             return block
         return None
+
+    def get_page(self, page_id):
+        page = self.pages[page_id]
+        assert page.page_id == page_id, "Mismatch between page_id and page index"
+        return page
 
     def assemble_html(self, child_blocks):
         template = ""

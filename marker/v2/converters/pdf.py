@@ -1,8 +1,13 @@
+<<<<<<< HEAD
+import os
+=======
 from marker.v2.providers.pdf import PdfProvider
 
+>>>>>>> origin/v2
 import tempfile
 from typing import List, Optional
 
+import click
 import datasets
 from pydantic import BaseModel
 
@@ -46,9 +51,14 @@ class PdfConverter(BaseConverter):
         return renderer(document)
 
 
-if __name__ == "__main__":
+@click.command()
+@click.option("--output", type=click.Path(exists=False), required=False, default="temp")
+@click.option("--fname", type=str, default="adversarial.pdf")
+def main(output: str, fname: str):
     dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
-    idx = dataset['filename'].index('adversarial.pdf')
+    idx = dataset['filename'].index(fname)
+    out_filename = fname.rsplit(".", 1)[0] + ".md"
+    os.makedirs(output, exist_ok=True)
 
     with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
         temp_pdf.write(dataset['pdf'][idx])
@@ -57,5 +67,12 @@ if __name__ == "__main__":
         converter = PdfConverter()
         rendered = converter(temp_pdf.name)
 
-        with open("temp.md", "w+") as f:
-            f.write(rendered)
+        with open(os.path.join(output, out_filename), "w+") as f:
+            f.write(rendered.markdown)
+
+        for img_name, img in rendered.images.items():
+            img.save(os.path.join(output, img_name), "PNG")
+
+
+if __name__ == "__main__":
+    main()

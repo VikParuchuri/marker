@@ -11,7 +11,7 @@ from marker.v2.schema.document import Document
 
 
 class EquationProcessor(BaseProcessor):
-    block_type = BlockTypes.Equation
+    block_types = (BlockTypes.Equation, )
     model_max_length = 384
     batch_size = None
     token_buffer = 256
@@ -26,7 +26,7 @@ class EquationProcessor(BaseProcessor):
 
         for page in document.pages:
             for block in page.children:
-                if block.block_type != self.block_type:
+                if block.block_type not in self.block_types:
                     continue
                 image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.lowres_image.size)
                 image = page.lowres_image.crop(image_poly.bbox).convert("RGB")

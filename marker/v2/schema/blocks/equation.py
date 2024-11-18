@@ -7,4 +7,4 @@ class Equation(Block):
     latex: str | None = None
 
     def assemble_html(self, child_blocks, parent_structure=None):
-        return f"<div class='math'>{self.latex}</div>"
+        return f"<p><math>{self.latex}</math></p>"
