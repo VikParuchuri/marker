@@ -65,9 +65,12 @@ def pdf_provider(request):
 
 
 @pytest.fixture(scope="function")
-def pdf_document(pdf_provider, layout_model, recognition_model, detection_model) -> Document:
-    layout_builder = LayoutBuilder(layout_model)
-    ocr_builder = OcrBuilder(detection_model, recognition_model)
-    builder = DocumentBuilder()
+def pdf_document(request, pdf_provider, layout_model, recognition_model, detection_model) -> Document:
+    config_mark = request.node.get_closest_marker("config")
+    config = config_mark.args[0] if config_mark else None
+
+    layout_builder = LayoutBuilder(layout_model, config)
+    ocr_builder = OcrBuilder(detection_model, recognition_model, config)
+    builder = DocumentBuilder(config)
     document = builder(pdf_provider, layout_builder, ocr_builder)
     return document
