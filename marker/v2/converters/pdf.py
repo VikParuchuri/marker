@@ -65,7 +65,7 @@ def main(output: str, fname: str):
             f.write(rendered.markdown)
 
         for img_name, img in rendered.images.items():
-            img.save(os.path.join(output, img_name))
+            img.save(os.path.join(output, img_name), "PNG")
 
 
 if __name__ == "__main__":

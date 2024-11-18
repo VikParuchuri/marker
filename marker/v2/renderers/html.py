@@ -1,3 +1,5 @@
+import re
+
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
@@ -9,6 +11,24 @@ from marker.v2.schema.blocks import BlockId
 class HTMLOutput(BaseModel):
     html: str
     images: dict
+
+
+def merge_consecutive_tags(html, tag):
+    if not html:
+        return html
+
+    def replace_whitespace(match):
+        return match.group(1)
+
+    pattern = fr'</{tag}>(\s*)<{tag}>'
+
+    while True:
+        new_merged = re.sub(pattern, replace_whitespace, html)
+        if new_merged == html:
+            break
+        html = new_merged
+
+    return html
 
 
 class HTMLRenderer(BaseRenderer):
@@ -23,7 +43,7 @@ class HTMLRenderer(BaseRenderer):
         cropped = page_img.crop(image_box.bbox)
         return cropped
 
-    def extract_html(self, document, document_output):
+    def extract_html(self, document, document_output, level=0):
         soup = BeautifulSoup(document_output.html, 'html.parser')
 
         content_refs = soup.find_all('content-ref')
@@ -34,7 +54,7 @@ class HTMLRenderer(BaseRenderer):
             sub_images = {}
             for item in document_output.children:
                 if item.id == src:
-                    content, sub_images = self.extract_html(document, item)
+                    content, sub_images = self.extract_html(document, item, level + 1)
                     ref_block_id: BlockId = item.id
                     break
 
@@ -47,9 +67,14 @@ class HTMLRenderer(BaseRenderer):
                 ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
             else:
                 images.update(sub_images)
-                ref.replace_with(BeautifulSoup(f"<div>{content}</div>", 'html.parser'))
+                ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))
 
-        return str(soup), images
+        output = str(soup)
+        if level == 0:
+            output = merge_consecutive_tags(output, 'b')
+            output = merge_consecutive_tags(output, 'i')
+
+        return output, images
 
     def __call__(self, document) -> HTMLOutput:
         document_output = document.render()

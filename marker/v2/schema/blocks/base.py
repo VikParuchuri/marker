@@ -49,25 +49,6 @@ class BlockId(BaseModel):
         return str(self).replace('/', '_')
 
 
-def merge_consecutive_tags(html, tag):
-    if not html:
-        return html
-
-    def replace_with_space(match):
-        closing_tag, whitespace, opening_tag = match.groups()
-        return whitespace if whitespace else ''
-
-    pattern = fr'</{tag}>\s*<{tag}>'
-
-    while True:
-        new_merged = re.sub(pattern, replace_with_space, html)
-        if new_merged == html:
-            break
-        html = new_merged
-
-    return html
-
-
 class Block(BaseModel):
     polygon: PolygonBox
     block_type: Optional[str] = None
@@ -128,8 +109,6 @@ class Block(BaseModel):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
-        template = merge_consecutive_tags(template, 'b')
-        template = merge_consecutive_tags(template, 'i')
         return template
 
     def render(self, document, parent_structure):
