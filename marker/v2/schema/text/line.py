@@ -2,6 +2,7 @@ import re
 
 import regex
 
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block, BlockOutput
 
 HYPHENS = r'-—¬'
@@ -18,6 +19,7 @@ def replace_last(string, old, new):
     last_match = matches[-1]
     return string[:last_match.start()] + new + string[last_match.end():]
 
+
 def strip_trailing_hyphens(line_text, next_line_text, line_html) -> str:
     lowercase_letters = r'\p{Ll}|\d'
 
@@ -31,7 +33,7 @@ def strip_trailing_hyphens(line_text, next_line_text, line_html) -> str:
 
 
 class Line(Block):
-    block_type: str = "Line"
+    block_type: BlockTypes = BlockTypes.Line
 
     def assemble_html(self, document, child_blocks, parent_structure):
         template = ""

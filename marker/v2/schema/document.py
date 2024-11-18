@@ -4,6 +4,7 @@ from typing import List
 
 from pydantic import BaseModel
 
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import BlockId, BlockOutput
 from marker.v2.schema.groups.page import PageGroup
 
@@ -11,13 +12,13 @@ from marker.v2.schema.groups.page import PageGroup
 class DocumentOutput(BaseModel):
     children: List[BlockOutput]
     html: str
-    block_type: str = "Document"
+    block_type: BlockTypes = BlockTypes.Document
 
 
 class Document(BaseModel):
     filepath: str
     pages: List[PageGroup]
-    block_type: str = "Document"
+    block_type: BlockTypes = BlockTypes.Document
 
     def get_block(self, block_id: BlockId):
         page = self.get_page(block_id.page_id)

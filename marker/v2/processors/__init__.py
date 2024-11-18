@@ -2,6 +2,7 @@ from typing import Optional, Tuple
 
 from pydantic import BaseModel
 
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
 from marker.v2.util import assign_config
 

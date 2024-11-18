@@ -1,17 +1,17 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel
+from texify.inference import batch_inference
 from tqdm import tqdm
 
 from marker.settings import settings
 from marker.v2.processors import BaseProcessor
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
-
-from texify.inference import batch_inference
 
 
 class EquationProcessor(BaseProcessor):
-    block_types = ("Equation", )
+    block_types = (BlockTypes.Equation, )
     model_max_length = 384
     batch_size = None
     token_buffer = 256

@@ -1,18 +1,28 @@
-from marker.v2.schema.blocks import Block, LAYOUT_BLOCK_REGISTRY
-from marker.v2.schema.groups import GROUP_BLOCK_REGISTRY
-from marker.v2.schema.text import TEXT_BLOCK_REGISTRY
+from enum import Enum, auto
 
 
-class _BlockTypes:
-    def __init__(self):
-        pass
-
-    def add(self, registry: dict[str, Block]):
-        for k, v in registry.items():
-            setattr(self, k, k)
-
-
-BlockTypes = _BlockTypes()
-BlockTypes.add(GROUP_BLOCK_REGISTRY)
-BlockTypes.add(TEXT_BLOCK_REGISTRY)
-BlockTypes.add(LAYOUT_BLOCK_REGISTRY)
+class BlockTypes(Enum):
+    Line = auto()
+    Span = auto()
+    FigureGroup = auto()
+    TableGroup = auto()
+    ListGroup = auto()
+    PictureGroup = auto()
+    Page = auto()
+    Caption = auto()
+    Code = auto()
+    Figure = auto()
+    Footnote = auto()
+    Form = auto()
+    Equation = auto()
+    Handwriting = auto()
+    TextInlineMath = auto()
+    ListItem = auto()
+    PageFooter = auto()
+    PageHeader = auto()
+    Picture = auto()
+    SectionHeader = auto()
+    Table = auto()
+    Text = auto()
+    TableOfContents = auto()
+    Document = auto()

@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 
 from marker.schema.bbox import BboxElement
 from marker.schema.block import Block, Span
-from surya.schema import TextDetectionResult, LayoutResult, OrderResult
+from surya.schema import TextDetectionResult, LayoutResult
 
 
 class Page(BboxElement):
@@ -12,7 +12,7 @@ class Page(BboxElement):
     rotation: Optional[int] = None # Rotation degrees of the page
     text_lines: Optional[TextDetectionResult] = None
     layout: Optional[LayoutResult] = None
-    order: Optional[OrderResult] = None
+    order: Optional[Any] = None
     ocr_method: Optional[str] = None # One of "surya" or "tesseract"
     char_blocks: Optional[List[Dict]] = None # Blocks with character-level data from pdftext
     images: Optional[List[Any]] = None # Images to save along with the page, need Any to avoid pydantic error

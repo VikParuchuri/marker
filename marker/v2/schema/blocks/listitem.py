@@ -1,5 +1,6 @@
 import re
 
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 
 
@@ -9,8 +10,9 @@ def replace_bullets(text):
     replaced_string = re.sub(bullet_pattern, r"\1-\2", text)
     return replaced_string
 
+
 class ListItem(Block):
-    block_type: str = "ListItem"
+    block_type: BlockTypes = BlockTypes.ListItem
 
     def assemble_html(self, child_blocks, parent_structure):
         template = super().assemble_html(child_blocks, parent_structure)

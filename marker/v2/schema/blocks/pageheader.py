@@ -1,8 +1,9 @@
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 
 
 class PageHeader(Block):
-    block_type: str = "PageHeader"
+    block_type: str = BlockTypes.PageHeader
 
     def assemble_html(self, child_blocks, parent_structure):
         template = super().assemble_html(child_blocks, parent_structure)
