@@ -1,11 +1,15 @@
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from pydantic import BaseModel
 
 from marker.v2.renderers import BaseRenderer
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import BlockId
+
+# Ignore beautifulsoup warnings
+import warnings
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 
 class HTMLOutput(BaseModel):

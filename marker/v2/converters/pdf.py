@@ -1,9 +1,8 @@
-<<<<<<< HEAD
 import os
-=======
-from marker.v2.providers.pdf import PdfProvider
+os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
->>>>>>> origin/v2
+from marker.v2.processors.sectionheader import SectionHeaderProcessor
+from marker.v2.providers.pdf import PdfProvider
 import tempfile
 from typing import List, Optional
 
@@ -46,6 +45,9 @@ class PdfConverter(BaseConverter):
 
         table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
         table_processor(document)
+
+        section_header_processor = SectionHeaderProcessor()
+        section_header_processor(document)
 
         renderer = MarkdownRenderer()
         return renderer(document)

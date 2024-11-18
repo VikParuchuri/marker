@@ -28,6 +28,9 @@ class BlockId(BaseModel):
             return f"/page/{self.page_id}"
         return f"/page/{self.page_id}/{self.block_type.name}/{self.block_id}"
 
+    def __hash__(self):
+        return hash(str(self))
+
     def __repr__(self):
         return str(self)
 
