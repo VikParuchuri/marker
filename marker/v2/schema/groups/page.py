@@ -48,6 +48,12 @@ class PageGroup(Block):
         assert block.block_id == block_id.block_id
         return block
 
+    def assemble_html(self, child_blocks, parent_structure=None):
+        template = ""
+        for c in child_blocks:
+            template += f"<content-ref src='{c.id}'></content-ref>"
+        return template
+
     def merge_blocks(
         self,
         page_lines: List[Line],

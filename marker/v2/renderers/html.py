@@ -1,11 +1,15 @@
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from pydantic import BaseModel
 
 from marker.v2.renderers import BaseRenderer
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import BlockId
+
+# Ignore beautifulsoup warnings
+import warnings
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 
 class HTMLOutput(BaseModel):
@@ -34,6 +38,8 @@ def merge_consecutive_tags(html, tag):
 class HTMLRenderer(BaseRenderer):
     remove_blocks: list = [BlockTypes.PageHeader, BlockTypes.PageFooter]
     image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
+    page_blocks: list = [BlockTypes.Page]
+    paginate_output: bool = False
 
     def extract_image(self, document, image_id):
         image_block = document.get_block(image_id)
@@ -65,6 +71,11 @@ class HTMLRenderer(BaseRenderer):
                 image_name = f"{ref_block_id.to_path()}.png"
                 images[image_name] = image
                 ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
+            elif ref_block_id.block_type in self.page_blocks:
+                images.update(sub_images)
+                if self.paginate_output:
+                    content = f"<div class='page' data-page-id='{ref_block_id.page_id}'>{content}</div>"
+                ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))
             else:
                 images.update(sub_images)
                 ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))

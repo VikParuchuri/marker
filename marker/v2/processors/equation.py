@@ -16,7 +16,7 @@ class EquationProcessor(BaseProcessor):
     batch_size = None
     token_buffer = 256
 
-    def __init__(self, texify_model, config: Optional[BaseModel] = None):
+    def __init__(self, texify_model, config=None):
         super().__init__(config)
 
         self.texify_model = texify_model
