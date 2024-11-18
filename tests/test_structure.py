@@ -1,6 +1,9 @@
+import pytest
+
 from marker.v2.builders.structure import StructureBuilder
 
 
+@pytest.mark.config({"page_range": [0]})
 def test_structure_builder(pdf_document):
     structure = StructureBuilder()
     structure(pdf_document)

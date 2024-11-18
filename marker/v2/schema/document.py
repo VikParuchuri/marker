@@ -5,7 +5,7 @@ from typing import List
 from pydantic import BaseModel
 
 from marker.v2.schema import BlockTypes
-from marker.v2.schema.blocks import BlockId, BlockOutput
+from marker.v2.schema.blocks import Block, BlockId, BlockOutput
 from marker.v2.schema.groups.page import PageGroup
 
 
@@ -28,11 +28,12 @@ class Document(BaseModel):
         return None
 
     def get_page(self, page_id):
-        page = self.pages[page_id]
-        assert page.page_id == page_id, "Mismatch between page_id and page index"
-        return page
+        for page in self.pages:
+            if page.page_id == page_id:
+                return page
+        return None
 
-    def assemble_html(self, child_blocks):
+    def assemble_html(self, child_blocks: List[Block]):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"

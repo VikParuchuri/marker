@@ -1,12 +1,9 @@
+import pytest
 from marker.v2.schema import BlockTypes
-from marker.v2.schema.text.line import Line
-from tests.utils import setup_pdf_document
 
 
-def test_ocr_pipeline():
-    pdf_document = setup_pdf_document(
-        "water_damage.pdf"
-    )
+@pytest.mark.filename("water_damage.pdf")
+def test_ocr_pipeline(pdf_document):
     assert pdf_document.pages[0].structure[0] == '/page/0/Table/0'
 
     table_block = pdf_document.pages[0].get_block(pdf_document.pages[0].structure[0])

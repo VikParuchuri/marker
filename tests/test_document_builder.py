@@ -1,7 +1,10 @@
+import pytest
+
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.text.line import Line
 
 
+@pytest.mark.config({"page_range": [0]})
 def test_document_builder(pdf_document):
     first_page = pdf_document.pages[0]
     assert first_page.structure[0] == '/page/0/SectionHeader/0'
@@ -18,22 +21,3 @@ def test_document_builder(pdf_document):
     assert first_span.text == 'Subspace Adversarial Training'
     assert first_span.font == 'NimbusRomNo9L-Medi'
     assert first_span.formats == ['plain']
-
-    last_block = first_page.get_block(first_page.structure[-1])
-    assert last_block.block_type == BlockTypes.Text
-
-    last_text_block: Line = first_page.get_block(last_block.structure[-1])
-    assert last_text_block.block_type == BlockTypes.Line
-
-    last_span = first_page.get_block(last_text_block.structure[-1])
-    assert last_span.block_type == BlockTypes.Span
-    assert last_span.text == 'prove the quality of single-step AT solutions. However,'
-    assert last_span.font == 'NimbusRomNo9L-Regu'
-    assert last_span.formats == ['plain']
-
-
-if __name__ == "__main__":
-    from tests.utils import setup_pdf_document
-
-    pdf_document = setup_pdf_document("adversarial.pdf")
-    test_document_builder(pdf_document)

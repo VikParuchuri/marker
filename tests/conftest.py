@@ -49,8 +49,11 @@ def table_rec_model():
 
 @pytest.fixture(scope="function")
 def pdf_provider(request):
-    mark = request.node.get_closest_marker("filename")
-    filename = mark.args[0] if mark else "adversarial.pdf"
+    filename_mark = request.node.get_closest_marker("filename")
+    filename = filename_mark.args[0] if filename_mark else "adversarial.pdf"
+
+    config_mark = request.node.get_closest_marker("config")
+    config = config_mark.args[0] if config_mark else None
 
     dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
     idx = dataset['filename'].index(filename)
@@ -58,13 +61,16 @@ def pdf_provider(request):
     temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf")
     temp_pdf.write(dataset['pdf'][idx])
     temp_pdf.flush()
-    yield PdfProvider(temp_pdf.name)
+    yield PdfProvider(temp_pdf.name, config)
 
 
 @pytest.fixture(scope="function")
-def pdf_document(pdf_provider, layout_model, recognition_model, detection_model) -> Document:
-    layout_builder = LayoutBuilder(layout_model)
-    ocr_builder = OcrBuilder(detection_model, recognition_model)
-    builder = DocumentBuilder()
+def pdf_document(request, pdf_provider, layout_model, recognition_model, detection_model) -> Document:
+    config_mark = request.node.get_closest_marker("config")
+    config = config_mark.args[0] if config_mark else None
+
+    layout_builder = LayoutBuilder(layout_model, config)
+    ocr_builder = OcrBuilder(detection_model, recognition_model, config)
+    builder = DocumentBuilder(config)
     document = builder(pdf_provider, layout_builder, ocr_builder)
     return document
