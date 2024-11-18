@@ -3,7 +3,7 @@ from marker.v2.schema import BlockTypes
 
 
 @pytest.mark.filename("water_damage.pdf")
-def test_ocr_pipeline(pdf_document):
+def test_garbled_pdf(pdf_document):
     assert pdf_document.pages[0].structure[0] == '/page/0/Table/0'
 
     table_block = pdf_document.pages[0].get_block(pdf_document.pages[0].structure[0])
