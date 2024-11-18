@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional, List, Any
+import re
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -43,6 +44,28 @@ class BlockId(BaseModel):
         if not hasattr(BlockTypes, v):
             raise ValueError(f"Invalid block type: {v}")
         return v
+
+    def to_path(self):
+        return str(self).replace('/', '_')
+
+
+def merge_consecutive_tags(html, tag):
+    if not html:
+        return html
+
+    def replace_with_space(match):
+        closing_tag, whitespace, opening_tag = match.groups()
+        return whitespace if whitespace else ''
+
+    pattern = fr'</{tag}>\s*<{tag}>'
+
+    while True:
+        new_merged = re.sub(pattern, replace_with_space, html)
+        if new_merged == html:
+            break
+        html = new_merged
+
+    return html
 
 
 class Block(BaseModel):
@@ -105,6 +128,8 @@ class Block(BaseModel):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
+        template = merge_consecutive_tags(template, 'b')
+        template = merge_consecutive_tags(template, 'i')
         return template
 
     def render(self, document, parent_structure):

@@ -6,4 +6,4 @@ class ListGroup(Block):
 
     def assemble_html(self, child_blocks, parent_structure):
         template = super().assemble_html(child_blocks, parent_structure)
-        return f"<ul>{template}</ul>"
+        return f"<p><ul>{template}</ul></p>"

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -7,7 +7,7 @@ from marker.v2.util import assign_config
 
 
 class BaseProcessor:
-    block_type: str | None = None # What block type this processor is responsible for
+    block_types: Tuple[str] | None = None # What block types this processor is responsible for
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
