@@ -110,22 +110,11 @@ class LayoutBuilder(BaseBuilder):
                         document_page.add_full_block(span)
                         line.add_structure(span)
 
-            for line_idx in provider_line_idxs.difference(assigned_line_idxs):
-                line = provider_lines[line_idx]
-                document_page.add_full_block(line)
-                text_block = document_page.add_block(Text, polygon=line.polygon)
-                document_page.add_structure(text_block)
-                text_block.text_extraction_method = "pdftext"
-                text_block.add_structure(line)
-                for span in line_spans[line_idx]:
-                    document_page.add_full_block(span)
-                    text_block.add_structure(span)
-
     def check_layout_coverage(
         self,
         document_page: PageGroup,
         provider_lines: List[Line],
-        coverage_threshold=0.6
+        coverage_threshold=0.5
     ):
         layout_area = 0
         provider_area = 0

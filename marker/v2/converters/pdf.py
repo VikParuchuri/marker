@@ -29,7 +29,7 @@ class PdfConverter(BaseConverter):
         self.detection_model = setup_detection_model()
 
     def __call__(self, filepath: str, page_range: List[int] | None = None):
-        pdf_provider = PdfProvider(filepath, {"page_range": page_range})
+        pdf_provider = PdfProvider(filepath, {"page_range": page_range, "force_ocr": False})
 
         layout_builder = LayoutBuilder(self.layout_model)
         ocr_builder = OcrBuilder(self.detection_model, self.recognition_model)
