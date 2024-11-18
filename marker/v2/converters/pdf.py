@@ -24,6 +24,7 @@ from marker.v2.renderers.markdown import MarkdownRenderer
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 from marker.v2.schema.registry import BLOCK_REGISTRY
+from marker.v2.processors.debug import DebugProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -58,6 +59,9 @@ class PdfConverter(BaseConverter):
         section_header_processor = SectionHeaderProcessor(self.config)
         section_header_processor(document)
 
+        debug_processor = DebugProcessor(self.config)
+        debug_processor(document)
+
         renderer = MarkdownRenderer(self.config)
         return renderer(document)
 
@@ -65,11 +69,18 @@ class PdfConverter(BaseConverter):
 @click.command()
 @click.option("--output", type=click.Path(exists=False), required=False, default="temp")
 @click.option("--fname", type=str, default="adversarial.pdf")
-def main(output: str, fname: str):
+@click.option("--debug", is_flag=True)
+def main(output: str, fname: str, debug: bool):
     dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
     idx = dataset['filename'].index(fname)
     out_filename = fname.rsplit(".", 1)[0] + ".md"
     os.makedirs(output, exist_ok=True)
+
+    config = {}
+    if debug:
+        config["debug_pdf_images"] = True
+        config["debug_layout_images"] = True
+        config["debug_json"] = True
 
     with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
         temp_pdf.write(dataset['pdf'][idx])

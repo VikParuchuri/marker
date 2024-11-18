@@ -26,3 +26,6 @@ class BlockTypes(Enum):
     Text = auto()
     TableOfContents = auto()
     Document = auto()
+
+    def __str__(self):
+        return self.name

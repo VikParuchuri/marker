@@ -7,7 +7,7 @@ from marker.v2.schema.registry import BLOCK_REGISTRY
 
 
 class StructureBuilder(BaseBuilder):
-    gap_threshold: int = 10
+    gap_threshold: int = .05
 
     def __init__(self, config=None):
         super().__init__(config)
@@ -18,6 +18,7 @@ class StructureBuilder(BaseBuilder):
             self.group_lists(page)
 
     def group_caption_blocks(self, page: PageGroup):
+        gap_threshold_px = self.gap_threshold * page.polygon.height
         for i, block_id in enumerate(page.structure):
             block = page.get_block(block_id)
             if block.block_type not in [BlockTypes.Table, BlockTypes.Figure, BlockTypes.Picture]:
@@ -29,10 +30,10 @@ class StructureBuilder(BaseBuilder):
                 prev_block = page.get_block(prev_block_id)
                 if all([
                     prev_block.block_type in [BlockTypes.Caption, BlockTypes.Footnote],
-                    prev_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
+                    prev_block.polygon.minimum_gap(block.polygon) < gap_threshold_px
                 ]):
                     block_structure.insert(0, prev_block_id)
-                    selected_polygons.append(prev_block.polygon)
+                    selected_polygons.append(selected_polygons[0])
                 else:
                     break
 
@@ -40,7 +41,7 @@ class StructureBuilder(BaseBuilder):
                 next_block = page.get_block(next_block_id)
                 if all([
                     next_block.block_type in [BlockTypes.Caption, BlockTypes.Footnote],
-                    next_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
+                    next_block.polygon.minimum_gap(selected_polygons[-1]) < gap_threshold_px
                 ]):
                     block_structure.append(next_block_id)
                     selected_polygons.append(next_block.polygon)
@@ -59,6 +60,7 @@ class StructureBuilder(BaseBuilder):
                 page.remove_structure_items(block_structure)
 
     def group_lists(self, page: PageGroup):
+        gap_threshold_px = self.gap_threshold * page.polygon.height
         for i, block_id in enumerate(page.structure):
             block = page.get_block(block_id)
             if block.block_type not in [BlockTypes.ListItem]:
@@ -70,7 +72,7 @@ class StructureBuilder(BaseBuilder):
                 next_block = page.get_block(next_block_id)
                 if all([
                     next_block.block_type == BlockTypes.ListItem,
-                    next_block.polygon.minimum_gap(block.polygon) < self.gap_threshold
+                    next_block.polygon.minimum_gap(selected_polygons[-1]) < gap_threshold_px
                 ]):
                     block_structure.append(next_block_id)
                     selected_polygons.append(next_block.polygon)
