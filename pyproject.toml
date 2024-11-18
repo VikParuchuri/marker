@@ -33,11 +33,11 @@ tabulate = "^0.9.0"
 ftfy = "^6.1.1"
 texify = "^0.2.1"
 rapidfuzz = "^3.8.1"
-surya-ocr = "^0.6.14"
+surya-ocr = { git = "https://github.com/VikParuchuri/surya.git", branch = "layout2" }
 filetype = "^1.2.0"
 regex = "^2024.4.28"
 pdftext = "^0.3.18"
-tabled-pdf = "^0.1.5"
+tabled-pdf = { git = "https://github.com/VikParuchuri/tabled.git", branch = "dev-mose/compilation-updates" }
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
@@ -46,6 +46,7 @@ streamlit = "^1.37.1"
 fastapi = "^0.115.4"
 uvicorn = "^0.32.0"
 python-multipart = "^0.0.16"
+pytest = "^8.3.3"
 
 [tool.poetry.scripts]
 marker = "convert:main"
