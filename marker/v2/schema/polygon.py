@@ -77,15 +77,31 @@ class PolygonBox(BaseModel):
         if self.intersection_pct(other) > 0:
             return 0
 
-        x_dist = min(abs(self.bbox[0] - other.bbox[2]), abs(self.bbox[2] - other.bbox[0]))
-        y_dist = min(abs(self.bbox[1] - other.bbox[3]), abs(self.bbox[3] - other.bbox[1]))
+        def dist(p1, p2):
+            return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
-        if x_dist == 0 or self.overlap_x(other) > 0:
-            return y_dist
-        if y_dist == 0 or self.overlap_y(other) > 0:
-            return x_dist
-
-        return (x_dist ** 2 + y_dist ** 2) ** 0.5
+        left = other.bbox[2] < self.bbox[0]
+        right = self.bbox[2] < other.bbox[0]
+        bottom = other.bbox[3] < self.bbox[1]
+        top = self.bbox[3] < other.bbox[1]
+        if top and left:
+            return dist((self.bbox[0], self.bbox[3]), (other.bbox[2], other.bbox[1]))
+        elif left and bottom:
+            return dist((self.bbox[0], self.bbox[1]), (other.bbox[2], other.bbox[3]))
+        elif bottom and right:
+            return dist((self.bbox[2], self.bbox[1]), (other.bbox[0], other.bbox[3]))
+        elif right and top:
+            return dist((self.bbox[2], self.bbox[3]), (other.bbox[0], other.bbox[1]))
+        elif left:
+            return self.bbox[0] - other.bbox[2]
+        elif right:
+            return other.bbox[0] - self.bbox[2]
+        elif bottom:
+            return self.bbox[1] - other.bbox[3]
+        elif top:
+            return other.bbox[1] - self.bbox[3]
+        else:
+            return 0
 
     def center_distance(self, other: PolygonBox):
         return ((self.center[0] - other.center[0]) ** 2 + (self.center[1] - other.center[1]) ** 2) ** 0.5

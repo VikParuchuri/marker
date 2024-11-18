@@ -4,11 +4,16 @@ from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 
 
-def replace_bullets(text):
+def replace_bullets(child_blocks):
     # Replace bullet characters with a -
-    bullet_pattern = r"(^|[\n ])[•●○■▪▫–—]( )"
-    replaced_string = re.sub(bullet_pattern, r"\1-\2", text)
-    return replaced_string
+    first_block = None
+    while len(child_blocks) > 0:
+        first_block = child_blocks[0]
+        child_blocks = first_block.children
+
+    if first_block.id.block_type == BlockTypes.Line:
+        bullet_pattern = r"(^|[\n ]|<[^>]*>)[•●○■▪▫–—-]( )"
+        first_block.html = re.sub(bullet_pattern, r"\1\2", first_block.html)
 
 
 class ListItem(Block):
@@ -17,5 +22,6 @@ class ListItem(Block):
     def assemble_html(self, child_blocks, parent_structure):
         template = super().assemble_html(child_blocks, parent_structure)
         template = template.replace("\n", " ")
-        template = replace_bullets(template)
+        # Remove the first bullet character
+        replace_bullets(child_blocks)
         return f"<li>{template}</li>"
