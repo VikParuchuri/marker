@@ -6,7 +6,7 @@ from tests.utils import setup_pdf_document
 def test_ocr_pipeline():
     pdf_document = setup_pdf_document(
         "adversarial.pdf",
-        pdf_provider_config={
+        config={
             "force_ocr": True
         }
     )

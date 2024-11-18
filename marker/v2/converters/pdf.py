@@ -23,7 +23,7 @@ from marker.v2.renderers.markdown import MarkdownRenderer
 
 
 class PdfConverter(BaseConverter):
-    def __init__(self, config: Optional[BaseModel] = None):
+    def __init__(self, config=None):
         super().__init__(config)
 
         self.layout_model = setup_layout_model()
@@ -32,24 +32,24 @@ class PdfConverter(BaseConverter):
         self.table_rec_model = setup_table_rec_model()
         self.detection_model = setup_detection_model()
 
-    def __call__(self, filepath: str, page_range: List[int] | None = None):
-        pdf_provider = PdfProvider(filepath, {"page_range": page_range, "force_ocr": False})
+    def __call__(self, filepath: str):
+        pdf_provider = PdfProvider(filepath, self.config)
 
-        layout_builder = LayoutBuilder(self.layout_model)
-        ocr_builder = OcrBuilder(self.detection_model, self.recognition_model)
-        document = DocumentBuilder()(pdf_provider, layout_builder, ocr_builder)
-        StructureBuilder()(document)
+        layout_builder = LayoutBuilder(self.layout_model, self.config)
+        ocr_builder = OcrBuilder(self.detection_model, self.recognition_model, self.config)
+        document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
+        StructureBuilder(self.config)(document)
 
-        equation_processor = EquationProcessor(self.texify_model)
+        equation_processor = EquationProcessor(self.texify_model, self.config)
         equation_processor(document)
 
-        table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model)
+        table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config)
         table_processor(document)
 
-        section_header_processor = SectionHeaderProcessor()
+        section_header_processor = SectionHeaderProcessor(self.config)
         section_header_processor(document)
 
-        renderer = MarkdownRenderer()
+        renderer = MarkdownRenderer(self.config)
         return renderer(document)
 
 

@@ -18,7 +18,7 @@ class TableProcessor(BaseProcessor):
     table_rec_batch_size = None
     ocr_batch_size = None
 
-    def __init__(self, detection_model, ocr_model, table_rec_model, config: Optional[BaseModel] = None):
+    def __init__(self, detection_model, ocr_model, table_rec_model, config=None):
         super().__init__(config)
 
         self.detection_model = detection_model
