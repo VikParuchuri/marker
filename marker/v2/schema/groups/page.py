@@ -42,4 +42,6 @@ class PageGroup(Block):
         return block
 
     def get_block(self, block_id: BlockId) -> Block | None:
-        return self.children[block_id.block_id]
+        block: Block = self.children[block_id.block_id]
+        assert block.block_id == block_id.block_id
+        return block
