@@ -11,10 +11,7 @@ from marker.v2.schema.document import Document
 
 def setup_pdf_document(
     filename='adversarial.pdf',
-    pdf_provider_config=None,
-    layout_builder_config=None,
-    ocr_builder_config=None,
-    document_builder_config=None
+    config=None,
 ) -> Document:
     dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
     idx = dataset['filename'].index(filename)
@@ -27,9 +24,9 @@ def setup_pdf_document(
     recognition_model = setup_recognition_model()
     detection_model = setup_detection_model()
 
-    provider = PdfProvider(temp_pdf.name, pdf_provider_config)
-    layout_builder = LayoutBuilder(layout_model, layout_builder_config)
-    ocr_builder = OcrBuilder(detection_model, recognition_model, ocr_builder_config)
-    builder = DocumentBuilder(document_builder_config)
+    provider = PdfProvider(temp_pdf.name, config)
+    layout_builder = LayoutBuilder(layout_model, config)
+    ocr_builder = OcrBuilder(detection_model, recognition_model, config)
+    builder = DocumentBuilder(config)
     document = builder(provider, layout_builder, ocr_builder)
     return document

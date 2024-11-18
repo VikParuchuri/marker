@@ -23,7 +23,7 @@ class PdfProvider(BaseProvider):
     flatten_pdf: bool = True
     force_ocr: bool = False
 
-    def __init__(self, filepath: str, config: Optional[BaseModel] = None):
+    def __init__(self, filepath: str, config = None):
         super().__init__(filepath, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)

@@ -12,7 +12,7 @@ from marker.v2.schema.groups.page import PageGroup
 class StructureBuilder(BaseBuilder):
     gap_threshold: int = 10
 
-    def __init__(self, config: Optional[BaseModel] = None):
+    def __init__(self, config=None):
         super().__init__(config)
 
     def __call__(self, document: Document):
