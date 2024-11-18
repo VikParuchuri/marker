@@ -1,9 +1,10 @@
 from markdownify import markdownify
 from marker.v2.renderers.html import HTMLRenderer
+from marker.v2.schema.document import Document
 
 
 class MarkdownRenderer(HTMLRenderer):
-    def __call__(self, document):
+    def __call__(self, document: Document):
         document_output = document.render()
         full_html = self.extract_html(document, document_output)
         return markdownify(
@@ -13,5 +14,3 @@ class MarkdownRenderer(HTMLRenderer):
             escape_misc=False,
             escape_underscores=False
         )
-
-

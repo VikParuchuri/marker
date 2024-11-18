@@ -1,4 +1,5 @@
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 
 class TableGroup(Block):
-    block_type: str = "TableGroup"
+    block_type: BlockTypes = BlockTypes.TableGroup

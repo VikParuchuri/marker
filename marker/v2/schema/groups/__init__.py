@@ -10,6 +10,5 @@ GROUP_BLOCK_REGISTRY = {
     if isinstance(v, type)
     and issubclass(v, Block)
     and v != Block  # Exclude the base Block class
-    and (v.model_fields['block_type'].default.endswith("Group") or v.model_fields['block_type'].default == "Page")
+    and (v.model_fields['block_type'].default.name.endswith("Group") or v.model_fields['block_type'].default.name == "Page")
 }
-

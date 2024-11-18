@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from typing import Optional, List, Any
+from typing import TYPE_CHECKING, Any, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.polygon import PolygonBox
+
+if TYPE_CHECKING:
+    from marker.v2.schema.document import Document
 
 
 class BlockOutput(BaseModel):
@@ -17,12 +21,12 @@ class BlockOutput(BaseModel):
 class BlockId(BaseModel):
     page_id: int
     block_id: int | None = None
-    block_type: str | None = None
+    block_type: BlockTypes | None = None
 
     def __str__(self):
         if self.block_type is None or self.block_id is None:
             return f"/page/{self.page_id}"
-        return f"/page/{self.page_id}/{self.block_type}/{self.block_id}"
+        return f"/page/{self.page_id}/{self.block_type.name}/{self.block_id}"
 
     def __repr__(self):
         return str(self)
@@ -40,19 +44,19 @@ class BlockId(BaseModel):
     @classmethod
     def validate_block_type(cls, v):
         from marker.v2.schema import BlockTypes
-        if not hasattr(BlockTypes, v):
+        if not v in BlockTypes:
             raise ValueError(f"Invalid block type: {v}")
         return v
 
 
 class Block(BaseModel):
     polygon: PolygonBox
-    block_type: Optional[str] = None
+    block_type: Optional[BlockTypes] = None
     block_id: Optional[int] = None
     page_id: Optional[int] = None
+    text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
-    rendered: Any | None = None # The rendered output of the block
-    text_extraction_method: str = "pdftext"
+    rendered: Any | None = None  # The rendered output of the block
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -65,8 +69,6 @@ class Block(BaseModel):
         )
 
     def add_structure(self, block: Block):
-        self.polygon = self.polygon.merge([block.polygon])
-
         if self.structure is None:
             self.structure = [block.id]
         else:
@@ -83,7 +85,7 @@ class Block(BaseModel):
         if self.structure is not None:
             self.structure = [item for item in self.structure if item not in block_ids]
 
-    def raw_text(self, document) -> str:
+    def raw_text(self, document: Document) -> str:
         from marker.v2.schema.text.line import Line
         from marker.v2.schema.text.span import Span
 
