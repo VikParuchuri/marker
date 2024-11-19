@@ -22,19 +22,3 @@ def setup_pdf_provider(
 
     provider = PdfProvider(temp_pdf.name, config)
     return provider
-
-
-def setup_pdf_document(
-    filename='adversarial.pdf',
-    config=None,
-) -> Document:
-    layout_model = setup_layout_model()
-    recognition_model = setup_recognition_model()
-    detection_model = setup_detection_model()
-
-    provider = setup_pdf_provider(filename, config)
-    layout_builder = LayoutBuilder(layout_model, config)
-    ocr_builder = OcrBuilder(detection_model, recognition_model, config)
-    builder = DocumentBuilder(config)
-    document = builder(provider, layout_builder, ocr_builder)
-    return document
