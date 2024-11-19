@@ -13,4 +13,4 @@ class Text(Block):
         class_attr = ""
         if self.has_continuation:
             class_attr += "class='has-continuation'"
-        return f"<p {class_attr}'>{template}</p>"
+        return f"<p {class_attr}>{template}</p>"
