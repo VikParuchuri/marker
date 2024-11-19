@@ -1,6 +1,6 @@
 import atexit
 import functools
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Set
 
 import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
