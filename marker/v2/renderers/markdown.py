@@ -24,6 +24,7 @@ class Markdownify(MarkdownConverter):
 class MarkdownOutput(BaseModel):
     markdown: str
     images: dict
+    metadata: dict
 
 
 class MarkdownRenderer(HTMLRenderer):
@@ -43,5 +44,6 @@ class MarkdownRenderer(HTMLRenderer):
         markdown = md_cls.convert(full_html)
         return MarkdownOutput(
             markdown=markdown,
-            images=images
+            images=images,
+            metadata=self.generate_document_metadata(document, document_output)
         )

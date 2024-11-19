@@ -4,12 +4,13 @@ from PIL import Image
 
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block, BlockId
+from marker.v2.schema.groups.base import Group
 from marker.v2.schema.polygon import PolygonBox
 from marker.v2.schema.text.line import Line
 from marker.v2.schema.text.span import Span
 
 
-class PageGroup(Block):
+class PageGroup(Group):
     block_type: BlockTypes = BlockTypes.Page
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None

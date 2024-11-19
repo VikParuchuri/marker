@@ -49,16 +49,17 @@ class Line(Block):
             template = strip_trailing_hyphens(raw_text, next_line_raw_text, template)
         return template
 
-    def render(self, document, parent_structure):
+    def render(self, document, parent_structure, section_hierarchy=None):
         child_content = []
         if self.structure is not None and len(self.structure) > 0:
             for block_id in self.structure:
                 block = document.get_block(block_id)
-                child_content.append(block.render(document, parent_structure))
+                child_content.append(block.render(document, parent_structure, section_hierarchy))
 
         return BlockOutput(
             html=self.assemble_html(document, child_content, parent_structure),
             polygon=self.polygon,
             id=self.id,
-            children=[]
+            children=[],
+            section_hierarchy=section_hierarchy
         )
