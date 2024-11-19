@@ -1,3 +1,4 @@
+import html
 from typing import List, Literal
 
 from marker.v2.schema import BlockTypes
@@ -39,6 +40,8 @@ class Span(Block):
 
         if replaced_newline:
             text += " "
+
+        text = html.escape(text)
 
         if len(text) > 3:
             if self.italic:
