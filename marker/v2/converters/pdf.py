@@ -1,3 +1,5 @@
+import json
+
 from marker.v2.providers.pdf import PdfProvider
 import os
 
@@ -99,12 +101,20 @@ def main(output: str, fname: str, debug: bool, output_format: str):
         with open(os.path.join(output, out_filename), "w+") as f:
             f.write(rendered.markdown)
 
+        meta_filename = f"{fname_base}_meta.json"
+        with open(os.path.join(output, meta_filename), "w+") as f:
+            f.write(json.dumps(rendered.metadata, indent=2))
+
         for img_name, img in rendered.images.items():
             img.save(os.path.join(output, img_name), "PNG")
     elif output_format == "json":
         out_filename = f"{fname_base}.json"
         with open(os.path.join(output, out_filename), "w+") as f:
             f.write(rendered.model_dump_json(indent=2))
+
+        meta_filename = f"{fname_base}_meta.json"
+        with open(os.path.join(output, meta_filename), "w+") as f:
+            f.write(json.dumps(rendered.metadata, indent=2))
 
 
 if __name__ == "__main__":

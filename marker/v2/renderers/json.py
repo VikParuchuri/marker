@@ -27,6 +27,7 @@ class JSONBlockOutput(BaseModel):
 class JSONOutput(BaseModel):
     children: List[JSONBlockOutput]
     block_type: BlockTypes = BlockTypes.Document
+    metadata: dict
 
 
 def reformat_section_hierarchy(section_hierarchy):
@@ -43,7 +44,7 @@ class JSONRenderer(BaseRenderer):
     def extract_json(self, document, block_output):
         cls = get_block_class(block_output.id.block_type)
         if cls.__base__ == Block:
-            html, images = self.extract_html(document, block_output)
+            html, images = self.extract_block_html(document, block_output)
             return JSONBlockOutput(
                 html=html,
                 polygon=block_output.polygon.polygon,
@@ -67,32 +68,6 @@ class JSONRenderer(BaseRenderer):
                 section_hierarchy=reformat_section_hierarchy(block_output.section_hierarchy)
             )
 
-    def extract_html(self, document, block_output):
-        soup = BeautifulSoup(block_output.html, 'html.parser')
-
-        content_refs = soup.find_all('content-ref')
-        ref_block_id = None
-        images = {}
-        for ref in content_refs:
-            src = ref.get('src')
-            sub_images = {}
-            for item in block_output.children:
-                if item.id == src:
-                    content, sub_images = self.extract_html(document, item)
-                    ref_block_id: BlockId = item.id
-                    break
-
-            if ref_block_id.block_type in self.image_blocks:
-                image = self.extract_image(document, ref_block_id)
-                image_buffer = io.BytesIO()
-                image.save(image_buffer, format='PNG')
-                images[ref_block_id] = base64.b64encode(image_buffer.getvalue()).decode('utf-8')
-            else:
-                images.update(sub_images)
-                ref.replace_with(BeautifulSoup(content, 'html.parser'))
-
-        return str(soup), images
-
     def __call__(self, document) -> JSONOutput:
         document_output = document.render()
         json_output = []
@@ -100,4 +75,5 @@ class JSONRenderer(BaseRenderer):
             json_output.append(self.extract_json(document, page_output))
         return JSONOutput(
             children=json_output,
+            metadata=self.generate_document_metadata(document, document_output)
         )

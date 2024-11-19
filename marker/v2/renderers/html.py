@@ -15,11 +15,10 @@ warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 class HTMLOutput(BaseModel):
     html: str
     images: dict
+    metadata: dict
 
 
 class HTMLRenderer(BaseRenderer):
-    remove_blocks: list = [BlockTypes.PageHeader, BlockTypes.PageFooter]
-    image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
     page_blocks: list = [BlockTypes.Page]
     paginate_output: bool = False
 
@@ -42,7 +41,8 @@ class HTMLRenderer(BaseRenderer):
             sub_images = {}
             for item in document_output.children:
                 if item.id == src:
-                    content, sub_images = self.extract_html(document, item, level + 1)
+                    content, sub_images_ = self.extract_html(document, item, level + 1)
+                    sub_images.update(sub_images_)
                     ref_block_id: BlockId = item.id
                     break
 
@@ -75,4 +75,5 @@ class HTMLRenderer(BaseRenderer):
         return HTMLOutput(
             html=full_html,
             images=images,
+            metadata=self.generate_document_metadata(document, document_output)
         )
