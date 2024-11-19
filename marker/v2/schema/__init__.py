@@ -1,7 +1,7 @@
-from enum import Enum, auto
+from enum import auto, IntEnum
 
 
-class BlockTypes(Enum):
+class BlockTypes(IntEnum):
     Line = auto()
     Span = auto()
     FigureGroup = auto()

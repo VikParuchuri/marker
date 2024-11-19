@@ -50,17 +50,15 @@ class PdfConverter(BaseConverter):
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
-        equation_processor = EquationProcessor(self.texify_model, self.config)
-        equation_processor(document)
+        processor_list = [
+            EquationProcessor(self.texify_model, self.config),
+            TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config),
+            SectionHeaderProcessor(self.config),
+            DebugProcessor(self.config),
+        ]
 
-        table_processor = TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config)
-        table_processor(document)
-
-        section_header_processor = SectionHeaderProcessor(self.config)
-        section_header_processor(document)
-
-        debug_processor = DebugProcessor(self.config)
-        debug_processor(document)
+        for processor in processor_list:
+            processor(document)
 
         renderer = MarkdownRenderer(self.config)
         return renderer(document)
@@ -86,7 +84,7 @@ def main(output: str, fname: str, debug: bool):
         temp_pdf.write(dataset['pdf'][idx])
         temp_pdf.flush()
 
-        converter = PdfConverter()
+        converter = PdfConverter(config)
         rendered = converter(temp_pdf.name)
 
         with open(os.path.join(output, out_filename), "w+") as f:

@@ -2,6 +2,7 @@ from marker.v2.processors import BaseProcessor
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
 
+from typing import Dict, List
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.exceptions import ConvergenceWarning
@@ -19,7 +20,7 @@ class SectionHeaderProcessor(BaseProcessor):
     height_tolerance = .99
 
     def __call__(self, document: Document):
-        line_heights = {}
+        line_heights: Dict[int, List[float]] = {}
         for page in document.pages:
             for block in page.children:
                 if block.block_type not in self.block_types:
@@ -46,7 +47,7 @@ class SectionHeaderProcessor(BaseProcessor):
                 if block.heading_level is None:
                     block.heading_level = self.default_level
 
-    def bucket_headings(self, line_heights, num_levels=4):
+    def bucket_headings(self, line_heights: List[float], num_levels=4):
         if len(line_heights) <= self.level_count:
             return []
 
