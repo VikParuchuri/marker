@@ -97,6 +97,7 @@ def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: st
         config["debug_pdf_images"] = True
         config["debug_layout_images"] = True
         config["debug_json"] = True
+        config["debug_data_folder"] = output_dir
     if force_ocr:
         config["force_ocr"] = True
 

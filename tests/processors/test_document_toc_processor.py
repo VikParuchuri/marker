@@ -9,4 +9,4 @@ def test_table_processor(pdf_document, detection_model, recognition_model, table
     processor(pdf_document)
 
     assert len(pdf_document.table_of_contents) == 3
-    assert pdf_document.table_of_contents[0].text == "Subspace Adversarial Training"
+    assert pdf_document.table_of_contents[0]["text"] == "Subspace Adversarial Training"
