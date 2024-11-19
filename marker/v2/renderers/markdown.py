@@ -50,7 +50,8 @@ class MarkdownRenderer(HTMLRenderer):
             heading_style="ATX",
             bullets="-",
             escape_misc=False,
-            escape_underscores=False
+            escape_underscores=False,
+            escape_asterisks=False
         )
         markdown = md_cls.convert(full_html)
         return MarkdownOutput(

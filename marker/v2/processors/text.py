@@ -18,14 +18,12 @@ class TextProcessor(BaseProcessor):
                     if not len(block.structure) > 3:  # Skip non paragraphs
                         continue
 
-                    block_idx = page.structure.index(block.id)
-                    if block_idx + 1 < len(page.structure):
-                        next_block = page.structure[block_idx + 1]
-                        if next_block.block_type not in self.block_types:
-                            continue
+                    next_block = document.get_next_block(block)
+                    if next_block and next_block.block_type not in self.block_types:
+                        continue
 
                     lines: List[Line] = [page.get_block(block_id) for block_id in block.structure]
                     avg_width = sum([l.polygon.width for l in lines]) / len(lines)
 
-                    if (lines[-1].polygon.width - avg_width) > 0:
+                    if lines[-1].polygon.width >= avg_width * 0.98:
                         block.has_continuation = True
