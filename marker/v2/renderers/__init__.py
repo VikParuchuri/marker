@@ -68,10 +68,20 @@ class BaseRenderer:
                 toc.extend(child_toc)
         return toc
 
+    def generate_page_stats(self, document, document_output):
+        page_stats = []
+        for page in document.pages:
+            page_stats.append({
+                "page_id": page.page_id,
+                "text_extraction_method": page.text_extraction_method
+            })
+        return page_stats
+
     def generate_document_metadata(self, document, document_output):
         toc = self.compute_toc(document, document_output)
         return {
-            "table_of_contents": toc
+            "table_of_contents": toc,
+            "page_stats": self.generate_page_stats(document, document_output)
         }
 
     def extract_block_html(self, document, block_output):
