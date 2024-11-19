@@ -1,10 +1,11 @@
+from marker.v2.providers.pdf import PdfProvider
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
-from marker.v2.processors.sectionheader import SectionHeaderProcessor
-from marker.v2.providers.pdf import PdfProvider
 import tempfile
+from collections import defaultdict
+from typing import Dict, Type
 
 import click
 import datasets
@@ -14,17 +15,26 @@ from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.builders.ocr import OcrBuilder
 from marker.v2.builders.structure import StructureBuilder
 from marker.v2.converters import BaseConverter
+from marker.v2.models import setup_detection_model, setup_layout_model, \
+    setup_recognition_model, setup_table_rec_model, setup_texify_model
 from marker.v2.processors.equation import EquationProcessor
+from marker.v2.processors.sectionheader import SectionHeaderProcessor
 from marker.v2.processors.table import TableProcessor
-from marker.v2.models import setup_layout_model, setup_texify_model, setup_recognition_model, setup_table_rec_model, \
-    setup_detection_model
 from marker.v2.renderers.markdown import MarkdownRenderer
+from marker.v2.schema import BlockTypes
+from marker.v2.schema.blocks import Block
+from marker.v2.schema.registry import register_block_class
 from marker.v2.processors.debug import DebugProcessor
 
 
 class PdfConverter(BaseConverter):
+    override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
+
     def __init__(self, config=None):
         super().__init__(config)
+        
+        for block_type, override_block_type in self.override_map.items():
+            register_block_class(block_type, override_block_type)
 
         self.layout_model = setup_layout_model()
         self.texify_model = setup_texify_model()

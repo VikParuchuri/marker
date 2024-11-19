@@ -9,10 +9,10 @@ from marker.v2.builders.ocr import OcrBuilder
 from marker.v2.schema.document import Document
 
 
-def setup_pdf_document(
+def setup_pdf_provider(
     filename='adversarial.pdf',
     config=None,
-) -> Document:
+) -> PdfProvider:
     dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
     idx = dataset['filename'].index(filename)
 
@@ -20,11 +20,19 @@ def setup_pdf_document(
     temp_pdf.write(dataset['pdf'][idx])
     temp_pdf.flush()
 
+    provider = PdfProvider(temp_pdf.name, config)
+    return provider
+
+
+def setup_pdf_document(
+    filename='adversarial.pdf',
+    config=None,
+) -> Document:
     layout_model = setup_layout_model()
     recognition_model = setup_recognition_model()
     detection_model = setup_detection_model()
 
-    provider = PdfProvider(temp_pdf.name, config)
+    provider = setup_pdf_provider(filename, config)
     layout_builder = LayoutBuilder(layout_model, config)
     ocr_builder = OcrBuilder(detection_model, recognition_model, config)
     builder = DocumentBuilder(config)

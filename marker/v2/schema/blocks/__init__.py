@@ -17,11 +17,3 @@ from marker.v2.schema.blocks.sectionheader import SectionHeader
 from marker.v2.schema.blocks.table import Table
 from marker.v2.schema.blocks.text import Text
 from marker.v2.schema.blocks.toc import TableOfContents
-
-LAYOUT_BLOCK_REGISTRY = {
-    v.model_fields['block_type'].default: v for k, v in locals().items()
-    if isinstance(v, type)
-    and issubclass(v, Block)
-    and v != Block  # Exclude the base Block class
-    and not v.model_fields['block_type'].default.name.endswith("Group")
-}

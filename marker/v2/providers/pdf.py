@@ -4,11 +4,12 @@ from typing import Dict, List, Optional, Set, Tuple
 import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
 from PIL import Image
-from pydantic import BaseModel
 
 from marker.ocr.heuristics import detect_bad_ocr
 from marker.v2.providers import BaseProvider
 from marker.v2.schema.polygon import PolygonBox
+from marker.v2.schema import BlockTypes
+from marker.v2.schema.registry import get_block_class
 from marker.v2.schema.text.line import Line
 from marker.v2.schema.text.span import Span
 
@@ -23,7 +24,7 @@ class PdfProvider(BaseProvider):
     flatten_pdf: bool = True
     force_ocr: bool = False
 
-    def __init__(self, filepath: str, config = None):
+    def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
@@ -105,6 +106,8 @@ class PdfProvider(BaseProvider):
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf
         )
+        SpanClass: Span = get_block_class(BlockTypes.Span)
+        LineClass: Span = get_block_class(BlockTypes.Line)
         for page in page_char_blocks:
             page_id = page["page"]
             lines: List[Line] = []
@@ -120,7 +123,7 @@ class PdfProvider(BaseProvider):
                         font_weight = span["font"]["weight"] or 0
                         font_size = span["font"]["size"] or 0
                         spans.append(
-                            Span(
+                            SpanClass(
                                 polygon=PolygonBox.from_bbox(span["bbox"]),
                                 text=span["text"],
                                 font=font_name,
@@ -133,7 +136,7 @@ class PdfProvider(BaseProvider):
                                 text_extraction_method="pdftext"
                             )
                         )
-                    lines.append(Line(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id))
+                    lines.append(LineClass(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id))
                     line_spans[len(lines) - 1] = spans
             if self.check_line_spans(line_spans):
                 page_lines[page_id] = lines
