@@ -62,7 +62,6 @@ class Block(BaseModel):
     page_id: Optional[int] = None
     text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
-    rendered: Any | None = None  # The rendered output of the block
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -109,13 +108,13 @@ class Block(BaseModel):
                 text += "\n"
         return text
 
-    def assemble_html(self, child_blocks, parent_structure=None):
+    def assemble_html(self, child_blocks: List[BlockOutput], parent_structure: Optional[List[str]] = None):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
         return template
 
-    def render(self, document, parent_structure):
+    def render(self, document: Document, parent_structure: Optional[List[str]]):
         child_content = []
         if self.structure is not None and len(self.structure) > 0:
             for block_id in self.structure:
