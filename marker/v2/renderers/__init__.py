@@ -57,7 +57,7 @@ class BaseRenderer:
         toc = []
         if hasattr(block_output, "id") and block_output.id.block_type == BlockTypes.SectionHeader:
             toc.append({
-                "title": self.extract_block_html(document, block_output),
+                "title": self.extract_block_html(document, block_output)[0],
                 "level": document.get_block(block_output.id).heading_level,
                 "page": block_output.id.page_id
             })
