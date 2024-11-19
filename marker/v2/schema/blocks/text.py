@@ -5,14 +5,12 @@ from marker.v2.schema.blocks import Block
 class Text(Block):
     block_type: BlockTypes = BlockTypes.Text
     has_continuation: bool = False
-    is_continuation: bool = False
 
     def assemble_html(self, child_blocks, parent_structure):
         template = super().assemble_html(child_blocks, parent_structure)
         template = template.replace("\n", " ")
 
-        if not self.is_continuation:
-            template = f"<p>{template}"
-        if not self.has_continuation:
-            template = f"{template}</p>"
-        return template
+        class_attr = ""
+        if self.has_continuation:
+            class_attr += "class='has-continuation'"
+        return f"<p {class_attr}'>{template}</p>"

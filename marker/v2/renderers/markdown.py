@@ -1,4 +1,5 @@
-from markdownify import markdownify, MarkdownConverter
+import regex
+from markdownify import MarkdownConverter
 from pydantic import BaseModel
 
 from marker.v2.renderers.html import HTMLRenderer
@@ -19,6 +20,17 @@ class Markdownify(MarkdownConverter):
             return pagination_item + text
         else:
             return text
+
+    def convert_p(self, el, text, *args):
+        hyphens = r'-—¬'
+        has_continuation = el.has_attr('class') and 'has-continuation' in el['class']
+        if has_continuation:
+            if regex.compile(rf'.*[\p{{Ll}}|\d][{hyphens}]\s?$', regex.DOTALL).match(text):  # handle hypenation across pages
+                return regex.split(rf"[{hyphens}]\s?$", text)[0]
+            if regex.search(r'[^\w\s]$', text):  # Ends with non-word character and so we add a space after text, e.g "However,"
+                return f"{text} "
+            return text
+        return f"{text}\n\n" if text else ""  # default convert_p behavior
 
 
 class MarkdownOutput(BaseModel):
