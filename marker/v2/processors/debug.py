@@ -23,7 +23,8 @@ class DebugProcessor(BaseProcessor):
         # Remove extension from doc name
         doc_base = os.path.basename(document.filepath).rsplit(".", 1)[0]
         self.debug_folder = os.path.join(self.debug_data_folder, doc_base)
-        os.makedirs(self.debug_folder, exist_ok=True)
+        if any([self.debug_layout_images, self.debug_pdf_images, self.debug_json]):
+            os.makedirs(self.debug_folder, exist_ok=True)
 
         if self.debug_layout_images:
             self.draw_layout_debug_images(document)
@@ -37,7 +38,7 @@ class DebugProcessor(BaseProcessor):
             self.dump_block_debug_data(document)
             print(f"Dumped block debug data to {self.debug_data_folder}")
 
-    def draw_layout_debug_images(self, document: Document, pdf_mode = False):
+    def draw_layout_debug_images(self, document: Document, pdf_mode=False):
         for idx, page in enumerate(document.pages):
             img_size = page.highres_image.size
             png_image = Image.new("RGB", img_size, color="white")
@@ -112,7 +113,7 @@ class DebugProcessor(BaseProcessor):
         _, _, width, height = draw.textbbox((0, 0), text=text, font=font)
         return width, height
 
-    def render_on_image(self, bboxes, image, labels=None, label_offset=1, label_font_size=10, color: str | list='red', draw_bbox=True):
+    def render_on_image(self, bboxes, image, labels=None, label_offset=1, label_font_size=10, color: str | list = 'red', draw_bbox=True):
         draw = ImageDraw.Draw(image)
         font_path = self.get_font_path()
         label_font = ImageFont.truetype(font_path, label_font_size)
