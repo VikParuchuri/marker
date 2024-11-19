@@ -1,3 +1,4 @@
+import atexit
 import functools
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -38,10 +39,12 @@ class PdfProvider(BaseProvider):
         if not self.force_ocr:
             self.page_lines, self.page_spans = self.pdftext_extraction()
 
+        atexit.register(self.cleanup_pdf_doc)
+
     def __len__(self) -> int:
         return len(self.doc)
 
-    def __del__(self):
+    def cleanup_pdf_doc(self):
         if self.doc is not None:
             self.doc.close()
 

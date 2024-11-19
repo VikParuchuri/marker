@@ -15,10 +15,18 @@ class DocumentOutput(BaseModel):
     block_type: BlockTypes = BlockTypes.Document
 
 
+class TocItem(BaseModel):
+    title: str
+    heading_level: int
+    page_id: int
+    polygon: List[List[int]]
+
+
 class Document(BaseModel):
     filepath: str
     pages: List[PageGroup]
     block_type: BlockTypes = BlockTypes.Document
+    table_of_contents: List[TocItem] | None = None
 
     def get_block(self, block_id: BlockId):
         page = self.get_page(block_id.page_id)
