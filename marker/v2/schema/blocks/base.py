@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional, Dict
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -16,6 +16,7 @@ class BlockOutput(BaseModel):
     polygon: PolygonBox
     id: BlockId
     children: List[BlockOutput] | None = None
+    section_hierarchy: Dict[int, BlockId] | None = None
 
 
 class BlockId(BaseModel):
@@ -114,16 +115,33 @@ class Block(BaseModel):
             template += f"<content-ref src='{c.id}'></content-ref>"
         return template
 
-    def render(self, document: Document, parent_structure: Optional[List[str]]):
+    def assign_section_hierarchy(self, section_hierarchy):
+        if self.block_type == BlockTypes.SectionHeader and self.heading_level:
+            levels = list(section_hierarchy.keys())
+            for level in levels:
+                if level >= self.heading_level:
+                    del section_hierarchy[level]
+            section_hierarchy[self.heading_level] = self.id
+
+        return section_hierarchy
+
+    def render(self, document: Document, parent_structure: Optional[List[str]], section_hierarchy=None):
         child_content = []
+        if section_hierarchy is None:
+            section_hierarchy = {}
+        section_hierarchy = self.assign_section_hierarchy(section_hierarchy)
+
         if self.structure is not None and len(self.structure) > 0:
             for block_id in self.structure:
                 block = document.get_block(block_id)
-                child_content.append(block.render(document, self.structure))
+                rendered = block.render(document, self.structure, section_hierarchy)
+                section_hierarchy = rendered.section_hierarchy  # Update the section hierarchy from the peer blocks
+                child_content.append(rendered)
 
         return BlockOutput(
             html=self.assemble_html(child_content, parent_structure),
             polygon=self.polygon,
             id=self.id,
-            children=child_content
+            children=child_content,
+            section_hierarchy=section_hierarchy
         )

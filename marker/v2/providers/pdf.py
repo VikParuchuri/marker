@@ -1,21 +1,18 @@
+import atexit
 import functools
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Set
 
 import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
 from PIL import Image
 
 from marker.ocr.heuristics import detect_bad_ocr
-from marker.v2.providers import BaseProvider
+from marker.v2.providers import BaseProvider, ProviderOutput, ProviderPageLines
 from marker.v2.schema.polygon import PolygonBox
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.registry import get_block_class
 from marker.v2.schema.text.line import Line
 from marker.v2.schema.text.span import Span
-
-PageLines = Dict[int, List[Line]]
-LineSpans = Dict[int, List[Span]]
-PageSpans = Dict[int, LineSpans]
 
 
 class PdfProvider(BaseProvider):
@@ -28,20 +25,21 @@ class PdfProvider(BaseProvider):
         super().__init__(filepath, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
-        self.page_lines: PageLines = {i: [] for i in range(len(self.doc))}
-        self.page_spans: PageSpans = {i: {} for i in range(len(self.doc))}
+        self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
 
         if self.page_range is None:
             self.page_range = range(len(self.doc))
         assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, "Invalid page range"
 
         if not self.force_ocr:
-            self.page_lines, self.page_spans = self.pdftext_extraction()
+            self.page_lines = self.pdftext_extraction()
+
+        atexit.register(self.cleanup_pdf_doc)
 
     def __len__(self) -> int:
         return len(self.doc)
 
-    def __del__(self):
+    def cleanup_pdf_doc(self):
         if self.doc is not None:
             self.doc.close()
 
@@ -96,9 +94,8 @@ class PdfProvider(BaseProvider):
             formats.add("italic")
         return formats
 
-    def pdftext_extraction(self) -> Tuple[PageLines, PageSpans]:
-        page_lines: PageLines = {}
-        page_spans: PageSpans = {}
+    def pdftext_extraction(self) -> ProviderPageLines:
+        page_lines: ProviderPageLines = {}
         page_char_blocks = dictionary_output(
             self.filepath,
             page_range=self.page_range,
@@ -107,11 +104,10 @@ class PdfProvider(BaseProvider):
             flatten_pdf=self.flatten_pdf
         )
         SpanClass: Span = get_block_class(BlockTypes.Span)
-        LineClass: Span = get_block_class(BlockTypes.Line)
+        LineClass: Line = get_block_class(BlockTypes.Line)
         for page in page_char_blocks:
             page_id = page["page"]
-            lines: List[Line] = []
-            line_spans: LineSpans = {}
+            lines: List[ProviderOutput] = []
             for block in page["blocks"]:
                 for line in block["lines"]:
                     spans: List[Span] = []
@@ -136,20 +132,24 @@ class PdfProvider(BaseProvider):
                                 text_extraction_method="pdftext"
                             )
                         )
-                    lines.append(LineClass(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id))
-                    line_spans[len(lines) - 1] = spans
-            if self.check_line_spans(line_spans):
+                    lines.append(
+                        ProviderOutput(
+                            line=LineClass(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id),
+                            spans=spans
+                        )
+                    )
+            if self.check_line_spans(lines):
                 page_lines[page_id] = lines
-                page_spans[page_id] = line_spans
-        return page_lines, page_spans
+        return page_lines
 
-    def check_line_spans(self, page_spans: LineSpans) -> bool:
-        if not len(sum(list(page_spans.values()), [])):
+    def check_line_spans(self, page_lines: List[ProviderOutput]) -> bool:
+        page_spans = [span for line in page_lines for span in line.spans]
+        if len(page_spans) == 0:
             return False
+
         text = ""
-        for line_spans in page_spans.values():
-            for span in line_spans:
-                text = text + " " + span.text
+        for span in page_spans:
+            text = text + " " + span.text
             text = text + "\n"
         if len(text.strip()) == 0:
             return False
@@ -168,8 +168,5 @@ class PdfProvider(BaseProvider):
         page = self.doc[idx]
         return PolygonBox.from_bbox(page.get_bbox())
 
-    def get_page_lines(self, idx: int) -> PageLines:
+    def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
-
-    def get_page_spans(self, idx: int) -> PageSpans:
-        return self.page_spans[idx]

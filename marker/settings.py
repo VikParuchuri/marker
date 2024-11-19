@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     EXTRACT_IMAGES: bool = True # Extract images from pdfs and save them
     PAGINATE_OUTPUT: bool = False # Paginate output markdown
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    OUTPUT_DIR: str = os.path.join(BASE_DIR, "conversion_results")
     FLATTEN_PDF: bool = True # Pull form field values into the PDF before converting to markdown
 
     @computed_field

@@ -19,3 +19,10 @@ def test_markdown_renderer_pagination(pdf_document):
 
     assert "{0}-" in md
     assert "{1}-" in md
+
+
+@pytest.mark.config({"page_range": [0, 1]})
+def test_markdown_renderer_metadata(pdf_document):
+    renderer = MarkdownRenderer({"paginate_output": True})
+    metadata = renderer(pdf_document).metadata
+    assert "table_of_contents" in metadata

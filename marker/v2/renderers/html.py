@@ -15,29 +15,10 @@ warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 class HTMLOutput(BaseModel):
     html: str
     images: dict
-
-
-def merge_consecutive_tags(html, tag):
-    if not html:
-        return html
-
-    def replace_whitespace(match):
-        return match.group(1)
-
-    pattern = fr'</{tag}>(\s*)<{tag}>'
-
-    while True:
-        new_merged = re.sub(pattern, replace_whitespace, html)
-        if new_merged == html:
-            break
-        html = new_merged
-
-    return html
+    metadata: dict
 
 
 class HTMLRenderer(BaseRenderer):
-    remove_blocks: list = [BlockTypes.PageHeader, BlockTypes.PageFooter]
-    image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
     page_blocks: list = [BlockTypes.Page]
     paginate_output: bool = False
 
@@ -60,7 +41,8 @@ class HTMLRenderer(BaseRenderer):
             sub_images = {}
             for item in document_output.children:
                 if item.id == src:
-                    content, sub_images = self.extract_html(document, item, level + 1)
+                    content, sub_images_ = self.extract_html(document, item, level + 1)
+                    sub_images.update(sub_images_)
                     ref_block_id: BlockId = item.id
                     break
 
@@ -82,8 +64,8 @@ class HTMLRenderer(BaseRenderer):
 
         output = str(soup)
         if level == 0:
-            output = merge_consecutive_tags(output, 'b')
-            output = merge_consecutive_tags(output, 'i')
+            output = self.merge_consecutive_tags(output, 'b')
+            output = self.merge_consecutive_tags(output, 'i')
 
         return output, images
 
@@ -93,4 +75,5 @@ class HTMLRenderer(BaseRenderer):
         return HTMLOutput(
             html=full_html,
             images=images,
+            metadata=self.generate_document_metadata(document, document_output)
         )
