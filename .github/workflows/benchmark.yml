@@ -1,6 +1,6 @@
 name: Integration test with benchmark
 
-on: [push]
+on: [] # re-enable after integration
 
 env:
   TORCH_DEVICE: "cpu"

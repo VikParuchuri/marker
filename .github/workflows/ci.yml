@@ -1,0 +1,25 @@
+name: CI tests
+
+on: [push]
+
+env:
+  TORCH_DEVICE: "cpu"
+  OCR_ENGINE: "surya"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Install python dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Run tests
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: poetry run pytest
