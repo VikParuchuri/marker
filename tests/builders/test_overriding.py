@@ -46,4 +46,4 @@ def test_overriding_mp():
 
     with mp.Pool(processes=2) as pool:
         results = pool.starmap(get_lines, [(pdf, config) for pdf in pdf_list])
-        assert all([r[0].__class__ == NewLine for r in results])
+        assert all([r[0].line.__class__ == NewLine for r in results])

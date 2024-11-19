@@ -81,7 +81,8 @@ class PdfConverter(BaseConverter):
 @click.option("--debug", is_flag=True)
 @click.option("--output_format", type=click.Choice(["markdown", "json"]), default="markdown")
 @click.option("--pages", type=str, default=None)
-def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: str):
+@click.option("--force_ocr", is_flag=True)
+def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: str, force_ocr: bool):
     if pages is not None:
         pages = list(map(int, pages.split(",")))
 
@@ -96,6 +97,8 @@ def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: st
         config["debug_pdf_images"] = True
         config["debug_layout_images"] = True
         config["debug_json"] = True
+    if force_ocr:
+        config["force_ocr"] = True
 
 
     converter = PdfConverter(config=config, output_format=output_format)

@@ -7,7 +7,8 @@ def test_pdf_provider(pdf_provider):
     assert pdf_provider.get_image(0, 72).size == (612, 792)
     assert pdf_provider.get_image(0, 96).size == (816, 1056)
 
-    spans_list = pdf_provider.get_page_spans(0)
+    page_lines = pdf_provider.get_page_spans(0)
+    spans_list = [span for line in page_lines for span in line.spans]
     assert len(spans_list) == 93
 
     spans = spans_list[0]

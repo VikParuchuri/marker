@@ -1,10 +1,17 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import BaseModel
 
+from marker.v2.schema.text import Span
 from marker.v2.schema.text.line import Line
 from marker.v2.util import assign_config
 
+
+class ProviderOutput(BaseModel):
+    line: Line
+    spans: List[Span]
+
+ProviderPageLines = Dict[int, List[ProviderOutput]]
 
 class BaseProvider:
     def __init__(self, filepath: str, config: Optional[BaseModel | dict] = None):

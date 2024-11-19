@@ -5,7 +5,8 @@ from surya.schema import LayoutResult
 
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
-from marker.v2.providers.pdf import PageLines, PageSpans, PdfProvider
+from marker.v2.providers import ProviderOutput, ProviderPageLines
+from marker.v2.providers.pdf import PdfProvider
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
@@ -25,7 +26,7 @@ class LayoutBuilder(BaseBuilder):
     def __call__(self, document: Document, provider: PdfProvider):
         layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
-        self.merge_blocks(document.pages, provider.page_lines, provider.page_spans)
+        self.merge_blocks(document.pages, provider.page_lines)
 
     def get_batch_size(self):
         if self.batch_size is not None:
@@ -54,18 +55,18 @@ class LayoutBuilder(BaseBuilder):
                 layout_block.polygon = layout_block.polygon.rescale(layout_page_size, provider_page_size)
                 page.add_structure(layout_block)
 
-    def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: PageLines, provider_page_spans: PageSpans):
-        for document_page, provider_lines in zip(document_pages, provider_page_lines.values()):
+    def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: ProviderPageLines):
+        for document_page in document_pages:
+            provider_lines = provider_page_lines[document_page.page_id]
             if not self.check_layout_coverage(document_page, provider_lines):
                 document_page.text_extraction_method = "surya"
                 continue
-            line_spans = provider_page_spans[document_page.page_id]
-            document_page.merge_blocks(provider_lines, line_spans, text_extraction_method="pdftext")
+            document_page.merge_blocks(provider_lines, text_extraction_method="pdftext")
 
     def check_layout_coverage(
         self,
         document_page: PageGroup,
-        provider_lines: List[Line],
+        provider_lines: List[ProviderOutput],
         coverage_threshold=0.5
     ):
         layout_area = 0
@@ -76,6 +77,6 @@ class LayoutBuilder(BaseBuilder):
                 continue
             layout_area += layout_block.polygon.area
             for provider_line in provider_lines:
-                provider_area += layout_block.polygon.intersection_area(provider_line.polygon)
+                provider_area += layout_block.polygon.intersection_area(provider_line.line.polygon)
         coverage_ratio = provider_area / layout_area if layout_area > 0 else 0
         return coverage_ratio >= coverage_threshold
