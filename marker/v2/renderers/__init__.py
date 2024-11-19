@@ -53,25 +53,19 @@ class BaseRenderer:
 
         return html
 
-    def compute_toc(self, document, block_output: BlockOutput):
-        toc = []
-        if hasattr(block_output, "id") and block_output.id.block_type == BlockTypes.SectionHeader:
-            toc.append({
-                "title": self.extract_block_html(document, block_output)[0],
-                "level": document.get_block(block_output.id).heading_level,
-                "page": block_output.id.page_id
+    def generate_page_stats(self, document, document_output):
+        page_stats = []
+        for page in document.pages:
+            page_stats.append({
+                "page_id": page.page_id,
+                "text_extraction_method": page.text_extraction_method
             })
-
-        for child in block_output.children:
-            child_toc = self.compute_toc(document, child)
-            if child_toc:
-                toc.extend(child_toc)
-        return toc
+        return page_stats
 
     def generate_document_metadata(self, document, document_output):
-        toc = self.compute_toc(document, document_output)
         return {
-            "table_of_contents": toc
+            "table_of_contents": document.table_of_contents,
+            "page_stats": self.generate_page_stats(document, document_output)
         }
 
     def extract_block_html(self, document, block_output):

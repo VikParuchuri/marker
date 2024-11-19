@@ -1,5 +1,7 @@
 import json
 
+from marker.settings import settings
+from marker.v2.processors.document_toc import DocumentTOCProcessor
 from marker.v2.providers.pdf import PdfProvider
 import os
 
@@ -63,6 +65,7 @@ class PdfConverter(BaseConverter):
             EquationProcessor(self.texify_model, self.config),
             TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config),
             SectionHeaderProcessor(self.config),
+            DocumentTOCProcessor(self.config),
             DebugProcessor(self.config),
         ]
 
@@ -73,48 +76,52 @@ class PdfConverter(BaseConverter):
 
 
 @click.command()
-@click.option("--output", type=click.Path(exists=False), required=False, default="temp")
-@click.option("--fname", type=str, default="adversarial.pdf")
+@click.argument("fpath", type=str)
+@click.option("--output_dir", type=click.Path(exists=False), required=False, default=settings.OUTPUT_DIR)
 @click.option("--debug", is_flag=True)
 @click.option("--output_format", type=click.Choice(["markdown", "json"]), default="markdown")
-def main(output: str, fname: str, debug: bool, output_format: str):
-    dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
-    idx = dataset['filename'].index(fname)
-    fname_base = fname.rsplit(".", 1)[0]
-    os.makedirs(output, exist_ok=True)
+@click.option("--pages", type=str, default=None)
+@click.option("--force_ocr", is_flag=True)
+def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: str, force_ocr: bool):
+    if pages is not None:
+        pages = list(map(int, pages.split(",")))
 
-    config = {}
+    fname_base = os.path.splitext(os.path.basename(fpath))[0]
+    output_dir = os.path.join(output_dir, fname_base)
+    os.makedirs(output_dir, exist_ok=True)
+
+    config = {
+        "page_range": pages,
+    }
     if debug:
         config["debug_pdf_images"] = True
         config["debug_layout_images"] = True
         config["debug_json"] = True
+        config["debug_data_folder"] = output_dir
+    if force_ocr:
+        config["force_ocr"] = True
 
-    with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
-        temp_pdf.write(dataset['pdf'][idx])
-        temp_pdf.flush()
 
-        converter = PdfConverter(config=config, output_format=output_format)
-        rendered = converter(temp_pdf.name)
+    converter = PdfConverter(config=config, output_format=output_format)
+    rendered = converter(fpath)
 
     if output_format == "markdown":
-        out_filename = f"{fname_base}.md"
-        with open(os.path.join(output, out_filename), "w+") as f:
+        with open(os.path.join(output_dir, f"{fname_base}.md"), "w+") as f:
             f.write(rendered.markdown)
 
-        meta_filename = f"{fname_base}_meta.json"
-        with open(os.path.join(output, meta_filename), "w+") as f:
+        with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
             f.write(json.dumps(rendered.metadata, indent=2))
 
         for img_name, img in rendered.images.items():
-            img.save(os.path.join(output, img_name), "PNG")
+            img.save(os.path.join(output_dir, img_name), "PNG")
     elif output_format == "json":
-        out_filename = f"{fname_base}.json"
-        with open(os.path.join(output, out_filename), "w+") as f:
+        with open(os.path.join(output_dir, f"{fname_base}.json"), "w+") as f:
             f.write(rendered.model_dump_json(indent=2))
 
-        meta_filename = f"{fname_base}_meta.json"
-        with open(os.path.join(output, meta_filename), "w+") as f:
+        with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
             f.write(json.dumps(rendered.metadata, indent=2))
+
+    print(f"Output written to {output_dir}")
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ benchmark_data
 debug_data
 temp.md
 temp
+conversion_results
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -26,5 +26,3 @@ def test_markdown_renderer_metadata(pdf_document):
     renderer = MarkdownRenderer({"paginate_output": True})
     metadata = renderer(pdf_document).metadata
     assert "table_of_contents" in metadata
-
-    assert "Subspace Adversarial Training" in metadata["table_of_contents"][0]["title"]
