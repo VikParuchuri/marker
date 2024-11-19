@@ -8,7 +8,8 @@ from PIL import Image
 from marker.ocr.heuristics import detect_bad_ocr
 from marker.v2.providers import BaseProvider
 from marker.v2.schema.polygon import PolygonBox
-from marker.v2.schema.registry import get_block_cls
+from marker.v2.schema import BlockTypes
+from marker.v2.schema.registry import get_block_class
 from marker.v2.schema.text.line import Line
 from marker.v2.schema.text.span import Span
 
@@ -105,8 +106,8 @@ class PdfProvider(BaseProvider):
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf
         )
-        SpanClass = get_block_cls(Span)
-        LineClass = get_block_cls(Line)
+        SpanClass: Span = get_block_class(BlockTypes.Span)
+        LineClass: Span = get_block_class(BlockTypes.Line)
         for page in page_char_blocks:
             page_id = page["page"]
             lines: List[Line] = []

@@ -13,7 +13,7 @@ from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.builders.ocr import OcrBuilder
 from marker.v2.schema.document import Document
-from marker.v2.schema.registry import BLOCK_REGISTRY
+from marker.v2.schema.registry import register_block_class
 
 
 @pytest.fixture(scope="session")
@@ -58,7 +58,7 @@ def config(request):
 
     override_map: Dict[BlockTypes, Type[Block]] = config.get("override_map", {})
     for block_type, override_block_type in override_map.items():
-        BLOCK_REGISTRY[block_type] = override_block_type
+        register_block_class(block_type, override_block_type)
 
     return config
 

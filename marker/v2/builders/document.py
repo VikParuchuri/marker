@@ -3,9 +3,10 @@ from marker.v2.builders import BaseBuilder
 from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.builders.ocr import OcrBuilder
 from marker.v2.providers.pdf import PdfProvider
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
 from marker.v2.schema.groups.page import PageGroup
-from marker.v2.schema.registry import get_block_cls
+from marker.v2.schema.registry import get_block_class
 
 
 class DocumentBuilder(BaseBuilder):
@@ -16,7 +17,7 @@ class DocumentBuilder(BaseBuilder):
         return document
 
     def build_document(self, provider: PdfProvider):
-        PageGroupClass = get_block_cls(PageGroup)
+        PageGroupClass: PageGroup = get_block_class(BlockTypes.Page)
         initial_pages = [
             PageGroupClass(
                 page_id=i,
@@ -25,5 +26,5 @@ class DocumentBuilder(BaseBuilder):
                 polygon=provider.get_page_bbox(i)
             ) for i in provider.page_range
         ]
-        DocumentClass = get_block_cls(Document)
+        DocumentClass: Document = get_block_class(BlockTypes.Document)
         return DocumentClass(filepath=provider.filepath, pages=initial_pages)

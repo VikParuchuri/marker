@@ -1,4 +1,5 @@
-from typing import Dict, Type, TypeVar
+from typing import Dict, Type
+from importlib import import_module
 
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block, Caption, Code, Equation, Figure, \
@@ -11,39 +12,44 @@ from marker.v2.schema.groups import FigureGroup, ListGroup, PageGroup, \
     PictureGroup, TableGroup
 from marker.v2.schema.text import Line, Span
 
-BLOCK_REGISTRY: Dict[str, Type[Block]] = {
-    BlockTypes.Line: Line,
-    BlockTypes.Span: Span,
-    BlockTypes.FigureGroup: FigureGroup,
-    BlockTypes.TableGroup: TableGroup,
-    BlockTypes.ListGroup: ListGroup,
-    BlockTypes.PictureGroup: PictureGroup,
-    BlockTypes.Page: PageGroup,
-    BlockTypes.Caption: Caption,
-    BlockTypes.Code: Code,
-    BlockTypes.Figure: Figure,
-    BlockTypes.Footnote: Footnote,
-    BlockTypes.Form: Form,
-    BlockTypes.Equation: Equation,
-    BlockTypes.Handwriting: Handwriting,
-    BlockTypes.TextInlineMath: InlineMath,
-    BlockTypes.ListItem: ListItem,
-    BlockTypes.PageFooter: PageFooter,
-    BlockTypes.PageHeader: PageHeader,
-    BlockTypes.Picture: Picture,
-    BlockTypes.SectionHeader: SectionHeader,
-    BlockTypes.Table: Table,
-    BlockTypes.Text: Text,
-    BlockTypes.TableOfContents: TableOfContents,
-    BlockTypes.Document: Document,
-}
-
-T = TypeVar('T')
+BLOCK_REGISTRY: Dict[BlockTypes, str] = {}
 
 
-def get_block_cls(block_cls: T) -> T:
-    return BLOCK_REGISTRY.get(block_cls.model_fields['block_type'].default, block_cls)
+def register_block_class(block_type: BlockTypes, block_cls: Type[Block]):
+    BLOCK_REGISTRY[block_type] = f"{block_cls.__module__}.{block_cls.__name__}"
 
+
+def get_block_class(block_type: BlockTypes) -> Type[Block]:
+    class_path = BLOCK_REGISTRY[block_type]
+    module_name, class_name = class_path.rsplit('.', 1)
+    module = import_module(module_name)
+    return getattr(module, class_name)
+
+
+register_block_class(BlockTypes.Line, Line)
+register_block_class(BlockTypes.Span, Span)
+register_block_class(BlockTypes.FigureGroup, FigureGroup)
+register_block_class(BlockTypes.TableGroup, TableGroup)
+register_block_class(BlockTypes.ListGroup, ListGroup)
+register_block_class(BlockTypes.PictureGroup, PictureGroup)
+register_block_class(BlockTypes.Page, PageGroup)
+register_block_class(BlockTypes.Caption, Caption)
+register_block_class(BlockTypes.Code, Code)
+register_block_class(BlockTypes.Figure, Figure)
+register_block_class(BlockTypes.Footnote, Footnote)
+register_block_class(BlockTypes.Form, Form)
+register_block_class(BlockTypes.Equation, Equation)
+register_block_class(BlockTypes.Handwriting, Handwriting)
+register_block_class(BlockTypes.TextInlineMath, InlineMath)
+register_block_class(BlockTypes.ListItem, ListItem)
+register_block_class(BlockTypes.PageFooter, PageFooter)
+register_block_class(BlockTypes.PageHeader, PageHeader)
+register_block_class(BlockTypes.Picture, Picture)
+register_block_class(BlockTypes.SectionHeader, SectionHeader)
+register_block_class(BlockTypes.Table, Table)
+register_block_class(BlockTypes.Text, Text)
+register_block_class(BlockTypes.TableOfContents, TableOfContents)
+register_block_class(BlockTypes.Document, Document)
 
 assert len(BLOCK_REGISTRY) == len(BlockTypes)
-assert all([v.model_fields['block_type'].default == k for k, v in BLOCK_REGISTRY.items()])
+assert all([get_block_class(k).model_fields['block_type'].default == k for k, _ in BLOCK_REGISTRY.items()])

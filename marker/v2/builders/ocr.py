@@ -5,9 +5,10 @@ from surya.ocr import run_ocr
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
 from marker.v2.providers.pdf import PdfProvider
+from marker.v2.schema import BlockTypes
 from marker.v2.schema.document import Document
 from marker.v2.schema.polygon import PolygonBox
-from marker.v2.schema.registry import get_block_cls
+from marker.v2.schema.registry import get_block_class
 from marker.v2.schema.text.line import Line
 from marker.v2.schema.text.span import Span
 
@@ -62,8 +63,8 @@ class OcrBuilder(BaseBuilder):
         page_lines = {}
         page_spans = {}
 
-        SpanClass = get_block_cls(Span)
-        LineClass = get_block_cls(Line)
+        SpanClass: Span = get_block_class(BlockTypes.Span)
+        LineClass: Line = get_block_class(BlockTypes.Line)
 
         for page_id, recognition_result in zip((page.page_id for page in page_list), recognition_results):
             page_spans.setdefault(page_id, {})

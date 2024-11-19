@@ -23,7 +23,7 @@ from marker.v2.processors.table import TableProcessor
 from marker.v2.renderers.markdown import MarkdownRenderer
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
-from marker.v2.schema.registry import BLOCK_REGISTRY
+from marker.v2.schema.registry import register_block_class
 from marker.v2.processors.debug import DebugProcessor
 
 
@@ -34,7 +34,7 @@ class PdfConverter(BaseConverter):
         super().__init__(config)
         
         for block_type, override_block_type in self.override_map.items():
-            BLOCK_REGISTRY[block_type] = override_block_type
+            register_block_class(block_type, override_block_type)
 
         self.layout_model = setup_layout_model()
         self.texify_model = setup_texify_model()
