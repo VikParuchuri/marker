@@ -19,7 +19,7 @@ class TextProcessor(BaseProcessor):
                     if block.structure is None:
                         continue
 
-                    if not len(block.structure) > 3:  # Skip non paragraphs
+                    if not len(block.structure) >= 2:  # Skip single lines
                         continue
 
                     next_block = document.get_next_block(block)
