@@ -16,6 +16,9 @@ class TextProcessor(BaseProcessor):
         for page in document.pages:
             for block in page.children:
                 if block.block_type in self.block_types:
+                    if block.structure is None:
+                        continue
+
                     if not len(block.structure) > 3:  # Skip non paragraphs
                         continue
 
