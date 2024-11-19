@@ -7,6 +7,7 @@ from typing import List
 
 class TextProcessor(BaseProcessor):
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
+    min_continuation_width_ratio = 0.98
 
     def __init__(self, config):
         super().__init__(config)
@@ -25,5 +26,5 @@ class TextProcessor(BaseProcessor):
                     lines: List[Line] = [page.get_block(block_id) for block_id in block.structure]
                     avg_width = sum([l.polygon.width for l in lines]) / len(lines)
 
-                    if lines[-1].polygon.width >= avg_width * 0.98:
+                    if lines[-1].polygon.width >= avg_width * self.min_continuation_width_ratio:
                         block.has_continuation = True
