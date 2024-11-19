@@ -12,4 +12,8 @@ class Table(Block):
     cells: List[SpanTableCell] | None = None
 
     def assemble_html(self, child_blocks, parent_structure=None):
-        return html_format(self.cells)
+        if self.cells:
+            return html_format(self.cells)
+        else:
+            template = super().assemble_html(child_blocks, parent_structure)
+            return f"<p>{template}</p>"

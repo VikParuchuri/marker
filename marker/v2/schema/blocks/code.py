@@ -9,6 +9,7 @@ class Code(Block):
     code: str | None = None
 
     def assemble_html(self, child_blocks, parent_structure):
+        code = self.code or ""
         return (f"<pre>"
-                f"{html.escape(self.code)}"
+                f"{html.escape(code)}"
                 f"</pre>")
