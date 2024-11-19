@@ -41,8 +41,11 @@ class Document(BaseModel):
 
     def render(self):
         child_content = []
+        section_hierarchy = None
         for page in self.pages:
-            child_content.append(page.render(self, None))
+            rendered = page.render(self, None, section_hierarchy)
+            section_hierarchy = rendered.section_hierarchy
+            child_content.append(rendered)
 
         return DocumentOutput(
             children=child_content,

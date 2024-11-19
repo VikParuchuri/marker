@@ -9,7 +9,7 @@ def test_list_grouping(pdf_document):
     structure = StructureBuilder()
     structure(pdf_document)
 
-    page = pdf_document.pags[0]
+    page = pdf_document.page[0]
     list_groups = []
     for block in page.children:
         if block.block_type == BlockTypes.ListGroup:

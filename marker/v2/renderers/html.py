@@ -17,24 +17,6 @@ class HTMLOutput(BaseModel):
     images: dict
 
 
-def merge_consecutive_tags(html, tag):
-    if not html:
-        return html
-
-    def replace_whitespace(match):
-        return match.group(1)
-
-    pattern = fr'</{tag}>(\s*)<{tag}>'
-
-    while True:
-        new_merged = re.sub(pattern, replace_whitespace, html)
-        if new_merged == html:
-            break
-        html = new_merged
-
-    return html
-
-
 class HTMLRenderer(BaseRenderer):
     remove_blocks: list = [BlockTypes.PageHeader, BlockTypes.PageFooter]
     image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
@@ -82,8 +64,8 @@ class HTMLRenderer(BaseRenderer):
 
         output = str(soup)
         if level == 0:
-            output = merge_consecutive_tags(output, 'b')
-            output = merge_consecutive_tags(output, 'i')
+            output = self.merge_consecutive_tags(output, 'b')
+            output = self.merge_consecutive_tags(output, 'i')
 
         return output, images
 

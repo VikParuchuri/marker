@@ -1,8 +1,8 @@
 from marker.v2.schema import BlockTypes
-from marker.v2.schema.blocks import Block
+from marker.v2.schema.groups.base import Group
 
 
-class ListGroup(Block):
+class ListGroup(Group):
     block_type: BlockTypes = BlockTypes.ListGroup
 
     def assemble_html(self, child_blocks, parent_structure):

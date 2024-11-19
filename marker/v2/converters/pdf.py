@@ -1,6 +1,8 @@
 from marker.v2.providers.pdf import PdfProvider
 import os
 
+from marker.v2.renderers.json import JSONRenderer
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 import tempfile
@@ -30,7 +32,7 @@ from marker.v2.processors.debug import DebugProcessor
 class PdfConverter(BaseConverter):
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, output_format="markdown"):
         super().__init__(config)
         
         for block_type, override_block_type in self.override_map.items():
@@ -41,6 +43,11 @@ class PdfConverter(BaseConverter):
         self.recognition_model = setup_recognition_model()
         self.table_rec_model = setup_table_rec_model()
         self.detection_model = setup_detection_model()
+
+        if output_format == "markdown":
+            self.renderer = MarkdownRenderer(self.config)
+        elif output_format == "json":
+            self.renderer = JSONRenderer(self.config)
 
     def __call__(self, filepath: str):
         pdf_provider = PdfProvider(filepath, self.config)
@@ -62,18 +69,18 @@ class PdfConverter(BaseConverter):
         debug_processor = DebugProcessor(self.config)
         debug_processor(document)
 
-        renderer = MarkdownRenderer(self.config)
-        return renderer(document)
+        return self.renderer(document)
 
 
 @click.command()
 @click.option("--output", type=click.Path(exists=False), required=False, default="temp")
 @click.option("--fname", type=str, default="adversarial.pdf")
 @click.option("--debug", is_flag=True)
-def main(output: str, fname: str, debug: bool):
+@click.option("--output_format", type=click.Choice(["markdown", "json"]), default="markdown")
+def main(output: str, fname: str, debug: bool, output_format: str):
     dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
     idx = dataset['filename'].index(fname)
-    out_filename = fname.rsplit(".", 1)[0] + ".md"
+    fname_base = fname.rsplit(".", 1)[0]
     os.makedirs(output, exist_ok=True)
 
     config = {}
@@ -86,14 +93,20 @@ def main(output: str, fname: str, debug: bool):
         temp_pdf.write(dataset['pdf'][idx])
         temp_pdf.flush()
 
-        converter = PdfConverter()
+        converter = PdfConverter(config=config, output_format=output_format)
         rendered = converter(temp_pdf.name)
 
+    if output_format == "markdown":
+        out_filename = f"{fname_base}.md"
         with open(os.path.join(output, out_filename), "w+") as f:
             f.write(rendered.markdown)
 
         for img_name, img in rendered.images.items():
             img.save(os.path.join(output, img_name), "PNG")
+    elif output_format == "json":
+        out_filename = f"{fname_base}.json"
+        with open(os.path.join(output, out_filename), "w+") as f:
+            f.write(rendered.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":
