@@ -103,7 +103,13 @@ def pdf_document(request, config, pdf_provider, layout_model, recognition_model,
 
 @pytest.fixture(scope="function")
 def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model, renderer):
-    model_lst = [layout_model, texify_model, recognition_model, table_rec_model, detection_model]
+    model_dict = {
+        "layout_model": layout_model,
+        "texify_model": texify_model,
+        "recognition_model": recognition_model,
+        "table_rec_model": table_rec_model,
+        "detection_model": detection_model
+    }
     processor_list = [
         EquationProcessor,
         TableProcessor,
@@ -114,7 +120,7 @@ def pdf_converter(request, config, layout_model, texify_model, recognition_model
         DebugProcessor,
     ]
     yield PdfConverter(
-        model_lst=model_lst,
+        model_dict=model_dict,
         processor_list=processor_list,
         renderer=renderer,
         config=config

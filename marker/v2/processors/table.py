@@ -22,14 +22,14 @@ class TableProcessor(BaseProcessor):
     def __init__(
         self,
         detection_model: EfficientViTForSemanticSegmentation,
-        ocr_model: OCREncoderDecoderModel,
+        recognition_model: OCREncoderDecoderModel,
         table_rec_model: TableRecEncoderDecoderModel,
         config=None
     ):
         super().__init__(config)
 
         self.detection_model = detection_model
-        self.ocr_model = ocr_model
+        self.recognition_model = recognition_model
         self.table_rec_model = table_rec_model
 
     def __call__(self, document: Document):
@@ -75,7 +75,7 @@ class TableProcessor(BaseProcessor):
             [t["table_image"] for t in table_data],
             cells,
             needs_ocr,
-            [self.table_rec_model, self.table_rec_model.processor, self.ocr_model, self.ocr_model.processor],
+            [self.table_rec_model, self.table_rec_model.processor, self.recognition_model, self.recognition_model.processor],
             table_rec_batch_size=self.get_table_rec_batch_size(),
             ocr_batch_size=self.get_ocr_batch_size()
         )

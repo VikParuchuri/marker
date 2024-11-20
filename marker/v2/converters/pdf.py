@@ -12,7 +12,7 @@ from marker.v2.util import parse_range_str
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 from collections import defaultdict
-from typing import Dict, Type, List, Any, Optional
+from typing import Dict, Type, List, Any
 
 import click
 import inspect
@@ -40,13 +40,13 @@ from marker.v2.renderers import BaseRenderer
 class PdfConverter(BaseConverter):
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
 
-    def __init__(self, model_lst: List[Any], processor_list: List[BaseProcessor], renderer: BaseRenderer, config=None):
+    def __init__(self, model_dict: Dict[str, Any], processor_list: List[BaseProcessor], renderer: BaseRenderer, config=None):
         super().__init__(config)
         
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
 
-        self.class_instance_map = {model.__class__: model for model in model_lst}
+        self.model_dict = model_dict
         self.processor_list = processor_list
         self.renderer = renderer
 
@@ -58,10 +58,10 @@ class PdfConverter(BaseConverter):
         for param_name, param in parameters.items():
             if param_name == 'self':
                 continue
-            elif param.name == 'config':
+            elif param_name == 'config':
                 resolved_kwargs[param_name] = self.config
-            elif param.annotation in self.class_instance_map:
-                resolved_kwargs[param_name] = self.class_instance_map[param.annotation]
+            elif param.name in self.model_dict:
+                resolved_kwargs[param_name] = self.model_dict[param_name]
             elif param.default != inspect.Parameter.empty:
                 resolved_kwargs[param_name] = param.default
             else:
@@ -109,13 +109,13 @@ def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: st
     if force_ocr:
         config["force_ocr"] = True
 
-    model_lst = [
-        setup_layout_model(),
-        setup_texify_model(),
-        setup_recognition_model(),
-        setup_table_rec_model(),
-        setup_detection_model(),
-    ]
+    model_dict = {
+        "layout_model": setup_layout_model(),
+        "texify_model": setup_texify_model(),
+        "recognition_model": setup_recognition_model(),
+        "table_rec_model": setup_table_rec_model(),
+        "detection_model": setup_detection_model(),
+    }
     processor_list = [
         EquationProcessor,
         TableProcessor,
@@ -137,7 +137,7 @@ def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: st
 
     converter = PdfConverter(
         config=config,
-        model_lst=model_lst,
+        model_dict=model_dict,
         processor_list=processor_list,
         renderer=renderer
     )
