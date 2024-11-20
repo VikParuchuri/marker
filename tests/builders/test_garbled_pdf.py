@@ -1,5 +1,5 @@
 import pytest
-from marker.v2.schema import BlockTypes
+from marker.schema import BlockTypes
 
 
 @pytest.mark.skip(reason="This is failing because we need better garbled text detection")

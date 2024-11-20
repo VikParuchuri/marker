@@ -1,6 +1,6 @@
 import pytest
 
-from marker.v2.renderers.markdown import MarkdownRenderer
+from marker.renderers.markdown import MarkdownRenderer
 
 
 @pytest.mark.config({"page_range": [0]})

@@ -1,7 +1,7 @@
 import pytest
 
-from marker.v2.builders.structure import StructureBuilder
-from marker.v2.schema import BlockTypes
+from marker.builders.structure import StructureBuilder
+from marker.schema import BlockTypes
 
 
 @pytest.mark.config({"page_range": [4]})

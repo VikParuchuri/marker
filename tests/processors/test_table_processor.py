@@ -2,8 +2,8 @@ import pytest
 
 from tabled.schema import SpanTableCell
 
-from marker.v2.schema import BlockTypes
-from marker.v2.processors.table import TableProcessor
+from marker.schema import BlockTypes
+from marker.processors.table import TableProcessor
 
 
 @pytest.mark.config({"page_range": [5]})

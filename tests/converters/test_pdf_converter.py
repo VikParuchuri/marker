@@ -1,6 +1,6 @@
 import pytest
-from marker.v2.converters.pdf import PdfConverter
-from marker.v2.renderers.markdown import MarkdownOutput
+from marker.converters.pdf import PdfConverter
+from marker.renderers.markdown import MarkdownOutput
 
 
 @pytest.mark.output_format("markdown")

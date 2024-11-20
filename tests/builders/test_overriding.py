@@ -2,12 +2,12 @@ import multiprocessing as mp
 
 import pytest
 
-from marker.v2.providers.pdf import PdfProvider
-from marker.v2.schema import BlockTypes
-from marker.v2.schema.blocks import SectionHeader
-from marker.v2.schema.document import Document
-from marker.v2.schema.registry import register_block_class
-from marker.v2.schema.text import Line
+from marker.providers.pdf import PdfProvider
+from marker.schema import BlockTypes
+from marker.schema.blocks import SectionHeader
+from marker.schema.document import Document
+from marker.schema.registry import register_block_class
+from marker.schema.text import Line
 from tests.utils import setup_pdf_provider
 
 

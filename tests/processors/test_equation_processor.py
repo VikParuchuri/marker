@@ -1,7 +1,7 @@
 import pytest
 
-from marker.v2.schema import BlockTypes
-from marker.v2.processors.equation import EquationProcessor
+from marker.schema import BlockTypes
+from marker.processors.equation import EquationProcessor
 
 
 @pytest.mark.config({"page_range": [0]})

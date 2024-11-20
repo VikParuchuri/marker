@@ -1,3 +1,0 @@
-ocrmypdf
-tesseract
-tesseract-lang

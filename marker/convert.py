@@ -1,40 +1,8 @@
 import warnings
-
-from marker.pdf.images import render_image
-
 warnings.filterwarnings("ignore", category=UserWarning) # Filter torch pytree user warnings
 
 import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
-
-
-import pypdfium2 as pdfium # Needs to be at the top to avoid warnings
-from PIL import Image
-
-from marker.utils import flush_cuda_memory
-from marker.tables.table import format_tables
-from marker.debug.data import dump_bbox_debug_data, draw_page_debug_images
-from marker.layout.layout import surya_layout, annotate_block_types
-from marker.layout.order import surya_order, sort_blocks_in_reading_order
-from marker.ocr.lang import replace_langs_with_codes, validate_langs
-from marker.ocr.detection import surya_detection
-from marker.ocr.recognition import run_ocr
-from marker.pdf.extract_text import get_text_blocks
-from marker.cleaners.headers import filter_header_footer, filter_common_titles
-from marker.equations.equations import replace_equations
-from marker.pdf.utils import find_filetype
-from marker.cleaners.code import identify_code_blocks, indent_blocks
-from marker.cleaners.bullets import replace_bullets
-from marker.cleaners.headings import split_heading_blocks, infer_heading_levels
-from marker.cleaners.fontstyle import find_bold_italic
-from marker.postprocessors.markdown import merge_spans, merge_lines, get_full_text
-from marker.cleaners.text import cleanup_text
-from marker.images.extract import extract_images
-from marker.images.save import images_to_dict
-from marker.cleaners.toc import compute_toc
-
-from typing import List, Dict, Tuple, Optional
-from marker.settings import settings
 
 
 def convert_single_pdf(

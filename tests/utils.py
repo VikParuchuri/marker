@@ -1,12 +1,12 @@
-from marker.v2.providers.pdf import PdfProvider
+from marker.providers.pdf import PdfProvider
 import tempfile
 
 import datasets
-from marker.v2.models import setup_layout_model, setup_recognition_model, setup_detection_model
-from marker.v2.builders.document import DocumentBuilder
-from marker.v2.builders.layout import LayoutBuilder
-from marker.v2.builders.ocr import OcrBuilder
-from marker.v2.schema.document import Document
+from marker.models import setup_layout_model, setup_recognition_model, setup_detection_model
+from marker.builders.document import DocumentBuilder
+from marker.builders.layout import LayoutBuilder
+from marker.builders.ocr import OcrBuilder
+from marker.schema.document import Document
 
 
 def setup_pdf_provider(

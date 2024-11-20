@@ -1,6 +1,6 @@
 import pytest
 
-from marker.v2.builders.structure import StructureBuilder
+from marker.builders.structure import StructureBuilder
 
 
 @pytest.mark.config({"page_range": [0]})

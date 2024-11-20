@@ -1,29 +1,29 @@
-from marker.v2.providers.pdf import PdfProvider
+from marker.providers.pdf import PdfProvider
 import tempfile
 from typing import Dict, Type
 
 import datasets
 import pytest
 
-from marker.v2.builders.document import DocumentBuilder
-from marker.v2.builders.layout import LayoutBuilder
-from marker.v2.builders.ocr import OcrBuilder
-from marker.v2.converters.pdf import PdfConverter
-from marker.v2.models import setup_detection_model, setup_layout_model, \
+from marker.builders.document import DocumentBuilder
+from marker.builders.layout import LayoutBuilder
+from marker.builders.ocr import OcrBuilder
+from marker.converters.pdf import PdfConverter
+from marker.models import setup_detection_model, setup_layout_model, \
     setup_recognition_model, setup_table_rec_model, \
     setup_texify_model
-from marker.v2.processors.code import CodeProcessor
-from marker.v2.processors.debug import DebugProcessor
-from marker.v2.processors.document_toc import DocumentTOCProcessor
-from marker.v2.processors.equation import EquationProcessor
-from marker.v2.processors.sectionheader import SectionHeaderProcessor
-from marker.v2.processors.table import TableProcessor
-from marker.v2.processors.text import TextProcessor
-from marker.v2.schema import BlockTypes
-from marker.v2.schema.blocks import Block
-from marker.v2.renderers.markdown import MarkdownRenderer
-from marker.v2.renderers.json import JSONRenderer
-from marker.v2.schema.registry import register_block_class
+from marker.processors.code import CodeProcessor
+from marker.processors.debug import DebugProcessor
+from marker.processors.document_toc import DocumentTOCProcessor
+from marker.processors.equation import EquationProcessor
+from marker.processors.sectionheader import SectionHeaderProcessor
+from marker.processors.table import TableProcessor
+from marker.processors.text import TextProcessor
+from marker.schema import BlockTypes
+from marker.schema.blocks import Block
+from marker.renderers.markdown import MarkdownRenderer
+from marker.renderers.json import JSONRenderer
+from marker.schema.registry import register_block_class
 
 
 @pytest.fixture(scope="session")

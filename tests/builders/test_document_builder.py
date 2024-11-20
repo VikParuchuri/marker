@@ -1,7 +1,7 @@
 import pytest
 
-from marker.v2.schema import BlockTypes
-from marker.v2.schema.text.line import Line
+from marker.schema import BlockTypes
+from marker.schema.text.line import Line
 
 
 @pytest.mark.config({"page_range": [0]})

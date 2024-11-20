@@ -1,6 +1,6 @@
 import pytest
 
-from marker.v2.renderers.json import JSONRenderer
+from marker.renderers.json import JSONRenderer
 
 
 @pytest.mark.config({"page_range": [0]})
