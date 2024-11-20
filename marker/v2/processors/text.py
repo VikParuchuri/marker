@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 import regex
@@ -44,11 +45,11 @@ class TextProcessor(BaseProcessor):
                             continue
                         new_page = document.get_page(next_block_doc.page_id)  # the next block can come from the next page
                         new_block_lines = [new_page.get_block(block_id) for block_id in next_block_doc.structure]
-                        min_x = min([l.polygon.x_start for l in new_block_lines])
+                        min_x = math.floor(min([l.polygon.x_start for l in new_block_lines]))
                         next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
                     lines: List[Line] = [page.get_block(block_id) for block_id in block.structure]
-                    max_x = max([l.polygon.x_end for l in lines])
+                    max_x = math.floor(max([l.polygon.x_end for l in lines]))
 
                     last_line_is_full_width = lines[-1].polygon.x_end >= max_x
                     last_line_is_hyphentated = regex.compile(r'.*[\p{Ll}|\d][-—¬]\s?$', regex.DOTALL).match(lines[-1].raw_text(document).strip())
