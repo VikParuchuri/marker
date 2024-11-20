@@ -70,7 +70,7 @@ class TextProcessor(BaseProcessor):
 
                             # check if the new block is indented
                             new_block_lines = [next_page.get_block(block_id) for block_id in next_page_block.structure]
-                            min_x = math.floor(min([l.polygon.x_start for l in new_block_lines]))
+                            min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
                             next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
                             next_block_in_first_quadrant = (next_page_block.polygon.x_start < next_page.polygon.width // 2) and \
