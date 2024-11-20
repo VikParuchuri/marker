@@ -11,12 +11,11 @@ from marker.v2.util import parse_range_str
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
-import tempfile
 from collections import defaultdict
-from typing import Dict, Type
+from typing import Dict, Type, List, Any
 
 import click
-import datasets
+import inspect
 
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
@@ -34,47 +33,51 @@ from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 from marker.v2.schema.registry import register_block_class
 from marker.v2.processors.debug import DebugProcessor
+from marker.v2.processors import BaseProcessor
+from marker.v2.renderers import BaseRenderer
 
 
 class PdfConverter(BaseConverter):
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
 
-    def __init__(self, config=None, output_format="markdown"):
+    def __init__(self, model_dict: Dict[str, Any], processor_list: List[BaseProcessor], renderer: BaseRenderer, config=None):
         super().__init__(config)
         
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
 
-        self.layout_model = setup_layout_model()
-        self.texify_model = setup_texify_model()
-        self.recognition_model = setup_recognition_model()
-        self.table_rec_model = setup_table_rec_model()
-        self.detection_model = setup_detection_model()
+        self.model_dict = model_dict
+        self.processor_list = processor_list
+        self.renderer = renderer
 
-        if output_format == "markdown":
-            self.renderer = MarkdownRenderer(self.config)
-        elif output_format == "json":
-            self.renderer = JSONRenderer(self.config)
+    def resolve_dependencies(self, cls):
+        init_signature = inspect.signature(cls.__init__)
+        parameters = init_signature.parameters
+
+        resolved_kwargs = {}
+        for param_name, param in parameters.items():
+            if param_name == 'self':
+                continue
+            elif param_name == 'config':
+                resolved_kwargs[param_name] = self.config
+            elif param.name in self.model_dict:
+                resolved_kwargs[param_name] = self.model_dict[param_name]
+            elif param.default != inspect.Parameter.empty:
+                resolved_kwargs[param_name] = param.default
+            else:
+                raise ValueError(f"Cannot resolve dependency for parameter: {param_name}")
+
+        return cls(**resolved_kwargs)
 
     def __call__(self, filepath: str):
         pdf_provider = PdfProvider(filepath, self.config)
-
-        layout_builder = LayoutBuilder(self.layout_model, self.config)
-        ocr_builder = OcrBuilder(self.detection_model, self.recognition_model, self.config)
+        layout_builder = self.resolve_dependencies(LayoutBuilder)
+        ocr_builder = self.resolve_dependencies(OcrBuilder)
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
-        processor_list = [
-            EquationProcessor(self.texify_model, self.config),
-            TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config),
-            SectionHeaderProcessor(self.config),
-            TextProcessor(self.config),
-            CodeProcessor(self.config),
-            DocumentTOCProcessor(self.config),
-            DebugProcessor(self.config),
-        ]
-
-        for processor in processor_list:
+        for processor_cls in self.processor_list:
+            processor = self.resolve_dependencies(processor_cls)
             processor(document)
 
         return self.renderer(document)
@@ -106,25 +109,47 @@ def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: st
     if force_ocr:
         config["force_ocr"] = True
 
-
-    converter = PdfConverter(config=config, output_format=output_format)
-    rendered = converter(fpath)
+    model_dict = {
+        "layout_model": setup_layout_model(),
+        "texify_model": setup_texify_model(),
+        "recognition_model": setup_recognition_model(),
+        "table_rec_model": setup_table_rec_model(),
+        "detection_model": setup_detection_model(),
+    }
+    processor_list = [
+        EquationProcessor,
+        TableProcessor,
+        SectionHeaderProcessor,
+        TextProcessor,
+        CodeProcessor,
+        DocumentTOCProcessor,
+        DebugProcessor,
+    ]
 
     if output_format == "markdown":
-        with open(os.path.join(output_dir, f"{fname_base}.md"), "w+") as f:
-            f.write(rendered.markdown)
+        renderer = MarkdownRenderer(config)
+        fext = "md"
+    elif output_format == "json":
+        renderer = JSONRenderer(config)
+        fext = "json"
+    else:
+        raise ValueError(f"Unknown output format: {output_format}")
 
-        with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
-            f.write(json.dumps(rendered.metadata, indent=2))
+    converter = PdfConverter(
+        config=config,
+        model_dict=model_dict,
+        processor_list=processor_list,
+        renderer=renderer
+    )
+    rendered = converter(fpath)
 
+    with open(os.path.join(output_dir, f"{fname_base}.{fext}"), "w+") as f:
+        f.write(rendered.markdown)
+    with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
+        f.write(json.dumps(rendered.metadata, indent=2))
+    if output_format == "markdown":
         for img_name, img in rendered.images.items():
             img.save(os.path.join(output_dir, img_name), "PNG")
-    elif output_format == "json":
-        with open(os.path.join(output_dir, f"{fname_base}.json"), "w+") as f:
-            f.write(rendered.model_dump_json(indent=2))
-
-        with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
-            f.write(json.dumps(rendered.metadata, indent=2))
 
     print(f"Output written to {output_dir}")
 

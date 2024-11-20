@@ -1,7 +1,8 @@
-from typing import Optional
 
-from pydantic import BaseModel
 from surya.input.pdflines import get_page_text_lines
+from surya.model.detection.model import EfficientViTForSemanticSegmentation
+from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
+from surya.model.table_rec.encoderdecoder import TableRecEncoderDecoderModel
 from tabled.assignment import assign_rows_columns
 from tabled.inference.recognition import get_cells, recognize_tables
 
@@ -18,11 +19,17 @@ class TableProcessor(BaseProcessor):
     table_rec_batch_size = None
     ocr_batch_size = None
 
-    def __init__(self, detection_model, ocr_model, table_rec_model, config=None):
+    def __init__(
+        self,
+        detection_model: EfficientViTForSemanticSegmentation,
+        recognition_model: OCREncoderDecoderModel,
+        table_rec_model: TableRecEncoderDecoderModel,
+        config=None
+    ):
         super().__init__(config)
 
         self.detection_model = detection_model
-        self.ocr_model = ocr_model
+        self.recognition_model = recognition_model
         self.table_rec_model = table_rec_model
 
     def __call__(self, document: Document):
@@ -68,7 +75,7 @@ class TableProcessor(BaseProcessor):
             [t["table_image"] for t in table_data],
             cells,
             needs_ocr,
-            [self.table_rec_model, self.table_rec_model.processor, self.ocr_model, self.ocr_model.processor],
+            [self.table_rec_model, self.table_rec_model.processor, self.recognition_model, self.recognition_model.processor],
             table_rec_batch_size=self.get_table_rec_batch_size(),
             ocr_batch_size=self.get_ocr_batch_size()
         )

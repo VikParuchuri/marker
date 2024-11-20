@@ -1,3 +1,5 @@
+from surya.model.detection.model import EfficientViTForSemanticSegmentation
+from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
 from surya.ocr import run_ocr
 
 from marker.settings import settings
@@ -16,7 +18,7 @@ class OcrBuilder(BaseBuilder):
     recognition_batch_size = None
     detection_batch_size = None
 
-    def __init__(self, detection_model, recognition_model, config=None):
+    def __init__(self, detection_model: EfficientViTForSemanticSegmentation, recognition_model: OCREncoderDecoderModel, config=None):
         super().__init__(config)
 
         self.detection_model = detection_model
@@ -70,9 +72,9 @@ class OcrBuilder(BaseBuilder):
                 polygon = PolygonBox.from_bbox(ocr_line.bbox).rescale(image_polygon.size, page_size)
 
                 line = LineClass(
-                        polygon=polygon,
-                        page_id=page_id,
-                    )
+                    polygon=polygon,
+                    page_id=page_id,
+                )
                 spans = [
                     SpanClass(
                         text=ocr_line.text + "\n",
