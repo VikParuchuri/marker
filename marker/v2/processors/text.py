@@ -11,12 +11,14 @@ from marker.v2.schema.text.line import Line
 
 class TextProcessor(BaseProcessor):
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
+    column_gap_ratio = 0.02  # column gaps are atleast 2% of the page width
 
     def __init__(self, config):
         super().__init__(config)
 
     def __call__(self, document: Document):
         for page in document.pages:
+            column_gap = page.polygon.width * self.column_gap_ratio
             for block in page.children:
                 if block.block_type in self.block_types:
                     if block.structure is None:
@@ -29,8 +31,8 @@ class TextProcessor(BaseProcessor):
                     next_block = page.get_next_block(block)
                     if next_block is not None:  # we check for a column break
                         column_break = (
-                            next_block.polygon.y_start < block.polygon.y_start and
-                            next_block.polygon.x_start > block.polygon.x_end
+                            math.floor(next_block.polygon.y_start) <= math.floor(block.polygon.y_start) and
+                            next_block.polygon.x_start > (block.polygon.x_end + column_gap)
                         )
                     else:  # It's a page break since we don't have a next block in the page
                         page_break = True
