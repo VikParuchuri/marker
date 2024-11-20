@@ -21,7 +21,8 @@ from marker.v2.processors.table import TableProcessor
 from marker.v2.processors.text import TextProcessor
 from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
-from marker.v2.schema.document import Document
+from marker.v2.renderers.markdown import MarkdownRenderer
+from marker.v2.renderers.json import JSONRenderer
 from marker.v2.schema.registry import register_block_class
 
 
@@ -92,7 +93,7 @@ def pdf_provider(request, config, temp_pdf):
 
 
 @pytest.fixture(scope="function")
-def pdf_document(request, config, pdf_provider, layout_model, recognition_model, detection_model) -> Document:
+def pdf_document(request, config, pdf_provider, layout_model, recognition_model, detection_model):
     layout_builder = LayoutBuilder(layout_model, config)
     ocr_builder = OcrBuilder(detection_model, recognition_model, config)
     builder = DocumentBuilder(config)
@@ -101,7 +102,7 @@ def pdf_document(request, config, pdf_provider, layout_model, recognition_model,
 
 
 @pytest.fixture(scope="function")
-def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model):
+def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model, renderer):
     model_lst = [layout_model, texify_model, recognition_model, table_rec_model, detection_model]
     processor_list = [
         EquationProcessor,
@@ -113,13 +114,28 @@ def pdf_converter(request, config, layout_model, texify_model, recognition_model
         DebugProcessor,
     ]
     yield PdfConverter(
-        config=config,
         model_lst=model_lst,
         processor_list=processor_list,
-        output_format="markdown"
+        renderer=renderer,
+        config=config
     )
 
 
 @pytest.fixture(scope="function")
-def markdown_output(request, temp_pdf, pdf_converter):
+def renderer(request, config):
+    if request.node.get_closest_marker("output_format"):
+        output_format = request.node.get_closest_marker("output_format").args[0]
+        if output_format == "markdown":
+            return MarkdownRenderer(config)
+        elif output_format == "json":
+            return JSONRenderer(config)
+        else:
+            raise ValueError(f"Unknown output format: {output_format}")
+    else:
+        return MarkdownRenderer(config)
+
+
+@pytest.fixture(scope="function")
+@pytest.mark.output_format("markdown")
+def markdown_output(request, temp_pdf, pdf_converter, renderer):
     yield pdf_converter(temp_pdf.name)

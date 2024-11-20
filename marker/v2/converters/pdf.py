@@ -33,12 +33,14 @@ from marker.v2.schema import BlockTypes
 from marker.v2.schema.blocks import Block
 from marker.v2.schema.registry import register_block_class
 from marker.v2.processors.debug import DebugProcessor
+from marker.v2.processors import BaseProcessor
+from marker.v2.renderers import BaseRenderer
 
 
 class PdfConverter(BaseConverter):
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
 
-    def __init__(self, config=None, model_lst: Optional[List[Any]] = None, processor_list: Optional[List[Any]] = None, output_format="markdown"):
+    def __init__(self, model_lst: List[Any], processor_list: List[BaseProcessor], renderer: BaseRenderer, config=None):
         super().__init__(config)
         
         for block_type, override_block_type in self.override_map.items():
@@ -46,11 +48,7 @@ class PdfConverter(BaseConverter):
 
         self.class_instance_map = {model.__class__: model for model in model_lst}
         self.processor_list = processor_list
-
-        if output_format == "markdown":
-            self.renderer = MarkdownRenderer(self.config)
-        elif output_format == "json":
-            self.renderer = JSONRenderer(self.config)
+        self.renderer = renderer
 
     def resolve_dependencies(self, cls):
         init_signature = inspect.signature(cls.__init__)
@@ -127,29 +125,31 @@ def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: st
         DocumentTOCProcessor,
         DebugProcessor,
     ]
+
+    if output_format == "markdown":
+        renderer = MarkdownRenderer(config)
+        fext = "md"
+    elif output_format == "json":
+        renderer = JSONRenderer(config)
+        fext = "json"
+    else:
+        raise ValueError(f"Unknown output format: {output_format}")
+
     converter = PdfConverter(
         config=config,
         model_lst=model_lst,
         processor_list=processor_list,
-        output_format=output_format
+        renderer=renderer
     )
     rendered = converter(fpath)
 
+    with open(os.path.join(output_dir, f"{fname_base}.{fext}"), "w+") as f:
+        f.write(rendered.markdown)
+    with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
+        f.write(json.dumps(rendered.metadata, indent=2))
     if output_format == "markdown":
-        with open(os.path.join(output_dir, f"{fname_base}.md"), "w+") as f:
-            f.write(rendered.markdown)
-
-        with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
-            f.write(json.dumps(rendered.metadata, indent=2))
-
         for img_name, img in rendered.images.items():
             img.save(os.path.join(output_dir, img_name), "PNG")
-    elif output_format == "json":
-        with open(os.path.join(output_dir, f"{fname_base}.json"), "w+") as f:
-            f.write(rendered.model_dump_json(indent=2))
-
-        with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
-            f.write(json.dumps(rendered.metadata, indent=2))
 
     print(f"Output written to {output_dir}")
 
