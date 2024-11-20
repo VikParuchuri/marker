@@ -51,21 +51,19 @@ class TextProcessor(BaseProcessor):
                         new_block_lines = [page.get_block(block_id) for block_id in next_block.structure]
                         min_x = math.floor(min([l.polygon.x_start for l in new_block_lines]))
                         next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
-                    elif page_break:
-                        # we don't care if it's a page break and it's the last page
-                        if not document.pages.index(page) < len(document.pages) - 1:
-                            continue
-
+                    else:  # page break
                         next_page = document.get_next_page(page)
                         if next_page is None:
-                            continue
+                            continue  # we're on the last page, so we don't worry about merging
+
+                        # Go through the next page only
                         for next_page_block_id in next_page.structure:
                             if next_page_block_id.block_type in [BlockTypes.PageHeader, BlockTypes.PageFooter]:
                                 continue  # skip headers and footers
                             if next_page_block_id.block_type not in self.block_types:
                                 break  # we found a non-text block, so we can stop looking
 
-                            # we have our text_block, now we set the new block_lines
+                            # we have our text_block
                             next_page_block = next_page.get_block(next_page_block_id)
                             if next_page_block.structure is None:
                                 break  # This is odd though, why do we have text blocks with no structure?
@@ -80,8 +78,6 @@ class TextProcessor(BaseProcessor):
                             break
                         else:
                             continue  # we didn't break anywhere so we continue
-                    else:
-                        continue
 
                     lines: List[Line] = [page.get_block(block_id) for block_id in block.structure]
                     max_x = math.floor(max([l.polygon.x_end for l in lines]))
@@ -90,6 +86,6 @@ class TextProcessor(BaseProcessor):
                     last_line_is_hyphentated = regex.compile(r'.*[\p{Ll}|\d][-—¬]\s?$', regex.DOTALL).match(lines[-1].raw_text(document).strip())
 
                     if (last_line_is_full_width or last_line_is_hyphentated) and \
-                        not next_block_starts_indented and \
+                            not next_block_starts_indented and \
                             ((next_block_in_first_quadrant and page_break) or column_break):
                         block.has_continuation = True
