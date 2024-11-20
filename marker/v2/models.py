@@ -14,8 +14,14 @@ from surya.model.recognition.processor import load_processor as load_recognition
 from surya.model.table_rec.model import load_model as load_table_model
 from surya.model.table_rec.processor import load_processor as load_table_processor
 
+from texify.model.model import GenerateVisionEncoderDecoderModel
+from surya.model.layout.encoderdecoder import SuryaLayoutModel
+from surya.model.detection.model import EfficientViTForSemanticSegmentation
+from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
+from surya.model.table_rec.encoderdecoder import TableRecEncoderDecoderModel
 
-def setup_table_rec_model(device=None, dtype=None):
+
+def setup_table_rec_model(device=None, dtype=None) -> TableRecEncoderDecoderModel:
     if device:
         table_model = load_table_model(device=device, dtype=dtype)
     else:
@@ -24,7 +30,7 @@ def setup_table_rec_model(device=None, dtype=None):
     return table_model
 
 
-def setup_recognition_model(device=None, dtype=None):
+def setup_recognition_model(device=None, dtype=None) -> OCREncoderDecoderModel:
     if device:
         rec_model = load_recognition_model(device=device, dtype=dtype)
     else:
@@ -33,7 +39,7 @@ def setup_recognition_model(device=None, dtype=None):
     return rec_model
 
 
-def setup_detection_model(device=None, dtype=None):
+def setup_detection_model(device=None, dtype=None) -> EfficientViTForSemanticSegmentation:
     if device:
         model = load_detection_model(device=device, dtype=dtype)
     else:
@@ -42,7 +48,7 @@ def setup_detection_model(device=None, dtype=None):
     return model
 
 
-def setup_texify_model(device=None, dtype=None):
+def setup_texify_model(device=None, dtype=None) -> GenerateVisionEncoderDecoderModel:
     if device:
         texify_model = load_texify_model(checkpoint=settings.TEXIFY_MODEL_NAME, device=device, dtype=dtype)
     else:
@@ -51,7 +57,7 @@ def setup_texify_model(device=None, dtype=None):
     return texify_model
 
 
-def setup_layout_model(device=None, dtype=None):
+def setup_layout_model(device=None, dtype=None) -> SuryaLayoutModel:
     if device:
         model = load_layout_model(device=device, dtype=dtype)
     else:

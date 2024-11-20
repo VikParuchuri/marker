@@ -1,7 +1,7 @@
-from typing import List, Optional
+from typing import List
 
-from pydantic import BaseModel
 from texify.inference import batch_inference
+from texify.model.model import GenerateVisionEncoderDecoderModel
 from tqdm import tqdm
 
 from marker.settings import settings
@@ -16,7 +16,7 @@ class EquationProcessor(BaseProcessor):
     batch_size = None
     token_buffer = 256
 
-    def __init__(self, texify_model, config=None):
+    def __init__(self, texify_model: GenerateVisionEncoderDecoderModel, config=None):
         super().__init__(config)
 
         self.texify_model = texify_model

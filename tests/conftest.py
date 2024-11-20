@@ -1,17 +1,26 @@
 from marker.v2.providers.pdf import PdfProvider
 import tempfile
+from typing import Dict, Type
 
 import datasets
 import pytest
-from typing import Dict, Type
 
-from marker.v2.schema import BlockTypes
-from marker.v2.schema.blocks import Block
-from marker.v2.models import setup_layout_model, setup_texify_model, setup_recognition_model, setup_table_rec_model, \
-    setup_detection_model
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
 from marker.v2.builders.ocr import OcrBuilder
+from marker.v2.converters.pdf import PdfConverter
+from marker.v2.models import setup_detection_model, setup_layout_model, \
+    setup_recognition_model, setup_table_rec_model, \
+    setup_texify_model
+from marker.v2.processors.code import CodeProcessor
+from marker.v2.processors.debug import DebugProcessor
+from marker.v2.processors.document_toc import DocumentTOCProcessor
+from marker.v2.processors.equation import EquationProcessor
+from marker.v2.processors.sectionheader import SectionHeaderProcessor
+from marker.v2.processors.table import TableProcessor
+from marker.v2.processors.text import TextProcessor
+from marker.v2.schema import BlockTypes
+from marker.v2.schema.blocks import Block
 from marker.v2.schema.document import Document
 from marker.v2.schema.registry import register_block_class
 
@@ -64,7 +73,7 @@ def config(request):
 
 
 @pytest.fixture(scope="function")
-def pdf_provider(request, config):
+def temp_pdf(request):
     filename_mark = request.node.get_closest_marker("filename")
     filename = filename_mark.args[0] if filename_mark else "adversarial.pdf"
 
@@ -74,6 +83,11 @@ def pdf_provider(request, config):
     temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf")
     temp_pdf.write(dataset['pdf'][idx])
     temp_pdf.flush()
+    yield temp_pdf
+
+
+@pytest.fixture(scope="function")
+def pdf_provider(request, config, temp_pdf):
     yield PdfProvider(temp_pdf.name, config)
 
 
@@ -83,4 +97,29 @@ def pdf_document(request, config, pdf_provider, layout_model, recognition_model,
     ocr_builder = OcrBuilder(detection_model, recognition_model, config)
     builder = DocumentBuilder(config)
     document = builder(pdf_provider, layout_builder, ocr_builder)
-    return document
+    yield document
+
+
+@pytest.fixture(scope="function")
+def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model):
+    model_lst = [layout_model, texify_model, recognition_model, table_rec_model, detection_model]
+    processor_list = [
+        EquationProcessor,
+        TableProcessor,
+        SectionHeaderProcessor,
+        TextProcessor,
+        CodeProcessor,
+        DocumentTOCProcessor,
+        DebugProcessor,
+    ]
+    yield PdfConverter(
+        config=config,
+        model_lst=model_lst,
+        processor_list=processor_list,
+        output_format="markdown"
+    )
+
+
+@pytest.fixture(scope="function")
+def markdown_output(request, temp_pdf, pdf_converter):
+    yield pdf_converter(temp_pdf.name)

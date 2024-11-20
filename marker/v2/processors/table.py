@@ -1,7 +1,8 @@
-from typing import Optional
 
-from pydantic import BaseModel
 from surya.input.pdflines import get_page_text_lines
+from surya.model.detection.model import EfficientViTForSemanticSegmentation
+from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
+from surya.model.table_rec.encoderdecoder import TableRecEncoderDecoderModel
 from tabled.assignment import assign_rows_columns
 from tabled.inference.recognition import get_cells, recognize_tables
 
@@ -18,7 +19,13 @@ class TableProcessor(BaseProcessor):
     table_rec_batch_size = None
     ocr_batch_size = None
 
-    def __init__(self, detection_model, ocr_model, table_rec_model, config=None):
+    def __init__(
+        self,
+        detection_model: EfficientViTForSemanticSegmentation,
+        ocr_model: OCREncoderDecoderModel,
+        table_rec_model: TableRecEncoderDecoderModel,
+        config=None
+    ):
         super().__init__(config)
 
         self.detection_model = detection_model

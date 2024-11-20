@@ -11,12 +11,11 @@ from marker.v2.util import parse_range_str
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
-import tempfile
 from collections import defaultdict
-from typing import Dict, Type
+from typing import Dict, Type, List, Any, Optional
 
 import click
-import datasets
+import inspect
 
 from marker.v2.builders.document import DocumentBuilder
 from marker.v2.builders.layout import LayoutBuilder
@@ -39,42 +38,48 @@ from marker.v2.processors.debug import DebugProcessor
 class PdfConverter(BaseConverter):
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
 
-    def __init__(self, config=None, output_format="markdown"):
+    def __init__(self, config=None, model_lst: Optional[List[Any]] = None, processor_list: Optional[List[Any]] = None, output_format="markdown"):
         super().__init__(config)
         
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
 
-        self.layout_model = setup_layout_model()
-        self.texify_model = setup_texify_model()
-        self.recognition_model = setup_recognition_model()
-        self.table_rec_model = setup_table_rec_model()
-        self.detection_model = setup_detection_model()
+        self.class_instance_map = {model.__class__: model for model in model_lst}
+        self.processor_list = processor_list
 
         if output_format == "markdown":
             self.renderer = MarkdownRenderer(self.config)
         elif output_format == "json":
             self.renderer = JSONRenderer(self.config)
 
+    def resolve_dependencies(self, cls):
+        init_signature = inspect.signature(cls.__init__)
+        parameters = init_signature.parameters
+
+        resolved_kwargs = {}
+        for param_name, param in parameters.items():
+            if param_name == 'self':
+                continue
+            elif param.name == 'config':
+                resolved_kwargs[param_name] = self.config
+            elif param.annotation in self.class_instance_map:
+                resolved_kwargs[param_name] = self.class_instance_map[param.annotation]
+            elif param.default != inspect.Parameter.empty:
+                resolved_kwargs[param_name] = param.default
+            else:
+                raise ValueError(f"Cannot resolve dependency for parameter: {param_name}")
+
+        return cls(**resolved_kwargs)
+
     def __call__(self, filepath: str):
         pdf_provider = PdfProvider(filepath, self.config)
-
-        layout_builder = LayoutBuilder(self.layout_model, self.config)
-        ocr_builder = OcrBuilder(self.detection_model, self.recognition_model, self.config)
+        layout_builder = self.resolve_dependencies(LayoutBuilder)
+        ocr_builder = self.resolve_dependencies(OcrBuilder)
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
-        processor_list = [
-            EquationProcessor(self.texify_model, self.config),
-            TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config),
-            SectionHeaderProcessor(self.config),
-            TextProcessor(self.config),
-            CodeProcessor(self.config),
-            DocumentTOCProcessor(self.config),
-            DebugProcessor(self.config),
-        ]
-
-        for processor in processor_list:
+        for processor_cls in self.processor_list:
+            processor = self.resolve_dependencies(processor_cls)
             processor(document)
 
         return self.renderer(document)
@@ -106,8 +111,28 @@ def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: st
     if force_ocr:
         config["force_ocr"] = True
 
-
-    converter = PdfConverter(config=config, output_format=output_format)
+    model_lst = [
+        setup_layout_model(),
+        setup_texify_model(),
+        setup_recognition_model(),
+        setup_table_rec_model(),
+        setup_detection_model(),
+    ]
+    processor_list = [
+        EquationProcessor,
+        TableProcessor,
+        SectionHeaderProcessor,
+        TextProcessor,
+        CodeProcessor,
+        DocumentTOCProcessor,
+        DebugProcessor,
+    ]
+    converter = PdfConverter(
+        config=config,
+        model_lst=model_lst,
+        processor_list=processor_list,
+        output_format=output_format
+    )
     rendered = converter(fpath)
 
     if output_format == "markdown":

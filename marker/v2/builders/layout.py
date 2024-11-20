@@ -2,6 +2,7 @@ from typing import List
 
 from surya.layout import batch_layout_detection
 from surya.schema import LayoutResult
+from surya.model.layout.encoderdecoder import SuryaLayoutModel
 
 from marker.settings import settings
 from marker.v2.builders import BaseBuilder
@@ -19,7 +20,7 @@ class LayoutBuilder(BaseBuilder):
     layout_coverage_min_lines = 1
     layout_coverage_threshold = .3
 
-    def __init__(self, layout_model, config=None):
+    def __init__(self, layout_model: SuryaLayoutModel, config=None):
         self.layout_model = layout_model
 
         super().__init__(config)
