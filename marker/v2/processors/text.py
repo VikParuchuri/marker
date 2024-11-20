@@ -49,7 +49,7 @@ class TextProcessor(BaseProcessor):
 
                         # we check for next_block indentation
                         new_block_lines = [page.get_block(block_id) for block_id in next_block.structure]
-                        min_x = math.floor(min([l.polygon.x_start for l in new_block_lines]))
+                        min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
                         next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
                     else:  # page break
                         next_page = document.get_next_page(page)
