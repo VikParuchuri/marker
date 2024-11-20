@@ -40,6 +40,7 @@ class TextProcessor(BaseProcessor):
 
                     next_block_starts_indented = True
                     next_block_in_first_quadrant = False
+                    new_block_lines = []
 
                     if column_break:
                         if next_block.block_type not in self.block_types:
@@ -47,10 +48,7 @@ class TextProcessor(BaseProcessor):
                         if next_block.structure is None:  # This is odd though, why do we have text blocks with no structure?
                             continue
 
-                        # we check for next_block indentation
                         new_block_lines = [page.get_block(block_id) for block_id in next_block.structure]
-                        min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
-                        next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
                     else:  # page break
                         next_page = document.get_next_page(page)
                         if next_page is None:
@@ -68,16 +66,18 @@ class TextProcessor(BaseProcessor):
                             if next_page_block.structure is None:
                                 break  # This is odd though, why do we have text blocks with no structure?
 
-                            # check if the new block is indented
                             new_block_lines = [next_page.get_block(block_id) for block_id in next_page_block.structure]
-                            min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
-                            next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
                             next_block_in_first_quadrant = (next_page_block.polygon.x_start < next_page.polygon.width // 2) and \
                                 (next_page_block.polygon.y_start < next_page.polygon.height // 2)
                             break
                         else:
                             continue  # we didn't break anywhere so we continue
+
+                    # we check for next_block indentation
+                    if len(new_block_lines):
+                        min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
+                        next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
                     lines: List[Line] = [page.get_block(block_id) for block_id in block.structure]
                     max_x = math.floor(max([l.polygon.x_end for l in lines]))
