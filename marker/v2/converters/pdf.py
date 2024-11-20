@@ -27,6 +27,7 @@ from marker.v2.models import setup_detection_model, setup_layout_model, \
     setup_recognition_model, setup_table_rec_model, setup_texify_model
 from marker.v2.processors.equation import EquationProcessor
 from marker.v2.processors.sectionheader import SectionHeaderProcessor
+from marker.v2.processors.text import TextProcessor
 from marker.v2.processors.table import TableProcessor
 from marker.v2.renderers.markdown import MarkdownRenderer
 from marker.v2.schema import BlockTypes
@@ -67,6 +68,7 @@ class PdfConverter(BaseConverter):
             EquationProcessor(self.texify_model, self.config),
             TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config),
             SectionHeaderProcessor(self.config),
+            TextProcessor(self.config),
             CodeProcessor(self.config),
             DocumentTOCProcessor(self.config),
             DebugProcessor(self.config),

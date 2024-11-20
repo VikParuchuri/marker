@@ -29,6 +29,9 @@ def test_overriding(pdf_document: Document):
 
 
 def get_lines(pdf: str, config=None):
+    for block_type, block_cls in config["override_map"].items():
+        register_block_class(block_type, block_cls)
+
     provider: PdfProvider = setup_pdf_provider(pdf, config)
     return provider.get_page_lines(0)
 
@@ -38,9 +41,6 @@ def test_overriding_mp():
         "page_range": [0],
         "override_map": {BlockTypes.Line: NewLine}
     }
-
-    for block_type, block_cls in config["override_map"].items():
-        register_block_class(block_type, block_cls)
 
     pdf_list = ["adversarial.pdf", "adversarial_rot.pdf"]
 

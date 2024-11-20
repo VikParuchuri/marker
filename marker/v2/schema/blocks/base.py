@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Dict
+from typing import TYPE_CHECKING, List, Literal, Optional, Dict
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -109,7 +109,7 @@ class Block(BaseModel):
                 text += "\n"
         return text
 
-    def assemble_html(self, child_blocks: List[BlockOutput], parent_structure=None):
+    def assemble_html(self, child_blocks: List[BlockOutput], parent_structure: Optional[List[str]] = None):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
@@ -125,7 +125,7 @@ class Block(BaseModel):
 
         return section_hierarchy
 
-    def render(self, document: Document, parent_structure, section_hierarchy=None):
+    def render(self, document: Document, parent_structure: Optional[List[str]], section_hierarchy=None):
         child_content = []
         if section_hierarchy is None:
             section_hierarchy = {}
@@ -135,7 +135,7 @@ class Block(BaseModel):
             for block_id in self.structure:
                 block = document.get_block(block_id)
                 rendered = block.render(document, self.structure, section_hierarchy)
-                section_hierarchy = rendered.section_hierarchy # Update the section hierarchy from the peer blocks
+                section_hierarchy = rendered.section_hierarchy  # Update the section hierarchy from the peer blocks
                 child_content.append(rendered)
 
         return BlockOutput(
