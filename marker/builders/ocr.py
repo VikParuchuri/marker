@@ -1,3 +1,5 @@
+from typing import List
+
 from surya.model.detection.model import EfficientViTForSemanticSegmentation
 from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
 from surya.ocr import run_ocr
@@ -15,8 +17,9 @@ from marker.schema.text.span import Span
 
 
 class OcrBuilder(BaseBuilder):
-    recognition_batch_size = None
-    detection_batch_size = None
+    recognition_batch_size: int | None = None
+    detection_batch_size: int | None = None
+    languages: List[str] | None = None
 
     def __init__(self, detection_model: EfficientViTForSemanticSegmentation, recognition_model: OCREncoderDecoderModel, config=None):
         super().__init__(config)

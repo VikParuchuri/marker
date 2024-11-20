@@ -11,7 +11,7 @@ from tqdm import tqdm
 import math
 
 from marker.convert import convert_single_pdf
-from marker.output import markdown_exists, save_markdown
+from marker.output import markdown_exists, save_output
 from marker.pdf.utils import find_filetype
 from marker.pdf.extract_text import get_length_of_text
 from marker.models import load_all_models
@@ -58,7 +58,7 @@ def process_single_pdf(args):
 
         full_text, images, out_metadata = convert_single_pdf(filepath, model_refs, metadata=metadata)
         if len(full_text.strip()) > 0:
-            save_markdown(out_folder, fname, full_text, images, out_metadata)
+            save_output(out_folder, fname, full_text, images, out_metadata)
         else:
             print(f"Empty file: {filepath}.  Could not convert.")
     except Exception as e:

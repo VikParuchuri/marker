@@ -39,6 +39,7 @@ regex = "^2024.4.28"
 pdftext = "^0.3.18"
 tabled-pdf = { git = "https://github.com/VikParuchuri/tabled.git", branch = "dev-mose/compilation-updates" }
 markdownify = "^0.13.1"
+click = "^8.1.7"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
