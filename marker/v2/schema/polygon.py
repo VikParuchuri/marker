@@ -49,6 +49,22 @@ class PolygonBox(BaseModel):
     def size(self):
         return [self.width, self.height]
 
+    @property
+    def x_start(self):
+        return self.bbox[0]
+
+    @property
+    def y_start(self):
+        return self.bbox[1]
+
+    @property
+    def x_end(self):
+        return self.bbox[2]
+
+    @property
+    def y_end(self):
+        return self.bbox[3]
+
     @computed_field
     @property
     def bbox(self) -> List[float]:
