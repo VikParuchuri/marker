@@ -105,7 +105,7 @@ class Block(BaseModel):
         for block_id in self.structure:
             block = document.get_block(block_id)
             text += block.raw_text(document)
-            if isinstance(block, Line):
+            if isinstance(block, Line) and not text.endswith("\n"):
                 text += "\n"
         return text
 
