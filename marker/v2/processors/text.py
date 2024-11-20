@@ -30,7 +30,7 @@ class TextProcessor(BaseProcessor):
                     if next_block is not None:  # we check for a column break
                         column_break = (
                             next_block.polygon.y_start < block.polygon.y_start and
-                            next_block.polygon.x_start > block.polygon.x_start
+                            next_block.polygon.x_start > block.polygon.x_end
                         )
                     else:  # It's a page break since we don't have a next block in the page
                         page_break = True
