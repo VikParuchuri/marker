@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -23,3 +25,16 @@ def assign_config(cls, config: BaseModel | dict | None):
 
         if hasattr(cls, split_k):
             setattr(cls, split_k, dict_config[k])
+
+
+def parse_range_str(range_str: str) -> List[int]:
+    range_lst = range_str.split(",")
+    page_lst = []
+    for i in range_lst:
+        if "-" in i:
+            start, end = i.split("-")
+            page_lst += list(range(int(start), int(end) + 1))
+        else:
+            page_lst.append(int(i))
+    page_lst = sorted(list(set(page_lst))) # Deduplicate page numbers and sort in order
+    return page_lst

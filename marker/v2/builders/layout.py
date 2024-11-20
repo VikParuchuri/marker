@@ -17,7 +17,7 @@ from marker.v2.schema.registry import get_block_class
 class LayoutBuilder(BaseBuilder):
     batch_size = None
     layout_coverage_min_lines = 1
-    layout_coverage_threshold = .5
+    layout_coverage_threshold = .3
 
     def __init__(self, layout_model, config=None):
         self.layout_model = layout_model
@@ -73,7 +73,7 @@ class LayoutBuilder(BaseBuilder):
         total_blocks = 0
         for layout_block_id in document_page.structure:
             layout_block = document_page.get_block(layout_block_id)
-            if layout_block.block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table]:
+            if layout_block.block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup]:
                 continue
 
             total_blocks += 1
@@ -85,5 +85,5 @@ class LayoutBuilder(BaseBuilder):
             if intersecting_lines > self.layout_coverage_min_lines:
                 covered_blocks += 1
 
-        coverage_ratio = covered_blocks / max(total_blocks, 1)
+        coverage_ratio = covered_blocks / total_blocks if total_blocks > 0 else 1
         return coverage_ratio >= self.layout_coverage_threshold

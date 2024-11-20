@@ -1,11 +1,13 @@
 import json
 
 from marker.settings import settings
+from marker.v2.processors.code import CodeProcessor
 from marker.v2.processors.document_toc import DocumentTOCProcessor
 from marker.v2.providers.pdf import PdfProvider
 import os
 
 from marker.v2.renderers.json import JSONRenderer
+from marker.v2.util import parse_range_str
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
@@ -67,6 +69,7 @@ class PdfConverter(BaseConverter):
             TableProcessor(self.detection_model, self.recognition_model, self.table_rec_model, self.config),
             SectionHeaderProcessor(self.config),
             TextProcessor(self.config),
+            CodeProcessor(self.config),
             DocumentTOCProcessor(self.config),
             DebugProcessor(self.config),
         ]
@@ -86,7 +89,7 @@ class PdfConverter(BaseConverter):
 @click.option("--force_ocr", is_flag=True)
 def main(fpath: str, output_dir: str, debug: bool, output_format: str, pages: str, force_ocr: bool):
     if pages is not None:
-        pages = list(map(int, pages.split(",")))
+        pages = parse_range_str(pages)
 
     fname_base = os.path.splitext(os.path.basename(fpath))[0]
     output_dir = os.path.join(output_dir, fname_base)

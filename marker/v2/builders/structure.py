@@ -8,6 +8,7 @@ from marker.v2.schema.registry import get_block_class
 
 class StructureBuilder(BaseBuilder):
     gap_threshold: int = .05
+    list_gap_threshold: int = .1
 
     def __init__(self, config=None):
         super().__init__(config)
@@ -19,9 +20,15 @@ class StructureBuilder(BaseBuilder):
 
     def group_caption_blocks(self, page: PageGroup):
         gap_threshold_px = self.gap_threshold * page.polygon.height
-        for i, block_id in enumerate(page.structure):
+        static_page_structure = page.structure.copy()
+        remove_ids = list()
+
+        for i, block_id in enumerate(static_page_structure):
             block = page.get_block(block_id)
             if block.block_type not in [BlockTypes.Table, BlockTypes.Figure, BlockTypes.Picture]:
+                continue
+
+            if block.block_id in remove_ids:
                 continue
 
             block_structure = [block_id]
@@ -57,14 +64,21 @@ class StructureBuilder(BaseBuilder):
 
                 # Update the structure of the page to reflect the new block
                 page.update_structure_item(block_id, group_block.id)
-                page.remove_structure_items(block_structure)
+                remove_ids.extend(block_structure)
+        page.remove_structure_items(remove_ids)
 
     def group_lists(self, page: PageGroup):
-        gap_threshold_px = self.gap_threshold * page.polygon.height
-        for i, block_id in enumerate(page.structure):
+        gap_threshold_px = self.list_gap_threshold * page.polygon.height
+        static_page_structure = page.structure.copy()
+        remove_ids = list()
+        for i, block_id in enumerate(static_page_structure):
             block = page.get_block(block_id)
             if block.block_type not in [BlockTypes.ListItem]:
                 continue
+
+            if block.id in remove_ids:
+                continue
+
             block_structure = [block_id]
             selected_polygons = [block.polygon]
 
@@ -86,4 +100,6 @@ class StructureBuilder(BaseBuilder):
 
                 # Update the structure of the page to reflect the new block
                 page.update_structure_item(block_id, group_block.id)
-                page.remove_structure_items(block_structure)
+                remove_ids.extend(block_structure)
+
+        page.remove_structure_items(remove_ids)
