@@ -43,11 +43,14 @@ class IgnoreTextProcessor(BaseProcessor):
     def filter_common_elements(self, document, blocks):
         # We can't filter if we don't have enough pages to find common elements
         if len(blocks) < 3:
-            return []
+            return
 
         text = [self.clean_text(b.raw_text(document)) for b in blocks]
         counter = Counter(text)
         common = [k for k, v in counter.items() if v > len(blocks) * self.common_element_threshold]
+        if len(common) == 0:
+            return
+
         for b in blocks:
             if fuzz.ratio(self.clean_text(b.raw_text(document)), common[0]) > self.text_match_threshold:
                 for span in b.contained_blocks(document, [BlockTypes.Span]):
