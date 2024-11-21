@@ -10,6 +10,14 @@ from marker.schema.text.line import Line
 
 
 class TextProcessor(BaseProcessor):
+    """
+    A processor for merging text across pages and columns.
+
+    Attributes:
+        column_gap_ratio (float):
+            The minimum ratio of the page width to the column gap to consider a column break.
+            Default is 0.02.
+    """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
     column_gap_ratio = 0.02  # column gaps are atleast 2% of the page width
 

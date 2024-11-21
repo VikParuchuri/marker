@@ -4,13 +4,41 @@ import os
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
-from marker.settings import settings
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
+from marker.settings import settings
 
 
 class DebugProcessor(BaseProcessor):
+    """
+    A processor for debugging the document.
+
+    Attributes:
+        debug_data_folder (str):
+            The folder to dump debug data to.
+            Default is "debug_data".
+
+        debug_layout_images (bool):
+            Whether to dump layout debug images.
+            Default is False.
+
+        debug_pdf_images (bool):
+            Whether to dump PDF debug images.
+            Default is False.
+
+        debug_json (bool):
+            Whether to dump block debug data.
+            Default is False.
+
+        render_font (str):
+            The path to the font to use for rendering debug images.
+            Default is "GoNotoCurrent-Regular.ttf" in the FONT_DIR folder.
+
+        font_dl_path (str):
+            The path to download the font from.
+            Default is "https://github.com/satbyy/go-noto-universal/releases/download/v7.0".
+    """
     block_types = tuple()
     debug_data_folder: str = "debug_data"
     debug_layout_images: bool = False

@@ -2,7 +2,6 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
 os.environ["IN_STREAMLIT"] = "true" # Avoid multiprocessing inside surya
-os.environ["PDFTEXT_CPU_WORKERS"] = "1" # Avoid multiprocessing inside pdftext
 
 import argparse
 import torch.multiprocessing as mp
@@ -67,7 +66,7 @@ def process_single_pdf(args):
 @click.option("--chunk_idx", type=int, default=0, help="Chunk index to convert")
 @click.option("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
 @click.option("--max_files", type=int, default=None, help="Maximum number of pdfs to convert")
-@click.option("--workers", type=int, default=5, help="Number of worker processes to use.")
+@click.option("--workers", type=int, default=3, help="Number of worker processes to use.")
 def main(in_folder: str, **kwargs):
     in_folder = os.path.abspath(in_folder)
     files = [os.path.join(in_folder, f) for f in os.listdir(in_folder)]
@@ -83,6 +82,9 @@ def main(in_folder: str, **kwargs):
     # Limit files converted if needed
     if kwargs["max_files"]:
         files_to_convert = files_to_convert[:kwargs["max_files"]]
+
+    # Disable nested multiprocessing 
+    kwargs["disable_multiprocessing"] = True
 
     total_processes = min(len(files_to_convert), kwargs["workers"])
 

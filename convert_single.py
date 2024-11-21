@@ -1,20 +1,22 @@
 import os
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
 
 import time
 
 import click
 
+from marker.config.parser import ConfigParser
+from marker.config.printer import CustomClickPrinter
 from marker.converters.pdf import PdfConverter
 from marker.logger import configure_logging
 from marker.models import create_model_dict
 from marker.output import save_output
-from marker.config.parser import ConfigParser
 
 configure_logging()
 
 
-@click.command(help="Convert a single PDF to markdown.")
+@click.command(cls=CustomClickPrinter, help="Convert a single PDF to markdown.")
 @click.argument("fpath", type=str)
 @ConfigParser.common_options
 def main(fpath: str, **kwargs):
