@@ -10,6 +10,18 @@ from marker.schema.registry import get_block_class
 
 
 class DocumentBuilder(BaseBuilder):
+    """
+    Constructs a Document given a PdfProvider, LayoutBuilder, and OcrBuilder.
+
+    Attributes:
+        lowres_image_dpi (int): 
+            DPI setting for low-resolution page images used for Layout and Line Detection.
+            Default is 96.
+
+        highres_image_dpi (int): 
+            DPI setting for high-resolution page images used for OCR.
+            Default is 192.
+    """
     lowres_image_dpi: int = 96
     highres_image_dpi: int = 192
 

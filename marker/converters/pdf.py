@@ -28,6 +28,16 @@ from marker.processors.debug import DebugProcessor
 
 
 class PdfConverter(BaseConverter):
+    """
+    A converter for processing and rendering PDF files into Markdown, JSON, HTML and other formats.
+
+    Attributes:
+        override_map (Dict[BlockTypes, Type[Block]]): 
+            A mapping to override the default block classes for specific block types. 
+            The keys are `BlockTypes` enum values, representing the types of blocks, 
+            and the values are corresponding `Block` class implementations to use 
+            instead of the defaults.
+    """
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
 
     def __init__(self, artifact_dict: Dict[str, Any], processor_list: List[str] | None = None, renderer: str | None = None, config=None):

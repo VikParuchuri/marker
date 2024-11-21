@@ -31,6 +31,8 @@ class ConfigParser:
         fn = click.option("--config_json", type=str, default=None,
                           help="Path to JSON file with additional configuration.")(fn)
         fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
+        fn = click.option("--disable_multiprocessing", is_flag=True, default=False, help="Disable multiprocessing.")(fn)
+        fn = click.option('-l', is_flag=True, help="List available builders, processors and converters")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
