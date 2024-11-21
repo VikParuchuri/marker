@@ -30,15 +30,25 @@ def find_subclasses(base_class):
 
 
 class CustomClickPrinter(click.Command):
+    def get_help(self, ctx):
+        additional_help = (
+            "\n\nTip: Use 'config --help' to display all the attributes of the Builders, Processors, and Converters in Marker."
+        )
+        help_text = super().get_help(ctx)
+        help_text = help_text + additional_help
+        click.echo(help_text)
+
     def parse_args(self, ctx, args):
-        # If '-l' is in the arguments, handle it and exit
-        if '-l' in args:
+        if 'config' in args and '--help' in args:
+            click.echo("Here is a list of all the Builders, Processors, and Converters in Marker along with their attributes:")
             base_classes = [BaseBuilder, BaseProcessor, BaseConverter]
             for base in base_classes:
+                click.echo(f"{base.__name__.removeprefix('Base')}s:\n")
+
                 subclasses = find_subclasses(base)
                 for class_name, class_type in subclasses.items():
                     doc = class_type.__doc__
                     if doc and "Attributes:" in doc:
-                        click.echo(f"{class_name}: {doc}")
+                        click.echo(f"  {class_name}: {doc}")
             ctx.exit()
         super().parse_args(ctx, args)
