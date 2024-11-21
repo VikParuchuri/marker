@@ -129,7 +129,7 @@ class Block(BaseModel):
 
         return section_hierarchy
 
-    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None):
+    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None) -> List[Block]:
         if self.structure is None:
             return []
 
