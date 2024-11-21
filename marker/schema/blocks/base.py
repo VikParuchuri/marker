@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Literal, Optional, Dict, Tuple, Sequence
+from typing import TYPE_CHECKING, List, Literal, Optional, Dict, Sequence
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -76,6 +76,8 @@ class Block(BaseModel):
         )
 
     def structure_blocks(self, document_page: Document | PageGroup) -> List[Block]:
+        if self.structure is None:
+            return []
         return [document_page.get_block(block_id) for block_id in self.structure]
 
     def add_structure(self, block: Block):
