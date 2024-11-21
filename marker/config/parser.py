@@ -30,6 +30,7 @@ class ConfigParser:
                           help="Comma separated list of processors to use.  Must use full module path.")(fn)
         fn = click.option("--config_json", type=str, default=None,
                           help="Path to JSON file with additional configuration.")(fn)
+        fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:

@@ -17,7 +17,6 @@ configure_logging()
 @click.command(help="Convert a single PDF to markdown.")
 @click.argument("fpath", type=str)
 @ConfigParser.common_options
-@click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")
 def main(fpath: str, **kwargs):
     models = create_model_dict()
     start = time.time()

@@ -7,6 +7,14 @@ from marker.renderers.html import HTMLOutput
 from marker.renderers.json import JSONOutput
 
 
+def output_exists(output_dir: str, fname_base: str):
+    exts = ["md", "html", "json"]
+    for ext in exts:
+        if os.path.exists(os.path.join(output_dir, f"{fname_base}.{ext}")):
+            return True
+    return False
+
+
 def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
     if isinstance(rendered, MarkdownOutput):
         ext = "md"
