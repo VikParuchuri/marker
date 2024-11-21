@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Literal, Optional, Dict
+from typing import TYPE_CHECKING, List, Literal, Optional, Dict, Tuple, Sequence
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -9,6 +9,7 @@ from marker.schema.polygon import PolygonBox
 
 if TYPE_CHECKING:
     from marker.schema.document import Document
+    from marker.schema.groups.page import PageGroup
 
 
 class BlockOutput(BaseModel):
@@ -74,6 +75,9 @@ class Block(BaseModel):
             block_type=self.block_type
         )
 
+    def structure_blocks(self, document_page: Document | PageGroup) -> List[Block]:
+        return [document_page.get_block(block_id) for block_id in self.structure]
+
     def add_structure(self, block: Block):
         if self.structure is None:
             self.structure = [block.id]
@@ -124,6 +128,18 @@ class Block(BaseModel):
             section_hierarchy[self.heading_level] = self.id
 
         return section_hierarchy
+
+    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None):
+        if self.structure is None:
+            return []
+
+        blocks = []
+        for block_id in self.structure:
+            block = document.get_block(block_id)
+            if block_types is None or block.block_type in block_types:
+                blocks.append(block)
+            blocks += block.contained_blocks(document, block_types)
+        return blocks
 
     def render(self, document: Document, parent_structure: Optional[List[str]], section_hierarchy=None):
         child_content = []

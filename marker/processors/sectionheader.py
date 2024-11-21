@@ -43,10 +43,7 @@ class SectionHeaderProcessor(BaseProcessor):
     def __call__(self, document: Document):
         line_heights: Dict[int, List[float]] = {}
         for page in document.pages:
-            for block in page.children:
-                if block.block_type not in self.block_types:
-                    continue
-
+            for block in page.contained_blocks(document, self.block_types):
                 line_heights[block.block_id] = []
                 if block.structure is not None:
                     line_heights[block.block_id] = [document.get_block(l).polygon.height for l in block.structure if l.block_type == BlockTypes.Line]

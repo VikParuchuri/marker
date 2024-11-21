@@ -59,19 +59,40 @@ class DebugProcessor(BaseProcessor):
             print(f"Dumped layout debug images to {self.debug_data_folder}")
 
         if self.debug_pdf_images:
-            self.draw_layout_debug_images(document, pdf_mode=True)
+            self.draw_pdf_debug_images(document)
             print(f"Dumped PDF debug images to {self.debug_data_folder}")
 
         if self.debug_json:
             self.dump_block_debug_data(document)
             print(f"Dumped block debug data to {self.debug_data_folder}")
 
+    def draw_pdf_debug_images(self, document: Document):
+        for idx, page in enumerate(document.pages):
+            png_image = page.highres_image.copy()
+
+            line_bboxes = []
+            span_bboxes = []
+            for child in page.children:
+                if child.block_type == BlockTypes.Line:
+                    bbox = child.polygon.rescale(page.polygon.size, png_image.size).bbox
+                    line_bboxes.append(bbox)
+                elif child.block_type == BlockTypes.Span:
+                    bbox = child.polygon.rescale(page.polygon.size, png_image.size).bbox
+                    span_bboxes.append(bbox)
+
+            self.render_on_image(line_bboxes, png_image, color="blue", draw_bbox=True, label_font_size=24)
+            self.render_on_image(span_bboxes, png_image, color="green", draw_bbox=True, label_font_size=24)
+
+            png_image = self.render_layout_boxes(page, png_image)
+
+            debug_file = os.path.join(self.debug_folder, f"pdf_page_{idx}.png")
+            png_image.save(debug_file)
+
+
     def draw_layout_debug_images(self, document: Document, pdf_mode=False):
         for idx, page in enumerate(document.pages):
             img_size = page.highres_image.size
             png_image = Image.new("RGB", img_size, color="white")
-            if pdf_mode:
-                png_image = page.highres_image.copy()
 
             line_bboxes = []
             line_text = []
@@ -83,36 +104,37 @@ class DebugProcessor(BaseProcessor):
                 line_bboxes.append(bbox)
                 line_text.append(child.raw_text(document))
 
-            if pdf_mode:
-                line_text = None
-
             self.render_on_image(line_bboxes, png_image, labels=line_text, color="black", draw_bbox=False, label_font_size=24)
 
-            layout_bboxes = []
-            layout_labels = []
-            for child in page.children:
-                if child.block_type in [BlockTypes.Line, BlockTypes.Span]:
-                    continue
+            png_image = self.render_layout_boxes(page, png_image)
 
-                bbox = child.polygon.rescale(page.polygon.size, img_size).bbox
-                layout_bboxes.append(bbox)
-                layout_labels.append(str(child.block_type))
-
-            self.render_on_image(layout_bboxes, png_image, labels=layout_labels, color="red", label_font_size=24)
-
-            order_labels = [str(i) for i in range(len(layout_bboxes))]
-            self.render_on_image(
-                layout_bboxes,
-                png_image,
-                labels=order_labels,
-                color="green",
-                draw_bbox=False,
-                label_offset=5
-            )
-
-            filecomp = "pdf" if pdf_mode else "layout"
-            debug_file = os.path.join(self.debug_folder, f"{filecomp}_page_{idx}.png")
+            debug_file = os.path.join(self.debug_folder, f"layout_page_{idx}.png")
             png_image.save(debug_file)
+
+
+    def render_layout_boxes(self, page, png_image):
+        layout_bboxes = []
+        layout_labels = []
+        for child in page.children:
+            if child.block_type in [BlockTypes.Line, BlockTypes.Span]:
+                continue
+
+            bbox = child.polygon.rescale(page.polygon.size, png_image.size).bbox
+            layout_bboxes.append(bbox)
+            layout_labels.append(str(child.block_type))
+
+        self.render_on_image(layout_bboxes, png_image, labels=layout_labels, color="red", label_font_size=24)
+
+        order_labels = [str(i) for i in range(len(layout_bboxes))]
+        self.render_on_image(
+            layout_bboxes,
+            png_image,
+            labels=order_labels,
+            color="green",
+            draw_bbox=False,
+            label_offset=5
+        )
+        return png_image
 
     def dump_block_debug_data(self, document: Document):
         debug_file = os.path.join(self.debug_folder, f"blocks.json")

@@ -57,10 +57,7 @@ class TableProcessor(BaseProcessor):
 
         table_data = []
         for page in document.pages:
-            for block in page.children:
-                if block.block_type not in self.block_types:
-                    continue
-
+            for block in page.contained_blocks(document, self.block_types):
                 image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.highres_image.size)
                 image = page.highres_image.crop(image_poly.bbox).convert("RGB")
 
