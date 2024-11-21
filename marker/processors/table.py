@@ -6,13 +6,33 @@ from surya.model.table_rec.encoderdecoder import TableRecEncoderDecoderModel
 from tabled.assignment import assign_rows_columns
 from tabled.inference.recognition import get_cells, recognize_tables
 
-from marker.settings import settings
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
+from marker.settings import settings
 
 
 class TableProcessor(BaseProcessor):
+    """
+    A processor for recognizing tables in the document.
+
+    Attributes:
+        detect_boxes (bool):
+            Whether to detect boxes for the table recognition model.
+            Default is False.
+
+        detector_batch_size (int):
+            The batch size to use for the table detection model.
+            Default is None, which will use the default batch size for the model.
+
+        table_rec_batch_size (int):
+            The batch size to use for the table recognition model.
+            Default is None, which will use the default batch size for the model.
+
+        recognition_batch_size (int):
+            The batch size to use for the table recognition model.
+            Default is None, which will use the default batch size for the model.
+    """
     block_types = (BlockTypes.Table, BlockTypes.TableOfContents, BlockTypes.Form)
     detect_boxes = False
     detector_batch_size = None

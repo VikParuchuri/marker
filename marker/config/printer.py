@@ -38,7 +38,7 @@ class CustomClickPrinter(click.Command):
                 subclasses = find_subclasses(base)
                 for class_name, class_type in subclasses.items():
                     doc = class_type.__doc__
-                    if doc:
+                    if doc and "Attributes:" in doc:
                         click.echo(f"{class_name}: {doc}")
             ctx.exit()
         super().parse_args(ctx, args)

@@ -6,9 +6,16 @@ from marker.schema.document import Document
 
 
 class IgnoreTextProcessor(BaseProcessor):
+    """
+    A processor for ignoring text blocks that are common elements in the document.
+
+    Attributes:
+        common_element_threshold (float):
+            The minimum fraction of pages that a block must appear in to be considered a common element.
+            Default is 0.6.
+    """
     block_types = (BlockTypes.Text,)
     common_element_threshold = .6
-    max_blocks = 1
 
     def __call__(self, document: Document):
         first_blocks = []

@@ -1,18 +1,39 @@
-from marker.processors import BaseProcessor
-from marker.schema import BlockTypes
-from marker.schema.document import Document
-
+import warnings
 from typing import Dict, List
+
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.exceptions import ConvergenceWarning
 
+from marker.processors import BaseProcessor
+from marker.schema import BlockTypes
+from marker.schema.document import Document
+
 # Ignore sklearn warning about not converging
-import warnings
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
 class SectionHeaderProcessor(BaseProcessor):
+    """
+    A processor for recognizing section headers in the document.
+
+    Attributes:
+        level_count (int):
+            The number of levels to use for headings.
+            Default is 4.
+
+        merge_threshold (float):
+            The minimum gap between headings to consider them part of the same group.
+            Default is 0.25.
+
+        default_level (int):
+            The default heading level to use if no heading level is detected.
+            Default is 2.
+
+        height_tolerance (float):
+            The minimum height of a heading to consider it a heading.
+            Default is 0.99.
+    """
     block_types = (BlockTypes.SectionHeader, )
     level_count = 4
     merge_threshold = .25

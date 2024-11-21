@@ -5,8 +5,10 @@ from marker.schema.document import Document
 
 
 class CodeProcessor(BaseProcessor):
+    """
+    A processor for formatting code blocks.
+    """
     block_types = (BlockTypes.Code, )
-    y_top_threshold = 2 # pixels
 
     def __call__(self, document: Document):
         for page in document.pages:
