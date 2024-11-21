@@ -6,7 +6,7 @@ import click
 
 from marker.renderers.html import HTMLRenderer
 from marker.settings import settings
-from marker.util import parse_range_str, strings_to_classes, classes_to_string
+from marker.util import parse_range_str, strings_to_classes, classes_to_strings
 from marker.renderers.markdown import MarkdownRenderer
 from marker.renderers.json import JSONRenderer
 
@@ -69,7 +69,7 @@ class ConfigParser:
                 r = HTMLRenderer
             case _:
                 raise ValueError("Invalid output format")
-        return classes_to_string([r])[0]
+        return classes_to_strings([r])[0]
 
     def get_processors(self):
         processors = self.cli_options.get("processors", None)

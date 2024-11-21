@@ -24,6 +24,7 @@ from marker.schema.blocks import Block
 from marker.renderers.markdown import MarkdownRenderer
 from marker.renderers.json import JSONRenderer
 from marker.schema.registry import register_block_class
+from marker.util import classes_to_strings
 
 
 @pytest.fixture(scope="session")
@@ -120,9 +121,9 @@ def pdf_converter(request, config, layout_model, texify_model, recognition_model
         DebugProcessor,
     ]
     yield PdfConverter(
-        model_dict=model_dict,
-        processor_list=processor_list,
-        renderer=renderer,
+        artifact_dict=model_dict,
+        processor_list=classes_to_strings(processor_list),
+        renderer=classes_to_strings([renderer])[0],
         config=config
     )
 
@@ -132,16 +133,10 @@ def renderer(request, config):
     if request.node.get_closest_marker("output_format"):
         output_format = request.node.get_closest_marker("output_format").args[0]
         if output_format == "markdown":
-            return MarkdownRenderer(config)
+            return MarkdownRenderer
         elif output_format == "json":
-            return JSONRenderer(config)
+            return JSONRenderer
         else:
             raise ValueError(f"Unknown output format: {output_format}")
     else:
-        return MarkdownRenderer(config)
-
-
-@pytest.fixture(scope="function")
-@pytest.mark.output_format("markdown")
-def markdown_output(request, temp_pdf, pdf_converter, renderer):
-    yield pdf_converter(temp_pdf.name)
+        return MarkdownRenderer

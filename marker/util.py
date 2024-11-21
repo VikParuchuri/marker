@@ -14,7 +14,7 @@ def strings_to_classes(items: List[str]) -> List[type]:
     return classes
 
 
-def classes_to_string(items: List[type]) -> List[str]:
+def classes_to_strings(items: List[type]) -> List[str]:
     for item in items:
         if not inspect.isclass(item):
             raise ValueError(f"Item {item} is not a class")
