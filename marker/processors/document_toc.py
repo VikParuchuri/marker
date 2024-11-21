@@ -4,6 +4,9 @@ from marker.schema.document import Document
 
 
 class DocumentTOCProcessor(BaseProcessor):
+    """
+    A processor for generating a table of contents for the document.
+    """
     block_types = (BlockTypes.SectionHeader, )
 
     def __call__(self, document: Document):
