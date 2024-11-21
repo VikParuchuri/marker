@@ -7,6 +7,18 @@ from marker.schema.registry import get_block_class
 
 
 class StructureBuilder(BaseBuilder):
+    """
+    A builder for grouping blocks together based on their structure.
+
+    Attributes:
+        gap_threshold (float):
+            The minimum gap between blocks to consider them part of the same group.
+            Default is 0.05.
+
+        list_gap_threshold (float):
+            The minimum gap between list items to consider them part of the same group.
+            Default is 0.1.
+    """
     gap_threshold: int = .05
     list_gap_threshold: int = .1
 

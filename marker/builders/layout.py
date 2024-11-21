@@ -16,6 +16,22 @@ from marker.schema.registry import get_block_class
 
 
 class LayoutBuilder(BaseBuilder):
+    """
+    A builder for performing layout detection on PDF pages and merging the results into the document.
+
+    Attributes:
+        batch_size (int):
+            The batch size to use for the layout model.
+            Default is None, which will use the default batch size for the model.
+
+        layout_coverage_min_lines (int):
+            The minimum number of PdfProvider lines that must be covered by the layout model
+            to consider the lines from the PdfProvider valid. Default is 1.
+
+        layout_coverage_threshold (float):
+            The minimum coverage ratio required for the layout model to consider
+            the lines from the PdfProvider valid. Default is 0.3.
+    """
     batch_size = None
     layout_coverage_min_lines = 1
     layout_coverage_threshold = .3

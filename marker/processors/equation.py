@@ -4,13 +4,29 @@ from texify.inference import batch_inference
 from texify.model.model import GenerateVisionEncoderDecoderModel
 from tqdm import tqdm
 
-from marker.settings import settings
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
+from marker.settings import settings
 
 
 class EquationProcessor(BaseProcessor):
+    """
+    A processor for recognizing equations in the document.
+
+    Attributes:
+        model_max_length (int):
+            The maximum number of tokens to allow for the Texify model.
+            Default is 384.
+
+        batch_size (int):
+            The batch size to use for the Texify model.
+            Default is None, which will use the default batch size for the model.
+
+        token_buffer (int):
+            The number of tokens to buffer above max for the Texify model.
+            Default is 256.
+    """
     block_types = (BlockTypes.Equation, )
     model_max_length = 384
     batch_size = None
