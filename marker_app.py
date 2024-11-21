@@ -2,7 +2,6 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["IN_STREAMLIT"] = "true"
-os.environ["PDFTEXT_CPU_WORKERS"] = "1"
 
 import base64
 import io
@@ -25,8 +24,10 @@ def load_models():
 
 def convert_pdf(fname: str, **kwargs) -> (str, Dict[str, Any], dict):
     config_parser = ConfigParser(kwargs)
+    config_dict = config_parser.generate_config_dict()
+    config_dict["pdftext_workers"] = 1
     converter = PdfConverter(
-        config=config_parser.generate_config_dict(),
+        config=config_dict,
         artifact_dict=model_dict,
         processor_list=config_parser.get_processors(),
         renderer=config_parser.get_renderer()
@@ -51,7 +52,6 @@ def img_to_html(img, img_alt):
 def markdown_insert_images(markdown, images):
     image_tags = re.findall(r'(!\[(?P<image_title>[^\]]*)\]\((?P<image_path>[^\)"\s]+)\s*([^\)]*)\))', markdown)
 
-    print(image_tags)
     for image in image_tags:
         image_markdown = image[0]
         image_alt = image[1]
