@@ -19,6 +19,7 @@ class IgnoreTextProcessor(BaseProcessor):
     """
     block_types = (BlockTypes.Text,)
     common_element_threshold = .25
+    common_element_min_blocks = 3
     max_blocks = 1
     text_match_threshold = 90
 
@@ -50,12 +51,16 @@ class IgnoreTextProcessor(BaseProcessor):
 
     def filter_common_elements(self, document, blocks):
         # We can't filter if we don't have enough pages to find common elements
-        if len(blocks) < 3:
+        if len(blocks) < self.common_element_min_blocks:
             return
 
         text = [self.clean_text(b.raw_text(document)) for b in blocks]
         counter = Counter(text)
-        common = [k for k, v in counter.items() if v > len(blocks) * self.common_element_threshold]
+        common = [
+            k for k, v in counter.items()
+            if v > len(blocks) * self.common_element_threshold
+               and v > self.common_element_min_blocks
+        ]
         if len(common) == 0:
             return
 

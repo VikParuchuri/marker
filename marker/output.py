@@ -15,21 +15,19 @@ def output_exists(output_dir: str, fname_base: str):
     return False
 
 
-def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
+def text_from_rendered(rendered: BaseModel):
     if isinstance(rendered, MarkdownOutput):
-        ext = "md"
-        text = rendered.markdown
-        images = rendered.images
+        return rendered.markdown, "md", rendered.images
     elif isinstance(rendered, HTMLOutput):
-        ext = "html"
-        text = rendered.html
-        images = rendered.images
+        return rendered.html, "html", rendered.images
     elif isinstance(rendered, JSONOutput):
-        ext = "json"
-        text = rendered.model_dump_json(exclude=["metadata"], indent=2)
-        images = {}
+        return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", {}
     else:
         raise ValueError("Invalid output type")
+
+
+def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
+    text, ext, images = text_from_rendered(rendered)
 
     with open(os.path.join(output_dir, f"{fname_base}.{ext}"), "w+") as f:
         f.write(text)
