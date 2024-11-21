@@ -1,9 +1,4 @@
-import argparse
-import os
-
 import click
-
-os.environ["PDFTEXT_CPU_WORKERS"] = "1"
 
 import uvicorn
 from pydantic import BaseModel, Field
@@ -83,8 +78,10 @@ async def convert_pdf(
     try:
         options = params.model_dump()
         config_parser = ConfigParser(options)
+        config_dict = config_parser.generate_config_dict()
+        config_dict["pdftext_workers"] = 1
         converter = PdfConverter(
-            config=config_parser.generate_config_dict(),
+            config=config_dict,
             artifact_dict=app_data["models"],
             processor_list=config_parser.get_processors(),
             renderer=config_parser.get_renderer()
