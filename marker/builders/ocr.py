@@ -17,6 +17,21 @@ from marker.schema.text.span import Span
 
 
 class OcrBuilder(BaseBuilder):
+    """
+    A builder for performing OCR on PDF pages and merging the results into the document.
+
+    Attributes:
+        detection_batch_size (int):
+            The batch size to use for the detection model.
+            Default is None, which will use the default batch size for the model.
+
+        recognition_batch_size (int):
+            The batch size to use for the recognition model.
+            Default is None, which will use the default batch size for the model.
+
+        languages (List[str]):
+            A list of languages to use for OCR. Default is None.
+    """
     recognition_batch_size: int | None = None
     detection_batch_size: int | None = None
     languages: List[str] | None = None
@@ -51,7 +66,7 @@ class OcrBuilder(BaseBuilder):
         page_list = [page for page in document.pages if page.text_extraction_method == "surya"]
         recognition_results = run_ocr(
             images=[page.lowres_image for page in page_list],
-            langs=[None] * len(page_list),
+            langs=[self.languages] * len(page_list),
             det_model=self.detection_model,
             det_processor=self.detection_model.processor,
             rec_model=self.recognition_model,
