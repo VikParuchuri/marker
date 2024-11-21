@@ -67,6 +67,7 @@ def process_single_pdf(args):
 @click.option("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
 @click.option("--max_files", type=int, default=None, help="Maximum number of pdfs to convert")
 @click.option("--workers", type=int, default=5, help="Number of worker processes to use.")
+@click.option("--skip_existing", is_flag=True, default=False, help="Skip existing converted files.")
 def main(in_folder: str, **kwargs):
     in_folder = os.path.abspath(in_folder)
     files = [os.path.join(in_folder, f) for f in os.listdir(in_folder)]
