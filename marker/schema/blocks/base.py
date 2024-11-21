@@ -74,6 +74,9 @@ class Block(BaseModel):
             block_type=self.block_type
         )
 
+    def structure_blocks(self, document_page) -> List[Block]:
+        return [document_page.get_block(block_id) for block_id in self.structure]
+
     def add_structure(self, block: Block):
         if self.structure is None:
             self.structure = [block.id]
@@ -128,6 +131,7 @@ class Block(BaseModel):
     def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None):
         if self.structure is None:
             return []
+
         blocks = []
         for block_id in self.structure:
             block = document.get_block(block_id)

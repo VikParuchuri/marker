@@ -49,7 +49,7 @@ class TextProcessor(BaseProcessor):
                     if next_block.structure is None:  # This is odd though, why do we have text blocks with no structure?
                         continue
 
-                    new_block_lines = [page.get_block(block_id) for block_id in next_block.structure]
+                    new_block_lines = next_block.structure_blocks(document)
                 else:  # page break
                     next_page = document.get_next_page(page)
                     if next_page is None:
@@ -80,7 +80,7 @@ class TextProcessor(BaseProcessor):
                     min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
                     next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
-                lines: List[Line] = [page.get_block(block_id) for block_id in block.structure]
+                lines: List[Line] = block.structure_blocks(document)
                 max_x = math.floor(max([l.polygon.x_end for l in lines]))
                 last_line_is_full_width = lines[-1].polygon.x_end >= max_x
 

@@ -18,14 +18,14 @@ class LineNumbersProcessor(BaseProcessor):
                 if block.structure is None:
                     continue
 
-                all_lines = [page.get_block(line_id) for line_id in block.structure]
+                all_lines = block.structure_blocks(document)
                 if len(all_lines) < self.min_lines_in_block:
                     continue
 
                 starts_with_number = []
                 ends_with_number = []
                 for line in all_lines:
-                    spans = [page.get_block(span_id) for span_id in line.structure]
+                    spans = line.structure_blocks(document)
                     if len(spans) < 2:
                         starts_with_number.append(False)
                         ends_with_number.append(False)

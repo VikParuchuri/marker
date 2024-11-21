@@ -12,13 +12,6 @@ from marker.converters.pdf import PdfConverter
 from marker.models import setup_detection_model, setup_layout_model, \
     setup_recognition_model, setup_table_rec_model, \
     setup_texify_model
-from marker.processors.code import CodeProcessor
-from marker.processors.debug import DebugProcessor
-from marker.processors.document_toc import DocumentTOCProcessor
-from marker.processors.equation import EquationProcessor
-from marker.processors.sectionheader import SectionHeaderProcessor
-from marker.processors.table import TableProcessor
-from marker.processors.text import TextProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.renderers.markdown import MarkdownRenderer
@@ -111,18 +104,9 @@ def pdf_converter(request, config, layout_model, texify_model, recognition_model
         "table_rec_model": table_rec_model,
         "detection_model": detection_model
     }
-    processor_list = [
-        EquationProcessor,
-        TableProcessor,
-        SectionHeaderProcessor,
-        TextProcessor,
-        CodeProcessor,
-        DocumentTOCProcessor,
-        DebugProcessor,
-    ]
     yield PdfConverter(
         artifact_dict=model_dict,
-        processor_list=classes_to_strings(processor_list),
+        processor_list=None,
         renderer=classes_to_strings([renderer])[0],
         config=config
     )
