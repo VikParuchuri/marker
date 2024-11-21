@@ -12,4 +12,4 @@ class TableOfContents(Block):
     cells: List[SpanTableCell] | None = None
 
     def assemble_html(self, child_blocks, parent_structure=None):
-        return html_format(self.cells)
+        return str(html_format(self.cells))

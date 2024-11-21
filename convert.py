@@ -42,7 +42,7 @@ def process_single_pdf(args):
 
     out_folder = config_parser.get_output_folder(fpath)
     base_name = config_parser.get_base_filename(fpath)
-    if output_exists(out_folder, base_name):
+    if cli_options.get('skip_existing') and output_exists(out_folder, base_name):
         return
 
     try:
