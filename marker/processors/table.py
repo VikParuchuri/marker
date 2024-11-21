@@ -17,7 +17,7 @@ class TableProcessor(BaseProcessor):
     detect_boxes = False
     detector_batch_size = None
     table_rec_batch_size = None
-    ocr_batch_size = None
+    recognition_batch_size = None
 
     def __init__(
         self,
@@ -77,7 +77,7 @@ class TableProcessor(BaseProcessor):
             needs_ocr,
             [self.table_rec_model, self.table_rec_model.processor, self.recognition_model, self.recognition_model.processor],
             table_rec_batch_size=self.get_table_rec_batch_size(),
-            ocr_batch_size=self.get_ocr_batch_size()
+            ocr_batch_size=self.get_recognition_batch_size()
         )
 
         for table_d, table_res in zip(table_data, tables):
@@ -101,9 +101,9 @@ class TableProcessor(BaseProcessor):
             return 64
         return 8
 
-    def get_ocr_batch_size(self):
-        if self.ocr_batch_size is not None:
-            return self.ocr_batch_size
+    def get_recognition_batch_size(self):
+        if self.recognition_batch_size is not None:
+            return self.recognition_batch_size
         elif settings.TORCH_DEVICE_MODEL == "mps":
             return 32
         elif settings.TORCH_DEVICE_MODEL == "cuda":
