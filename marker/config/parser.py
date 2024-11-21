@@ -57,6 +57,9 @@ class ConfigParser:
                     if v:
                         with open(v, "r") as f:
                             config.update(json.load(f))
+                case "disable_multiprocessing":
+                    if v:
+                        config["pdftext_workers"] = 1
         return config
 
     def get_renderer(self):
@@ -94,4 +97,3 @@ class ConfigParser:
     def get_base_filename(self, filepath: str):
         basename = os.path.basename(filepath)
         return os.path.splitext(basename)[0]
-
