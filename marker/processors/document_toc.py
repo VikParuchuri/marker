@@ -9,10 +9,7 @@ class DocumentTOCProcessor(BaseProcessor):
     def __call__(self, document: Document):
         toc = []
         for page in document.pages:
-            for block in page.children:
-                if block.block_type not in self.block_types:
-                    continue
-
+            for block in page.contained_blocks(document, self.block_types):
                 toc.append({
                     "title": block.raw_text(document).strip(),
                     "heading_level": block.heading_level,

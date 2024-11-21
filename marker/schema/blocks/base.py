@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Literal, Optional, Dict
+from typing import TYPE_CHECKING, List, Literal, Optional, Dict, Tuple, Sequence
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -124,6 +124,17 @@ class Block(BaseModel):
             section_hierarchy[self.heading_level] = self.id
 
         return section_hierarchy
+
+    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None):
+        if self.structure is None:
+            return []
+        blocks = []
+        for block_id in self.structure:
+            block = document.get_block(block_id)
+            if block_types is None or block.block_type in block_types:
+                blocks.append(block)
+            blocks += block.contained_blocks(document, block_types)
+        return blocks
 
     def render(self, document: Document, parent_structure: Optional[List[str]], section_hierarchy=None):
         child_content = []

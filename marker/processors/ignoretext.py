@@ -1,3 +1,4 @@
+import re
 from collections import Counter
 
 from marker.processors import BaseProcessor
@@ -17,10 +18,7 @@ class IgnoreTextProcessor(BaseProcessor):
             initial_block = None
             block = None
             last_block = None
-            for block in page.children:
-                if block.block_type not in self.block_types:
-                    continue
-
+            for block in page.contained_blocks(document, self.block_types):
                 if initial_block is None:
                     initial_block = block
 
@@ -35,14 +33,19 @@ class IgnoreTextProcessor(BaseProcessor):
         self.filter_common_elements(document, first_blocks)
         self.filter_common_elements(document, last_blocks)
 
-    def filter_common_elements(self, document, lines):
+    @staticmethod
+    def clean_text(text):
+        return re.sub(r"\s+", "", text)
+
+    def filter_common_elements(self, document, blocks):
         # We can't filter if we don't have enough pages to find common elements
-        if len(lines) < 3:
+        if len(blocks) < 3:
             return []
 
-        text = [b.raw_text(document) for b in lines]
+        text = [self.clean_text(b.raw_text(document)) for b in blocks]
         counter = Counter(text)
-        common = [k for k, v in counter.items() if v > len(lines) * self.common_element_threshold]
-        for b in lines:
-            if b.raw_text(document) in common:
-                b.is_header_footer = True
+        common = [k for k, v in counter.items() if v > len(blocks) * self.common_element_threshold]
+        for b in blocks:
+            if self.clean_text(b.raw_text(document)) in common:
+                for span in b.contained_blocks(document, [BlockTypes.Span]):
+                    span.ignore_for_output = True

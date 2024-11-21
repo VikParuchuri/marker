@@ -1,4 +1,7 @@
 import os
+
+from marker.processors.line_numbers import LineNumbersProcessor
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 from marker.processors.code import CodeProcessor
@@ -25,6 +28,7 @@ from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.registry import register_block_class
 from marker.processors.debug import DebugProcessor
+from marker.processors.ignoretext import IgnoreTextProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -46,6 +50,8 @@ class PdfConverter(BaseConverter):
                 TextProcessor,
                 CodeProcessor,
                 DocumentTOCProcessor,
+                IgnoreTextProcessor,
+                LineNumbersProcessor,
                 DebugProcessor,
             ]
 

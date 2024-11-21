@@ -10,9 +10,7 @@ class CodeProcessor(BaseProcessor):
 
     def __call__(self, document: Document):
         for page in document.pages:
-            for block in page.children:
-                if block.block_type not in self.block_types:
-                    continue
+            for block in page.contained_blocks(document, self.block_types):
                 self.format_block(document, block)
 
     def format_block(self, document: Document, block: Code):

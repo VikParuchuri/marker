@@ -23,6 +23,7 @@ class Span(Block):
     minimum_position: int
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
+    ignore_for_output: bool = False # Whether this span should be ignored in output
 
     @property
     def bold(self):
@@ -33,6 +34,9 @@ class Span(Block):
         return 'italic' in self.formats
 
     def assemble_html(self, child_blocks, parent_structure):
+        if self.ignore_for_output:
+            return ""
+
         text = self.text
         text = text.replace("-\n", "")  # Remove hyphenated line breaks
 
