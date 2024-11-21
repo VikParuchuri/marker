@@ -5,11 +5,14 @@ from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
 
+from rapidfuzz import fuzz
+
 
 class IgnoreTextProcessor(BaseProcessor):
     block_types = (BlockTypes.Text,)
-    common_element_threshold = .6
+    common_element_threshold = .25
     max_blocks = 1
+    text_match_threshold = 90
 
     def __call__(self, document: Document):
         first_blocks = []
@@ -46,6 +49,6 @@ class IgnoreTextProcessor(BaseProcessor):
         counter = Counter(text)
         common = [k for k, v in counter.items() if v > len(blocks) * self.common_element_threshold]
         for b in blocks:
-            if self.clean_text(b.raw_text(document)) in common:
+            if fuzz.ratio(self.clean_text(b.raw_text(document)), common[0]) > self.text_match_threshold:
                 for span in b.contained_blocks(document, [BlockTypes.Span]):
                     span.ignore_for_output = True

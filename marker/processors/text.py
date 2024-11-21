@@ -67,7 +67,7 @@ class TextProcessor(BaseProcessor):
                         if next_page_block.structure is None:
                             break  # This is odd though, why do we have text blocks with no structure?
 
-                        new_block_lines = [next_page.get_block(block_id) for block_id in next_page_block.structure]
+                        new_block_lines = next_page_block.structure_blocks(document)
 
                         next_block_in_first_quadrant = (next_page_block.polygon.x_start < next_page.polygon.width // 2) and \
                             (next_page_block.polygon.y_start < next_page.polygon.height // 2)

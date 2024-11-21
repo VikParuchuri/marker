@@ -13,6 +13,27 @@ class LineNumbersProcessor(BaseProcessor):
         super().__init__(config)
 
     def __call__(self, document: Document):
+        self.ignore_line_starts_ends(document)
+        self.ignore_line_number_blocks(document)
+
+    def ignore_line_number_blocks(self, document: Document):
+        for page in document.pages:
+            for block in page.contained_blocks(document, self.block_types):
+                raw_text = block.raw_text(document)
+                tokens = raw_text.strip().split()
+                if len(tokens) < 4:
+                    continue
+
+                tokens_are_numbers = [token.isdigit() for token in tokens]
+                if all([
+                    sum(tokens_are_numbers) / len(tokens) > self.strip_numbers_threshold,
+                    block.polygon.height > block.polygon.width # Ensure block is taller than it is wide, like vertical page numbers
+                ]):
+                    for span in block.contained_blocks(document, [BlockTypes.Span]):
+                        span.ignore_for_output = True
+
+
+    def ignore_line_starts_ends(self, document: Document):
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
                 if block.structure is None:

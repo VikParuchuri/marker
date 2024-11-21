@@ -9,6 +9,7 @@ from marker.schema.polygon import PolygonBox
 
 if TYPE_CHECKING:
     from marker.schema.document import Document
+    from marker.schema.groups.page import PageGroup
 
 
 class BlockOutput(BaseModel):
@@ -74,7 +75,7 @@ class Block(BaseModel):
             block_type=self.block_type
         )
 
-    def structure_blocks(self, document_page) -> List[Block]:
+    def structure_blocks(self, document_page: Document | PageGroup) -> List[Block]:
         return [document_page.get_block(block_id) for block_id in self.structure]
 
     def add_structure(self, block: Block):
