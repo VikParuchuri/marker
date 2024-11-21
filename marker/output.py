@@ -1,6 +1,7 @@
 import json
 import os
 
+from ftfy import fix_text
 from pydantic import BaseModel
 
 from marker.renderers.html import HTMLOutput
@@ -29,7 +30,7 @@ def text_from_rendered(rendered: BaseModel):
 
 def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
     text, ext, images = text_from_rendered(rendered)
-    text = text.encode('utf-8', errors='ignore').decode('utf-8')
+    text = fix_text(text)
 
     with open(os.path.join(output_dir, f"{fname_base}.{ext}"), "w+") as f:
         f.write(text)
