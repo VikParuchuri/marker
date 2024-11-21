@@ -1,10 +1,11 @@
-import os
 import json
+import os
 
 from pydantic import BaseModel
-from marker.renderers.markdown import MarkdownOutput
+
 from marker.renderers.html import HTMLOutput
 from marker.renderers.json import JSONOutput
+from marker.renderers.markdown import MarkdownOutput
 
 
 def output_exists(output_dir: str, fname_base: str):
@@ -28,6 +29,7 @@ def text_from_rendered(rendered: BaseModel):
 
 def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
     text, ext, images = text_from_rendered(rendered)
+    text = text.encode('utf-8', errors='ignore').decode('utf-8')
 
     with open(os.path.join(output_dir, f"{fname_base}.{ext}"), "w+") as f:
         f.write(text)
