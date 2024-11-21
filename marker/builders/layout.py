@@ -17,7 +17,7 @@ from marker.schema.registry import get_block_class
 
 class LayoutBuilder(BaseBuilder):
     """
-    A builder for performing layou detection on PDF pages and merging the results into the document.
+    A builder for performing layout detection on PDF pages and merging the results into the document.
 
     Attributes:
         batch_size (int):
