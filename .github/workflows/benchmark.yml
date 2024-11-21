@@ -1,6 +1,6 @@
 name: Integration test with benchmark
 
-on: [] # re-enable after integration
+on: [push]
 
 env:
   TORCH_DEVICE: "cpu"
@@ -28,7 +28,7 @@ jobs:
       - name: Run benchmark test
         run: |
           poetry run python benchmarks/overall.py benchmark_data/pdfs benchmark_data/references report.json
-          poetry run python scripts/verify_benchmark_scores.py report.json --type marker
+          poetry run python benchmarks/verify_scores.py report.json --type marker
         
           
 

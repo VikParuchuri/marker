@@ -1,7 +1,6 @@
 import os
 
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
-
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
 
 from surya.model.detection.model import load_model as load_detection_model, load_processor as load_detection_processor
 from surya.model.layout.model import load_model as load_layout_model
