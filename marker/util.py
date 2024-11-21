@@ -1,6 +1,25 @@
+import inspect
+from importlib import import_module
 from typing import List
 
 from pydantic import BaseModel
+
+
+def strings_to_classes(items: List[str]) -> List[type]:
+    classes = []
+    for item in items:
+        module_name, class_name = item.rsplit('.', 1)
+        module = import_module(module_name)
+        classes.append(getattr(module, class_name))
+    return classes
+
+
+def classes_to_string(items: List[type]) -> List[str]:
+    for item in items:
+        if not inspect.isclass(item):
+            raise ValueError(f"Item {item} is not a class")
+
+    return [f"{item.__module__}.{item.__name__}" for item in items]
 
 
 def assign_config(cls, config: BaseModel | dict | None):

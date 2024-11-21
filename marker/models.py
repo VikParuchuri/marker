@@ -1,7 +1,6 @@
 import os
 
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
-
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
 
 from surya.model.detection.model import load_model as load_detection_model, load_processor as load_detection_processor
 from surya.model.layout.model import load_model as load_layout_model
@@ -64,3 +63,13 @@ def setup_layout_model(device=None, dtype=None) -> SuryaLayoutModel:
         model = load_layout_model()
     model.processor = load_layout_processor()
     return model
+
+
+def create_model_dict(device=None, dtype=None) -> dict:
+    return {
+        "layout_model": setup_layout_model(device, dtype),
+        "texify_model": setup_texify_model(device, dtype),
+        "recognition_model": setup_recognition_model(device, dtype),
+        "table_rec_model": setup_table_rec_model(device, dtype),
+        "detection_model": setup_detection_model(device, dtype),
+    }

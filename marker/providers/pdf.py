@@ -34,7 +34,8 @@ class PdfProvider(BaseProvider):
 
         if self.page_range is None:
             self.page_range = range(len(self.doc))
-        assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, "Invalid page range"
+
+        assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, f"Invalid page range, values must be between 0 and {len(self.doc) - 1}.  Min of provided page range is {min(self.page_range)} and max is {max(self.page_range)}."
 
         if not self.force_ocr:
             self.page_lines = self.pdftext_extraction()

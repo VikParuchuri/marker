@@ -1,8 +1,4 @@
-import math
-
 from rapidfuzz import fuzz
-import re
-import regex
 from statistics import mean
 
 CHUNK_MIN_CHARS = 25
