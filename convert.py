@@ -3,22 +3,19 @@ import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
 os.environ["IN_STREAMLIT"] = "true" # Avoid multiprocessing inside surya
 
-import argparse
+import math
+import traceback
+
+import click
 import torch.multiprocessing as mp
 from tqdm import tqdm
-import math
 
+from marker.config.parser import ConfigParser
 from marker.converters.pdf import PdfConverter
 from marker.logger import configure_logging
 from marker.models import create_model_dict
-from marker.output import save_output, output_exists
-from marker.config.parser import ConfigParser
-from marker.models import create_model_dict
+from marker.output import output_exists, save_output
 from marker.settings import settings
-from marker.logger import configure_logging
-import traceback
-import json
-import click
 
 configure_logging()
 
