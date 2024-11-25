@@ -25,10 +25,9 @@ It only uses models where necessary, which improves speed and accuracy.
 ## Examples
 
 | PDF                                                                   | Markdown        | JSON                                                                                                 |
-| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook    | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/thinkpython.md)     |
-| [Think OS](https://greenteapress.com/thinkos/thinkos.pdf)             | Textbook    | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/thinkos.md)             |
-| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf)           | arXiv paper |  [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/switch_transformers.md) |
-| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf)              | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/multicolcnn.md)        |
+| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook    | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/thinkpython/thinkpython.md)     | |
+| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf)           | arXiv paper |  [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/switch_transformers/switch_transformers.md) |
+| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf)              | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/switch_transformers/multicolcnn.md)        |
 
 ## Performance
 
@@ -106,7 +105,7 @@ Options:
 - `--processors TEXT`: Override the default processors by providing their full module paths, separated by commas. Example: `--processors "module1.processor1,module2.processor2"`
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
 - `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "eng,fra,deu"` for English, French, and German.
-- `-l`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
+- `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
 
 The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you don't need OCR, marker can work with any language.
 
@@ -117,7 +116,7 @@ marker /path/to/input/folder --workers 10
 ```
 
 - `marker` supports all the same options from `marker_single` above.
-- `--workers` is the number of conversion workers to run simultaneously.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage.  Marker will use 5GB of VRAM per worker at the peak, and 3.5GB average.
+- `--workers` is the number of conversion workers to run simultaneously.  This is set to 5 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage.  Marker will use 5GB of VRAM per worker at the peak, and 3.5GB average.
 
 ## Convert multiple files on multiple GPUs
 

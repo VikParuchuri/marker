@@ -15,45 +15,62 @@ from marker.schema.groups import PageGroup
 class FootnoteProcessor(BaseProcessor):
     """
     A processor for pushing footnotes to the bottom, and relabeling mislabeled text blocks.
+
+    Attributes:
+        page_bottom_threshold (float):
+            The fraction of page height that is considered the bottom.
+            Default is .75
+
+        line_height_scaler (float):
+            The amount to scale line height by to consider a block a footnote.
+            Default is .5
     """
     block_types = (BlockTypes.Footnote,)
-    page_bottom_threshold = .66
-    font_size_scaler = .5
-    line_height_scaler = .5
+    page_bottom_threshold = .75
+    line_height_scaler = .85
+
 
     def __call__(self, document: Document):
+        footnote_heights = self.compute_block_stats(document)
+        if len(footnote_heights) == 0:
+            footnote_heights = [999]
+
+        avg_footnote_height = mean(footnote_heights)
         for page in document.pages:
-            self.relabel_texts_to_footnotes(page, document)
+            self.relabel_texts_to_footnotes(page, document, avg_footnote_height)
             self.push_footnotes_to_bottom(page, document)
 
+    def compute_block_stats(self, document: Document):
+        line_heights = []
+        for page in document.pages:
+            for footnote in page.contained_blocks(document, self.block_types):
+                contained_lines = footnote.contained_blocks(document, (BlockTypes.Line,))
+                line_heights.extend([line.polygon.height for line in contained_lines])
+        return line_heights
 
-    def relabel_texts_to_footnotes(self, page: PageGroup, document: Document):
+
+    def relabel_texts_to_footnotes(self, page: PageGroup, document: Document, avg_footnote_height: int):
         text_blocks = page.contained_blocks(document, (BlockTypes.Text,))
         block_stats = []
 
         for block in text_blocks:
-            contained_spans = block.contained_blocks(document, (BlockTypes.Span,))
-            font_size = [span.font_size for span in contained_spans]
             contained_lines = block.contained_blocks(document, (BlockTypes.Line,))
             line_heights = [line.polygon.height for line in contained_lines]
 
             block_stats.append({
-                "font_size": mean(font_size),
-                "line_height": mean(line_heights),
-                "line_heights": line_heights,
-                "font_sizes": font_size,
-                "in_bottom_third": block.polygon.y_end > page.polygon.height * self.page_bottom_threshold
+                "line_height": mean(line_heights) if len(line_heights) > 0 else 999,
+                "in_bottom": block.polygon.y_end > page.polygon.height * self.page_bottom_threshold
             })
 
         # Find the average font size and line height
-        avg_font_size = mean([fs for bs in block_stats for fs in bs["font_sizes"]])
-        avg_line_height = mean([lh for bs in block_stats for lh in bs["line_heights"]])
+        if len(block_stats) == 0:
+            return
 
+        height_gap = 1 - self.line_height_scaler
         for text_block, stats_dict in zip(text_blocks, block_stats):
             if all([
-                stats_dict["font_size"] < avg_font_size * self.font_size_scaler,
-                stats_dict["line_height"] < avg_line_height * self.line_height_scaler,
-                stats_dict["in_bottom_third"]
+                avg_footnote_height * self.line_height_scaler < stats_dict["line_height"] < avg_footnote_height * (1 + height_gap),
+                stats_dict["in_bottom"]
             ]):
                 new_block = Footnote.from_block(text_block)
                 page.replace_block(text_block, new_block)

@@ -77,7 +77,7 @@ class Block(BaseModel):
 
     @classmethod
     def from_block(cls, block: Block) -> Block:
-        block_attrs = block.model_dump(exclude=["id", "block_id"])
+        block_attrs = block.model_dump(exclude=["id", "block_id", "block_type"])
         return cls(**block_attrs)
 
     def structure_blocks(self, document_page: Document | PageGroup) -> List[Block]:
