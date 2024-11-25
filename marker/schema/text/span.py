@@ -52,6 +52,7 @@ class Span(Block):
         if replaced_newline and not text.endswith('-'):
             text += " "
 
+        text = text.replace("-\n", "")  # Remove hyphenated line breaks from the middle of the span
         text = html.escape(text)
         text = cleanup_text(text)
 
