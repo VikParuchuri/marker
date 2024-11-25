@@ -47,4 +47,4 @@ class CodeProcessor(BaseProcessor):
             code_text += text
             is_new_line = text.endswith("\n")
 
-        block.code = code_text
+        block.code = code_text.rstrip()

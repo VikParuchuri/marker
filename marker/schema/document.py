@@ -27,6 +27,7 @@ class Document(BaseModel):
     pages: List[PageGroup]
     block_type: BlockTypes = BlockTypes.Document
     table_of_contents: List[TocItem] | None = None
+    debug_data_path: str | None = None # Path that debug data was saved to
 
     def get_block(self, block_id: BlockId):
         page = self.get_page(block_id.page_id)

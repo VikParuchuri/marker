@@ -19,15 +19,15 @@ class FootnoteProcessor(BaseProcessor):
     Attributes:
         page_bottom_threshold (float):
             The fraction of page height that is considered the bottom.
-            Default is .75
+            Default is .8
 
         line_height_scaler (float):
-            The amount to scale line height by to consider a block a footnote.
-            Default is .5
+            The amount to scale line height by to consider a block a footnote. (from N to 1+(1-N))
+            Default is .99
     """
     block_types = (BlockTypes.Footnote,)
     page_bottom_threshold = .75
-    line_height_scaler = .85
+    line_height_scaler = .99
 
 
     def __call__(self, document: Document):
