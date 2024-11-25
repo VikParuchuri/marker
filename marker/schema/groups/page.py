@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, TYPE_CHECKING
 
 from PIL import Image
 
@@ -7,8 +7,9 @@ from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId
 from marker.schema.groups.base import Group
 from marker.schema.polygon import PolygonBox
-from marker.schema.text.line import Line
-from marker.schema.text.span import Span
+
+if TYPE_CHECKING:
+    from marker.schema.document import Document
 
 
 class PageGroup(Group):
@@ -75,6 +76,17 @@ class PageGroup(Group):
                 elif intersection_pct > max_intersections[line_idx][0]:
                     max_intersections[line_idx] = (intersection_pct, block_idx)
         return max_intersections
+
+    def replace_block(self, block: Block, new_block: Block):
+        # Handles incrementing the id
+        self.add_full_block(new_block)
+
+        # Replace block id in structure
+        super().replace_block(block, new_block)
+
+        # Replace block in structure of children
+        for child in self.children:
+            child.replace_block(block, new_block)
 
     def merge_blocks(
         self,

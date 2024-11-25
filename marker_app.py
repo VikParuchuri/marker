@@ -108,7 +108,7 @@ with col1:
 
     st.image(pil_image, caption="PDF file (preview)", use_container_width=True)
 
-page_range = st.sidebar.text_input("Page range to parse, comma separated like 0,5-10,20", value=f"{page_number}-{page_number+1}")
+page_range = st.sidebar.text_input("Page range to parse, comma separated like 0,5-10,20", value=f"{page_number}-{page_number}")
 force_ocr = st.sidebar.checkbox("Force OCR on all pages", help="Force OCR on all pages, even if they are images", value=False)
 output_format = st.sidebar.selectbox("Output format", ["markdown", "json", "html"], index=0)
 run_marker = st.sidebar.button("Run Marker")

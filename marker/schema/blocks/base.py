@@ -75,6 +75,11 @@ class Block(BaseModel):
             block_type=self.block_type
         )
 
+    @classmethod
+    def from_block(cls, block: Block) -> Block:
+        block_attrs = block.model_dump(exclude=["id", "block_id"])
+        return cls(**block_attrs)
+
     def structure_blocks(self, document_page: Document | PageGroup) -> List[Block]:
         return [document_page.get_block(block_id) for block_id in self.structure]
 
@@ -129,7 +134,7 @@ class Block(BaseModel):
 
         return section_hierarchy
 
-    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None):
+    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None) -> List[Block]:
         if self.structure is None:
             return []
 
@@ -140,6 +145,13 @@ class Block(BaseModel):
                 blocks.append(block)
             blocks += block.contained_blocks(document, block_types)
         return blocks
+
+    def replace_block(self, block: Block, new_block: Block):
+        if self.structure is not None:
+            for i, item in enumerate(self.structure):
+                if item == block.id:
+                    self.structure[i] = new_block.id
+                    break
 
     def render(self, document: Document, parent_structure: Optional[List[str]], section_hierarchy=None):
         child_content = []

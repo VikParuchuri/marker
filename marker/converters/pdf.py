@@ -1,5 +1,6 @@
 import os
 
+from marker.processors.footnote import FootnoteProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
@@ -54,6 +55,7 @@ class PdfConverter(BaseConverter):
             processor_list = strings_to_classes(processor_list)
         else:
             processor_list = [
+                FootnoteProcessor,
                 EquationProcessor,
                 TableProcessor,
                 SectionHeaderProcessor,
