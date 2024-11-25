@@ -80,6 +80,7 @@ class LayoutBuilder(BaseBuilder):
                 document_page.text_extraction_method = "surya"
                 continue
             document_page.merge_blocks(provider_lines, text_extraction_method="pdftext")
+            document_page.text_extraction_method = "pdftext"
 
     def check_layout_coverage(
         self,

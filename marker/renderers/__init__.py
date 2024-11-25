@@ -1,6 +1,7 @@
 import base64
 import io
 import re
+from collections import Counter
 from typing import Optional
 
 from bs4 import BeautifulSoup
@@ -56,9 +57,11 @@ class BaseRenderer:
     def generate_page_stats(self, document, document_output):
         page_stats = []
         for page in document.pages:
+            block_counts = Counter([str(block.block_type) for block in page.children]).most_common()
             page_stats.append({
                 "page_id": page.page_id,
-                "text_extraction_method": page.text_extraction_method
+                "text_extraction_method": page.text_extraction_method,
+                "block_counts": block_counts,
             })
         return page_stats
 
