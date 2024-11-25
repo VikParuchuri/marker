@@ -81,5 +81,4 @@ class IgnoreTextProcessor(BaseProcessor):
         for t, b in zip(text, blocks):
             # Check against all common elements
             if any(fuzz.ratio(t, common_element) > self.text_match_threshold for common_element in common):
-                for span in b.contained_blocks(document, [BlockTypes.Span]):
-                    span.ignore_for_output = True
+                b.ignore_for_output = True

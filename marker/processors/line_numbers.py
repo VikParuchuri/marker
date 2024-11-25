@@ -29,8 +29,7 @@ class LineNumbersProcessor(BaseProcessor):
                     sum(tokens_are_numbers) / len(tokens) > self.strip_numbers_threshold,
                     block.polygon.height > block.polygon.width # Ensure block is taller than it is wide, like vertical page numbers
                 ]):
-                    for span in block.contained_blocks(document, [BlockTypes.Span]):
-                        span.ignore_for_output = True
+                    block.ignore_for_output = True
 
 
     def ignore_line_starts_ends(self, document: Document):

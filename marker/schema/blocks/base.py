@@ -64,6 +64,7 @@ class Block(BaseModel):
     page_id: Optional[int] = None
     text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
+    ignore_for_output: bool = False # Whether this block should be ignored in output
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -116,6 +117,9 @@ class Block(BaseModel):
         return text
 
     def assemble_html(self, child_blocks: List[BlockOutput], parent_structure: Optional[List[str]] = None):
+        if self.ignore_for_output:
+            return ""
+
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"

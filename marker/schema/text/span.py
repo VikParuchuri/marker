@@ -23,7 +23,6 @@ class Span(Block):
     minimum_position: int
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
-    ignore_for_output: bool = False # Whether this span should be ignored in output
 
     @property
     def bold(self):
