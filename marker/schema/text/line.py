@@ -21,7 +21,7 @@ def replace_last(string, old, new):
 
 
 def strip_trailing_hyphens(line_text, next_line_text, line_html) -> str:
-    lowercase_letters = r'\p{Ll}|\d'
+    lowercase_letters = r'\p{Ll}'
 
     hyphen_regex = regex.compile(rf'.*[{HYPHENS}]\s?$', regex.DOTALL)
     next_line_starts_lowercase = regex.match(rf"^\s?[{lowercase_letters}]", next_line_text)
@@ -47,6 +47,8 @@ class Line(Block):
             next_line = document.get_block(next_block_id)
             next_line_raw_text = next_line.raw_text(document)
             template = strip_trailing_hyphens(raw_text, next_line_raw_text, template)
+        else:
+            template = template.strip(' ') # strip any trailing whitespace from the last line
         return template
 
     def render(self, document, parent_structure, section_hierarchy=None):

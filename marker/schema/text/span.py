@@ -38,7 +38,6 @@ class Span(Block):
             return ""
 
         text = self.text
-        text = text.replace("-\n", "")  # Remove hyphenated line breaks
 
         # Remove trailing newlines
         replaced_newline = False
@@ -50,7 +49,7 @@ class Span(Block):
         while len(text) > 0 and text[0] in ["\n", "\r"]:
             text = text[1:]
 
-        if replaced_newline:
+        if replaced_newline and not text.endswith('-'):
             text += " "
 
         text = html.escape(text)
