@@ -72,7 +72,8 @@ class OcrBuilder(BaseBuilder):
             rec_model=self.recognition_model,
             rec_processor=self.recognition_model.processor,
             recognition_batch_size=int(self.get_recognition_batch_size()),
-            highres_images=[page.highres_image for page in page_list]
+            highres_images=[page.highres_image for page in page_list],
+            detection_batch_size=int(self.get_detection_batch_size()),
         )
 
         page_lines = {}
