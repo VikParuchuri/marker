@@ -40,7 +40,7 @@ class StructureBuilder(BaseBuilder):
             if block.block_type not in [BlockTypes.Table, BlockTypes.Figure, BlockTypes.Picture]:
                 continue
 
-            if block.block_id in remove_ids:
+            if block.id in remove_ids:
                 continue
 
             block_structure = [block_id]
@@ -52,12 +52,14 @@ class StructureBuilder(BaseBuilder):
 
             if prev_block and \
                 prev_block.block_type in caption_types and \
-                prev_block.polygon.minimum_gap(block.polygon) < gap_threshold_px:
+                prev_block.polygon.minimum_gap(block.polygon) < gap_threshold_px and \
+                    prev_block.id not in remove_ids:
                 block_structure.insert(0, prev_block.id)
                 selected_polygons.append(prev_block.polygon)
-            elif next_block and \
+
+            if next_block and \
                 next_block.block_type in caption_types and \
-                next_block.polygon.minimum_gap(selected_polygons[-1]) < gap_threshold_px:
+                next_block.polygon.minimum_gap(block.polygon) < gap_threshold_px:
                 block_structure.append(next_block.id)
                 selected_polygons.append(next_block.polygon)
 
