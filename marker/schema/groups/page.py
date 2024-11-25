@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 
 from PIL import Image
 
@@ -7,8 +7,6 @@ from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId
 from marker.schema.groups.base import Group
 from marker.schema.polygon import PolygonBox
-from marker.schema.text.line import Line
-from marker.schema.text.span import Span
 
 
 class PageGroup(Group):
@@ -33,6 +31,12 @@ class PageGroup(Group):
         block_idx = self.structure.index(block.id)
         if block_idx + 1 < len(self.structure):
             return self.get_block(self.structure[block_idx + 1])
+        return None
+
+    def get_prev_block(self, block: Block):
+        block_idx = self.structure.index(block.id)
+        if block_idx > 0:
+            return self.get_block(self.structure[block_idx - 1])
         return None
 
     def add_block(self, block_cls: type[Block], polygon: PolygonBox) -> Block:
