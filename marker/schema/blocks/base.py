@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Literal, Optional, Dict, Tuple, Sequence
+from typing import TYPE_CHECKING, List, Literal, Optional, Dict, Sequence
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -64,6 +64,7 @@ class Block(BaseModel):
     page_id: Optional[int] = None
     text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
+    ignore_for_output: bool = False # Whether this block should be ignored in output
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -76,6 +77,8 @@ class Block(BaseModel):
         )
 
     def structure_blocks(self, document_page: Document | PageGroup) -> List[Block]:
+        if self.structure is None:
+            return []
         return [document_page.get_block(block_id) for block_id in self.structure]
 
     def add_structure(self, block: Block):
@@ -114,6 +117,9 @@ class Block(BaseModel):
         return text
 
     def assemble_html(self, child_blocks: List[BlockOutput], parent_structure: Optional[List[str]] = None):
+        if self.ignore_for_output:
+            return ""
+
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
@@ -129,7 +135,7 @@ class Block(BaseModel):
 
         return section_hierarchy
 
-    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None):
+    def contained_blocks(self, document: Document, block_types: Sequence[BlockTypes] = None) -> List[Block]:
         if self.structure is None:
             return []
 

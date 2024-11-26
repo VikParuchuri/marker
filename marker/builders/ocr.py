@@ -50,7 +50,7 @@ class OcrBuilder(BaseBuilder):
         if self.recognition_batch_size is not None:
             return self.recognition_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 128
+            return 32
         elif settings.TORCH_DEVICE_MODEL == "mps":
             return 32
         return 32
@@ -71,7 +71,8 @@ class OcrBuilder(BaseBuilder):
             det_processor=self.detection_model.processor,
             rec_model=self.recognition_model,
             rec_processor=self.recognition_model.processor,
-            batch_size=int(self.get_recognition_batch_size()),
+            detection_batch_size=int(self.get_detection_batch_size()),
+            recognition_batch_size=int(self.get_recognition_batch_size()),
             highres_images=[page.highres_image for page in page_list]
         )
 

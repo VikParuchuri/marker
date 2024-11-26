@@ -3,22 +3,19 @@ import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
 os.environ["IN_STREAMLIT"] = "true" # Avoid multiprocessing inside surya
 
-import argparse
+import math
+import traceback
+
+import click
 import torch.multiprocessing as mp
 from tqdm import tqdm
-import math
 
+from marker.config.parser import ConfigParser
 from marker.converters.pdf import PdfConverter
 from marker.logger import configure_logging
 from marker.models import create_model_dict
-from marker.output import save_output, output_exists
-from marker.config.parser import ConfigParser
-from marker.models import create_model_dict
+from marker.output import output_exists, save_output
 from marker.settings import settings
-from marker.logger import configure_logging
-import traceback
-import json
-import click
 
 configure_logging()
 
@@ -42,7 +39,7 @@ def process_single_pdf(args):
 
     out_folder = config_parser.get_output_folder(fpath)
     base_name = config_parser.get_base_filename(fpath)
-    if output_exists(out_folder, base_name):
+    if cli_options.get('skip_existing') and output_exists(out_folder, base_name):
         return
 
     try:
@@ -66,7 +63,8 @@ def process_single_pdf(args):
 @click.option("--chunk_idx", type=int, default=0, help="Chunk index to convert")
 @click.option("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
 @click.option("--max_files", type=int, default=None, help="Maximum number of pdfs to convert")
-@click.option("--workers", type=int, default=3, help="Number of worker processes to use.")
+@click.option("--workers", type=int, default=5, help="Number of worker processes to use.")
+@click.option("--skip_existing", is_flag=True, default=False, help="Skip existing converted files.")
 def main(in_folder: str, **kwargs):
     in_folder = os.path.abspath(in_folder)
     files = [os.path.join(in_folder, f) for f in os.listdir(in_folder)]

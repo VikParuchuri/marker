@@ -57,6 +57,22 @@ class Document(BaseModel):
             return self.pages[page_idx + 1]
         return None
 
+    def get_prev_block(self, block: Block):
+        page = self.get_page(block.page_id)
+        prev_block = page.get_prev_block(block)
+        if prev_block:
+            return prev_block
+        prev_page = self.get_prev_page(page)
+        if not prev_page:
+            return None
+        return prev_page.get_block(prev_page.structure[-1])
+    
+    def get_prev_page(self, page: PageGroup):
+        page_idx = self.pages.index(page)
+        if page_idx > 0:
+            return self.pages[page_idx - 1]
+        return None
+
     def assemble_html(self, child_blocks: List[Block]):
         template = ""
         for c in child_blocks:

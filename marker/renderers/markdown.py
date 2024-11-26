@@ -27,9 +27,7 @@ class Markdownify(MarkdownConverter):
         if has_continuation:
             if regex.compile(rf'.*[\p{{Ll}}|\d][{hyphens}]\s?$', regex.DOTALL).match(text):  # handle hypenation across pages
                 return regex.split(rf"[{hyphens}]\s?$", text)[0]
-            if regex.search(r'[^\w\s]$', text):  # Ends with non-word character and so we add a space after text, e.g "However,"
-                return f"{text} "
-            return text
+            return f"{text} "
         return f"{text}\n\n" if text else ""  # default convert_p behavior
 
 

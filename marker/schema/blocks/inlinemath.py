@@ -7,6 +7,9 @@ class InlineMath(Block):
     has_continuation: bool = False
 
     def assemble_html(self, child_blocks, parent_structure):
+        if self.ignore_for_output:
+            return ""
+
         template = super().assemble_html(child_blocks, parent_structure)
         template = template.replace("\n", " ")
 

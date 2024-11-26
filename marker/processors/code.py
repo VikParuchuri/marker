@@ -19,6 +19,10 @@ class CodeProcessor(BaseProcessor):
         min_left = 9999  # will contain x- coord of column 0
         total_width = 0
         total_chars = 0
+
+        if block.structure is None:
+            return
+
         for line_id in block.structure:
             line = document.get_block(line_id)
             min_left = min(line.polygon.bbox[0], min_left)
