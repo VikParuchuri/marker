@@ -1,34 +1,32 @@
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
-from marker.processors.code import CodeProcessor
-from marker.processors.document_toc import DocumentTOCProcessor
-from marker.providers.pdf import PdfProvider
-from marker.processors.footnote import FootnoteProcessor
-from marker.processors.line_numbers import LineNumbersProcessor
-from marker.processors.order import OrderProcessor
-
-from marker.util import strings_to_classes
-
-from collections import defaultdict
-from typing import Dict, Type, List, Any
 import inspect
+from collections import defaultdict
+from typing import Any, Dict, List, Type
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
 from marker.converters import BaseConverter
+from marker.processors.code import CodeProcessor
+from marker.processors.debug import DebugProcessor
+from marker.processors.document_toc import DocumentTOCProcessor
 from marker.processors.equation import EquationProcessor
+from marker.processors.footnote import FootnoteProcessor
+from marker.processors.ignoretext import IgnoreTextProcessor
+from marker.processors.line_numbers import LineNumbersProcessor
+from marker.processors.page_header import PageHeaderProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
-from marker.processors.text import TextProcessor
 from marker.processors.table import TableProcessor
+from marker.processors.text import TextProcessor
+from marker.providers.pdf import PdfProvider
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.registry import register_block_class
-from marker.processors.debug import DebugProcessor
-from marker.processors.ignoretext import IgnoreTextProcessor
+from marker.util import strings_to_classes
 
 
 class PdfConverter(BaseConverter):
@@ -55,6 +53,7 @@ class PdfConverter(BaseConverter):
         else:
             processor_list = [
                 FootnoteProcessor,
+                PageHeaderProcessor,
                 EquationProcessor,
                 TableProcessor,
                 SectionHeaderProcessor,

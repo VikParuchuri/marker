@@ -19,24 +19,27 @@ class TextProcessor(BaseProcessor):
             Default is 0.02.
     """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    column_gap_ratio = 0.02  # column gaps are atleast 2% of the page width
+    column_gap_ratio = 0.02  # column gaps are atleast 2% of the current column width
 
     def __init__(self, config):
         super().__init__(config)
 
     def __call__(self, document: Document):
         for page in document.pages:
-            column_gap = page.polygon.width * self.column_gap_ratio
             for block in page.contained_blocks(document, self.block_types):
                 if block.structure is None:
                     continue
 
                 if not len(block.structure) >= 2:  # Skip single lines
                     continue
+                
+                column_gap = block.polygon.width * self.column_gap_ratio
 
                 column_break, page_break = False, False
                 next_block = page.get_next_block(block)
-                if next_block is not None:  # we check for a column break
+
+                if  next_block is not None: # next block exists
+                    # we check for a column break
                     column_break = (
                         math.floor(next_block.polygon.y_start) <= math.floor(block.polygon.y_start) and
                         next_block.polygon.x_start > (block.polygon.x_end + column_gap)
@@ -49,6 +52,7 @@ class TextProcessor(BaseProcessor):
 
                 next_block_starts_indented = True
                 next_block_in_first_quadrant = False
+                last_line_is_full_width = False
                 new_block_lines = []
 
                 if column_break:
@@ -67,13 +71,16 @@ class TextProcessor(BaseProcessor):
                     for next_page_block_id in next_page.structure:
                         if next_page_block_id.block_type in [BlockTypes.PageHeader, BlockTypes.PageFooter]:
                             continue  # skip headers and footers
-                        if next_page_block_id.block_type not in self.block_types:
-                            break  # we found a non-text block, so we can stop looking
 
-                        # we have our text_block
+                        # we have our block
                         next_page_block = next_page.get_block(next_page_block_id)
-                        if next_page_block.structure is None:
-                            break  # This is odd though, why do we have text blocks with no structure?
+                        if next_page_block.ignore_for_output:
+                            continue # skip ignored blocks
+
+                        if not (next_page_block.structure is not None and \
+                            next_page_block.block_type in self.block_types): 
+                            # we found a non-text block or an empty text block, so we can stop looking
+                            break
 
                         new_block_lines = next_page_block.structure_blocks(document)
 
@@ -88,9 +95,10 @@ class TextProcessor(BaseProcessor):
                     min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
                     next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
-                lines: List[Line] = block.structure_blocks(document)
-                max_x = math.floor(max([l.polygon.x_end for l in lines]))
-                last_line_is_full_width = lines[-1].polygon.x_end >= max_x
+                lines: List[Line] = [l for l in block.structure_blocks(document) if l.polygon.width > 0]
+                if len(lines):
+                    max_x = math.floor(max([l.polygon.x_end for l in lines]))
+                    last_line_is_full_width = lines[-1].polygon.x_end >= max_x
 
                 last_line_is_hyphentated = regex.compile(r'.*[\p{Ll}|\d][-—¬]\s?$', regex.DOTALL).match(lines[-1].raw_text(document).strip())
 
