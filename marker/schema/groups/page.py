@@ -18,7 +18,7 @@ class PageGroup(Group):
     highres_image: Image.Image | None = None
     children: List[Block] | None = None
     layout_sliced: bool = False # Whether the layout model had to slice the image (order may be wrong)
-    excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span, BlockTypes.Picture, BlockTypes.Figure)
+    excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
     maximum_assignment_distance: float = 20 # pixels
 
     def incr_block_id(self):
