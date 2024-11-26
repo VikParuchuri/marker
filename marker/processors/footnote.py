@@ -1,5 +1,3 @@
-import re
-from collections import Counter
 from statistics import mean
 
 from marker.processors import BaseProcessor

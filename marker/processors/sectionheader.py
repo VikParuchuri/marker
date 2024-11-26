@@ -47,6 +47,8 @@ class SectionHeaderProcessor(BaseProcessor):
                 line_heights[block.block_id] = []
                 if block.structure is not None:
                     line_heights[block.block_id] = [document.get_block(l).polygon.height for l in block.structure if l.block_type == BlockTypes.Line]
+                else:
+                    block.ignore_for_output = True
 
         flat_line_heights = [h for heights in line_heights.values() for h in heights]
         heading_ranges = self.bucket_headings(flat_line_heights)

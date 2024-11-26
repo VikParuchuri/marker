@@ -22,7 +22,8 @@ class IgnoreTextProcessor(BaseProcessor):
     """
     block_types = (
         BlockTypes.Text, BlockTypes.PageHeader, 
-        BlockTypes.PageFooter, BlockTypes.SectionHeader
+        BlockTypes.PageFooter, BlockTypes.SectionHeader,
+        BlockTypes.TextInlineMath
     )
     common_element_threshold = .20
     common_element_min_blocks = 3
