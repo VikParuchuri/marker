@@ -34,7 +34,7 @@ class LayoutBuilder(BaseBuilder):
     """
     batch_size = None
     layout_coverage_min_lines = 1
-    layout_coverage_threshold = .3
+    layout_coverage_threshold = .1
 
     def __init__(self, layout_model: SuryaLayoutModel, config=None):
         self.layout_model = layout_model

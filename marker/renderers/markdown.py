@@ -50,7 +50,9 @@ class MarkdownRenderer(HTMLRenderer):
             bullets="-",
             escape_misc=False,
             escape_underscores=False,
-            escape_asterisks=False
+            escape_asterisks=False,
+            sub_symbol="<sub>",
+            sup_symbol="<sup>",
         )
         markdown = md_cls.convert(full_html)
         return MarkdownOutput(

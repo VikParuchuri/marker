@@ -119,8 +119,11 @@ class PolygonBox(BaseModel):
         else:
             return 0
 
-    def center_distance(self, other: PolygonBox):
-        return ((self.center[0] - other.center[0]) ** 2 + (self.center[1] - other.center[1]) ** 2) ** 0.5
+    def center_distance(self, other: PolygonBox, x_weight: float = 1, y_weight: float = 1, absolute=False):
+        if not absolute:
+            return ((self.center[0] - other.center[0]) ** 2 * x_weight + (self.center[1] - other.center[1]) ** 2 * y_weight) ** 0.5
+        else:
+            return abs(self.center[0] - other.center[0]) * x_weight + abs(self.center[1] - other.center[1]) * y_weight
 
     def rescale(self, old_size, new_size):
         # Point is in x, y format

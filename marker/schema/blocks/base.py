@@ -65,6 +65,7 @@ class Block(BaseModel):
     text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
     ignore_for_output: bool = False # Whether this block should be ignored in output
+    source: Literal['layout', 'heuristics', 'processor'] = 'layout'
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
