@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-import base64
-import io
 from typing import List, Dict
 
-from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 from marker.schema.blocks import Block
 from marker.renderers import BaseRenderer
 from marker.schema import BlockTypes
-from marker.schema.blocks import BlockId
 from marker.schema.registry import get_block_class
 
 

@@ -1,6 +1,7 @@
 import base64
 import io
 import re
+from collections import Counter
 from typing import Optional
 
 from bs4 import BeautifulSoup
@@ -56,17 +57,23 @@ class BaseRenderer:
     def generate_page_stats(self, document, document_output):
         page_stats = []
         for page in document.pages:
+            block_counts = Counter([str(block.block_type) for block in page.children]).most_common()
             page_stats.append({
                 "page_id": page.page_id,
-                "text_extraction_method": page.text_extraction_method
+                "text_extraction_method": page.text_extraction_method,
+                "block_counts": block_counts,
             })
         return page_stats
 
     def generate_document_metadata(self, document, document_output):
-        return {
+        metadata =  {
             "table_of_contents": document.table_of_contents,
-            "page_stats": self.generate_page_stats(document, document_output)
+            "page_stats": self.generate_page_stats(document, document_output),
         }
+        if document.debug_data_path is not None:
+            metadata["debug_data_path"] = document.debug_data_path
+
+        return metadata
 
     def extract_block_html(self, document, block_output):
         soup = BeautifulSoup(block_output.html, 'html.parser')

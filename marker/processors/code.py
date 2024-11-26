@@ -15,16 +15,14 @@ class CodeProcessor(BaseProcessor):
             for block in page.contained_blocks(document, self.block_types):
                 self.format_block(document, block)
 
+
     def format_block(self, document: Document, block: Code):
         min_left = 9999  # will contain x- coord of column 0
         total_width = 0
         total_chars = 0
-
-        if block.structure is None:
-            return
-
-        for line_id in block.structure:
-            line = document.get_block(line_id)
+        
+        contained_lines = block.contained_blocks(document, (BlockTypes.Line,))
+        for line in contained_lines:
             min_left = min(line.polygon.bbox[0], min_left)
             total_width += line.polygon.width
             total_chars += len(line.raw_text(document))
@@ -32,8 +30,7 @@ class CodeProcessor(BaseProcessor):
         avg_char_width = total_width / max(total_chars, 1)
         code_text = ""
         is_new_line = False
-        for line_id in block.structure:
-            line = document.get_block(line_id)
+        for line in contained_lines:
             text = line.raw_text(document)
             if avg_char_width == 0:
                 prefix = ""
@@ -47,4 +44,4 @@ class CodeProcessor(BaseProcessor):
             code_text += text
             is_new_line = text.endswith("\n")
 
-        block.code = code_text
+        block.code = code_text.rstrip()

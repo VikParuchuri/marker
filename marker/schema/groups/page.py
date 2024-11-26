@@ -1,4 +1,5 @@
-from typing import List
+from collections import defaultdict
+from typing import Dict, List, TYPE_CHECKING
 
 from PIL import Image
 
@@ -7,6 +8,9 @@ from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId
 from marker.schema.groups.base import Group
 from marker.schema.polygon import PolygonBox
+
+if TYPE_CHECKING:
+    from marker.schema.document import Document
 
 
 class PageGroup(Group):
@@ -80,6 +84,17 @@ class PageGroup(Group):
                     max_intersections[line_idx] = (intersection_pct, block_idx)
         return max_intersections
 
+    def replace_block(self, block: Block, new_block: Block):
+        # Handles incrementing the id
+        self.add_full_block(new_block)
+
+        # Replace block id in structure
+        super().replace_block(block, new_block)
+
+        # Replace block in structure of children
+        for child in self.children:
+            child.replace_block(block, new_block)
+
     def merge_blocks(
         self,
         provider_outputs: List[ProviderOutput],
@@ -89,28 +104,21 @@ class PageGroup(Group):
         provider_line_idxs = set(range(len(provider_outputs)))
         max_intersections = self.compute_line_block_intersections(provider_outputs, excluded_block_types)
 
+        # Try to assign lines by intersection
         assigned_line_idxs = set()
+        block_lines = defaultdict(list)
         for line_idx, provider_output in enumerate(provider_outputs):
             if line_idx in max_intersections and max_intersections[line_idx][0] > 0.0:
-                line = provider_output.line
-                spans = provider_output.spans
-                self.add_full_block(line)
                 block_idx = max_intersections[line_idx][1]
-                block: Block = self.children[block_idx]
-                block.add_structure(line)
-                block.polygon = block.polygon.merge([line.polygon])
-                block.text_extraction_method = text_extraction_method
+                block_lines[block_idx].append((line_idx, provider_output))
                 assigned_line_idxs.add(line_idx)
-                for span in spans:
-                    self.add_full_block(span)
-                    line.add_structure(span)
 
+        # If no intersection, assign by distance
         for line_idx in provider_line_idxs.difference(assigned_line_idxs):
             min_dist = None
             min_dist_idx = None
             provider_output: ProviderOutput = provider_outputs[line_idx]
             line = provider_output.line
-            spans = provider_output.spans
             for block_idx, block in enumerate(self.children):
                 if block.block_type in excluded_block_types:
                     continue
@@ -120,12 +128,20 @@ class PageGroup(Group):
                     min_dist_idx = block_idx
 
             if min_dist_idx is not None:
-                self.add_full_block(line)
-                nearest_block = self.children[min_dist_idx]
-                nearest_block.add_structure(line)
-                nearest_block.polygon = nearest_block.polygon.merge([line.polygon])
-                nearest_block.text_extraction_method = text_extraction_method
+                block_lines[min_dist_idx].append((line_idx, provider_output))
                 assigned_line_idxs.add(line_idx)
+
+        # Add lines to the proper blocks, sorted in order
+        for block_idx, lines in block_lines.items():
+            lines = sorted(lines, key=lambda x: x[0])
+            block = self.children[block_idx]
+            for line_idx, provider_output in lines:
+                line = provider_output.line
+                spans = provider_output.spans
+                self.add_full_block(line)
+                block.add_structure(line)
+                block.polygon = block.polygon.merge([line.polygon])
+                block.text_extraction_method = text_extraction_method
                 for span in spans:
                     self.add_full_block(span)
                     line.add_structure(span)

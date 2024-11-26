@@ -1,40 +1,40 @@
 # Marker
 
-Marker converts PDF to markdown quickly and accurately.
+Marker converts PDFs to markdown, JSON, and HTML quickly and accurately.
 
-- Supports a wide range of documents (optimized for books and scientific papers)
+- Supports a wide range of documents
 - Supports all languages
 - Removes headers/footers/other artifacts
 - Formats tables and code blocks
 - Extracts and saves images along with the markdown
-- Converts most equations to latex
+- Converts equations to latex
+- Easily extensible with your own formatting and logic
 - Works on GPU, CPU, or MPS
 
 ## How it works
 
 Marker is a pipeline of deep learning models:
 
-- Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya), tesseract)
+- Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
 - Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
-- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify)
-- Combine blocks and postprocess complete text (heuristics, [pdf_postprocessor](https://huggingface.co/vikp/pdf_postprocessor_t5))
+- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify). [tabled](https://github.com/VikParuchuri/tabled))
+- Combine blocks and postprocess complete text
 
 It only uses models where necessary, which improves speed and accuracy.
 
 ## Examples
 
-| PDF                                                                   | Type        | Marker                                                                                                 | Nougat                                                                                                 |
-|-----------------------------------------------------------------------|-------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook    | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/thinkpython.md)         | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/thinkpython.md)         |
-| [Think OS](https://greenteapress.com/thinkos/thinkos.pdf)             | Textbook    | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/thinkos.md)             | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/thinkos.md)             |
-| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf)           | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/switch_transformers.md) |
-| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf)              | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/marker/multicolcnn.md)         | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/nougat/multicolcnn.md)         |
+| PDF | File type | Markdown | JSON |
+|-----|-----------|----------|------|
+| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/thinkpython.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/thinkpython.json) |
+| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/switch_transformers.json) |
+| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/multicolcnn.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/multicolcnn.md) |
 
 ## Performance
 
 ![Benchmark overall](data/images/overall.png)
 
-The above results are with marker and nougat setup so they each take ~4GB of VRAM on an A6000.
+The above results are with marker setup so it takes ~4GB of VRAM on an A6000.
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
@@ -60,15 +60,14 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
-- Marker will not convert 100% of equations to LaTeX.  This is because it has to detect then convert.
-- Tables are not always formatted 100% correctly - text can be in the wrong column.
-- Whitespace and indentations are not always respected.
-- Not all lines/spans will be joined properly.
-- This works best on digital PDFs that won't require a lot of OCR.  It's optimized for speed, and limited OCR is used to fix errors.
+- Marker will not convert inline equations
+- Tables are not always formatted 100% correctly - multiline cells are sometimes split into multiple rows.
+- Forms are not converted optimally
+- Very complex layouts, with nested tables and forms, may not work
 
 # Installation
 
-You'll need python 3.9+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
+You'll need python 3.10+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
 
 Install with:
 
@@ -76,20 +75,12 @@ Install with:
 pip install marker-pdf
 ```
 
-## Optional: OCRMyPDF
-
-Only needed if you want to use the optional `ocrmypdf` as the ocr backend.  Note that `ocrmypdf` includes Ghostscript, an AGPL dependency, but calls it via CLI, so it does not trigger the license provisions.
-
-See the instructions [here](docs/install_ocrmypdf.md)
-
 # Usage
 
 First, some configuration:
 
-- Inspect the settings in `marker/settings.py`.  You can override any settings with environment variables.
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-- By default, marker will use `surya` for OCR.  Surya is slower on CPU, but more accurate than tesseract.  It also doesn't require you to specify the languages in the document.  If you want faster OCR, set `OCR_ENGINE` to `ocrmypdf`. This also requires external dependencies (see above).  If you don't want OCR at all, set `OCR_ENGINE` to `None`.
-- Some PDFs, even digital ones, have bad text in them.  Set `OCR_ALL_PAGES=true` to force OCR if you find bad output from marker.
+- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag on the CLI or via configuration to ensure your PDF runs through OCR.
 
 ## Interactive App
 
@@ -103,93 +94,191 @@ marker_gui
 ## Convert a single file
 
 ```shell
-marker_single /path/to/file.pdf /path/to/output/folder --batch_multiplier 2 --max_pages 10 
+marker_single /path/to/file.pdf
 ```
 
-- `--batch_multiplier` is how much to multiply default batch sizes by if you have extra VRAM.  Higher numbers will take more VRAM, but process faster.  Set to 2 by default.  The default batch sizes will take ~3GB of VRAM.
-- `--max_pages` is the maximum number of pages to process.  Omit this to convert the entire document.
-- `--start_page` is the page to start from (default is None, will start from the first page).
-- `--langs` is an optional comma separated list of the languages in the document, for OCR.  Optional by default, required if you use tesseract.
+Options:
+- `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
+- `--debug`: Enable debug mode for additional logging and diagnostic information.
+- `--output_format [markdown|json|html]`: Specify the format for the output results.
+- `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
+- `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
+- `--processors TEXT`: Override the default processors by providing their full module paths, separated by commas. Example: `--processors "module1.processor1,module2.processor2"`
+- `--config_json PATH`: Path to a JSON configuration file containing additional settings.
+- `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "eng,fra,deu"` for English, French, and German.
+- `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
 
-The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you need more languages, you can use any language supported by [Tesseract](https://tesseract-ocr.github.io/tessdoc/Data-Files#data-files-for-version-400-november-29-2016) if you set `OCR_ENGINE` to `ocrmypdf`.  If you don't need OCR, marker can work with any language.
+The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you don't need OCR, marker can work with any language.
 
 ## Convert multiple files
 
 ```shell
-marker /path/to/input/folder /path/to/output/folder --workers 4 --max 10
+marker /path/to/input/folder --workers 4
 ```
 
-- `--workers` is the number of pdfs to convert at once.  This is set to 1 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage.  Marker will use 5GB of VRAM per worker at the peak, and 3.5GB average.
-- `--max` is the maximum number of pdfs to convert.  Omit this to convert all pdfs in the folder.
-- `--min_length` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
-- `--metadata_file` is an optional path to a json file with metadata about the pdfs.  If you provide it, it will be used to set the language for each pdf.  Setting language is optional for surya (default), but required for tesseract. The format is:
-
-```
-{
-  "pdf1.pdf": {"languages": ["English"]},
-  "pdf2.pdf": {"languages": ["Spanish", "Russian"]},
-  ...
-}
-```
-
-You can use language names or codes.  The exact codes depend on the OCR engine.  See [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py) for a full list for surya codes, and [here](https://tesseract-ocr.github.io/tessdoc/Data-Files#data-files-for-version-400-november-29-2016) for tesseract.
+- `marker` supports all the same options from `marker_single` above.
+- `--workers` is the number of conversion workers to run simultaneously.  This is set to 5 by default, but you can increase it to increase throughput, at the cost of more CPU/GPU usage.  Marker will use 5GB of VRAM per worker at the peak, and 3.5GB average.
 
 ## Convert multiple files on multiple GPUs
 
 ```shell
-METADATA_FILE=../pdf_meta.json NUM_DEVICES=4 NUM_WORKERS=15 marker_chunk_convert ../pdf_in ../md_out
+NUM_DEVICES=4 NUM_WORKERS=15 marker_chunk_convert ../pdf_in ../md_out
 ```
 
-- `METADATA_FILE` is an optional path to a json file with metadata about the pdfs.  See above for the format.
 - `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
 - `NUM_WORKERS` is the number of parallel processes to run on each GPU.
-- `MIN_LENGTH` is the minimum number of characters that need to be extracted from a pdf before it will be considered for processing.  If you're processing a lot of pdfs, I recommend setting this to avoid OCRing pdfs that are mostly images. (slows everything down)
-
-Note that the env variables above are specific to this script, and cannot be set in `local.env`.
-
+- 
 
 ## Use from python
 
-See the `convert_single_pdf` function for additional arguments that can be passed.
+See the `PdfConverter` class at `marker/converters/pdf.py` function for additional arguments that can be passed.
 
 ```python
-from marker.convert import convert_single_pdf
-from marker.models import load_all_models
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
+from marker.output import text_from_rendered
 
-fpath = "FILEPATH"
-model_lst = load_all_models()
-full_text, images, out_meta = convert_single_pdf(fpath, model_lst)
+converter = PdfConverter(
+    artifact_dict=create_model_dict(),
+)
+rendered = converter("FILEPATH")
+text, _, images = text_from_rendered(rendered)
 ```
 
-# Output format
+`rendered` will be a pydantic basemodel with different properties depending on the output type requested.  With markdown output (default), you'll have the properties `markdown`, `metadata`, and `images`.  For json output, you'll have `children`, `block_type`, and `metadata`.
 
-The output will be a markdown file, but there will also be a metadata json file that gives information about the conversion process.  It has these fields:
+### Custom configuration
+
+You can also pass configuration using the `ConfigParser`:
+
+```python
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
+from marker.config.parser import ConfigParser
+
+config = {
+    "output_format": "json",
+    "ADDITIONAL_KEY": "VALUE"
+}
+config_parser = ConfigParser(config)
+
+converter = PdfConverter(
+    config=config_parser.generate_config_dict(),
+    artifact_dict=create_model_dict(),
+    processor_list=config_parser.get_processors(),
+    renderer=config_parser.get_renderer()
+)
+rendered = converter("FILEPATH")
+```
+
+# Output Formats
+
+## Markdown
+
+Markdown output will include:
+
+- image links (images will be saved in the same folder)
+- formatted tables
+- embedded LaTeX equations (fenced with `$$`)
+- Code is fenced with triple backticks
+
+## HTML
+
+HTML output is similar to markdown output:
+
+- Images are included via `img` tags
+- equations are fenced with `<math>` tags
+- code is in `pre` tags
+
+## JSON
+
+JSON output will be organized in a tree-like structure, with the leaf nodes being blocks.  Examples of leaf nodes are a single list item, a paragraph of text, or an image.
+
+The output will be a list, with each list item representing a page.  Each page is considered a block in the internal marker schema.  There are different types of blocks to represent different elements.  
+
+Pages have the keys:
+
+- `id` - unique id for the block.
+- `block_type` - the type of block. The possible block types can be seen in `marker/schema/__init__.py`.  As of this writing, they are ["Line", "Span", "FigureGroup", "TableGroup", "ListGroup", "PictureGroup", "Page", "Caption", "Code", "Figure", "Footnote", "Form", "Equation", "Handwriting", "TextInlineMath", "ListItem", "PageFooter", "PageHeader", "Picture", "SectionHeader", "Table", "Text", "TableOfContents", "Document"]
+- `html` - the HTML for the page.  Note that this will have recursive references to children.  The `content-ref` tags must be replaced with the child content if you want the full html.  You can see an example of this at `marker/renderers/__init__.py:BaseRender.extract_block_html`.
+- `polygon` - the 4-corner polygon of the page, in (x1,y1), (x2,y2), (x3, y3), (x4, y4) format.  (x1,y1) is the top left, and coordinates go clockwise.
+- `children` - the child blocks.
+
+The child blocks have two additional keys:
+
+- `section_hierarchy` - indicates the sections that the block is part of.  `1` indicates an h1 tag, `2` an h2, and so on.
+- `images` - base64 encoded images.  The key will be the block id, and the data will be the encoded image.
+
+Note that child blocks of pages can have their own children as well (a tree structure).
 
 ```json
 {
-    "languages": null, // any languages that were passed in
-    "filetype": "pdf", // type of the file
-    "pdf_toc": [], // the table of contents from the pdf
-    "computed_toc": [], //the computed table of contents
-    "pages": 10, // page count
-    "ocr_stats": {
-        "ocr_pages": 0, // number of pages OCRed
-        "ocr_failed": 0, // number of pages where OCR failed
-        "ocr_success": 0,
-        "ocr_engine": "none"
-    },
-    "block_stats": {
-        "header_footer": 0,
-        "code": 0, // number of code blocks
-        "table": 2, // number of tables
-        "equations": {
-            "successful_ocr": 0,
-            "unsuccessful_ocr": 0,
-            "equations": 0
-        }
+      "id": "/page/10/Page/366",
+      "block_type": "Page",
+      "html": "<content-ref src='/page/10/SectionHeader/0'></content-ref><content-ref src='/page/10/SectionHeader/1'></content-ref><content-ref src='/page/10/Text/2'></content-ref><content-ref src='/page/10/Text/3'></content-ref><content-ref src='/page/10/Figure/4'></content-ref><content-ref src='/page/10/SectionHeader/5'></content-ref><content-ref src='/page/10/SectionHeader/6'></content-ref><content-ref src='/page/10/TextInlineMath/7'></content-ref><content-ref src='/page/10/TextInlineMath/8'></content-ref><content-ref src='/page/10/Table/9'></content-ref><content-ref src='/page/10/SectionHeader/10'></content-ref><content-ref src='/page/10/Text/11'></content-ref>",
+      "polygon": [[0.0, 0.0], [612.0, 0.0], [612.0, 792.0], [0.0, 792.0]],
+      "children": [
+        {
+          "id": "/page/10/SectionHeader/0",
+          "block_type": "SectionHeader",
+          "html": "<h1>Supplementary Material for <i>Subspace Adversarial Training</i> </h1>",
+          "polygon": [
+            [217.845703125, 80.630859375], [374.73046875, 80.630859375],
+            [374.73046875, 107.0],
+            [217.845703125, 107.0]
+          ],
+          "children": null,
+          "section_hierarchy": {
+            "1": "/page/10/SectionHeader/1"
+          },
+          "images": {}
+        },
+        ...
+        ]
     }
+
+
+```
+
+## Metadata
+
+All output formats will return a metadata dictionary, with the following fields:
+
+```json
+{
+    "table_of_contents": [
+      {
+        "title": "Introduction",
+        "heading_level": 1,
+        "page_id": 0,
+        "polygon": [...]
+      }
+    ], // computed PDF table of contents
+    "page_stats": [
+      {
+        "page_id":  0, 
+        "text_extraction_method": "pdftext",
+        "block_counts": [("Span", 200), ...]
+      },
+      ...
+    ]
 }
 ```
+
+# Internals
+
+Marker is easy to extend.  The core units of marker are:
+
+- `Providers`, at `marker/providers`.  These provide information from a source file, like a PDF.
+- `Builders`, at `marker/builders`.  These generate the initial document blocks and fill in text, using info from the providers.
+- `Processors`, at `marker/processors`.  These process specific blocks, for example the table formatter is a processor.
+- `Renderers`, at `marker/renderers`. These use the blocks to render output.
+- `Schema`, at `marker/schema`.  The classes for all the block types.
+- `Converters`, at `marker/converters`.  They run the whole end to end pipeline.
+
+To customize processing behavior, override the `processors`.  To add new output formats, write a new `renderer`.  For additional input formats, write a new `provider.`
+
+Processors and renderers can be directly passed into the base `PDFConverter`, so you can specify your own custom processing easily.
 
 ## API server
 
@@ -201,14 +290,6 @@ marker_server --port 8001
 ```
 
 This will start a fastapi server that you can access at `localhost:8001`.  You can go to `localhost:8001/docs` to see the endpoint options.
-
-Note that this is not a very robust API, and is only intended for small-scale use.  If you want to use this server, but want a more robust conversion option, you can run against the hosted [Datalab API](https://www.datalab.to/plans).  You'll need to register and get an API key, then run:
-
-```shell
-marker_server --port 8001 --api_key API_KEY
-```
-
-Note: This is not the recommended way to use the Datalab API - it's only provided as a convenience for people wrapping the marker repo.  The recommended way is to make a post request to the endpoint directly from your code vs proxying through this server.
 
 You can send requests like this:
 
@@ -224,36 +305,25 @@ post_data = {
 requests.post("http://localhost:8001/marker", data=json.dumps(post_data)).json()
 ```
 
+Note that this is not a very robust API, and is only intended for small-scale use.  If you want to use this server, but want a more robust conversion option, you can use the hosted [Datalab API](https://www.datalab.to/plans).
+
 # Troubleshooting
 
 There are some settings that you may find useful if things aren't working the way you expect:
 
-- `OCR_ALL_PAGES` - set this to true to force OCR all pages.  This can be very useful if there is garbled text in the output of marker.
+- Make sure to set `force_ocr` if you see garbled text - this will re-OCR the document.
 - `TORCH_DEVICE` - set this to force marker to use a given torch device for inference.
-- `OCR_ENGINE` - can set this to `surya` or `ocrmypdf`.
-- Verify that you set the languages correctly, or passed in a metadata file.
-- If you're getting out of memory errors, decrease worker count (increased the `VRAM_PER_TASK` setting).  You can also try splitting up long PDFs into multiple files.
-
-In general, if output is not what you expect, trying to OCR the PDF is a good first step.  Not all PDFs have good text/bboxes embedded in them.
+- If you're getting out of memory errors, decrease worker count.  You can also try splitting up long PDFs into multiple files.
 
 ## Debugging
 
-Set `DEBUG=true` to save data to the `debug` subfolder in the marker root directory.  This will save images of each page with detected layout and text, as well as output a json file with additional bounding box information.
-
-## Useful settings
-
-These settings can improve/change output quality:
-
-- `OCR_ALL_PAGES` will force OCR across the document.  Many PDFs have bad text embedded due to older OCR engines being used.
-- `PAGINATE_OUTPUT` will put a horizontal rule between pages.  Default: False.  The horizontal rule will be `\n\n`, then `{PAGE_NUMBER}`, then 48 single dashes `-`, then `\n\n`.  The separator can be configured via the `PAGE_SEPARATOR` setting.
-- `EXTRACT_IMAGES` will extract images and save separately.  Default: True.
-- `BAD_SPAN_TYPES` specifies layout blocks to remove from the markdown output.
+Pass the `debug` option to activate debug mode.  This will save images of each page with detected layout and text, as well as output a json file with additional bounding box information.
 
 # Benchmarks
 
 Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
 
-Benchmarks show that marker is 4x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).  We show naive text extraction (pulling text out of the pdf with no processing) for comparison.
+Benchmarks show that marker is 4x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
 
 **Speed**
 
@@ -291,12 +361,8 @@ poetry install
 Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run the overall benchmark like this:
 
 ```shell
-python benchmarks/overall.py data/pdfs data/references report.json --nougat
+python benchmarks/overall.py data/pdfs data/references report.json
 ```
-
-This will benchmark marker against other text extraction methods.  It sets up batch sizes for nougat and marker to use a similar amount of GPU RAM for each.
-
-Omit `--nougat` to exclude nougat from the benchmark.  I don't recommend running nougat on CPU, since it is very slow.
 
 # Thanks
 

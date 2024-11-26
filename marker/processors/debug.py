@@ -54,6 +54,8 @@ class DebugProcessor(BaseProcessor):
         if any([self.debug_layout_images, self.debug_pdf_images, self.debug_json]):
             os.makedirs(self.debug_folder, exist_ok=True)
 
+        document.debug_data_path = self.debug_folder
+
         if self.debug_layout_images:
             self.draw_layout_debug_images(document)
             print(f"Dumped layout debug images to {self.debug_data_folder}")

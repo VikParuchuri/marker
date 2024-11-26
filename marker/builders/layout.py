@@ -80,6 +80,7 @@ class LayoutBuilder(BaseBuilder):
                 document_page.text_extraction_method = "surya"
                 continue
             document_page.merge_blocks(provider_lines, text_extraction_method="pdftext")
+            document_page.text_extraction_method = "pdftext"
 
     def check_layout_coverage(
         self,
@@ -88,6 +89,7 @@ class LayoutBuilder(BaseBuilder):
     ):
         covered_blocks = 0
         total_blocks = 0
+        large_text_blocks = 0
         for layout_block_id in document_page.structure:
             layout_block = document_page.get_block(layout_block_id)
             if layout_block.block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup]:
@@ -102,5 +104,13 @@ class LayoutBuilder(BaseBuilder):
             if intersecting_lines > self.layout_coverage_min_lines:
                 covered_blocks += 1
 
+            if layout_block.polygon.intersection_pct(document_page.polygon) > 0.8 and layout_block.block_type == BlockTypes.Text:
+                large_text_blocks += 1
+
         coverage_ratio = covered_blocks / total_blocks if total_blocks > 0 else 1
-        return coverage_ratio >= self.layout_coverage_threshold
+        text_okay = coverage_ratio >= self.layout_coverage_threshold
+
+        # Model will sometimes say there is a single block of text on the page when it is blank
+        if not text_okay and (total_blocks == 1 and large_text_blocks == 1):
+            text_okay = True
+        return text_okay
