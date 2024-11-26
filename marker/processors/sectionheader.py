@@ -48,6 +48,7 @@ class SectionHeaderProcessor(BaseProcessor):
                     line_heights[block.id] = block.line_height(document)
                 else:
                     line_heights[block.id] = 0
+                    block.ignore_for_output = True # Don't output an empty section header
 
         flat_line_heights = list(line_heights.values())
         heading_ranges = self.bucket_headings(flat_line_heights)
