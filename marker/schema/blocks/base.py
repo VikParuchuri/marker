@@ -65,6 +65,7 @@ class Block(BaseModel):
     text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
     ignore_for_output: bool = False # Whether this block should be ignored in output
+    source: Literal['layout', 'heuristics', 'processor'] = 'layout'
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -179,3 +180,9 @@ class Block(BaseModel):
             children=child_content,
             section_hierarchy=section_hierarchy
         )
+
+    def line_height(self, document: Document):
+        lines = self.contained_blocks(document, (BlockTypes.Line,))
+        if len(lines) == 0:
+            return 0
+        return self.polygon.height / len(lines)

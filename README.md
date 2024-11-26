@@ -24,11 +24,11 @@ It only uses models where necessary, which improves speed and accuracy.
 
 ## Examples
 
-| PDF | File type | Markdown | JSON |
-|-----|-----------|----------|------|
-| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/thinkpython.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/thinkpython.json) |
-| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/switch_transformers.json) |
-| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/multicolcnn.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/multicolcnn.md) |
+| PDF | File type | Markdown                                                                                                                     | JSON                                                                                                   |
+|-----|-----------|------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/thinkpython/thinkpython.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/thinkpython.json)         |
+| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/switch_transformers/switch_transformers.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/switch_transformers.json) |
+| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/multicolcnn/multicolcnn.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/multicolcnn.json)         |
 
 ## Performance
 
@@ -60,7 +60,7 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
-- Marker will not convert inline equations
+- Marker will only convert block equations
 - Tables are not always formatted 100% correctly - multiline cells are sometimes split into multiple rows.
 - Forms are not converted optimally
 - Very complex layouts, with nested tables and forms, may not work
@@ -181,6 +181,7 @@ Markdown output will include:
 - formatted tables
 - embedded LaTeX equations (fenced with `$$`)
 - Code is fenced with triple backticks
+- Superscripts for footnotes
 
 ## HTML
 
@@ -323,29 +324,23 @@ Pass the `debug` option to activate debug mode.  This will save images of each p
 
 Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
 
-Benchmarks show that marker is 4x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
-
 **Speed**
 
-| Method | Average Score | Time per page | Time per document |
-|--------|---------------|---------------|-------------------|
-| marker | 0.613721      | 0.631991      | 58.1432           |
-| nougat | 0.406603      | 2.59702       | 238.926           |
+| Method  | Average Score | Time per page | Time per document |
+|---------|----------------|---------------|------------------|
+| marker  | 0.625115       | 0.234184     | 21.545           |
 
 **Accuracy**
 
-First 3 are non-arXiv books, last 3 are arXiv papers.
+| Method  | thinkpython.pdf | switch_trans.pdf | thinkdsp.pdf | crowd.pdf | thinkos.pdf | multicolcnn.pdf |
+|---------|----------------|-----------------|--------------|------------|-------------|----------------|
+| marker  | 0.720347       | 0.592002       | 0.70468     | 0.515082   | 0.701394    | 0.517184      |
 
-| Method | multicolcnn.pdf | switch_trans.pdf | thinkpython.pdf | thinkos.pdf | thinkdsp.pdf | crowd.pdf |
-|--------|-----------------|------------------|-----------------|-------------|--------------|-----------|
-| marker | 0.536176        | 0.516833         | 0.70515         | 0.710657    | 0.690042     | 0.523467  |
-| nougat | 0.44009         | 0.588973         | 0.322706        | 0.401342    | 0.160842     | 0.525663  |
-
-Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `4.1GB` for marker.  Benchmarks were run on an A6000 Ada.
+Peak GPU memory usage during the benchmark is `6GB` for marker.  Benchmarks were run on an A10.
 
 **Throughput**
 
-Marker takes about 4GB of VRAM on average per task, so you can convert 12 documents in parallel on an A6000.
+Marker takes about 6GB of VRAM on average per task, so you can convert 8 documents in parallel on an A6000.
 
 ![Benchmark results](data/images/per_doc.png)
 
