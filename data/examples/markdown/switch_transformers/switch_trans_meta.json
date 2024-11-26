@@ -1,0 +1,2415 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Switch Transformers: Scaling to Trillion Parameter Models\nwith Simple and Efficient Sparsity",
+      "heading_level": 1,
+      "page_id": 0,
+      "polygon": [
+        [
+          95.02734375,
+          101.513671875
+        ],
+        [
+          517.5703125,
+          101.513671875
+        ],
+        [
+          517.5703125,
+          134.0
+        ],
+        [
+          95.02734375,
+          134.0
+        ]
+      ]
+    },
+    {
+      "title": "Noam Shazeer",
+      "heading_level": 4,
+      "page_id": 0,
+      "polygon": [
+        [
+          90.0,
+          214.0
+        ],
+        [
+          169.0,
+          214.0
+        ],
+        [
+          169.0,
+          225.650390625
+        ],
+        [
+          90.0,
+          225.650390625
+        ]
+      ]
+    },
+    {
+      "title": "Abstract",
+      "heading_level": 3,
+      "page_id": 0,
+      "polygon": [
+        [
+          280.0,
+          311.0
+        ],
+        [
+          332.0,
+          311.0
+        ],
+        [
+          332.0,
+          323.0
+        ],
+        [
+          280.0,
+          323.0
+        ]
+      ]
+    },
+    {
+      "title": "Contents",
+      "heading_level": 2,
+      "page_id": 1,
+      "polygon": [
+        [
+          90.0,
+          91.65234375
+        ],
+        [
+          145.0810546875,
+          91.65234375
+        ],
+        [
+          145.0810546875,
+          105.0908203125
+        ],
+        [
+          90.0,
+          105.0908203125
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": 3,
+      "page_id": 2,
+      "polygon": [
+        [
+          89.947265625,
+          91.845703125
+        ],
+        [
+          180.791015625,
+          91.845703125
+        ],
+        [
+          180.791015625,
+          104.220703125
+        ],
+        [
+          89.947265625,
+          104.220703125
+        ]
+      ]
+    },
+    {
+      "title": "2. Switch Transformer",
+      "heading_level": 2,
+      "page_id": 3,
+      "polygon": [
+        [
+          89.349609375,
+          467.54296875
+        ],
+        [
+          223.224609375,
+          467.54296875
+        ],
+        [
+          223.224609375,
+          481.0
+        ],
+        [
+          89.349609375,
+          481.0
+        ]
+      ]
+    },
+    {
+      "title": "2.1 Simplifying Sparse Routing",
+      "heading_level": 3,
+      "page_id": 4,
+      "polygon": [
+        [
+          89.05078125,
+          431.0
+        ],
+        [
+          263.0,
+          430.41796875
+        ],
+        [
+          263.0,
+          442.0
+        ],
+        [
+          89.05078125,
+          442.79296875
+        ]
+      ]
+    },
+    {
+      "title": "2.2 Efficient Sparse Routing",
+      "heading_level": 2,
+      "page_id": 5,
+      "polygon": [
+        [
+          89.57373046875,
+          575.0
+        ],
+        [
+          246.0,
+          574.27734375
+        ],
+        [
+          246.0,
+          586.0
+        ],
+        [
+          89.57373046875,
+          587.42578125
+        ]
+      ]
+    },
+    {
+      "title": "2.3 Putting It All Together: The Switch Transformer",
+      "heading_level": 4,
+      "page_id": 7,
+      "polygon": [
+        [
+          89.27490234375,
+          203.80078125
+        ],
+        [
+          385.0,
+          203.80078125
+        ],
+        [
+          385.0,
+          215.40234375
+        ],
+        [
+          89.27490234375,
+          215.40234375
+        ]
+      ]
+    },
+    {
+      "title": "2.4 Improved Training and Fine-Tuning Techniques",
+      "heading_level": 3,
+      "page_id": 7,
+      "polygon": [
+        [
+          89.6484375,
+          583.9453125
+        ],
+        [
+          375.029296875,
+          583.9453125
+        ],
+        [
+          375.029296875,
+          596.0
+        ],
+        [
+          89.6484375,
+          596.0
+        ]
+      ]
+    },
+    {
+      "title": "3. Scaling Properties",
+      "heading_level": 2,
+      "page_id": 10,
+      "polygon": [
+        [
+          89.57373046875,
+          547.20703125
+        ],
+        [
+          214.259765625,
+          547.20703125
+        ],
+        [
+          214.259765625,
+          560.35546875
+        ],
+        [
+          89.57373046875,
+          560.35546875
+        ]
+      ]
+    },
+    {
+      "title": "3.1 Scaling Results on a Step-Basis",
+      "heading_level": 4,
+      "page_id": 11,
+      "polygon": [
+        [
+          89.4990234375,
+          142.0
+        ],
+        [
+          285.0,
+          142.0
+        ],
+        [
+          285.0,
+          153.0
+        ],
+        [
+          89.4990234375,
+          153.0
+        ]
+      ]
+    },
+    {
+      "title": "3.2 Scaling Results on a Time-Basis",
+      "heading_level": 2,
+      "page_id": 12,
+      "polygon": [
+        [
+          89.27490234375,
+          93.0
+        ],
+        [
+          290.162109375,
+          91.458984375
+        ],
+        [
+          290.162109375,
+          104.0
+        ],
+        [
+          89.27490234375,
+          104.607421875
+        ]
+      ]
+    },
+    {
+      "title": "3.3 Scaling Versus a Larger Dense Model",
+      "heading_level": 4,
+      "page_id": 12,
+      "polygon": [
+        [
+          89.6484375,
+          633.4453125
+        ],
+        [
+          318.251953125,
+          633.4453125
+        ],
+        [
+          318.251953125,
+          645.0
+        ],
+        [
+          89.6484375,
+          645.0
+        ]
+      ]
+    },
+    {
+      "title": "4. Downstream Results",
+      "heading_level": 2,
+      "page_id": 13,
+      "polygon": [
+        [
+          89.2001953125,
+          453.0
+        ],
+        [
+          228.7529296875,
+          451.6875
+        ],
+        [
+          228.7529296875,
+          465.0
+        ],
+        [
+          89.2001953125,
+          465.609375
+        ]
+      ]
+    },
+    {
+      "title": "4.1 Fine-Tuning",
+      "heading_level": 3,
+      "page_id": 13,
+      "polygon": [
+        [
+          90.0,
+          584.33203125
+        ],
+        [
+          180.4921875,
+          584.33203125
+        ],
+        [
+          180.4921875,
+          596.70703125
+        ],
+        [
+          90.0,
+          596.70703125
+        ]
+      ]
+    },
+    {
+      "title": "Switch Transformers",
+      "heading_level": 2,
+      "page_id": 14,
+      "polygon": [
+        [
+          249.0,
+          38.0
+        ],
+        [
+          359.490234375,
+          38.0
+        ],
+        [
+          359.490234375,
+          50.70849609375
+        ],
+        [
+          249.0,
+          50.70849609375
+        ]
+      ]
+    },
+    {
+      "title": "4.2 Distillation",
+      "heading_level": 4,
+      "page_id": 15,
+      "polygon": [
+        [
+          89.947265625,
+          488.42578125
+        ],
+        [
+          173.4697265625,
+          488.42578125
+        ],
+        [
+          173.4697265625,
+          500.02734375
+        ],
+        [
+          89.947265625,
+          500.02734375
+        ]
+      ]
+    },
+    {
+      "title": "4.3 Multilingual Learning",
+      "heading_level": 3,
+      "page_id": 16,
+      "polygon": [
+        [
+          89.42431640625,
+          578.53125
+        ],
+        [
+          233.0859375,
+          578.53125
+        ],
+        [
+          233.0859375,
+          591.0
+        ],
+        [
+          89.42431640625,
+          591.0
+        ]
+      ]
+    },
+    {
+      "title": "5. Designing Models with Data, Model, and Expert-Parallelism",
+      "heading_level": 2,
+      "page_id": 17,
+      "polygon": [
+        [
+          89.349609375,
+          607.1484375
+        ],
+        [
+          465.57421875,
+          607.1484375
+        ],
+        [
+          465.57421875,
+          620.296875
+        ],
+        [
+          89.349609375,
+          620.296875
+        ]
+      ]
+    },
+    {
+      "title": "Switch Transformers",
+      "heading_level": 2,
+      "page_id": 18,
+      "polygon": [
+        [
+          248.4755859375,
+          38.0
+        ],
+        [
+          360.38671875,
+          38.0
+        ],
+        [
+          360.38671875,
+          50.70849609375
+        ],
+        [
+          248.4755859375,
+          50.70849609375
+        ]
+      ]
+    },
+    {
+      "title": "5.1 Data Parallelism",
+      "heading_level": 4,
+      "page_id": 19,
+      "polygon": [
+        [
+          89.947265625,
+          453.0
+        ],
+        [
+          204.0,
+          453.0
+        ],
+        [
+          204.0,
+          464.44921875
+        ],
+        [
+          89.947265625,
+          464.44921875
+        ]
+      ]
+    },
+    {
+      "title": "5.2 Model Parallelism",
+      "heading_level": 4,
+      "page_id": 19,
+      "polygon": [
+        [
+          89.4990234375,
+          563.0
+        ],
+        [
+          212.0,
+          563.0
+        ],
+        [
+          212.0,
+          574.0
+        ],
+        [
+          89.4990234375,
+          574.0
+        ]
+      ]
+    },
+    {
+      "title": "5.3 Model and Data Parallelism",
+      "heading_level": 4,
+      "page_id": 20,
+      "polygon": [
+        [
+          89.72314453125,
+          602.12109375
+        ],
+        [
+          267.75,
+          602.12109375
+        ],
+        [
+          267.75,
+          614.0
+        ],
+        [
+          89.72314453125,
+          614.0
+        ]
+      ]
+    },
+    {
+      "title": "5.4 Expert and Data Parallelism",
+      "heading_level": 4,
+      "page_id": 21,
+      "polygon": [
+        [
+          89.05078125,
+          92.8125
+        ],
+        [
+          270.73828125,
+          92.8125
+        ],
+        [
+          270.73828125,
+          104.3173828125
+        ],
+        [
+          89.05078125,
+          104.3173828125
+        ]
+      ]
+    },
+    {
+      "title": "5.5 Expert, Model and Data Parallelism",
+      "heading_level": 4,
+      "page_id": 21,
+      "polygon": [
+        [
+          89.4990234375,
+          329.677734375
+        ],
+        [
+          313.171875,
+          329.677734375
+        ],
+        [
+          313.171875,
+          341.0
+        ],
+        [
+          89.4990234375,
+          341.0
+        ]
+      ]
+    },
+    {
+      "title": "5.6 Towards Trillion Parameter Models",
+      "heading_level": 4,
+      "page_id": 21,
+      "polygon": [
+        [
+          89.349609375,
+          539.859375
+        ],
+        [
+          308.390625,
+          539.859375
+        ],
+        [
+          308.390625,
+          550.6875
+        ],
+        [
+          89.349609375,
+          550.6875
+        ]
+      ]
+    },
+    {
+      "title": "Switch Transformers",
+      "heading_level": 2,
+      "page_id": 22,
+      "polygon": [
+        [
+          248.326171875,
+          38.0
+        ],
+        [
+          360.38671875,
+          38.0
+        ],
+        [
+          360.38671875,
+          50.90185546875
+        ],
+        [
+          248.326171875,
+          50.90185546875
+        ]
+      ]
+    },
+    {
+      "title": "6. Related Work",
+      "heading_level": 3,
+      "page_id": 23,
+      "polygon": [
+        [
+          88.82666015625,
+          452.4609375
+        ],
+        [
+          188.26171875,
+          452.4609375
+        ],
+        [
+          188.26171875,
+          465.0
+        ],
+        [
+          88.82666015625,
+          465.0
+        ]
+      ]
+    },
+    {
+      "title": "7. Discussion",
+      "heading_level": 2,
+      "page_id": 24,
+      "polygon": [
+        [
+          89.05078125,
+          368.349609375
+        ],
+        [
+          168.0,
+          368.349609375
+        ],
+        [
+          168.0,
+          381.0
+        ],
+        [
+          89.05078125,
+          381.0
+        ]
+      ]
+    },
+    {
+      "title": "8. Future Work",
+      "heading_level": 3,
+      "page_id": 25,
+      "polygon": [
+        [
+          89.4990234375,
+          219.65625
+        ],
+        [
+          183.0322265625,
+          219.65625
+        ],
+        [
+          183.0322265625,
+          232.0
+        ],
+        [
+          89.4990234375,
+          232.0
+        ]
+      ]
+    },
+    {
+      "title": "9. Conclusion",
+      "heading_level": 2,
+      "page_id": 26,
+      "polygon": [
+        [
+          89.947265625,
+          228.744140625
+        ],
+        [
+          171.9755859375,
+          228.744140625
+        ],
+        [
+          171.9755859375,
+          242.0
+        ],
+        [
+          89.947265625,
+          242.0
+        ]
+      ]
+    },
+    {
+      "title": "Acknowledgments",
+      "heading_level": 1,
+      "page_id": 26,
+      "polygon": [
+        [
+          90.0,
+          392.51953125
+        ],
+        [
+          198.2724609375,
+          392.51953125
+        ],
+        [
+          198.2724609375,
+          407.0
+        ],
+        [
+          90.0,
+          407.0
+        ]
+      ]
+    },
+    {
+      "title": "A. Switch for Attention",
+      "heading_level": 1,
+      "page_id": 26,
+      "polygon": [
+        [
+          90.0,
+          561.515625
+        ],
+        [
+          233.0859375,
+          561.515625
+        ],
+        [
+          233.0859375,
+          576.0
+        ],
+        [
+          90.0,
+          576.0
+        ]
+      ]
+    },
+    {
+      "title": "B. Preventing Token Dropping with No-Token-Left-Behind",
+      "heading_level": 1,
+      "page_id": 28,
+      "polygon": [
+        [
+          89.6484375,
+          92.0
+        ],
+        [
+          445.8515625,
+          90.685546875
+        ],
+        [
+          445.8515625,
+          104.0
+        ],
+        [
+          89.6484375,
+          105.1875
+        ]
+      ]
+    },
+    {
+      "title": "C. Encouraging Exploration Across Experts",
+      "heading_level": 2,
+      "page_id": 28,
+      "polygon": [
+        [
+          90.0,
+          400.25390625
+        ],
+        [
+          352.916015625,
+          400.25390625
+        ],
+        [
+          352.916015625,
+          414.0
+        ],
+        [
+          90.0,
+          414.0
+        ]
+      ]
+    },
+    {
+      "title": "D. Switch Transformers in Lower Compute Regimes",
+      "heading_level": 2,
+      "page_id": 28,
+      "polygon": [
+        [
+          89.349609375,
+          658.1953125
+        ],
+        [
+          399.83203125,
+          658.1953125
+        ],
+        [
+          399.83203125,
+          671.0
+        ],
+        [
+          89.349609375,
+          671.0
+        ]
+      ]
+    },
+    {
+      "title": "E. Relation of Upstream to Downstream Model Performance",
+      "heading_level": 3,
+      "page_id": 31,
+      "polygon": [
+        [
+          89.4990234375,
+          92.0
+        ],
+        [
+          451.23046875,
+          92.0
+        ],
+        [
+          451.23046875,
+          104.02734375
+        ],
+        [
+          89.4990234375,
+          104.02734375
+        ]
+      ]
+    },
+    {
+      "title": "F. Pseudo Code for Switch Transformers",
+      "heading_level": 2,
+      "page_id": 32,
+      "polygon": [
+        [
+          89.57373046875,
+          90.5888671875
+        ],
+        [
+          333.791015625,
+          90.5888671875
+        ],
+        [
+          333.791015625,
+          104.1240234375
+        ],
+        [
+          89.57373046875,
+          104.1240234375
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": 3,
+      "page_id": 35,
+      "polygon": [
+        [
+          89.05078125,
+          92.0
+        ],
+        [
+          153.59765625,
+          92.0
+        ],
+        [
+          153.59765625,
+          104.1240234375
+        ],
+        [
+          89.05078125,
+          104.1240234375
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          136
+        ],
+        [
+          "Line",
+          77
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Footnote",
+          5
+        ],
+        [
+          "PageHeader",
+          3
+        ],
+        [
+          "SectionHeader",
+          3
+        ]
+      ]
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          164
+        ],
+        [
+          "Line",
+          35
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "TableOfContents",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          211
+        ],
+        [
+          "Line",
+          74
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          125
+        ],
+        [
+          "Line",
+          43
+        ],
+        [
+          "ListItem",
+          6
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          256
+        ],
+        [
+          "Line",
+          58
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          191
+        ],
+        [
+          "Line",
+          57
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          275
+        ],
+        [
+          "Line",
+          54
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          210
+        ],
+        [
+          "Line",
+          53
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Footnote",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          133
+        ],
+        [
+          "Line",
+          44
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          127
+        ],
+        [
+          "Line",
+          40
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "ListItem",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 10,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          127
+        ],
+        [
+          "Line",
+          41
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 11,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          160
+        ],
+        [
+          "Line",
+          74
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 12,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          133
+        ],
+        [
+          "Line",
+          49
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 13,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          168
+        ],
+        [
+          "Line",
+          68
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 14,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          133
+        ],
+        [
+          "Line",
+          46
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 15,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          125
+        ],
+        [
+          "Line",
+          39
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 16,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          110
+        ],
+        [
+          "Line",
+          42
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 17,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          132
+        ],
+        [
+          "Line",
+          38
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "ListItem",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 18,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          327
+        ],
+        [
+          "Line",
+          150
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 19,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          268
+        ],
+        [
+          "Line",
+          41
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 20,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          149
+        ],
+        [
+          "Line",
+          44
+        ],
+        [
+          "Figure",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 21,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          212
+        ],
+        [
+          "Line",
+          44
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "TextInlineMath",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Equation",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 22,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          187
+        ],
+        [
+          "Line",
+          47
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 23,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          147
+        ],
+        [
+          "Line",
+          46
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 24,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          152
+        ],
+        [
+          "Line",
+          47
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 25,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          113
+        ],
+        [
+          "Line",
+          42
+        ],
+        [
+          "ListItem",
+          5
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 26,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          92
+        ],
+        [
+          "Line",
+          40
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 27,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          170
+        ],
+        [
+          "Line",
+          52
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 28,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          103
+        ],
+        [
+          "Line",
+          43
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 29,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          123
+        ],
+        [
+          "Line",
+          54
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 30,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          54
+        ],
+        [
+          "Line",
+          26
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 31,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          140
+        ],
+        [
+          "Line",
+          59
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 32,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          445
+        ],
+        [
+          "Line",
+          29
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Code",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 33,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          810
+        ],
+        [
+          "Line",
+          53
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Code",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 34,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1048
+        ],
+        [
+          "Line",
+          58
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Code",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 35,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          126
+        ],
+        [
+          "Line",
+          40
+        ],
+        [
+          "ListItem",
+          14
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 36,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          114
+        ],
+        [
+          "Line",
+          40
+        ],
+        [
+          "ListItem",
+          13
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 37,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          111
+        ],
+        [
+          "Line",
+          39
+        ],
+        [
+          "ListItem",
+          13
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 38,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          109
+        ],
+        [
+          "Line",
+          38
+        ],
+        [
+          "ListItem",
+          14
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 39,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          58
+        ],
+        [
+          "Line",
+          24
+        ],
+        [
+          "ListItem",
+          7
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    }
+  ],
+  "debug_data_path": "debug_data/switch_trans"
+}

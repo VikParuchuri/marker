@@ -1,39 +1,41 @@
-import os
 import json
+import os
+
+from ftfy import fix_text
+from pydantic import BaseModel
+
+from marker.renderers.html import HTMLOutput
+from marker.renderers.json import JSONOutput
+from marker.renderers.markdown import MarkdownOutput
 
 
-def get_subfolder_path(out_folder, fname):
-    subfolder_name = fname.rsplit('.', 1)[0]
-    subfolder_path = os.path.join(out_folder, subfolder_name)
-    return subfolder_path
+def output_exists(output_dir: str, fname_base: str):
+    exts = ["md", "html", "json"]
+    for ext in exts:
+        if os.path.exists(os.path.join(output_dir, f"{fname_base}.{ext}")):
+            return True
+    return False
 
 
-def get_markdown_filepath(out_folder, fname):
-    subfolder_path = get_subfolder_path(out_folder, fname)
-    out_filename = fname.rsplit(".", 1)[0] + ".md"
-    out_filename = os.path.join(subfolder_path, out_filename)
-    return out_filename
+def text_from_rendered(rendered: BaseModel):
+    if isinstance(rendered, MarkdownOutput):
+        return rendered.markdown, "md", rendered.images
+    elif isinstance(rendered, HTMLOutput):
+        return rendered.html, "html", rendered.images
+    elif isinstance(rendered, JSONOutput):
+        return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", {}
+    else:
+        raise ValueError("Invalid output type")
 
 
-def markdown_exists(out_folder, fname):
-    out_filename = get_markdown_filepath(out_folder, fname)
-    return os.path.exists(out_filename)
+def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
+    text, ext, images = text_from_rendered(rendered)
+    text = fix_text(text)
 
+    with open(os.path.join(output_dir, f"{fname_base}.{ext}"), "w+") as f:
+        f.write(text)
+    with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
+        f.write(json.dumps(rendered.metadata, indent=2))
 
-def save_markdown(out_folder, fname, full_text, images, out_metadata):
-    subfolder_path = get_subfolder_path(out_folder, fname)
-    os.makedirs(subfolder_path, exist_ok=True)
-
-    markdown_filepath = get_markdown_filepath(out_folder, fname)
-    out_meta_filepath = markdown_filepath.rsplit(".", 1)[0] + "_meta.json"
-
-    with open(markdown_filepath, "w+", encoding='utf-8') as f:
-        f.write(full_text)
-    with open(out_meta_filepath, "w+") as f:
-        f.write(json.dumps(out_metadata, indent=4, ensure_ascii=False))
-
-    for filename, image in images.items():
-        image_filepath = os.path.join(subfolder_path, filename)
-        image.save(image_filepath, "PNG")
-
-    return subfolder_path
+    for img_name, img in images.items():
+        img.save(os.path.join(output_dir, img_name), "PNG")

@@ -1,40 +1,24 @@
-import argparse
 import tempfile
 import time
 from collections import defaultdict
 
+import click
 from tqdm import tqdm
 import pypdfium2 as pdfium
 
-from marker.convert import convert_single_pdf
+from marker.config.parser import ConfigParser
+from marker.converters.pdf import PdfConverter
 from marker.logger import configure_logging
-from marker.models import load_all_models
-from marker.benchmark.scoring import score_text
-from marker.pdf.extract_text import naive_get_text
+from marker.models import create_model_dict
+from pdftext.extraction import plain_text_output
 import json
 import os
 import subprocess
 import shutil
 from tabulate import tabulate
-import torch
+from scoring import score_text
 
 configure_logging()
-
-
-def start_memory_profiling():
-    torch.cuda.memory._record_memory_history(
-        max_entries=100000
-    )
-
-
-def stop_memory_profiling(memory_file):
-    try:
-        torch.cuda.memory._dump_snapshot(memory_file)
-    except Exception as e:
-        logger.error(f"Failed to capture memory snapshot {e}")
-
-        # Stop recording memory snapshot history.
-    torch.cuda.memory._record_memory_history(enabled=None)
 
 
 def nougat_prediction(pdf_filename, batch_size=1):
@@ -46,35 +30,21 @@ def nougat_prediction(pdf_filename, batch_size=1):
     shutil.rmtree(out_dir)
     return data
 
-
-def main():
-    parser = argparse.ArgumentParser(description="Benchmark PDF to MD conversion.  Needs source pdfs, and a reference folder with the correct markdown.")
-    parser.add_argument("in_folder", help="Input PDF files")
-    parser.add_argument("reference_folder", help="Reference folder with reference markdown files")
-    parser.add_argument("out_file", help="Output filename")
-    parser.add_argument("--nougat", action="store_true", help="Run nougat and compare", default=False)
-    # Nougat batch size 1 uses about as much VRAM as default marker settings
-    parser.add_argument("--marker_batch_multiplier", type=int, default=1, help="Batch size multiplier to use for marker when making predictions.")
-    parser.add_argument("--nougat_batch_size", type=int, default=1, help="Batch size to use for nougat when making predictions.")
-    parser.add_argument("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
-    parser.add_argument("--profile_memory", action="store_true", help="Profile memory usage", default=False)
-
-    args = parser.parse_args()
-
+@click.command(help="Benchmark PDF to MD conversion.")
+@click.argument("in_folder", type=str)
+@click.argument("reference_folder", type=str)
+@click.argument("out_file", type=str)
+@click.option("--nougat", is_flag=True, help="Run nougat and compare")
+@click.option("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
+def main(in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_out_path: str):
     methods = ["marker"]
-    if args.nougat:
+    if nougat:
         methods.append("nougat")
 
-    if args.profile_memory:
-        start_memory_profiling()
-
-    model_lst = load_all_models()
-
-    if args.profile_memory:
-        stop_memory_profiling("model_load.pickle")
+    model_dict = create_model_dict()
 
     scores = defaultdict(dict)
-    benchmark_files = os.listdir(args.in_folder)
+    benchmark_files = os.listdir(in_folder)
     benchmark_files = [b for b in benchmark_files if b.endswith(".pdf")]
     times = defaultdict(dict)
     pages = defaultdict(int)
@@ -82,26 +52,29 @@ def main():
     for idx, fname in tqdm(enumerate(benchmark_files)):
         md_filename = fname.rsplit(".", 1)[0] + ".md"
 
-        reference_filename = os.path.join(args.reference_folder, md_filename)
+        reference_filename = os.path.join(reference_folder, md_filename)
         with open(reference_filename, "r", encoding="utf-8") as f:
             reference = f.read()
 
-        pdf_filename = os.path.join(args.in_folder, fname)
+        pdf_filename = os.path.join(in_folder, fname)
         doc = pdfium.PdfDocument(pdf_filename)
         pages[fname] = len(doc)
 
+        config_parser = ConfigParser({"output_format": "markdown"})
         for method in methods:
             start = time.time()
             if method == "marker":
-                if args.profile_memory:
-                    start_memory_profiling()
-                full_text, _, out_meta = convert_single_pdf(pdf_filename, model_lst, batch_multiplier=args.marker_batch_multiplier)
-                if args.profile_memory:
-                    stop_memory_profiling(f"marker_memory_{idx}.pickle")
+                converter = PdfConverter(
+                    config=config_parser.generate_config_dict(),
+                    artifact_dict=model_dict,
+                    processor_list=None,
+                    renderer=config_parser.get_renderer()
+                )
+                full_text = converter(pdf_filename).markdown
             elif method == "nougat":
-                full_text = nougat_prediction(pdf_filename, batch_size=args.nougat_batch_size)
+                full_text = nougat_prediction(pdf_filename, batch_size=1)
             elif method == "naive":
-                full_text = naive_get_text(doc)
+                full_text = plain_text_output(doc, workers=1)
             else:
                 raise ValueError(f"Unknown method {method}")
 
@@ -110,13 +83,13 @@ def main():
             score = score_text(full_text, reference)
             scores[method][fname] = score
 
-            if args.md_out_path:
+            if md_out_path:
                 md_out_filename = f"{method}_{md_filename}"
-                with open(os.path.join(args.md_out_path, md_out_filename), "w+") as f:
+                with open(os.path.join(md_out_path, md_out_filename), "w+") as f:
                     f.write(full_text)
 
     total_pages = sum(pages.values())
-    with open(args.out_file, "w+") as f:
+    with open(out_file, "w+") as f:
         write_data = defaultdict(dict)
         for method in methods:
             total_time = sum(times[method].values())
