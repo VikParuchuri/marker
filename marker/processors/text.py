@@ -37,9 +37,7 @@ class TextProcessor(BaseProcessor):
                 column_break, page_break = False, False
                 next_block = page.get_next_block(block)
 
-                next_block_exists_and_isnt_last_page_header = next_block is not None and \
-                    not (next_block.block_type == BlockTypes.PageHeader and page.structure[-1] == next_block.id)
-                if  next_block_exists_and_isnt_last_page_header: # next block exists and it's not the last page header
+                if  next_block is not None: # next block exists
                     # we check for a column break
                     column_break = (
                         math.floor(next_block.polygon.y_start) <= math.floor(block.polygon.y_start) and
