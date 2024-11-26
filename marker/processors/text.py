@@ -52,6 +52,7 @@ class TextProcessor(BaseProcessor):
 
                 next_block_starts_indented = True
                 next_block_in_first_quadrant = False
+                last_line_is_full_width = False
                 new_block_lines = []
 
                 if column_break:
@@ -95,8 +96,9 @@ class TextProcessor(BaseProcessor):
                     next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
                 lines: List[Line] = [l for l in block.structure_blocks(document) if l.polygon.width > 0]
-                max_x = math.floor(max([l.polygon.x_end for l in lines]))
-                last_line_is_full_width = lines[-1].polygon.x_end >= max_x
+                if len(lines):
+                    max_x = math.floor(max([l.polygon.x_end for l in lines]))
+                    last_line_is_full_width = lines[-1].polygon.x_end >= max_x
 
                 last_line_is_hyphentated = regex.compile(r'.*[\p{Ll}|\d][-—¬]\s?$', regex.DOTALL).match(lines[-1].raw_text(document).strip())
 
