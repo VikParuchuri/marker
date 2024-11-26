@@ -13,7 +13,7 @@ class Table(Block):
 
     def assemble_html(self, child_blocks, parent_structure=None):
         if self.cells:
-            return html_format(self.cells)
+            return str(html_format(self.cells))
         else:
             template = super().assemble_html(child_blocks, parent_structure)
             return f"<p>{template}</p>"

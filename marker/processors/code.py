@@ -20,7 +20,7 @@ class CodeProcessor(BaseProcessor):
         min_left = 9999  # will contain x- coord of column 0
         total_width = 0
         total_chars = 0
-
+        
         contained_lines = block.contained_blocks(document, (BlockTypes.Line,))
         for line in contained_lines:
             min_left = min(line.polygon.bbox[0], min_left)

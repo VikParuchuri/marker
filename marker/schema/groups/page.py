@@ -37,6 +37,12 @@ class PageGroup(Group):
             return self.get_block(self.structure[block_idx + 1])
         return None
 
+    def get_prev_block(self, block: Block):
+        block_idx = self.structure.index(block.id)
+        if block_idx > 0:
+            return self.get_block(self.structure[block_idx - 1])
+        return None
+
     def add_block(self, block_cls: type[Block], polygon: PolygonBox) -> Block:
         self.incr_block_id()
         block = block_cls(

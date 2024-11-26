@@ -23,7 +23,6 @@ class Span(Block):
     minimum_position: int
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
-    ignore_for_output: bool = False # Whether this span should be ignored in output
 
     @property
     def bold(self):
@@ -38,7 +37,6 @@ class Span(Block):
             return ""
 
         text = self.text
-        text = text.replace("-\n", "")  # Remove hyphenated line breaks
 
         # Remove trailing newlines
         replaced_newline = False
@@ -50,9 +48,10 @@ class Span(Block):
         while len(text) > 0 and text[0] in ["\n", "\r"]:
             text = text[1:]
 
-        if replaced_newline:
+        if replaced_newline and not text.endswith('-'):
             text += " "
 
+        text = text.replace("-\n", "")  # Remove hyphenated line breaks from the middle of the span
         text = html.escape(text)
         text = cleanup_text(text)
 
