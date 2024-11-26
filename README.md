@@ -34,7 +34,7 @@ It only uses models where necessary, which improves speed and accuracy.
 
 ![Benchmark overall](data/images/overall.png)
 
-The above results are with marker setup so it takes ~4GB of VRAM on an A6000.
+The above results are with marker setup so it takes ~6GB of VRAM on an A10.
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
@@ -340,7 +340,7 @@ Peak GPU memory usage during the benchmark is `6GB` for marker.  Benchmarks were
 
 **Throughput**
 
-Marker takes about 6GB of VRAM on average per task, so you can convert 8 documents in parallel on an A6000.
+Note that you can convert documents in parallel for more throughput.
 
 ![Benchmark results](data/images/per_doc.png)
 
