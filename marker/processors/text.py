@@ -19,20 +19,21 @@ class TextProcessor(BaseProcessor):
             Default is 0.02.
     """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    column_gap_ratio = 0.02  # column gaps are atleast 2% of the page width
+    column_gap_ratio = 0.02  # column gaps are atleast 2% of the current column width
 
     def __init__(self, config):
         super().__init__(config)
 
     def __call__(self, document: Document):
         for page in document.pages:
-            column_gap = page.polygon.width * self.column_gap_ratio
             for block in page.contained_blocks(document, self.block_types):
                 if block.structure is None:
                     continue
 
                 if not len(block.structure) >= 2:  # Skip single lines
                     continue
+                
+                column_gap = block.polygon.width * self.column_gap_ratio
 
                 column_break, page_break = False, False
                 next_block = page.get_next_block(block)
@@ -93,7 +94,7 @@ class TextProcessor(BaseProcessor):
                     min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
                     next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
-                lines: List[Line] = block.structure_blocks(document)
+                lines: List[Line] = [l for l in block.structure_blocks(document) if l.polygon.width > 0]
                 max_x = math.floor(max([l.polygon.x_end for l in lines]))
                 last_line_is_full_width = lines[-1].polygon.x_end >= max_x
 
