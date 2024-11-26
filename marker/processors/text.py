@@ -36,7 +36,11 @@ class TextProcessor(BaseProcessor):
 
                 column_break, page_break = False, False
                 next_block = page.get_next_block(block)
-                if next_block is not None:  # we check for a column break
+
+                next_block_exists_and_isnt_last_page_header = next_block is not None and \
+                    not (next_block.block_type == BlockTypes.PageHeader and page.structure[-1] == next_block.id)
+                if  next_block_exists_and_isnt_last_page_header: # next block exists and it's not the last page header
+                    # we check for a column break
                     column_break = (
                         math.floor(next_block.polygon.y_start) <= math.floor(block.polygon.y_start) and
                         next_block.polygon.x_start > (block.polygon.x_end + column_gap)
@@ -67,13 +71,16 @@ class TextProcessor(BaseProcessor):
                     for next_page_block_id in next_page.structure:
                         if next_page_block_id.block_type in [BlockTypes.PageHeader, BlockTypes.PageFooter]:
                             continue  # skip headers and footers
-                        if next_page_block_id.block_type not in self.block_types:
-                            break  # we found a non-text block, so we can stop looking
 
-                        # we have our text_block
+                        # we have our block
                         next_page_block = next_page.get_block(next_page_block_id)
-                        if next_page_block.structure is None:
-                            break  # This is odd though, why do we have text blocks with no structure?
+                        if next_page_block.ignore_for_output:
+                            continue # skip ignored blocks
+
+                        if not (next_page_block.structure is not None and \
+                            next_page_block.block_type in self.block_types): 
+                            # we found a non-text block or an empty text block, so we can stop looking
+                            break
 
                         new_block_lines = next_page_block.structure_blocks(document)
 
