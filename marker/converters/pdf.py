@@ -1,13 +1,12 @@
 import os
-
-from marker.processors.footnote import FootnoteProcessor
-from marker.processors.line_numbers import LineNumbersProcessor
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 from marker.processors.code import CodeProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
 from marker.providers.pdf import PdfProvider
+from marker.processors.footnote import FootnoteProcessor
+from marker.processors.line_numbers import LineNumbersProcessor
+from marker.processors.order import OrderProcessor
 
 from marker.util import strings_to_classes
 

@@ -9,15 +9,13 @@ from marker.schema.blocks import Block, BlockId
 from marker.schema.groups.base import Group
 from marker.schema.polygon import PolygonBox
 
-if TYPE_CHECKING:
-    from marker.schema.document import Document
-
 
 class PageGroup(Group):
     block_type: BlockTypes = BlockTypes.Page
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
     children: List[Block] | None = None
+    layout_sliced: bool = False # Whether the layout model had to slice the image (order may be wrong)
 
     def incr_block_id(self):
         if self.block_id is None:

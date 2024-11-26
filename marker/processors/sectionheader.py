@@ -44,11 +44,12 @@ class SectionHeaderProcessor(BaseProcessor):
         line_heights: Dict[int, List[float]] = {}
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
-                line_heights[block.block_id] = []
                 if block.structure is not None:
-                    line_heights[block.block_id] = [document.get_block(l).polygon.height for l in block.structure if l.block_type == BlockTypes.Line]
+                    line_heights[block.id] = block.line_height(document)
+                else:
+                    line_heights[block.id] = 0
 
-        flat_line_heights = [h for heights in line_heights.values() for h in heights]
+        flat_line_heights = list(line_heights.values())
         heading_ranges = self.bucket_headings(flat_line_heights)
 
         for page in document.pages:
@@ -56,11 +57,10 @@ class SectionHeaderProcessor(BaseProcessor):
                 if block.block_type not in self.block_types:
                     continue
 
-                block_heights = line_heights[block.block_id]
-                if len(block_heights) > 0:
-                    avg_height = sum(block_heights) / len(block_heights)
+                block_height = line_heights[block.id]
+                if block_height > 0:
                     for idx, (min_height, max_height) in enumerate(heading_ranges):
-                        if avg_height >= min_height * self.height_tolerance:
+                        if block_height >= min_height * self.height_tolerance:
                             block.heading_level = idx + 1
                             break
 

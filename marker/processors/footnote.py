@@ -26,8 +26,8 @@ class FootnoteProcessor(BaseProcessor):
             Default is .99
     """
     block_types = (BlockTypes.Footnote,)
-    page_bottom_threshold = .75
-    line_height_scaler = .99
+    page_bottom_threshold = .725
+    line_height_scaler = .97
 
 
     def __call__(self, document: Document):
@@ -44,8 +44,7 @@ class FootnoteProcessor(BaseProcessor):
         line_heights = []
         for page in document.pages:
             for footnote in page.contained_blocks(document, self.block_types):
-                contained_lines = footnote.contained_blocks(document, (BlockTypes.Line,))
-                line_heights.extend([line.polygon.height for line in contained_lines])
+                line_heights.append(footnote.line_height(document))
         return line_heights
 
 
@@ -54,11 +53,8 @@ class FootnoteProcessor(BaseProcessor):
         block_stats = []
 
         for block in text_blocks:
-            contained_lines = block.contained_blocks(document, (BlockTypes.Line,))
-            line_heights = [line.polygon.height for line in contained_lines]
-
             block_stats.append({
-                "line_height": mean(line_heights) if len(line_heights) > 0 else 999,
+                "line_height": block.line_height(document),
                 "in_bottom": block.polygon.y_end > page.polygon.height * self.page_bottom_threshold
             })
 

@@ -323,25 +323,19 @@ Pass the `debug` option to activate debug mode.  This will save images of each p
 
 Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
 
-Benchmarks show that marker is 4x faster than nougat, and more accurate outside arXiv (nougat was trained on arXiv data).
-
 **Speed**
 
 | Method | Average Score | Time per page | Time per document |
 |--------|---------------|---------------|-------------------|
-| marker | 0.613721      | 0.631991      | 58.1432           |
-| nougat | 0.406603      | 2.59702       | 238.926           |
+| marker | 0.618355      | 0.250211      | 23.0194           |
 
 **Accuracy**
-
-First 3 are non-arXiv books, last 3 are arXiv papers.
 
 | Method | multicolcnn.pdf | switch_trans.pdf | thinkpython.pdf | thinkos.pdf | thinkdsp.pdf | crowd.pdf |
 |--------|-----------------|------------------|-----------------|-------------|--------------|-----------|
 | marker | 0.536176        | 0.516833         | 0.70515         | 0.710657    | 0.690042     | 0.523467  |
-| nougat | 0.44009         | 0.588973         | 0.322706        | 0.401342    | 0.160842     | 0.525663  |
 
-Peak GPU memory usage during the benchmark is `4.2GB` for nougat, and `4.1GB` for marker.  Benchmarks were run on an A6000 Ada.
+Peak GPU memory usage during the benchmark is `4.1GB` for marker.  Benchmarks were run on an A10.
 
 **Throughput**
 

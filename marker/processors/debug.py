@@ -117,7 +117,8 @@ class DebugProcessor(BaseProcessor):
     def render_layout_boxes(self, page, png_image):
         layout_bboxes = []
         layout_labels = []
-        for child in page.children:
+        for block_id in page.structure:
+            child = page.get_block(block_id)
             if child.block_type in [BlockTypes.Line, BlockTypes.Span]:
                 continue
 
@@ -134,7 +135,8 @@ class DebugProcessor(BaseProcessor):
             labels=order_labels,
             color="green",
             draw_bbox=False,
-            label_offset=5
+            label_offset=5,
+            label_font_size=24
         )
         return png_image
 

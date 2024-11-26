@@ -179,3 +179,9 @@ class Block(BaseModel):
             children=child_content,
             section_hierarchy=section_hierarchy
         )
+
+    def line_height(self, document: Document):
+        lines = self.contained_blocks(document, (BlockTypes.Line,))
+        if len(lines) == 0:
+            return 0
+        return self.polygon.height / len(lines)
