@@ -4321,8 +4321,8 @@ transformers = "^4.41.0"
 [package.source]
 type = "git"
 url = "https://github.com/VikParuchuri/surya.git"
-reference = "layout2"
-resolved_reference = "f786e3c2e5449f5b220cd65a0e6efd97a52c8120"
+reference = "dev"
+resolved_reference = "ebc4fa1148993e2c47abb6658a3a07a97ec5eb08"
 
 [[package]]
 name = "sympy"
@@ -4357,14 +4357,14 @@ pydantic-settings = "^2.5.2"
 pypdfium2 = "^4.30.0"
 python-dotenv = "^1.0.1"
 scikit-learn = "^1.5.2"
-surya-ocr = {git = "https://github.com/VikParuchuri/surya.git", branch = "layout2"}
+surya-ocr = {git = "https://github.com/VikParuchuri/surya.git", branch = "dev"}
 tabulate = "^0.9.0"
 
 [package.source]
 type = "git"
 url = "https://github.com/VikParuchuri/tabled.git"
-reference = "dev-mose/compilation-updates"
-resolved_reference = "b9de2fb67f44c399ea1ceb1e6f62d2d4698c3961"
+reference = "dev"
+resolved_reference = "0e95e8f6ea59687bab6bcc66e8c6a92cdea09a31"
 
 [[package]]
 name = "tabulate"
@@ -5135,4 +5135,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "4a5f7a6283c83d4d8397aac777fcccb9bb7622fe2f0a317baaf9553092b0259b"
+content-hash = "1a2c7fa2b53aa8cfc40029b0942ab306ebe4a27f60eccde1b4399b2ac2db24e3"
