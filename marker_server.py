@@ -18,6 +18,14 @@ from marker.models import create_model_dict
 
 app_data = {}
 
+
+UPLOAD_DIRECTORY = "./uploads"  # Directory to store uploaded files
+
+# Ensure the upload directory exists
+if not os.path.exists(UPLOAD_DIRECTORY):
+    os.makedirs(UPLOAD_DIRECTORY)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app_data["models"] = create_model_dict()
@@ -30,10 +38,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 @app.get("/")
 async def root():
     return HTMLResponse(
-"""
+        """
 <h1>Marker API</h1>
 <ul>
     <li><a href="/docs">API Documentation</a></li>
@@ -45,8 +54,7 @@ async def root():
 
 class CommonParams(BaseModel):
     filepath: Annotated[
-        str,
-        Field(description="The path to the PDF file to convert.")
+        Optional[str], Field(description="The path to the PDF file to convert.")
     ]
     page_range: Annotated[
         Optional[str],
@@ -58,11 +66,15 @@ class CommonParams(BaseModel):
     ] = None
     force_ocr: Annotated[
         bool,
-        Field(description="Force OCR on all pages of the PDF.  Defaults to False.  This can lead to worse results if you have good text in your PDFs (which is true in most cases).")
+        Field(
+            description="Force OCR on all pages of the PDF.  Defaults to False.  This can lead to worse results if you have good text in your PDFs (which is true in most cases)."
+        ),
     ] = False
     paginate_output: Annotated[
         bool,
-        Field(description="Whether to paginate the output.  Defaults to False.  If set to True, each page of the output will be separated by a horizontal rule that contains the page number (2 newlines, {PAGE_NUMBER}, 48 - characters, 2 newlines).")
+        Field(
+            description="Whether to paginate the output.  Defaults to False.  If set to True, each page of the output will be separated by a horizontal rule that contains the page number (2 newlines, {PAGE_NUMBER}, 48 - characters, 2 newlines)."
+        ),
     ] = False
     output_format: Annotated[
         str,
@@ -106,7 +118,7 @@ async def convert_pdf(
         "output": text,
         "images": encoded,
         "metadata": metadata,
-        "success": True
+        "success": True,
     }
 
 
