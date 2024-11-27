@@ -2,6 +2,8 @@ import html
 import re
 from typing import List, Literal
 
+from ftfy import fix_text
+
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 
@@ -36,7 +38,7 @@ class Span(Block):
         if self.ignore_for_output:
             return ""
 
-        text = self.text
+        text = fix_text(self.text)
 
         # Remove trailing newlines
         replaced_newline = False

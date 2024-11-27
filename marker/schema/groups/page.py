@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import Dict, List, TYPE_CHECKING, Sequence, Tuple
 
+import numpy as np
 from PIL import Image
 
 from marker.providers import ProviderOutput
@@ -8,6 +9,7 @@ from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId, Text
 from marker.schema.groups.base import Group
 from marker.schema.polygon import PolygonBox
+from marker.util import matrix_intersection_area
 
 LINE_MAPPING_TYPE = List[Tuple[int, ProviderOutput]]
 
@@ -75,15 +77,22 @@ class PageGroup(Group):
     def compute_line_block_intersections(self, provider_outputs: List[ProviderOutput]):
         max_intersections = {}
 
+        blocks = [
+            block for block in self.children
+            if block.block_type not in self.excluded_block_types
+        ]
+        block_bboxes = [block.polygon.bbox for block in blocks]
+        line_bboxes = [provider_output.line.polygon.bbox for provider_output in provider_outputs]
+
+        intersection_matrix = matrix_intersection_area(line_bboxes, block_bboxes)
+
         for line_idx, line in enumerate(provider_outputs):
-            for block in self.children:
-                if block.block_type in self.excluded_block_types:
-                    continue
-                intersection_pct = line.line.polygon.intersection_pct(block.polygon)
-                if line_idx not in max_intersections:
-                    max_intersections[line_idx] = (intersection_pct, block.id)
-                elif intersection_pct > max_intersections[line_idx][0]:
-                    max_intersections[line_idx] = (intersection_pct, block.id)
+            max_intersection = intersection_matrix[line_idx].argmax()
+            if intersection_matrix[line_idx, max_intersection] > 0:
+                max_intersections[line_idx] = (
+                    intersection_matrix[line_idx, max_intersection],
+                    blocks[max_intersection].id
+                )
         return max_intersections
 
     def replace_block(self, block: Block, new_block: Block):

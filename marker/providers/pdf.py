@@ -1,7 +1,9 @@
 import atexit
 import functools
 import re
-from typing import List, Set
+from concurrent.futures.thread import ThreadPoolExecutor
+from itertools import repeat
+from typing import List, Set, Dict
 
 import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
@@ -187,7 +189,6 @@ class PdfProvider(BaseProvider):
 
         return False
 
-    @functools.lru_cache(maxsize=None)
     def get_image(self, idx: int, dpi: int) -> Image.Image:
         page = self.doc[idx]
         image = page.render(scale=dpi / 72, draw_annots=False).to_pil()
