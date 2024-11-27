@@ -96,7 +96,7 @@ class TextProcessor(BaseProcessor):
                     min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
                     next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
 
-                lines: List[Line] = [l for l in block.structure_blocks(document) if l.polygon.width > 0]
+                lines: List[Line] = [l for l in block.structure_blocks(document) if l.polygon.width > 1]
                 if len(lines):
                     max_x = math.floor(max([l.polygon.x_end for l in lines]))
                     last_line_is_full_width = lines[-1].polygon.x_end >= max_x
