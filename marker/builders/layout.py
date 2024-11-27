@@ -33,10 +33,15 @@ class LayoutBuilder(BaseBuilder):
         layout_coverage_threshold (float):
             The minimum coverage ratio required for the layout model to consider
             the lines from the PdfProvider valid. Default is 0.3.
+
+        document_ocr_threshold (float):
+            The minimum ratio of pages that must pass the layout coverage check
+            to avoid OCR. Default is 0.8.
     """
     batch_size = None
     layout_coverage_min_lines = 1
     layout_coverage_threshold = .1
+    document_ocr_threshold = .8
     excluded_for_coverage = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
 
     def __init__(self, layout_model: SuryaLayoutModel, config=None):
@@ -78,9 +83,17 @@ class LayoutBuilder(BaseBuilder):
                 page.add_structure(layout_block)
 
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: ProviderPageLines):
+        good_pages = []
         for document_page in document_pages:
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            if not self.check_layout_coverage(document_page, provider_lines):
+            good_pages.append(self.check_layout_coverage(document_page, provider_lines))
+
+        ocr_document = sum(good_pages) / len(good_pages) < self.document_ocr_threshold
+        for idx, document_page in enumerate(document_pages):
+            provider_lines = provider_page_lines.get(document_page.page_id, [])
+            needs_ocr = not good_pages[idx]
+
+            if needs_ocr and ocr_document:
                 document_page.text_extraction_method = "surya"
                 continue
             document_page.merge_blocks(provider_lines, text_extraction_method="pdftext")
