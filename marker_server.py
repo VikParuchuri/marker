@@ -1,4 +1,7 @@
+import traceback
+
 import click
+import os
 
 import uvicorn
 from pydantic import BaseModel, Field
@@ -12,18 +15,15 @@ from contextlib import asynccontextmanager
 from typing import Optional, Annotated
 import io
 
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Form, File, UploadFile
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 
 app_data = {}
 
 
-UPLOAD_DIRECTORY = "./uploads"  # Directory to store uploaded files
-
-# Ensure the upload directory exists
-if not os.path.exists(UPLOAD_DIRECTORY):
-    os.makedirs(UPLOAD_DIRECTORY)
+UPLOAD_DIRECTORY = "./uploads"
+os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
 
 @asynccontextmanager
@@ -82,13 +82,11 @@ class CommonParams(BaseModel):
     ] = "markdown"
 
 
-@app.post("/marker")
-async def convert_pdf(
-    params: CommonParams
-):
+async def _convert_pdf(params: CommonParams):
     assert params.output_format in ["markdown", "json", "html"], "Invalid output format"
     try:
         options = params.model_dump()
+        print(options)
         config_parser = ConfigParser(options)
         config_dict = config_parser.generate_config_dict()
         config_dict["pdftext_workers"] = 1
@@ -102,6 +100,7 @@ async def convert_pdf(
         text, _, images = text_from_rendered(rendered)
         metadata = rendered.metadata
     except Exception as e:
+        traceback.print_exc()
         return {
             "success": False,
             "error": str(e),
@@ -120,6 +119,42 @@ async def convert_pdf(
         "metadata": metadata,
         "success": True,
     }
+
+@app.post("/marker")
+async def convert_pdf(
+    params: CommonParams
+):
+    return await _convert_pdf(params)
+
+
+
+@app.post("/marker/upload")
+async def convert_pdf_upload(
+    page_range: Optional[str] = Form(default=None),
+    languages: Optional[str] = Form(default=None),
+    force_ocr: Optional[bool] = Form(default=False),
+    paginate_output: Optional[bool] = Form(default=False),
+    output_format: Optional[str] = Form(default="markdown"),
+    file: UploadFile = File(
+        ..., description="The PDF file to convert.", media_type="application/pdf"
+    ),
+):
+    upload_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
+    with open(upload_path, "wb") as upload_file:
+        file_contents = await file.read()
+        upload_file.write(file_contents)
+
+    params = CommonParams(
+        filepath=upload_path,
+        page_range=page_range,
+        languages=languages,
+        force_ocr=force_ocr,
+        paginate_output=paginate_output,
+        output_format=output_format,
+    )
+    results = await _convert_pdf(params)
+    os.remove(upload_path)
+    return results
 
 
 @click.command()
