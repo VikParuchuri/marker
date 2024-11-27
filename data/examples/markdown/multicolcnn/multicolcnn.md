@@ -128,8 +128,6 @@ $$D_{\bf x}=\frac{1}{||Z||}({\cal N}_{h}({\bf x},\sigma_{h})+{\cal N}_{b}({\bf x
 
 where xb is the center of the body, which is 0.875 meters down from the head on average, and can be determined from the perspective map M and the head center x [27]. We sum these Gaussians for each person to pro-
 
-
-
 | Method | MAE |
 | --- | --- |
 | AMDCN | 290.82 |
@@ -158,8 +156,6 @@ Our network performs very well on the TRANCOS dataset. Indeed, as confirmed by t
 ### 4.3. UCSD Crowd Counting
 
 Results are shown in Table 3 and Figure 3. We see that the "original" split as defined by the creators of the dataset in [5] and used in [28] gives us somewhat worse results for counting on this dataset. Results were consistent over multiple trainings. Again, including the perspective map does not seem to increase performance on this dataset. Despite this, we see in Table 3 and Figure 3 that the results are comparable to the state of the art. In fact, for two of the splits, our proposed network beats the state of the art. For the upscale split, the AMDCN is the state of the art by a large relative margin. This is compelling because it shows that accurate perspective-free counting can be achieved without
-
-
 
 | Method |  | GAME | GAME | GAME | GAME |
 | --- | --- | --- | --- | --- | --- |
@@ -190,8 +186,6 @@ We report the results of the ablation studies in Figure 4. We note from these pl
 
 Figure 3. UCSD crowd counting dataset. Both plots show comparisons of predicted and ground truth counts over time. While AMDCN does not beat the state of the art on the original split, the predictions still follow the true counts reasonably. The jump in the original split is due to that testing set including multiple scenes of highly varying counts.
 
-
-
 | Method | maximal | downscale | upscale | minimal | original |
 | --- | --- | --- | --- | --- | --- |
 | AMDCN (without perspective information) | 1.63 | 1.43 | 0.63 | 1.71 | 1.74 |
@@ -221,17 +215,15 @@ We have proposed the use of aggregated multicolumn dilated convolutions, the AMD
 
 Figure 4. Ablation studies on various datasets in which the number of columns is varied and the aggregator is included or not included. The results generally support the use of more columns and an aggregator module.
 
-
-
 | Method | MAE |
 | --- | --- |
-| AMDCN (without perspective infor | 16.6 |
+| AMDCN (without perspective infor | 16.6 |
 | mation) |  |
-| AMDCN (with perspective informa | 14.9 |
+| AMDCN (with perspective informa | 14.9 |
 | tion) |  |
-| LBP+RR [28] (with perspective infor | 31.0 |
+| LBP+RR [28] (with perspective infor | 31.0 |
 | mation) |  |
-| MCNN [28] (with perspective informa | 11.6 |
+| MCNN [28] (with perspective informa | 11.6 |
 | tion) |  |
 | [27] (with perspective information) | 12.9 |
 
@@ -255,7 +247,6 @@ This material is based upon work supported by the National Science Foundation un
 - [2] C. Arteta, V. Lempitsky, J. A. Noble, and A. Zisserman. Interactive object counting. In *European Conference on Computer Vision*, pages 504–518. Springer, 2014.
 - [3] D. Babu Sam, S. Surya, and R. Venkatesh Babu. Switching convolutional neural network for crowd
 
-
 counting. In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition*, pages 5744–5752, 2017.
 
 - [4] L. Boominathan, S. S. Kruthiventi, and R. V. Babu. Crowdnet: A deep convolutional network for dense crowd counting. In *Proceedings of the 2016 ACM on Multimedia Conference*, pages 640–644. ACM, 2016.
@@ -270,7 +261,6 @@ counting. In *Proceedings of the IEEE Conference on Computer Vision and Pattern 
 - [13] L. Fiaschi, U. Kothe, R. Nair, and F. A. Hamprecht. ¨ Learning to count with regression forest and structured labels. In *Pattern Recognition (ICPR), 2012 21st International Conference on*, pages 2685–2688. IEEE, 2012.
 - [14] R. Guerrero-Gomez-Olmedo, B. Torre-Jim ´ enez, S. M. ´ Lopez-Sastre, Roberto Basc ´ on, and D. O ´ noro Rubio. ˜ Extremely overlapping vehicle counting. In *Iberian Conference on Pattern Recognition and Image Analysis (IbPRIA)*, 2015.
 
-
 - [15] V. Lempitsky and A. Zisserman. Learning to count objects in images. In *Advances in Neural Information Processing Systems*, pages 1324–1332, 2010.
 - [16] G. Lin, C. Shen, A. van den Hengel, and I. Reid. Efficient piecewise training of deep structured models for semantic segmentation. In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition*, pages 3194–3203, 2016.
 - [17] H. Noh, S. Hong, and B. Han. Learning deconvolution network for semantic segmentation. In *Proceedings of the IEEE International Conference on Computer Vision*, pages 1520–1528, 2015.
@@ -284,7 +274,6 @@ counting. In *Proceedings of the IEEE Conference on Computer Vision and Pattern 
 - [25] F. Yu and V. Koltun. Multi-scale context aggregation by dilated convolutions. *arXiv preprint arXiv:1511.07122*, 2015.
 - [26] F. Yu, V. Koltun, and T. Funkhouser. Dilated residual networks. *arXiv preprint arXiv:1705.09914*, 2017.
 - [27] C. Zhang, H. Li, X. Wang, and X. Yang. Crossscene crowd counting via deep convolutional neural networks. In *Proceedings of the IEEE Conference on*
-
 
 *Computer Vision and Pattern Recognition*, pages 833– 841, 2015.
 
