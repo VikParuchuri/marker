@@ -1,20 +1,26 @@
 import os
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
 
 from surya.model.detection.model import load_model as load_detection_model, load_processor as load_detection_processor
+from surya.model.layout.model import load_model as load_layout_model
+from surya.model.layout.processor import load_processor as load_layout_processor
 from texify.model.model import load_model as load_texify_model
 from texify.model.processor import load_processor as load_texify_processor
 from marker.settings import settings
 from surya.model.recognition.model import load_model as load_recognition_model
 from surya.model.recognition.processor import load_processor as load_recognition_processor
-from surya.model.ordering.model import load_model as load_order_model
-from surya.model.ordering.processor import load_processor as load_order_processor
 from surya.model.table_rec.model import load_model as load_table_model
 from surya.model.table_rec.processor import load_processor as load_table_processor
 
+from texify.model.model import GenerateVisionEncoderDecoderModel
+from surya.model.layout.encoderdecoder import SuryaLayoutModel
+from surya.model.detection.model import EfficientViTForSemanticSegmentation
+from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
+from surya.model.table_rec.encoderdecoder import TableRecEncoderDecoderModel
 
-def setup_table_rec_model(device=None, dtype=None):
+
+def setup_table_rec_model(device=None, dtype=None) -> TableRecEncoderDecoderModel:
     if device:
         table_model = load_table_model(device=device, dtype=dtype)
     else:
@@ -23,7 +29,7 @@ def setup_table_rec_model(device=None, dtype=None):
     return table_model
 
 
-def setup_recognition_model(device=None, dtype=None):
+def setup_recognition_model(device=None, dtype=None) -> OCREncoderDecoderModel:
     if device:
         rec_model = load_recognition_model(device=device, dtype=dtype)
     else:
@@ -32,7 +38,7 @@ def setup_recognition_model(device=None, dtype=None):
     return rec_model
 
 
-def setup_detection_model(device=None, dtype=None):
+def setup_detection_model(device=None, dtype=None) -> EfficientViTForSemanticSegmentation:
     if device:
         model = load_detection_model(device=device, dtype=dtype)
     else:
@@ -41,7 +47,7 @@ def setup_detection_model(device=None, dtype=None):
     return model
 
 
-def setup_texify_model(device=None, dtype=None):
+def setup_texify_model(device=None, dtype=None) -> GenerateVisionEncoderDecoderModel:
     if device:
         texify_model = load_texify_model(checkpoint=settings.TEXIFY_MODEL_NAME, device=device, dtype=dtype)
     else:
@@ -50,36 +56,20 @@ def setup_texify_model(device=None, dtype=None):
     return texify_model
 
 
-def setup_layout_model(device=None, dtype=None):
+def setup_layout_model(device=None, dtype=None) -> SuryaLayoutModel:
     if device:
-        model = load_detection_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT, device=device, dtype=dtype)
+        model = load_layout_model(device=device, dtype=dtype)
     else:
-        model = load_detection_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
-    model.processor = load_detection_processor(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
+        model = load_layout_model()
+    model.processor = load_layout_processor()
     return model
 
 
-def setup_order_model(device=None, dtype=None):
-    if device:
-        model = load_order_model(device=device, dtype=dtype)
-    else:
-        model = load_order_model()
-    model.processor = load_order_processor()
-    return model
-
-
-def load_all_models(device=None, dtype=None):
-    if device is not None:
-        assert dtype is not None, "Must provide dtype if device is provided"
-
-    # langs is optional list of languages to prune from recognition MoE model
-    detection = setup_detection_model(device, dtype)
-    layout = setup_layout_model(device, dtype)
-    order = setup_order_model(device, dtype)
-
-    # Only load recognition model if we'll need it for all pdfs
-    ocr = setup_recognition_model(device, dtype)
-    texify = setup_texify_model(device, dtype)
-    table_model = setup_table_rec_model(device, dtype)
-    model_lst = [texify, layout, order, detection, ocr, table_model]
-    return model_lst
+def create_model_dict(device=None, dtype=None) -> dict:
+    return {
+        "layout_model": setup_layout_model(device, dtype),
+        "texify_model": setup_texify_model(device, dtype),
+        "recognition_model": setup_recognition_model(device, dtype),
+        "table_rec_model": setup_table_rec_model(device, dtype),
+        "detection_model": setup_detection_model(device, dtype),
+    }

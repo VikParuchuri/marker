@@ -1,0 +1,880 @@
+{
+  "table_of_contents": [
+    {
+      "title": "An Aggregated Multicolumn Dilated Convolution Network\nfor Perspective-Free Counting",
+      "heading_level": 1,
+      "page_id": 0,
+      "polygon": [
+        [
+          117.73828125,
+          106.0
+        ],
+        [
+          478.72265625,
+          106.0
+        ],
+        [
+          478.72265625,
+          138.0
+        ],
+        [
+          117.73828125,
+          138.0
+        ]
+      ]
+    },
+    {
+      "title": "Jonathan Ventura\nUniversity of Colorado Colorado Springs",
+      "heading_level": 1,
+      "page_id": 0,
+      "polygon": [
+        [
+          291.0,
+          164.0
+        ],
+        [
+          489.0,
+          164.0
+        ],
+        [
+          489.0,
+          190.0
+        ],
+        [
+          291.0,
+          190.0
+        ]
+      ]
+    },
+    {
+      "title": "Abstract",
+      "heading_level": 1,
+      "page_id": 0,
+      "polygon": [
+        [
+          145.23046875,
+          232.0
+        ],
+        [
+          190.65234375,
+          231.451171875
+        ],
+        [
+          190.65234375,
+          244.0
+        ],
+        [
+          145.23046875,
+          244.0
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": 1,
+      "page_id": 0,
+      "polygon": [
+        [
+          49.68017578125,
+          512.0
+        ],
+        [
+          127.0,
+          512.0
+        ],
+        [
+          127.0,
+          524.0
+        ],
+        [
+          49.68017578125,
+          524.0
+        ]
+      ]
+    },
+    {
+      "title": "2. Related Work",
+      "heading_level": 1,
+      "page_id": 0,
+      "polygon": [
+        [
+          308.689453125,
+          621.84375
+        ],
+        [
+          392.0,
+          621.84375
+        ],
+        [
+          392.0,
+          634.0
+        ],
+        [
+          308.689453125,
+          634.0
+        ]
+      ]
+    },
+    {
+      "title": "3. Method",
+      "heading_level": 1,
+      "page_id": 2,
+      "polygon": [
+        [
+          49.343994140625,
+          371.0
+        ],
+        [
+          102.0,
+          371.0
+        ],
+        [
+          102.0,
+          383.0
+        ],
+        [
+          49.343994140625,
+          383.0
+        ]
+      ]
+    },
+    {
+      "title": "3.1. Dilated Convolutions for Multicolumn Net-\nworks",
+      "heading_level": 3,
+      "page_id": 2,
+      "polygon": [
+        [
+          49.97900390625,
+          391.0
+        ],
+        [
+          286.875,
+          391.0
+        ],
+        [
+          286.875,
+          414.0
+        ],
+        [
+          49.97900390625,
+          414.0
+        ]
+      ]
+    },
+    {
+      "title": "3.2. Experiments",
+      "heading_level": 3,
+      "page_id": 3,
+      "polygon": [
+        [
+          49.38134765625,
+          264.0
+        ],
+        [
+          129.46728515625,
+          264.0
+        ],
+        [
+          129.46728515625,
+          275.0
+        ],
+        [
+          49.38134765625,
+          275.34375
+        ]
+      ]
+    },
+    {
+      "title": "3.2.1 UCF50 Crowd Counting",
+      "heading_level": 4,
+      "page_id": 3,
+      "polygon": [
+        [
+          308.689453125,
+          340.0
+        ],
+        [
+          444.357421875,
+          340.0
+        ],
+        [
+          444.357421875,
+          350.0
+        ],
+        [
+          308.689453125,
+          350.0
+        ]
+      ]
+    },
+    {
+      "title": "3.2.2 TRANCOS Traffic Counting",
+      "heading_level": 4,
+      "page_id": 3,
+      "polygon": [
+        [
+          308.390625,
+          624.9375
+        ],
+        [
+          461.0,
+          624.9375
+        ],
+        [
+          461.0,
+          635.0
+        ],
+        [
+          308.390625,
+          635.0
+        ]
+      ]
+    },
+    {
+      "title": "3.2.3 UCSD Crowd Counting",
+      "heading_level": 4,
+      "page_id": 4,
+      "polygon": [
+        [
+          49.493408203125,
+          314.0
+        ],
+        [
+          181.0,
+          314.0
+        ],
+        [
+          181.0,
+          324.0
+        ],
+        [
+          49.493408203125,
+          324.0
+        ]
+      ]
+    },
+    {
+      "title": "3.2.4 WorldExpo '10 Crowd Counting",
+      "heading_level": 4,
+      "page_id": 4,
+      "polygon": [
+        [
+          306.59765625,
+          259.0
+        ],
+        [
+          477.52734375,
+          259.0
+        ],
+        [
+          477.52734375,
+          269.0
+        ],
+        [
+          306.59765625,
+          269.0
+        ]
+      ]
+    },
+    {
+      "title": "4. Results",
+      "heading_level": 1,
+      "page_id": 5,
+      "polygon": [
+        [
+          49.82958984375,
+          231.0
+        ],
+        [
+          99.3603515625,
+          231.0
+        ],
+        [
+          99.3603515625,
+          243.0
+        ],
+        [
+          49.82958984375,
+          243.0
+        ]
+      ]
+    },
+    {
+      "title": "4.1. UCF Crowd Counting",
+      "heading_level": 4,
+      "page_id": 5,
+      "polygon": [
+        [
+          49.642822265625,
+          251.0
+        ],
+        [
+          174.0673828125,
+          251.0
+        ],
+        [
+          174.0673828125,
+          262.001953125
+        ],
+        [
+          49.642822265625,
+          262.001953125
+        ]
+      ]
+    },
+    {
+      "title": "4.2. TRANCOS Traffic Counting",
+      "heading_level": 4,
+      "page_id": 5,
+      "polygon": [
+        [
+          49.82958984375,
+          456.0
+        ],
+        [
+          204.3984375,
+          456.0
+        ],
+        [
+          204.3984375,
+          467.0
+        ],
+        [
+          49.82958984375,
+          467.0
+        ]
+      ]
+    },
+    {
+      "title": "4.3. UCSD Crowd Counting",
+      "heading_level": 3,
+      "page_id": 5,
+      "polygon": [
+        [
+          49.568115234375,
+          553.0
+        ],
+        [
+          180.3427734375,
+          553.0
+        ],
+        [
+          180.3427734375,
+          564.22265625
+        ],
+        [
+          49.568115234375,
+          564.22265625
+        ]
+      ]
+    },
+    {
+      "title": "4.4. WorldExpo '10 Crowd Counting",
+      "heading_level": 4,
+      "page_id": 5,
+      "polygon": [
+        [
+          308.390625,
+          318.0
+        ],
+        [
+          481.7109375,
+          318.0
+        ],
+        [
+          481.7109375,
+          329.0
+        ],
+        [
+          308.390625,
+          329.0
+        ]
+      ]
+    },
+    {
+      "title": "4.5. Ablation Studies",
+      "heading_level": 4,
+      "page_id": 5,
+      "polygon": [
+        [
+          308.689453125,
+          476.0
+        ],
+        [
+          406.0,
+          476.0
+        ],
+        [
+          406.0,
+          486.10546875
+        ],
+        [
+          308.689453125,
+          486.10546875
+        ]
+      ]
+    },
+    {
+      "title": "5. Conclusion",
+      "heading_level": 1,
+      "page_id": 6,
+      "polygon": [
+        [
+          49.941650390625,
+          594.7734375
+        ],
+        [
+          119.0,
+          594.7734375
+        ],
+        [
+          119.0,
+          607.0
+        ],
+        [
+          49.941650390625,
+          607.0
+        ]
+      ]
+    },
+    {
+      "title": "5.1. Summary",
+      "heading_level": 3,
+      "page_id": 6,
+      "polygon": [
+        [
+          50.0,
+          619.5234375
+        ],
+        [
+          116.0,
+          619.5234375
+        ],
+        [
+          116.0,
+          631.0
+        ],
+        [
+          50.0,
+          631.0
+        ]
+      ]
+    },
+    {
+      "title": "5.2. Future Work",
+      "heading_level": 4,
+      "page_id": 7,
+      "polygon": [
+        [
+          50.0,
+          611.0
+        ],
+        [
+          131.0,
+          611.0
+        ],
+        [
+          131.0,
+          622.0
+        ],
+        [
+          50.0,
+          622.0
+        ]
+      ]
+    },
+    {
+      "title": "Acknowledgment",
+      "heading_level": 1,
+      "page_id": 7,
+      "polygon": [
+        [
+          308.390625,
+          446.0
+        ],
+        [
+          398.0,
+          446.0
+        ],
+        [
+          398.0,
+          458.0
+        ],
+        [
+          308.390625,
+          458.0
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": 1,
+      "page_id": 7,
+      "polygon": [
+        [
+          309.0,
+          571.0
+        ],
+        [
+          364.0,
+          571.0
+        ],
+        [
+          364.0,
+          583.0
+        ],
+        [
+          309.0,
+          583.0
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          178
+        ],
+        [
+          "Line",
+          114
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "SectionHeader",
+          5
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          171
+        ],
+        [
+          "Line",
+          76
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          276
+        ],
+        [
+          "Line",
+          97
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          274
+        ],
+        [
+          "Line",
+          108
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "TextInlineMath",
+          2
+        ],
+        [
+          "Equation",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          435
+        ],
+        [
+          "Line",
+          118
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "TextInlineMath",
+          6
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ]
+      ]
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          286
+        ],
+        [
+          "Line",
+          100
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "SectionHeader",
+          6
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          222
+        ],
+        [
+          "Line",
+          37
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          140
+        ],
+        [
+          "Line",
+          68
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "ListItem",
+          3
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          312
+        ],
+        [
+          "Line",
+          101
+        ],
+        [
+          "ListItem",
+          24
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "Text",
+          1
+        ]
+      ]
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          17
+        ],
+        [
+          "Line",
+          7
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ]
+      ]
+    }
+  ],
+  "debug_data_path": "debug_data/multicolcnn"
+}
