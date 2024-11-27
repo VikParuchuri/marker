@@ -1,9 +1,6 @@
 import atexit
-import functools
 import re
-from concurrent.futures.thread import ThreadPoolExecutor
-from itertools import repeat
-from typing import List, Set, Dict
+from typing import List, Set
 
 import pypdfium2 as pdfium
 from pdftext.extraction import dictionary_output
@@ -39,8 +36,12 @@ class PdfProvider(BaseProvider):
 
         assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, f"Invalid page range, values must be between 0 and {len(self.doc) - 1}.  Min of provided page range is {min(self.page_range)} and max is {max(self.page_range)}."
 
-        if not self.force_ocr:
+        if self.force_ocr:
+            # Manually assign page bboxes, since we can't get them from pdftext
+            self.page_bboxes = {i: self.doc[i].get_bbox() for i in self.page_range}
+        else:
             self.page_lines = self.pdftext_extraction()
+
 
         atexit.register(self.cleanup_pdf_doc)
 
@@ -111,6 +112,8 @@ class PdfProvider(BaseProvider):
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf
         )
+        self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_char_blocks)}
+
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
         for page in page_char_blocks:
@@ -195,9 +198,10 @@ class PdfProvider(BaseProvider):
         image = image.convert("RGB")
         return image
 
-    def get_page_bbox(self, idx: int) -> PolygonBox:
-        page = self.doc[idx]
-        return PolygonBox.from_bbox(page.get_bbox())
+    def get_page_bbox(self, idx: int) -> PolygonBox | None:
+        bbox = self.page_bboxes.get(idx)
+        if bbox:
+            return PolygonBox.from_bbox(bbox)
 
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
