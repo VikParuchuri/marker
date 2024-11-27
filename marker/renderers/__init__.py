@@ -8,7 +8,8 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 from marker.schema import BlockTypes
-from marker.schema.blocks.base import BlockOutput, BlockId
+from marker.schema.blocks.base import BlockId
+from marker.schema.document import Document
 from marker.util import assign_config
 
 
@@ -24,7 +25,7 @@ class BaseRenderer:
         raise NotImplementedError
 
     @staticmethod
-    def extract_image(document, image_id, to_base64=False):
+    def extract_image(document: Document, image_id, to_base64=False):
         image_block = document.get_block(image_id)
         page = document.get_page(image_block.page_id)
         page_img = page.highres_image
@@ -54,7 +55,7 @@ class BaseRenderer:
 
         return html
 
-    def generate_page_stats(self, document, document_output):
+    def generate_page_stats(self, document: Document, document_output):
         page_stats = []
         for page in document.pages:
             block_counts = Counter([str(block.block_type) for block in page.children]).most_common()
@@ -65,7 +66,7 @@ class BaseRenderer:
             })
         return page_stats
 
-    def generate_document_metadata(self, document, document_output):
+    def generate_document_metadata(self, document: Document, document_output):
         metadata =  {
             "table_of_contents": document.table_of_contents,
             "page_stats": self.generate_page_stats(document, document_output),
@@ -75,7 +76,7 @@ class BaseRenderer:
 
         return metadata
 
-    def extract_block_html(self, document, block_output):
+    def extract_block_html(self, document: Document, block_output):
         soup = BeautifulSoup(block_output.html, 'html.parser')
 
         content_refs = soup.find_all('content-ref')
