@@ -29,7 +29,7 @@ class EquationProcessor(BaseProcessor):
     """
     block_types = (BlockTypes.Equation, )
     model_max_length = 384
-    batch_size = None
+    texify_batch_size = None
     token_buffer = 256
 
     def __init__(self, texify_model: GenerateVisionEncoderDecoderModel, config=None):
@@ -68,8 +68,8 @@ class EquationProcessor(BaseProcessor):
             block.latex = prediction
 
     def get_batch_size(self):
-        if self.batch_size is not None:
-            return self.batch_size
+        if self.texify_batch_size is not None:
+            return self.texify_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 6
         elif settings.TORCH_DEVICE_MODEL == "mps":
