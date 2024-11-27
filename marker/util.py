@@ -2,6 +2,7 @@ import inspect
 from importlib import import_module
 from typing import List
 
+import numpy as np
 from pydantic import BaseModel
 
 
@@ -57,3 +58,24 @@ def parse_range_str(range_str: str) -> List[int]:
             page_lst.append(int(i))
     page_lst = sorted(list(set(page_lst))) # Deduplicate page numbers and sort in order
     return page_lst
+
+
+def matrix_intersection_area(boxes1: List[List[float]], boxes2: List[List[float]]) -> np.ndarray:
+    if len(boxes1) == 0 or len(boxes2) == 0:
+        return np.zeros((len(boxes1), len(boxes2)))
+
+    boxes1 = np.array(boxes1)
+    boxes2 = np.array(boxes2)
+
+    boxes1 = boxes1[:, np.newaxis, :]  # Shape: (N, 1, 4)
+    boxes2 = boxes2[np.newaxis, :, :]  # Shape: (1, M, 4)
+
+    min_x = np.maximum(boxes1[..., 0], boxes2[..., 0])  # Shape: (N, M)
+    min_y = np.maximum(boxes1[..., 1], boxes2[..., 1])
+    max_x = np.minimum(boxes1[..., 2], boxes2[..., 2])
+    max_y = np.minimum(boxes1[..., 3], boxes2[..., 3])
+
+    width = np.maximum(0, max_x - min_x)
+    height = np.maximum(0, max_y - min_y)
+
+    return width * height  # Shape: (N, M)

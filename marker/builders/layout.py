@@ -1,5 +1,6 @@
 from typing import List
 
+import numpy as np
 from surya.layout import batch_layout_detection
 from surya.schema import LayoutResult
 from surya.model.layout.encoderdecoder import SuryaLayoutModel
@@ -13,6 +14,7 @@ from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
+from marker.util import matrix_intersection_area
 
 
 class LayoutBuilder(BaseBuilder):
@@ -31,10 +33,16 @@ class LayoutBuilder(BaseBuilder):
         layout_coverage_threshold (float):
             The minimum coverage ratio required for the layout model to consider
             the lines from the PdfProvider valid. Default is 0.3.
+
+        document_ocr_threshold (float):
+            The minimum ratio of pages that must pass the layout coverage check
+            to avoid OCR. Default is 0.8.
     """
     batch_size = None
     layout_coverage_min_lines = 1
     layout_coverage_threshold = .1
+    document_ocr_threshold = .8
+    excluded_for_coverage = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
 
     def __init__(self, layout_model: SuryaLayoutModel, config=None):
         self.layout_model = layout_model
@@ -75,9 +83,17 @@ class LayoutBuilder(BaseBuilder):
                 page.add_structure(layout_block)
 
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: ProviderPageLines):
+        good_pages = []
         for document_page in document_pages:
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            if not self.check_layout_coverage(document_page, provider_lines):
+            good_pages.append(self.check_layout_coverage(document_page, provider_lines))
+
+        ocr_document = sum(good_pages) / len(good_pages) < self.document_ocr_threshold
+        for idx, document_page in enumerate(document_pages):
+            provider_lines = provider_page_lines.get(document_page.page_id, [])
+            needs_ocr = not good_pages[idx]
+
+            if needs_ocr and ocr_document:
                 document_page.text_extraction_method = "surya"
                 continue
             document_page.merge_blocks(provider_lines, text_extraction_method="pdftext")
@@ -91,16 +107,18 @@ class LayoutBuilder(BaseBuilder):
         covered_blocks = 0
         total_blocks = 0
         large_text_blocks = 0
-        for layout_block_id in document_page.structure:
-            layout_block = document_page.get_block(layout_block_id)
-            if layout_block.block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup]:
-                continue
 
+        layout_blocks = [document_page.get_block(block) for block in document_page.structure]
+        layout_blocks = [b for b in layout_blocks if b.block_type not in self.excluded_for_coverage]
+
+        layout_bboxes = [block.polygon.bbox for block in layout_blocks]
+        provider_bboxes = [line.line.polygon.bbox for line in provider_lines]
+
+        intersection_matrix = matrix_intersection_area(layout_bboxes, provider_bboxes)
+
+        for idx, layout_block in enumerate(layout_blocks):
             total_blocks += 1
-            intersecting_lines = 0
-            for provider_line in provider_lines:
-                if layout_block.polygon.intersection_area(provider_line.line.polygon) > 0:
-                    intersecting_lines += 1
+            intersecting_lines = np.count_nonzero(intersection_matrix[idx] > 0)
 
             if intersecting_lines > self.layout_coverage_min_lines:
                 covered_blocks += 1

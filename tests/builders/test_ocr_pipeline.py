@@ -19,3 +19,15 @@ def test_ocr_pipeline(pdf_document):
     first_span = first_page.get_block(first_text_block.structure[0])
     assert first_span.block_type == BlockTypes.Span
     assert first_span.text.strip() == 'Subspace Adversarial Training'
+
+    # Ensure we match all text lines up properly
+    # Makes sure the OCR bbox is being scaled to the same scale as the layout boxes
+    text_lines = first_page.contained_blocks(pdf_document, (BlockTypes.Line,))
+    text_blocks = first_page.contained_blocks(pdf_document, (BlockTypes.Text,))
+    assert len(text_lines) == 75
+
+    # Ensure the bbox sizes match up
+    max_line_position = max([line.polygon.y_end for line in text_lines])
+    max_block_position = max([block.polygon.y_end for block in text_blocks if block.source == "layout"])
+    assert max_line_position <= (max_block_position * 1.02)
+

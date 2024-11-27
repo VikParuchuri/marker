@@ -1,9 +1,16 @@
+import re
+
 import regex
 from markdownify import MarkdownConverter
 from pydantic import BaseModel
 
 from marker.renderers.html import HTMLRenderer
 from marker.schema.document import Document
+
+def cleanup_text(full_text):
+    full_text = re.sub(r'\n{3,}', '\n\n', full_text)
+    full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
+    return full_text
 
 
 class Markdownify(MarkdownConverter):
@@ -55,6 +62,7 @@ class MarkdownRenderer(HTMLRenderer):
             sup_symbol="<sup>",
         )
         markdown = md_cls.convert(full_html)
+        markdown = cleanup_text(markdown)
         return MarkdownOutput(
             markdown=markdown,
             images=images,

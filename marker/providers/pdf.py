@@ -1,9 +1,9 @@
 import atexit
-import functools
 import re
 from typing import List, Set
 
 import pypdfium2 as pdfium
+from ftfy import fix_text
 from pdftext.extraction import dictionary_output
 from PIL import Image
 
@@ -37,8 +37,12 @@ class PdfProvider(BaseProvider):
 
         assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, f"Invalid page range, values must be between 0 and {len(self.doc) - 1}.  Min of provided page range is {min(self.page_range)} and max is {max(self.page_range)}."
 
-        if not self.force_ocr:
+        if self.force_ocr:
+            # Manually assign page bboxes, since we can't get them from pdftext
+            self.page_bboxes = {i: self.doc[i].get_bbox() for i in self.page_range}
+        else:
             self.page_lines = self.pdftext_extraction()
+
 
         atexit.register(self.cleanup_pdf_doc)
 
@@ -109,6 +113,8 @@ class PdfProvider(BaseProvider):
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf
         )
+        self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_char_blocks)}
+
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
         for page in page_char_blocks:
@@ -124,10 +130,11 @@ class PdfProvider(BaseProvider):
                         font_name = span["font"]["name"] or "Unknown"
                         font_weight = span["font"]["weight"] or 0
                         font_size = span["font"]["size"] or 0
+                        polygon = PolygonBox.from_bbox(span["bbox"], ensure_nonzero_area=True)
                         spans.append(
                             SpanClass(
-                                polygon=PolygonBox.from_bbox(span["bbox"]),
-                                text=span["text"],
+                                polygon=polygon,
+                                text=fix_text(span["text"]),
                                 font=font_name,
                                 font_weight=font_weight,
                                 font_size=font_size,
@@ -138,9 +145,10 @@ class PdfProvider(BaseProvider):
                                 text_extraction_method="pdftext"
                             )
                         )
+                    polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
                     lines.append(
                         ProviderOutput(
-                            line=LineClass(polygon=PolygonBox.from_bbox(line["bbox"]), page_id=page_id),
+                            line=LineClass(polygon=polygon, page_id=page_id),
                             spans=spans
                         )
                     )
@@ -187,16 +195,16 @@ class PdfProvider(BaseProvider):
 
         return False
 
-    @functools.lru_cache(maxsize=None)
     def get_image(self, idx: int, dpi: int) -> Image.Image:
         page = self.doc[idx]
         image = page.render(scale=dpi / 72, draw_annots=False).to_pil()
         image = image.convert("RGB")
         return image
 
-    def get_page_bbox(self, idx: int) -> PolygonBox:
-        page = self.doc[idx]
-        return PolygonBox.from_bbox(page.get_bbox())
+    def get_page_bbox(self, idx: int) -> PolygonBox | None:
+        bbox = self.page_bboxes.get(idx)
+        if bbox:
+            return PolygonBox.from_bbox(bbox)
 
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
