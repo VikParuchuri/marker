@@ -61,6 +61,9 @@ def parse_range_str(range_str: str) -> List[int]:
 
 
 def matrix_intersection_area(boxes1: List[List[float]], boxes2: List[List[float]]) -> np.ndarray:
+    if len(boxes1) == 0 or len(boxes2) == 0:
+        return np.zeros((len(boxes1), len(boxes2)))
+
     boxes1 = np.array(boxes1)
     boxes2 = np.array(boxes2)
 

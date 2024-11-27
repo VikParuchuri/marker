@@ -6,7 +6,7 @@ from marker.schema import BlockTypes
 
 @pytest.mark.filename("population_stats.pdf")
 @pytest.mark.config({"page_range": [4]})
-def test_ignoretext_processor(pdf_document):
+def test_footnote_processor(pdf_document):
     processor = FootnoteProcessor()
     processor(pdf_document)
 

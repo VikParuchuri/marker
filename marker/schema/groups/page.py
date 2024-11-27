@@ -87,7 +87,11 @@ class PageGroup(Group):
         intersection_matrix = matrix_intersection_area(line_bboxes, block_bboxes)
 
         for line_idx, line in enumerate(provider_outputs):
-            max_intersection = intersection_matrix[line_idx].argmax()
+            intersection_line = intersection_matrix[line_idx]
+            if intersection_line.sum() == 0:
+                continue
+
+            max_intersection = intersection_line.argmax()
             if intersection_matrix[line_idx, max_intersection] > 0:
                 max_intersections[line_idx] = (
                     intersection_matrix[line_idx, max_intersection],

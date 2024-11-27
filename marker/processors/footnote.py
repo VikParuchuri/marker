@@ -24,25 +24,39 @@ class FootnoteProcessor(BaseProcessor):
             Default is .99
     """
     block_types = (BlockTypes.Footnote,)
-    page_bottom_threshold = .725
-    line_height_scaler = .97
+    page_bottom_threshold = .75
+    line_height_scaler = .94
 
 
     def __call__(self, document: Document):
-        footnote_heights = self.compute_block_stats(document)
+        footnote_heights = self.compute_footnote_block_stats(document)
+        text_heights = self.compute_text_block_stats(document)
         if len(footnote_heights) == 0:
             footnote_heights = [999]
+        if len(text_heights) == 0:
+            text_heights = [999]
 
         avg_footnote_height = mean(footnote_heights)
+        avg_text_height = mean(text_heights)
+        text_height_close_to_footnote = avg_footnote_height * self.line_height_scaler < avg_text_height < avg_footnote_height * (1 + 1 - self.line_height_scaler)
         for page in document.pages:
-            self.relabel_texts_to_footnotes(page, document, avg_footnote_height)
+            if not text_height_close_to_footnote:
+                self.relabel_texts_to_footnotes(page, document, avg_footnote_height)
+
             self.push_footnotes_to_bottom(page, document)
 
-    def compute_block_stats(self, document: Document):
+    def compute_footnote_block_stats(self, document: Document):
         line_heights = []
         for page in document.pages:
             for footnote in page.contained_blocks(document, self.block_types):
                 line_heights.append(footnote.line_height(document))
+        return line_heights
+
+    def compute_text_block_stats(self, document: Document):
+        line_heights = []
+        for page in document.pages:
+            for text_block in page.contained_blocks(document, (BlockTypes.Text,)):
+                line_heights.append(text_block.line_height(document))
         return line_heights
 
 
