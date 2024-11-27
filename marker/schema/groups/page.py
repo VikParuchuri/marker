@@ -133,6 +133,7 @@ class PageGroup(Group):
             else:
                 new_blocks.append(new_block)
                 new_block = [(line_idx, provider_outputs[line_idx])]
+            assigned_line_idxs.add(line_idx)
         if new_block:
             new_blocks.append(new_block)
 
@@ -200,7 +201,7 @@ class PageGroup(Group):
         assigned_line_idxs = set()
         block_lines = defaultdict(list)
         for line_idx, provider_output in enumerate(provider_outputs):
-            if line_idx in max_intersections and max_intersections[line_idx][0] > 0.0:
+            if line_idx in max_intersections:
                 block_id = max_intersections[line_idx][1]
                 block_lines[block_id].append((line_idx, provider_output))
                 assigned_line_idxs.add(line_idx)

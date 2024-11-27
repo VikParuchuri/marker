@@ -184,5 +184,9 @@ class PolygonBox(BaseModel):
         return PolygonBox(polygon=corners)
 
     @classmethod
-    def from_bbox(cls, bbox: List[float]):
+    def from_bbox(cls, bbox: List[float], ensure_nonzero_area=False):
+        if ensure_nonzero_area:
+            bbox = list(bbox)
+            bbox[2] = max(bbox[2], bbox[0] + 1)
+            bbox[3] = max(bbox[3], bbox[1] + 1)
         return cls(polygon=[[bbox[0], bbox[1]], [bbox[2], bbox[1]], [bbox[2], bbox[3]], [bbox[0], bbox[3]]])
