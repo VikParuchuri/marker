@@ -123,6 +123,11 @@ class PageGroup(Group):
             if line_idx in assigned_line_idxs:
                 continue
 
+            # if the unassociated line is a new line with minimal area, we can skip it
+            if provider_outputs[line_idx].line.polygon.area <= 1 and \
+                provider_outputs[line_idx].raw_text == "\n":
+                continue
+
             if new_block is None:
                 new_block = [(line_idx, provider_outputs[line_idx])]
             elif all([

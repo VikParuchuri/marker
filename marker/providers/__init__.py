@@ -11,6 +11,10 @@ class ProviderOutput(BaseModel):
     line: Line
     spans: List[Span]
 
+    @property
+    def raw_text(self):
+        return "".join(span.text for span in self.spans)
+
 ProviderPageLines = Dict[int, List[ProviderOutput]]
 
 class BaseProvider:
