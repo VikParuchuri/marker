@@ -3,6 +3,7 @@ import re
 from typing import List, Set
 
 import pypdfium2 as pdfium
+from ftfy import fix_text
 from pdftext.extraction import dictionary_output
 from PIL import Image
 
@@ -133,7 +134,7 @@ class PdfProvider(BaseProvider):
                         spans.append(
                             SpanClass(
                                 polygon=polygon,
-                                text=span["text"],
+                                text=fix_text(span["text"]),
                                 font=font_name,
                                 font_weight=font_weight,
                                 font_size=font_size,
