@@ -45,7 +45,8 @@ def convert_single_pdf(
         metadata: Optional[Dict] = None,
         langs: Optional[List[str]] = None,
         batch_multiplier: int = 1,
-        ocr_all_pages: bool = False
+        ocr_all_pages: bool = False,
+        sort_by_reading_order: bool = False,
 ) -> Tuple[str, Dict[str, Image.Image], Dict]:
     ocr_all_pages = ocr_all_pages or settings.OCR_ALL_PAGES
 
@@ -113,7 +114,8 @@ def convert_single_pdf(
 
     # Sort from reading order
     surya_order(lowres_images, pages, order_model, batch_multiplier=batch_multiplier)
-    sort_blocks_in_reading_order(pages)
+    if sort_by_reading_order:
+        sort_blocks_in_reading_order(pages)
 
     # Dump debug data if flags are set
     draw_page_debug_images(fname, pages)
