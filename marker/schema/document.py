@@ -85,7 +85,7 @@ class Document(BaseModel):
         section_hierarchy = None
         for page in self.pages:
             rendered = page.render(self, None, section_hierarchy)
-            section_hierarchy = rendered.section_hierarchy
+            section_hierarchy = rendered.section_hierarchy.copy()
             child_content.append(rendered)
 
         return DocumentOutput(

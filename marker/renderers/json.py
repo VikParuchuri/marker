@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 
-from marker.schema.blocks import Block
 from marker.renderers import BaseRenderer
 from marker.schema import BlockTypes
+from marker.schema.blocks import Block, BlockOutput
+from marker.schema.document import Document
 from marker.schema.registry import get_block_class
 
 
@@ -37,7 +38,7 @@ class JSONRenderer(BaseRenderer):
     image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
     page_blocks: list = [BlockTypes.Page]
 
-    def extract_json(self, document, block_output):
+    def extract_json(self, document: Document, block_output: BlockOutput):
         cls = get_block_class(block_output.id.block_type)
         if cls.__base__ == Block:
             html, images = self.extract_block_html(document, block_output)
@@ -64,7 +65,7 @@ class JSONRenderer(BaseRenderer):
                 section_hierarchy=reformat_section_hierarchy(block_output.section_hierarchy)
             )
 
-    def __call__(self, document) -> JSONOutput:
+    def __call__(self, document: Document) -> JSONOutput:
         document_output = document.render()
         json_output = []
         for page_output in document_output.children:

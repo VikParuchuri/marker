@@ -170,7 +170,7 @@ class Block(BaseModel):
             for block_id in self.structure:
                 block = document.get_block(block_id)
                 rendered = block.render(document, self.structure, section_hierarchy)
-                section_hierarchy = rendered.section_hierarchy  # Update the section hierarchy from the peer blocks
+                section_hierarchy = rendered.section_hierarchy.copy()  # Update the section hierarchy from the peer blocks
                 child_content.append(rendered)
 
         return BlockOutput(
