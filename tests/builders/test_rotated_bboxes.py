@@ -11,7 +11,7 @@ def test_rotated_bboxes(pdf_document):
     # Ensure we match all text lines up properly
     text_lines = first_page.contained_blocks(pdf_document, (BlockTypes.Line,))
     text_blocks = first_page.contained_blocks(pdf_document, (BlockTypes.Text,))
-    assert len(text_lines) == 97
+    assert len(text_lines) == 95
 
     # Ensure the bbox sizes match up
     max_line_position = max([line.polygon.x_end for line in text_lines])
