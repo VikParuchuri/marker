@@ -21,7 +21,6 @@ class HTMLOutput(BaseModel):
 class HTMLRenderer(BaseRenderer):
     page_blocks: list = [BlockTypes.Page]
     paginate_output: bool = False
-    extract_images: bool = True
 
     def extract_image(self, document, image_id):
         image_block = document.get_block(image_id)

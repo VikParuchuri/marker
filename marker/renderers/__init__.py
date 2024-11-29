@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 from marker.schema import BlockTypes
-from marker.schema.blocks.base import BlockId
+from marker.schema.blocks.base import BlockId, BlockOutput
 from marker.schema.document import Document
 from marker.util import assign_config
 
@@ -16,6 +16,7 @@ from marker.util import assign_config
 class BaseRenderer:
     remove_blocks: list = [BlockTypes.PageHeader, BlockTypes.PageFooter]
     image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
+    extract_images: bool = True
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
@@ -76,7 +77,7 @@ class BaseRenderer:
 
         return metadata
 
-    def extract_block_html(self, document: Document, block_output):
+    def extract_block_html(self, document: Document, block_output: BlockOutput):
         soup = BeautifulSoup(block_output.html, 'html.parser')
 
         content_refs = soup.find_all('content-ref')
@@ -92,14 +93,13 @@ class BaseRenderer:
                     ref_block_id: BlockId = item.id
                     break
 
-            if ref_block_id.block_type in self.image_blocks:
+            if ref_block_id.block_type in self.image_blocks and self.extract_images:
                 images[ref_block_id] = self.extract_image(document, ref_block_id, to_base64=True)
             else:
                 images.update(sub_images)
                 ref.replace_with(BeautifulSoup(content, 'html.parser'))
 
-        if block_output.id.block_type in self.image_blocks:
+        if block_output.id.block_type in self.image_blocks and self.extract_images:
             images[block_output.id] = self.extract_image(document, block_output.id, to_base64=True)
 
         return str(soup), images
-
