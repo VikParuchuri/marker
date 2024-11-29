@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from marker.renderers.html import HTMLRenderer
 from marker.schema.document import Document
 
+
 def cleanup_text(full_text):
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
