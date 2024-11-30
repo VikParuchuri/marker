@@ -122,7 +122,7 @@ if not run_marker:
     st.stop()
 
 # Run Marker
-with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
+with tempfile.NamedTemporaryFile(suffix=".pdf", encoding=settings.OUTPUT_ENCODING) as temp_pdf:
     temp_pdf.write(in_file.getvalue())
     temp_pdf.seek(0)
     filename = temp_pdf.name

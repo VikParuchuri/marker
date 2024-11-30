@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     FONT_DIR: str = os.path.join(BASE_DIR, "static", "fonts")
     DEBUG_DATA_FOLDER: str = os.path.join(BASE_DIR, "debug_data")
 
+    # General
+    OUTPUT_ENCODING: str = "utf-8"
+
     # General models
     TORCH_DEVICE: Optional[str] = None # Note: MPS device does not work for text detection, and will default to CPU
 

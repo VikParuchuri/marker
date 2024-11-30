@@ -18,6 +18,7 @@ import io
 from fastapi import FastAPI, Form, File, UploadFile
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
+from marker.settings import settings
 
 app_data = {}
 
@@ -110,7 +111,7 @@ async def _convert_pdf(params: CommonParams):
     for k, v in images.items():
         byte_stream = io.BytesIO()
         v.save(byte_stream, format="PNG")
-        encoded[k] = base64.b64encode(byte_stream.getvalue()).decode("utf-8")
+        encoded[k] = base64.b64encode(byte_stream.getvalue()).decode(settings.OUTPUT_ENCODING)
 
     return {
         "format": params.output_format,
@@ -140,7 +141,7 @@ async def convert_pdf_upload(
     ),
 ):
     upload_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
-    with open(upload_path, "wb") as upload_file:
+    with open(upload_path, "wb", encoding=settings.OUTPUT_ENCODING) as upload_file:
         file_contents = await file.read()
         upload_file.write(file_contents)
 
