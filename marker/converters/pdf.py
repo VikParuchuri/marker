@@ -17,6 +17,7 @@ from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
+from marker.processors.list import ListProcessor
 from marker.processors.page_header import PageHeaderProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
 from marker.processors.table import TableProcessor
@@ -58,6 +59,7 @@ class PdfConverter(BaseConverter):
                 TableProcessor,
                 SectionHeaderProcessor,
                 TextProcessor,
+                ListProcessor,
                 CodeProcessor,
                 DocumentTOCProcessor,
                 IgnoreTextProcessor,
