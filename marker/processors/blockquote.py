@@ -7,9 +7,9 @@ class BlockquoteProcessor(BaseProcessor):
     A processor for tagging blockquotes
     """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    min_x_indent = 15 # pixels
-    x_start_tolerance = 5 # pixels
-    x_end_tolerance = 5 # pixels
+    min_x_indent = 0.05 # % of block width
+    x_start_tolerance = 0.01 # % of block width
+    x_end_tolerance = 0.01 # % of block width
 
     def __init__(self, config):
         super().__init__(config)
@@ -33,12 +33,16 @@ class BlockquoteProcessor(BaseProcessor):
                 if next_block.ignore_for_output:
                     continue
 
-                matching_x_end = abs(next_block.polygon.x_end - block.polygon.x_end) < self.x_end_tolerance
-                matching_x_start = abs(next_block.polygon.x_start - block.polygon.x_start) < self.x_start_tolerance
-                x_indent = next_block.polygon.x_start > block.polygon.x_start + self.min_x_indent
+                matching_x_end = abs(next_block.polygon.x_end - block.polygon.x_end) < self.x_end_tolerance * block.polygon.width
+                matching_x_start = abs(next_block.polygon.x_start - block.polygon.x_start) < self.x_start_tolerance * block.polygon.width
+                x_indent = next_block.polygon.x_start > block.polygon.x_start + (self.min_x_indent * block.polygon.width)
                 y_indent = next_block.polygon.y_start > block.polygon.y_end
 
                 if block.block_type in self.block_types and block.blockquote:
                     next_block.blockquote = (matching_x_end and matching_x_start) or (x_indent and y_indent)
+                    next_block.blockquote_level = block.blockquote_level
+                    if (x_indent and y_indent):
+                        next_block.blockquote_level += 1
                 else:
                     next_block.blockquote = len(next_block.structure) >= 2 and (x_indent and y_indent)
+                    next_block.blockquote_level = 1

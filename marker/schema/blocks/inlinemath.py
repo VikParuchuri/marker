@@ -6,6 +6,7 @@ class InlineMath(Block):
     block_type: BlockTypes = BlockTypes.TextInlineMath
     has_continuation: bool = False
     blockquote: bool = False
+    blockquote_level: int = 0
 
     def assemble_html(self, child_blocks, parent_structure):
         if self.ignore_for_output:
@@ -18,8 +19,10 @@ class InlineMath(Block):
         if self.has_continuation:
             class_attr += " class='has-continuation'"
 
-        tag_name = "p"
         if self.blockquote:
-            tag_name ="blockquote"
-
-        return f"<{tag_name}{class_attr}>{template}</{tag_name}>"
+            # Add indentation for blockquote levels
+            blockquote_prefix = "<blockquote>" * self.blockquote_level
+            blockquote_suffix = "</blockquote>" * self.blockquote_level
+            return f"{blockquote_prefix}<p{class_attr}>{template}</p>{blockquote_suffix}"
+        else:
+            return f"<p{class_attr}>{template}</p>"
