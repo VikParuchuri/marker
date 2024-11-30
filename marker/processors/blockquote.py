@@ -30,7 +30,7 @@ class BlockquoteProcessor(BaseProcessor):
                 matching_x_end = abs(next_block.polygon.x_end - block.polygon.x_end) < self.x_end_tolerance
                 matching_x_start = abs(next_block.polygon.x_start - block.polygon.x_start) < self.x_start_tolerance
                 x_indent = next_block.polygon.x_start > block.polygon.x_start + self.min_x_indent
-                y_indent = next_block.polygon.y_end > block.polygon.y_start
+                y_indent = next_block.polygon.y_start > block.polygon.y_end
 
                 if block.block_type in self.block_types and block.blockquote:
                     next_block.blockquote = (matching_x_end and matching_x_start) or (x_indent and y_indent)
