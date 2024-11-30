@@ -16,7 +16,13 @@ class BlockquoteProcessor(BaseProcessor):
 
     def __call__(self, document: Document):
         for page in document.pages:
-            for block in page.contained_blocks(document, self.block_types): 
+            for block in page.contained_blocks(document, self.block_types):
+                if block.structure is None:
+                    continue
+                
+                if not len(block.structure) >= 2:
+                    continue
+
                 next_block = page.get_next_block(block)
                 if next_block is None:
                     continue
@@ -35,4 +41,4 @@ class BlockquoteProcessor(BaseProcessor):
                 if block.block_type in self.block_types and block.blockquote:
                     next_block.blockquote = (matching_x_end and matching_x_start) or (x_indent and y_indent)
                 else:
-                    next_block.blockquote = len(next_block.structure) > 2 and (x_indent and y_indent)
+                    next_block.blockquote = len(next_block.structure) >= 2 and (x_indent and y_indent)
