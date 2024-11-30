@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from PIL import Image
 
@@ -34,11 +34,18 @@ class PageGroup(Group):
         else:
             self.children.append(block)
 
-    def get_next_block(self, block: Block):
-        block_idx = self.structure.index(block.id)
-        if block_idx + 1 < len(self.structure):
-            return self.get_block(self.structure[block_idx + 1])
-        return None
+    def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
+        if ignored_block_types is None:
+            ignored_block_types = []
+        if block is None:
+            return self.get_block(self.structure[0])
+
+        # Iterate over blocks following the given block
+        for next_block_id in self.structure[self.structure.index(block.id) + 1:]:
+            if next_block_id.block_type not in ignored_block_types:
+                return self.get_block(next_block_id)
+
+        return None  # No valid next block found
 
     def get_prev_block(self, block: Block):
         block_idx = self.structure.index(block.id)

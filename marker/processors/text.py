@@ -37,66 +37,38 @@ class TextProcessor(BaseProcessor):
                 column_gap = block.polygon.width * self.column_gap_ratio
 
                 column_break, page_break = False, False
-                next_block = None
-
-                for next_block_id in page.structure[page.structure.index(block.id) + 1:]:
-                    if next_block_id.block_type in self.ignored_block_types:
-                        continue
-                    next_block = page.get_block(next_block_id)
-                    break
-
-                if  next_block is not None: # next block exists
-                    # we check for a column break
-                    column_break = (
-                        math.floor(next_block.polygon.y_start) <= math.floor(block.polygon.y_start) and
-                        next_block.polygon.x_start > (block.polygon.x_end + column_gap)
-                    )
-                else:  # It's a page break since we don't have a next block in the page
-                    page_break = True
-
-                if not (column_break or page_break):
-                    continue
-
                 next_block_starts_indented = True
                 next_block_in_first_quadrant = False
                 last_line_is_full_width = False
                 last_line_is_hyphentated = False
                 new_block_lines = []
 
-                if column_break:
-                    if next_block.block_type not in self.block_types:
-                        continue
-                    if next_block.structure is None:  # This is odd though, why do we have text blocks with no structure?
-                        continue
+                next_block = document.get_next_block(block, self.ignored_block_types)
+                if next_block is None: # we've reached the end of the document
+                    continue
+                if next_block.block_type not in self.block_types:
+                    continue # we found a non-text block
+                if next_block.structure is None:
+                    continue  # This is odd though, why do we have text blocks with no structure?
+                if next_block.ignore_for_output:
+                    continue # skip ignored blocks
 
-                    new_block_lines = next_block.structure_blocks(document)
-                else:  # page break
-                    next_page = document.get_next_page(page)
-                    if next_page is None:
-                        continue  # we're on the last page, so we don't worry about merging
+                if next_block.page_id == block.page_id: # block on the same page
+                    # we check for a column break
+                    column_break = (
+                        math.floor(next_block.polygon.y_start) <= math.floor(block.polygon.y_start) and
+                        next_block.polygon.x_start > (block.polygon.x_end + column_gap)
+                    )
+                else:
+                    page_break = True
+                    next_page = document.get_page(next_block.page_id)
+                    next_block_in_first_quadrant = (next_block.polygon.x_start < next_page.polygon.width // 2) and \
+                                        (next_block.polygon.y_start < next_page.polygon.height // 2)
 
-                    # Go through the next page only
-                    for next_page_block_id in next_page.structure:
-                        if next_page_block_id.block_type in self.ignored_block_types:
-                            continue  # skip headers and footers
-
-                        # we have our block
-                        next_page_block = next_page.get_block(next_page_block_id)
-                        if next_page_block.ignore_for_output:
-                            continue # skip ignored blocks
-
-                        if not (next_page_block.structure is not None and \
-                            next_page_block.block_type in self.block_types): 
-                            # we found a non-text block or an empty text block, so we can stop looking
-                            break
-
-                        new_block_lines = next_page_block.structure_blocks(document)
-
-                        next_block_in_first_quadrant = (next_page_block.polygon.x_start < next_page.polygon.width // 2) and \
-                            (next_page_block.polygon.y_start < next_page.polygon.height // 2)
-                        break
-                    else:
-                        continue  # we didn't break anywhere so we continue
+                if not (column_break or page_break):
+                    continue
+    
+                new_block_lines = next_block.structure_blocks(document)
 
                 # we check for next_block indentation
                 if len(new_block_lines):
