@@ -36,7 +36,7 @@ class ListProcessor(BaseProcessor):
                 if next_block.page_id == block.page_id: # block on the same page
                     # we check for a column break
                     column_break = (
-                        math.floor(next_block.polygon.y_start) <= math.ceil(block.polygon.y_start) and
+                        next_block.polygon.y_start <= block.polygon.y_end and
                         next_block.polygon.x_start > (block.polygon.x_end + column_gap)
                     )
                 else:
