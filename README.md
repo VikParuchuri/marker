@@ -50,7 +50,7 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 
 - Supports PDFs, word documents, and powerpoints 
 - 1/4th the price of leading cloud-based competitors
-- High uptime (99.99%), quality, and speed (.25s/page for 50 page doc)
+- High uptime (99.99%), quality, and speed (around 15 seconds to convert a 250 page PDF)
 
 # Community
 
