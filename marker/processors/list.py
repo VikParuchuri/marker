@@ -11,7 +11,6 @@ class ListProcessor(BaseProcessor):
     """
     block_types = (BlockTypes.ListGroup,)
     ignored_block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)
-    column_gap_ratio = 0.02  # column gaps are atleast 2% of the current column width
 
     def __init__(self, config):
         super().__init__(config)
@@ -29,16 +28,12 @@ class ListProcessor(BaseProcessor):
                 if next_block.ignore_for_output:
                     continue
 
-                column_gap = block.polygon.width * self.column_gap_ratio
                 column_break, page_break = False, False
                 next_block_in_first_quadrant = False
 
                 if next_block.page_id == block.page_id: # block on the same page
                     # we check for a column break
-                    column_break = (
-                        next_block.polygon.y_start <= block.polygon.y_end and
-                        next_block.polygon.x_start > (block.polygon.x_end + column_gap)
-                    )
+                    column_break = next_block.polygon.y_start <= block.polygon.y_end
                 else:
                     page_break = True
                     next_page = document.get_page(next_block.page_id)
