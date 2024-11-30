@@ -33,15 +33,6 @@ class TextProcessor(BaseProcessor):
 
                 if not len(block.structure) >= 2:  # Skip single lines
                     continue
-                
-                column_gap = block.polygon.width * self.column_gap_ratio
-
-                column_break, page_break = False, False
-                next_block_starts_indented = True
-                next_block_in_first_quadrant = False
-                last_line_is_full_width = False
-                last_line_is_hyphentated = False
-                new_block_lines = []
 
                 next_block = document.get_next_block(block, self.ignored_block_types)
                 if next_block is None: # we've reached the end of the document
@@ -53,10 +44,19 @@ class TextProcessor(BaseProcessor):
                 if next_block.ignore_for_output:
                     continue # skip ignored blocks
 
+                column_gap = block.polygon.width * self.column_gap_ratio
+
+                column_break, page_break = False, False
+                next_block_starts_indented = True
+                next_block_in_first_quadrant = False
+                last_line_is_full_width = False
+                last_line_is_hyphentated = False
+                new_block_lines = []
+
                 if next_block.page_id == block.page_id: # block on the same page
                     # we check for a column break
                     column_break = (
-                        math.floor(next_block.polygon.y_start) <= math.floor(block.polygon.y_start) and
+                        math.floor(next_block.polygon.y_start) <= math.ceil(block.polygon.y_start) and
                         next_block.polygon.x_start > (block.polygon.x_end + column_gap)
                     )
                 else:

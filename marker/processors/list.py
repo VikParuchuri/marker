@@ -1,3 +1,5 @@
+import math
+
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
@@ -9,6 +11,7 @@ class ListProcessor(BaseProcessor):
     """
     block_types = (BlockTypes.ListGroup,)
     ignored_block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)
+    column_gap_ratio = 0.02  # column gaps are atleast 2% of the current column width
 
     def __init__(self, config):
         super().__init__(config)
@@ -26,4 +29,20 @@ class ListProcessor(BaseProcessor):
                 if next_block.ignore_for_output:
                     continue
 
-                block.has_continuation = True
+                column_gap = block.polygon.width * self.column_gap_ratio
+                column_break, page_break = False, False
+                next_block_in_first_quadrant = False
+
+                if next_block.page_id == block.page_id: # block on the same page
+                    # we check for a column break
+                    column_break = (
+                        math.floor(next_block.polygon.y_start) <= math.ceil(block.polygon.y_start) and
+                        next_block.polygon.x_start > (block.polygon.x_end + column_gap)
+                    )
+                else:
+                    page_break = True
+                    next_page = document.get_page(next_block.page_id)
+                    next_block_in_first_quadrant = (next_block.polygon.x_start < next_page.polygon.width // 2) and \
+                                        (next_block.polygon.y_start < next_page.polygon.height // 2)
+    
+                block.has_continuation = column_break or (page_break and next_block_in_first_quadrant)
