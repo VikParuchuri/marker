@@ -37,11 +37,13 @@ class PageGroup(Group):
     def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:
             ignored_block_types = []
-        if block is None:
-            return self.get_block(self.structure[0])
+        
+        structure_idx = 0
+        if block is not None:
+            structure_idx = self.structure.index(block.id) + 1
 
         # Iterate over blocks following the given block
-        for next_block_id in self.structure[self.structure.index(block.id) + 1:]:
+        for next_block_id in self.structure[structure_idx:]:
             if next_block_id.block_type not in ignored_block_types:
                 return self.get_block(next_block_id)
 
