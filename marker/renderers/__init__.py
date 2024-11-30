@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from marker.schema import BlockTypes
 from marker.schema.blocks.base import BlockId, BlockOutput
 from marker.schema.document import Document
+from marker.settings import settings
 from marker.util import assign_config
 
 
@@ -35,7 +36,7 @@ class BaseRenderer:
         if to_base64:
             image_buffer = io.BytesIO()
             cropped.save(image_buffer, format='PNG')
-            cropped = base64.b64encode(image_buffer.getvalue()).decode('utf-8')
+            cropped = base64.b64encode(image_buffer.getvalue()).decode(settings.OUTPUT_ENCODING)
         return cropped
 
     @staticmethod
