@@ -141,7 +141,7 @@ async def convert_pdf_upload(
     ),
 ):
     upload_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
-    with open(upload_path, "wb", encoding=settings.OUTPUT_ENCODING) as upload_file:
+    with open(upload_path, "wb+") as upload_file:
         file_contents = await file.read()
         upload_file.write(file_contents)
 

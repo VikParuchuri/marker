@@ -19,6 +19,7 @@ class TextProcessor(BaseProcessor):
             Default is 0.02.
     """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
+    ignored_block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)
     column_gap_ratio = 0.02  # column gaps are atleast 2% of the current column width
 
     def __init__(self, config):
@@ -36,7 +37,13 @@ class TextProcessor(BaseProcessor):
                 column_gap = block.polygon.width * self.column_gap_ratio
 
                 column_break, page_break = False, False
-                next_block = page.get_next_block(block)
+                next_block = None
+
+                for next_block_id in page.structure[page.structure.index(block.id) + 1:]:
+                    if next_block_id.block_type in self.ignored_block_types:
+                        continue
+                    next_block = page.get_block(next_block_id)
+                    break
 
                 if  next_block is not None: # next block exists
                     # we check for a column break
@@ -70,7 +77,7 @@ class TextProcessor(BaseProcessor):
 
                     # Go through the next page only
                     for next_page_block_id in next_page.structure:
-                        if next_page_block_id.block_type in [BlockTypes.PageHeader, BlockTypes.PageFooter]:
+                        if next_page_block_id.block_type in self.ignored_block_types:
                             continue  # skip headers and footers
 
                         # we have our block

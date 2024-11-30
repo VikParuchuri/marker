@@ -49,10 +49,13 @@ class HTMLRenderer(BaseRenderer):
             if ref_block_id.block_type in self.remove_blocks:
                 ref.replace_with('')
             elif ref_block_id.block_type in self.image_blocks:
-                image = self.extract_image(document, ref_block_id)
-                image_name = f"{ref_block_id.to_path()}.png"
-                images[image_name] = image
-                ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
+                if self.extract_images:
+                    image = self.extract_image(document, ref_block_id)
+                    image_name = f"{ref_block_id.to_path()}.png"
+                    images[image_name] = image
+                    ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
+                else:
+                    ref.replace_with('')
             elif ref_block_id.block_type in self.page_blocks:
                 images.update(sub_images)
                 if self.paginate_output:

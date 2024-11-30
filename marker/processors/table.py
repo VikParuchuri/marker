@@ -1,4 +1,5 @@
 
+from ftfy import fix_text
 from surya.input.pdflines import get_page_text_lines
 from surya.model.detection.model import EfficientViTForSemanticSegmentation
 from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
@@ -100,6 +101,8 @@ class TableProcessor(BaseProcessor):
         for table_d, table_res in zip(table_data, tables):
             block = document.get_block(table_d["block_id"])
             cells = assign_rows_columns(table_res, table_d["img_size"])
+            for cell in cells:
+                cell.text = fix_text(cell.text)
             block.cells = cells
 
     def get_detector_batch_size(self):

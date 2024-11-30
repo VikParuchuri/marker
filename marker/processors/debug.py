@@ -69,7 +69,7 @@ class DebugProcessor(BaseProcessor):
             print(f"Dumped block debug data to {self.debug_data_folder}")
 
     def draw_pdf_debug_images(self, document: Document):
-        for idx, page in enumerate(document.pages):
+        for page in document.pages:
             png_image = page.highres_image.copy()
 
             line_bboxes = []
@@ -87,12 +87,12 @@ class DebugProcessor(BaseProcessor):
 
             png_image = self.render_layout_boxes(page, png_image)
 
-            debug_file = os.path.join(self.debug_folder, f"pdf_page_{idx}.png")
+            debug_file = os.path.join(self.debug_folder, f"pdf_page_{page.page_id}.png")
             png_image.save(debug_file)
 
 
     def draw_layout_debug_images(self, document: Document, pdf_mode=False):
-        for idx, page in enumerate(document.pages):
+        for page in document.pages:
             img_size = page.highres_image.size
             png_image = Image.new("RGB", img_size, color="white")
 
@@ -110,7 +110,7 @@ class DebugProcessor(BaseProcessor):
 
             png_image = self.render_layout_boxes(page, png_image)
 
-            debug_file = os.path.join(self.debug_folder, f"layout_page_{idx}.png")
+            debug_file = os.path.join(self.debug_folder, f"layout_page_{page.page_id}.png")
             png_image.save(debug_file)
 
 
@@ -143,7 +143,7 @@ class DebugProcessor(BaseProcessor):
     def dump_block_debug_data(self, document: Document):
         debug_file = os.path.join(self.debug_folder, f"blocks.json")
         debug_data = []
-        for idx, page in enumerate(document.pages):
+        for page in document.pages:
             page_data = page.model_dump(exclude=["lowres_image", "highres_image"])
             debug_data.append(page_data)
 

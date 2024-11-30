@@ -8,7 +8,7 @@ class PageHeaderProcessor(BaseProcessor):
     """
     A processor for moving PageHeaders to the top
     """
-    block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)
+    block_types = (BlockTypes.PageHeader)
 
     def __call__(self, document: Document):
         for page in document.pages:
