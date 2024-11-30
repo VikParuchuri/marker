@@ -5,6 +5,7 @@ from markdownify import MarkdownConverter
 from pydantic import BaseModel
 
 from marker.renderers.html import HTMLRenderer
+from marker.schema import BlockTypes
 from marker.schema.document import Document
 
 
@@ -33,9 +34,13 @@ class Markdownify(MarkdownConverter):
         hyphens = r'-—¬'
         has_continuation = el.has_attr('class') and 'has-continuation' in el['class']
         if has_continuation:
-            if regex.compile(rf'.*[\p{{Ll}}|\d][{hyphens}]\s?$', regex.DOTALL).match(text):  # handle hypenation across pages
-                return regex.split(rf"[{hyphens}]\s?$", text)[0]
-            return f"{text} "
+            block_type = BlockTypes[el['block-type']]
+            if block_type in [BlockTypes.TextInlineMath, BlockTypes.Text]:
+                if regex.compile(rf'.*[\p{{Ll}}|\d][{hyphens}]\s?$', regex.DOTALL).match(text):  # handle hypenation across pages
+                    return regex.split(rf"[{hyphens}]\s?$", text)[0]
+                return f"{text} "
+            if block_type == BlockTypes.ListGroup:
+                return f"{text}"
         return f"{text}\n\n" if text else ""  # default convert_p behavior
 
 

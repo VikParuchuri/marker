@@ -13,7 +13,7 @@ class InlineMath(Block):
         template = super().assemble_html(child_blocks, parent_structure)
         template = template.replace("\n", " ")
 
-        class_attr = ""
+        class_attr = f" block-type='{self.block_type}'"
         if self.has_continuation:
-            class_attr = " class='has-continuation'"
+            class_attr += " class='has-continuation'"
         return f"<p{class_attr}>{template}</p>"
