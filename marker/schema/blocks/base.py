@@ -87,6 +87,18 @@ class Block(BaseModel):
             return []
         return [document_page.get_block(block_id) for block_id in self.structure]
 
+    def get_prev_block(self, document_page: Document | PageGroup, block: Block, ignored_block_types: Optional[List[BlockTypes]] = None):
+        if ignored_block_types is None:
+            ignored_block_types = []
+        
+        structure_idx = self.structure.index(block.id)
+        if structure_idx == 0:
+            return None
+        
+        for prev_block_id in reversed(self.structure[:structure_idx]):
+            if prev_block_id.block_type not in ignored_block_types:
+                return document_page.get_block(prev_block_id)
+
     def get_next_block(self, document_page: Document | PageGroup, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:
             ignored_block_types = []

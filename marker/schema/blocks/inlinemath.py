@@ -15,14 +15,14 @@ class InlineMath(Block):
         template = super().assemble_html(child_blocks, parent_structure)
         template = template.replace("\n", " ")
 
-        class_attr = f" block-type='{self.block_type}'"
+        el_attr = f" block-type='{self.block_type}'"
         if self.has_continuation:
-            class_attr += " class='has-continuation'"
+            el_attr += " class='has-continuation'"
 
         if self.blockquote:
             # Add indentation for blockquote levels
             blockquote_prefix = "<blockquote>" * self.blockquote_level
             blockquote_suffix = "</blockquote>" * self.blockquote_level
-            return f"{blockquote_prefix}<p{class_attr}>{template}</p>{blockquote_suffix}"
+            return f"{blockquote_prefix}<p{el_attr}>{template}</p>{blockquote_suffix}"
         else:
-            return f"<p{class_attr}>{template}</p>"
+            return f"<p{el_attr}>{template}</p>"

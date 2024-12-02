@@ -55,8 +55,9 @@ class ListProcessor(BaseProcessor):
                 if block.ignore_for_output:
                     continue
 
-                list_item_block = block.get_next_block(page, None)
-                while list_item_block is not None:
+                for list_item_id in block.structure:
+                    list_item_block = page.get_block(list_item_id)
+
                     next_list_item_block = block.get_next_block(page, list_item_block)
                     if next_list_item_block is None:
                         break
@@ -68,13 +69,24 @@ class ListProcessor(BaseProcessor):
                     x_indent = next_list_item_block.polygon.x_start > list_item_block.polygon.x_start + (self.min_x_indent * list_item_block.polygon.width)
                     y_indent = next_list_item_block.polygon.y_start > list_item_block.polygon.y_start
 
-                    if list_item_block.list_indent:
-                        next_list_item_block.list_indent = (matching_x_end and matching_x_start) or (x_indent and y_indent)
+                    if list_item_block.list_indent_level and (matching_x_end and matching_x_start) or (x_indent and y_indent):
                         next_list_item_block.list_indent_level = list_item_block.list_indent_level
                         if (x_indent and y_indent):
                             next_list_item_block.list_indent_level += 1
                     elif (x_indent and y_indent):
-                        next_list_item_block.list_indent = True
                         next_list_item_block.list_indent_level = 1
 
                     list_item_block = next_list_item_block
+
+                for list_item_id in reversed(block.structure):
+                    list_item_block = page.get_block(list_item_id)
+                    prev_list_item_block = block.get_prev_block(page, list_item_block)
+                    if prev_list_item_block is None:
+                        break
+                    if prev_list_item_block.structure is None:
+                        break
+
+                    if list_item_block.list_indent_level > prev_list_item_block.list_indent_level:
+                        prev_list_item_block.add_structure(list_item_block)
+                        prev_list_item_block.polygon = prev_list_item_block.polygon.merge([list_item_block.polygon])
+                        block.remove_structure_items([list_item_id])

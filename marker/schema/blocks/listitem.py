@@ -18,7 +18,6 @@ def replace_bullets(child_blocks):
 
 class ListItem(Block):
     block_type: BlockTypes = BlockTypes.ListItem
-    list_indent: bool = False
     list_indent_level: int = 0
 
     def assemble_html(self, child_blocks, parent_structure):
@@ -27,9 +26,7 @@ class ListItem(Block):
         # Remove the first bullet character
         replace_bullets(child_blocks)
 
-        if self.list_indent:
-            ul_prefix = "<ul>" * self.list_indent_level
-            ul_suffix = "</ul>" * self.list_indent_level
-            return f"{ul_prefix}<li>{template}</li>{ul_suffix}"
-        else:
-            return f"<li>{template}</li>"
+        el_attr = f" block-type='{self.block_type}'"
+        if self.list_indent_level:
+            return f"<ul><li{el_attr} class='list-indent-{self.list_indent_level}'>{template}</li></ul>"
+        return f"<li{el_attr}>{template}</li>"
