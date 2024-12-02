@@ -68,7 +68,11 @@ class ListProcessor(BaseProcessor):
                         if list_item_block.polygon.x_start > stack[-1].polygon.x_start + (self.min_x_indent * page.polygon.width):
                             list_item_block.list_indent_level += 1
 
-                    stack.append(list_item_block)
+                    next_list_item_block = block.get_next_block(page, list_item_block)
+                    if next_list_item_block is not None and next_list_item_block.polygon.x_start > list_item_block.polygon.x_end:
+                        stack = [next_list_item_block]  # reset stack on column breaks
+                    else:
+                        stack.append(list_item_block)
 
                 stack: List[ListItem] = [block.get_next_block(page, None)]
                 for list_item_id in block.structure.copy():
