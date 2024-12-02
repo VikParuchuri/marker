@@ -12,7 +12,7 @@ class ListProcessor(BaseProcessor):
     """
     block_types = (BlockTypes.ListGroup,)
     ignored_block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)
-    min_x_indent = 0.05  # % of block width
+    min_x_indent = 0.01  # % of page width
 
     def __init__(self, config):
         super().__init__(config)
@@ -60,12 +60,12 @@ class ListProcessor(BaseProcessor):
                 for list_item_id in block.structure:
                     list_item_block: ListItem = page.get_block(list_item_id)
 
-                    while stack and list_item_block.polygon.x_start <= stack[-1].polygon.x_start + (self.min_x_indent * stack[-1].polygon.width):
+                    while stack and list_item_block.polygon.x_start <= stack[-1].polygon.x_start + (self.min_x_indent * page.polygon.width):
                         stack.pop()
 
                     if stack and list_item_block.polygon.y_start > stack[-1].polygon.y_start:
                         list_item_block.list_indent_level = stack[-1].list_indent_level
-                        if list_item_block.polygon.x_start > stack[-1].polygon.x_start + (self.min_x_indent * stack[-1].polygon.width):
+                        if list_item_block.polygon.x_start > stack[-1].polygon.x_start + (self.min_x_indent * page.polygon.width):
                             list_item_block.list_indent_level += 1
 
                     stack.append(list_item_block)
