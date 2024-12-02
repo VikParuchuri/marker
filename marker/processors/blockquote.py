@@ -2,14 +2,15 @@ from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
 
+
 class BlockquoteProcessor(BaseProcessor):
     """
     A processor for tagging blockquotes
     """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    min_x_indent = 0.05 # % of block width
-    x_start_tolerance = 0.01 # % of block width
-    x_end_tolerance = 0.01 # % of block width
+    min_x_indent = 0.05  # % of block width
+    x_start_tolerance = 0.01  # % of block width
+    x_end_tolerance = 0.01  # % of block width
 
     def __init__(self, config):
         super().__init__(config)
@@ -19,7 +20,7 @@ class BlockquoteProcessor(BaseProcessor):
             for block in page.contained_blocks(document, self.block_types):
                 if block.structure is None:
                     continue
-                
+
                 if not len(block.structure) >= 2:
                     continue
 
@@ -38,11 +39,11 @@ class BlockquoteProcessor(BaseProcessor):
                 x_indent = next_block.polygon.x_start > block.polygon.x_start + (self.min_x_indent * block.polygon.width)
                 y_indent = next_block.polygon.y_start > block.polygon.y_end
 
-                if block.block_type in self.block_types and block.blockquote:
+                if block.blockquote:
                     next_block.blockquote = (matching_x_end and matching_x_start) or (x_indent and y_indent)
                     next_block.blockquote_level = block.blockquote_level
                     if (x_indent and y_indent):
                         next_block.blockquote_level += 1
-                else:
-                    next_block.blockquote = len(next_block.structure) >= 2 and (x_indent and y_indent)
+                elif len(next_block.structure) >= 2 and (x_indent and y_indent):
+                    next_block.blockquote = True
                     next_block.blockquote_level = 1
