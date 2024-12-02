@@ -39,13 +39,16 @@ class DebugProcessor(BaseProcessor):
             The path to download the font from.
             Default is "https://github.com/satbyy/go-noto-universal/releases/download/v7.0".
     """
+
     block_types = tuple()
     debug_data_folder: str = "debug_data"
     debug_layout_images: bool = False
     debug_pdf_images: bool = False
     debug_json: bool = False
     render_font: str = os.path.join(settings.FONT_DIR, "GoNotoCurrent-Regular.ttf")
-    font_dl_path: str = "https://github.com/satbyy/go-noto-universal/releases/download/v7.0"
+    font_dl_path: str = (
+        "https://github.com/satbyy/go-noto-universal/releases/download/v7.0"
+    )
 
     def __call__(self, document: Document):
         # Remove extension from doc name
@@ -82,14 +85,21 @@ class DebugProcessor(BaseProcessor):
                     bbox = child.polygon.rescale(page.polygon.size, png_image.size).bbox
                     span_bboxes.append(bbox)
 
-            self.render_on_image(line_bboxes, png_image, color="blue", draw_bbox=True, label_font_size=24)
-            self.render_on_image(span_bboxes, png_image, color="green", draw_bbox=True, label_font_size=24)
+            self.render_on_image(
+                line_bboxes, png_image, color="blue", draw_bbox=True, label_font_size=24
+            )
+            self.render_on_image(
+                span_bboxes,
+                png_image,
+                color="green",
+                draw_bbox=True,
+                label_font_size=24,
+            )
 
             png_image = self.render_layout_boxes(page, png_image)
 
             debug_file = os.path.join(self.debug_folder, f"pdf_page_{idx}.png")
             png_image.save(debug_file)
-
 
     def draw_layout_debug_images(self, document: Document, pdf_mode=False):
         for idx, page in enumerate(document.pages):
@@ -106,13 +116,19 @@ class DebugProcessor(BaseProcessor):
                 line_bboxes.append(bbox)
                 line_text.append(child.raw_text(document))
 
-            self.render_on_image(line_bboxes, png_image, labels=line_text, color="black", draw_bbox=False, label_font_size=24)
+            self.render_on_image(
+                line_bboxes,
+                png_image,
+                labels=line_text,
+                color="black",
+                draw_bbox=False,
+                label_font_size=24,
+            )
 
             png_image = self.render_layout_boxes(page, png_image)
 
             debug_file = os.path.join(self.debug_folder, f"layout_page_{idx}.png")
             png_image.save(debug_file)
-
 
     def render_layout_boxes(self, page, png_image):
         layout_bboxes = []
@@ -126,7 +142,13 @@ class DebugProcessor(BaseProcessor):
             layout_bboxes.append(bbox)
             layout_labels.append(str(child.block_type))
 
-        self.render_on_image(layout_bboxes, png_image, labels=layout_labels, color="red", label_font_size=24)
+        self.render_on_image(
+            layout_bboxes,
+            png_image,
+            labels=layout_labels,
+            color="red",
+            label_font_size=24,
+        )
 
         order_labels = [str(i) for i in range(len(layout_bboxes))]
         self.render_on_image(
@@ -136,7 +158,7 @@ class DebugProcessor(BaseProcessor):
             color="green",
             draw_bbox=False,
             label_offset=5,
-            label_font_size=24
+            label_font_size=24,
         )
         return png_image
 
@@ -147,14 +169,16 @@ class DebugProcessor(BaseProcessor):
             page_data = page.model_dump(exclude=["lowres_image", "highres_image"])
             debug_data.append(page_data)
 
-        with open(debug_file, "w+") as f:
+        with open(debug_file, "w+", encoding="utf-8") as f:
             json.dump(debug_data, f)
 
     def get_font_path(self) -> str:
         if not os.path.exists(self.render_font):
             os.makedirs(os.path.dirname(self.render_font), exist_ok=True)
             font_dl_path = f"{self.font_dl_path}/{os.path.basename(self.render_font)}"
-            with requests.get(font_dl_path, stream=True) as r, open(self.render_font, 'wb') as f:
+            with requests.get(font_dl_path, stream=True) as r, open(
+                self.render_font, "wb", encoding="utf-8"
+            ) as f:
                 r.raise_for_status()
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
@@ -167,7 +191,16 @@ class DebugProcessor(BaseProcessor):
         _, _, width, height = draw.textbbox((0, 0), text=text, font=font)
         return width, height
 
-    def render_on_image(self, bboxes, image, labels=None, label_offset=1, label_font_size=10, color: str | list = 'red', draw_bbox=True):
+    def render_on_image(
+        self,
+        bboxes,
+        image,
+        labels=None,
+        label_offset=1,
+        label_font_size=10,
+        color: str | list = "red",
+        draw_bbox=True,
+    ):
         draw = ImageDraw.Draw(image)
         font_path = self.get_font_path()
         label_font = ImageFont.truetype(font_path, label_font_size)
@@ -175,14 +208,15 @@ class DebugProcessor(BaseProcessor):
         for i, bbox in enumerate(bboxes):
             bbox = [int(p) for p in bbox]
             if draw_bbox:
-                draw.rectangle(bbox, outline=color[i] if isinstance(color, list) else color, width=1)
+                draw.rectangle(
+                    bbox,
+                    outline=color[i] if isinstance(color, list) else color,
+                    width=1,
+                )
 
             if labels is not None:
                 label = labels[i]
-                text_position = (
-                    bbox[0] + label_offset,
-                    bbox[1] + label_offset
-                )
+                text_position = (bbox[0] + label_offset, bbox[1] + label_offset)
                 text_size = self.get_text_size(label, label_font)
                 if text_size[0] <= 0 or text_size[1] <= 0:
                     continue
@@ -190,14 +224,14 @@ class DebugProcessor(BaseProcessor):
                     text_position[0],
                     text_position[1],
                     text_position[0] + text_size[0],
-                    text_position[1] + text_size[1]
+                    text_position[1] + text_size[1],
                 )
                 draw.rectangle(box_position, fill="white")
                 draw.text(
                     text_position,
                     label,
                     fill=color[i] if isinstance(color, list) else color,
-                    font=label_font
+                    font=label_font,
                 )
 
         return image

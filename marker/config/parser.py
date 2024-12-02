@@ -17,21 +17,53 @@ class ConfigParser:
 
     @staticmethod
     def common_options(fn):
-        fn = click.option("--output_dir", type=click.Path(exists=False), required=False, default=settings.OUTPUT_DIR,
-                          help="Directory to save output.")(fn)
-        fn = click.option('--debug', '-d', is_flag=True, help='Enable debug mode.')(fn)
-        fn = click.option("--output_format", type=click.Choice(["markdown", "json", "html"]), default="markdown",
-                          help="Format to output results in.")(fn)
-        fn = click.option("--page_range", type=str, default=None,
-                          help="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20")(
-            fn)
-        fn = click.option("--force_ocr", is_flag=True, help="Force OCR on the whole document.")(fn)
-        fn = click.option("--processors", type=str, default=None,
-                          help="Comma separated list of processors to use.  Must use full module path.")(fn)
-        fn = click.option("--config_json", type=str, default=None,
-                          help="Path to JSON file with additional configuration.")(fn)
-        fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
-        fn = click.option("--disable_multiprocessing", is_flag=True, default=False, help="Disable multiprocessing.")(fn)
+        fn = click.option(
+            "--output_dir",
+            type=click.Path(exists=False),
+            required=False,
+            default=settings.OUTPUT_DIR,
+            help="Directory to save output.",
+        )(fn)
+        fn = click.option("--debug", "-d", is_flag=True, help="Enable debug mode.")(fn)
+        fn = click.option(
+            "--output_format",
+            type=click.Choice(["markdown", "json", "html"]),
+            default="markdown",
+            help="Format to output results in.",
+        )(fn)
+        fn = click.option(
+            "--page_range",
+            type=str,
+            default=None,
+            help="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20",
+        )(fn)
+        fn = click.option(
+            "--force_ocr", is_flag=True, help="Force OCR on the whole document."
+        )(fn)
+        fn = click.option(
+            "--processors",
+            type=str,
+            default=None,
+            help="Comma separated list of processors to use.  Must use full module path.",
+        )(fn)
+        fn = click.option(
+            "--config_json",
+            type=str,
+            default=None,
+            help="Path to JSON file with additional configuration.",
+        )(fn)
+        fn = click.option(
+            "--languages",
+            type=str,
+            default=None,
+            help="Comma separated list of languages to use for OCR.",
+        )(fn)
+        fn = click.option(
+            "--disable_multiprocessing",
+            is_flag=True,
+            default=False,
+            help="Disable multiprocessing.",
+        )(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
@@ -56,7 +88,7 @@ class ConfigParser:
                         config["languages"] = v.split(",")
                 case "config_json":
                     if v:
-                        with open(v, "r") as f:
+                        with open(v, "r", encoding="utf-8") as f:
                             config.update(json.load(f))
                 case "disable_multiprocessing":
                     if v:

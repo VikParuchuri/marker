@@ -58,11 +58,17 @@ class CommonParams(BaseModel):
     ]
     page_range: Annotated[
         Optional[str],
-        Field(description="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20", example=None)
+        Field(
+            description="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20",
+            example=None,
+        ),
     ] = None
     languages: Annotated[
         Optional[str],
-        Field(description="Comma separated list of languages to use for OCR. Must be either the names or codes from from https://github.com/VikParuchuri/surya/blob/master/surya/languages.py.", example=None)
+        Field(
+            description="Comma separated list of languages to use for OCR. Must be either the names or codes from from https://github.com/VikParuchuri/surya/blob/master/surya/languages.py.",
+            example=None,
+        ),
     ] = None
     force_ocr: Annotated[
         bool,
@@ -78,7 +84,9 @@ class CommonParams(BaseModel):
     ] = False
     output_format: Annotated[
         str,
-        Field(description="The format to output the text in.  Can be 'markdown', 'json', or 'html'.  Defaults to 'markdown'.")
+        Field(
+            description="The format to output the text in.  Can be 'markdown', 'json', or 'html'.  Defaults to 'markdown'."
+        ),
     ] = "markdown"
 
 
@@ -94,7 +102,7 @@ async def _convert_pdf(params: CommonParams):
             config=config_dict,
             artifact_dict=app_data["models"],
             processor_list=config_parser.get_processors(),
-            renderer=config_parser.get_renderer()
+            renderer=config_parser.get_renderer(),
         )
         rendered = converter(params.filepath)
         text, _, images = text_from_rendered(rendered)
@@ -120,12 +128,10 @@ async def _convert_pdf(params: CommonParams):
         "success": True,
     }
 
-@app.post("/marker")
-async def convert_pdf(
-    params: CommonParams
-):
-    return await _convert_pdf(params)
 
+@app.post("/marker")
+async def convert_pdf(params: CommonParams):
+    return await _convert_pdf(params)
 
 
 @app.post("/marker/upload")
@@ -140,7 +146,7 @@ async def convert_pdf_upload(
     ),
 ):
     upload_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
-    with open(upload_path, "wb") as upload_file:
+    with open(upload_path, "wb", encoding="utf-8") as upload_file:
         file_contents = await file.read()
         upload_file.write(file_contents)
 

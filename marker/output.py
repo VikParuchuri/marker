@@ -30,9 +30,13 @@ def text_from_rendered(rendered: BaseModel):
 def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
     text, ext, images = text_from_rendered(rendered)
 
-    with open(os.path.join(output_dir, f"{fname_base}.{ext}"), "w+") as f:
+    with open(
+        os.path.join(output_dir, f"{fname_base}.{ext}"), "w+", encoding="utf-8"
+    ) as f:
         f.write(text)
-    with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+") as f:
+    with open(
+        os.path.join(output_dir, f"{fname_base}_meta.json"), "w+", encoding="utf-8"
+    ) as f:
         f.write(json.dumps(rendered.metadata, indent=2))
 
     for img_name, img in images.items():

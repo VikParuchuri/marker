@@ -3,7 +3,7 @@ import argparse
 
 
 def verify_scores(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)
 
     multicolcnn_score = data["marker"]["files"]["multicolcnn.pdf"]["score"]
@@ -14,7 +14,7 @@ def verify_scores(file_path):
 
 
 def verify_table_scores(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)
 
     avg = sum([r["score"] for r in data]) / len(data)
@@ -25,7 +25,9 @@ def verify_table_scores(file_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Verify benchmark scores")
     parser.add_argument("file_path", type=str, help="Path to the json file")
-    parser.add_argument("--type", type=str, help="Type of file to verify", default="marker")
+    parser.add_argument(
+        "--type", type=str, help="Type of file to verify", default="marker"
+    )
     args = parser.parse_args()
     if args.type == "marker":
         verify_scores(args.file_path)

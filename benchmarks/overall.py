@@ -23,20 +23,40 @@ configure_logging()
 
 def nougat_prediction(pdf_filename, batch_size=1):
     out_dir = tempfile.mkdtemp()
-    subprocess.run(["nougat", pdf_filename, "-o", out_dir, "--no-skipping", "--recompute", "--batchsize", str(batch_size)], check=True)
+    subprocess.run(
+        [
+            "nougat",
+            pdf_filename,
+            "-o",
+            out_dir,
+            "--no-skipping",
+            "--recompute",
+            "--batchsize",
+            str(batch_size),
+        ],
+        check=True,
+    )
     md_file = os.listdir(out_dir)[0]
-    with open(os.path.join(out_dir, md_file), "r") as f:
+    with open(os.path.join(out_dir, md_file), "r", encoding="utf-8") as f:
         data = f.read()
     shutil.rmtree(out_dir)
     return data
+
 
 @click.command(help="Benchmark PDF to MD conversion.")
 @click.argument("in_folder", type=str)
 @click.argument("reference_folder", type=str)
 @click.argument("out_file", type=str)
 @click.option("--nougat", is_flag=True, help="Run nougat and compare")
-@click.option("--md_out_path", type=str, default=None, help="Output path for generated markdown files")
-def main(in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_out_path: str):
+@click.option(
+    "--md_out_path",
+    type=str,
+    default=None,
+    help="Output path for generated markdown files",
+)
+def main(
+    in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_out_path: str
+):
     methods = ["marker"]
     if nougat:
         methods.append("nougat")
@@ -68,7 +88,7 @@ def main(in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_
                     config=config_parser.generate_config_dict(),
                     artifact_dict=model_dict,
                     processor_list=None,
-                    renderer=config_parser.get_renderer()
+                    renderer=config_parser.get_renderer(),
                 )
                 full_text = converter(pdf_filename).markdown
             elif method == "nougat":
@@ -85,29 +105,29 @@ def main(in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_
 
             if md_out_path:
                 md_out_filename = f"{method}_{md_filename}"
-                with open(os.path.join(md_out_path, md_out_filename), "w+") as f:
+                with open(
+                    os.path.join(md_out_path, md_out_filename), "w+", encoding="utf-8"
+                ) as f:
                     f.write(full_text)
 
     total_pages = sum(pages.values())
-    with open(out_file, "w+") as f:
+    with open(out_file, "w+", encoding="utf-8") as f:
         write_data = defaultdict(dict)
         for method in methods:
             total_time = sum(times[method].values())
             file_stats = {
-                fname:
-                {
+                fname: {
                     "time": times[method][fname],
                     "score": scores[method][fname],
-                    "pages": pages[fname]
+                    "pages": pages[fname],
                 }
-
                 for fname in benchmark_files
             }
             write_data[method] = {
                 "files": file_stats,
                 "avg_score": sum(scores[method].values()) / len(scores[method]),
                 "time_per_page": total_time / total_pages,
-                "time_per_doc": total_time / len(scores[method])
+                "time_per_doc": total_time / len(scores[method]),
             }
 
         json.dump(write_data, f, indent=4)
@@ -116,10 +136,24 @@ def main(in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_
     score_table = []
     score_headers = benchmark_files
     for method in methods:
-        summary_table.append([method, write_data[method]["avg_score"], write_data[method]["time_per_page"], write_data[method]["time_per_doc"]])
-        score_table.append([method, *[write_data[method]["files"][h]["score"] for h in score_headers]])
+        summary_table.append(
+            [
+                method,
+                write_data[method]["avg_score"],
+                write_data[method]["time_per_page"],
+                write_data[method]["time_per_doc"],
+            ]
+        )
+        score_table.append(
+            [method, *[write_data[method]["files"][h]["score"] for h in score_headers]]
+        )
 
-    print(tabulate(summary_table, headers=["Method", "Average Score", "Time per page", "Time per document"]))
+    print(
+        tabulate(
+            summary_table,
+            headers=["Method", "Average Score", "Time per page", "Time per document"],
+        )
+    )
     print("")
     print("Scores by file")
     print(tabulate(score_table, headers=["Method", *score_headers]))
@@ -127,4 +161,3 @@ def main(in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_
 
 if __name__ == "__main__":
     main()
-
