@@ -1,5 +1,3 @@
-import math
-
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document

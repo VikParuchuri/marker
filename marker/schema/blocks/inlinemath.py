@@ -5,6 +5,8 @@ from marker.schema.blocks import Block
 class InlineMath(Block):
     block_type: BlockTypes = BlockTypes.TextInlineMath
     has_continuation: bool = False
+    blockquote: bool = False
+    blockquote_level: int = 0
 
     def assemble_html(self, child_blocks, parent_structure):
         if self.ignore_for_output:
@@ -16,4 +18,11 @@ class InlineMath(Block):
         class_attr = f" block-type='{self.block_type}'"
         if self.has_continuation:
             class_attr += " class='has-continuation'"
-        return f"<p{class_attr}>{template}</p>"
+
+        if self.blockquote:
+            # Add indentation for blockquote levels
+            blockquote_prefix = "<blockquote>" * self.blockquote_level
+            blockquote_suffix = "</blockquote>" * self.blockquote_level
+            return f"{blockquote_prefix}<p{class_attr}>{template}</p>{blockquote_suffix}"
+        else:
+            return f"<p{class_attr}>{template}</p>"
