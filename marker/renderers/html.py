@@ -1,4 +1,3 @@
-import re
 from typing import Literal
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
@@ -7,13 +6,15 @@ from pydantic import BaseModel
 from marker.renderers import BaseRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import BlockId
+from marker.settings import settings
 
 # Ignore beautifulsoup warnings
 import warnings
-
-from marker.settings import settings
-
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+
+# Suppress DecompressionBombError
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
 
 
 class HTMLOutput(BaseModel):
