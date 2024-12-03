@@ -1,10 +1,6 @@
 import atexit
 import re
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures.process import ProcessPoolExecutor
-from itertools import repeat
 from typing import List, Set
-import multiprocessing as mp
 
 import pypdfium2 as pdfium
 from ftfy import fix_text
