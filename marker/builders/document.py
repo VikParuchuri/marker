@@ -37,10 +37,10 @@ class DocumentBuilder(BaseBuilder):
         highres_images = provider.get_images(provider.page_range, self.highres_image_dpi)
         initial_pages = [
             PageGroupClass(
-                page_id=i,
+                page_id=p,
                 lowres_image=lowres_images[i],
                 highres_image=highres_images[i],
-                polygon=provider.get_page_bbox(i)
+                polygon=provider.get_page_bbox(p)
             ) for i, p in enumerate(provider.page_range)
         ]
         DocumentClass: Document = get_block_class(BlockTypes.Document)
