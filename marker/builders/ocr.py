@@ -1,10 +1,10 @@
 from typing import List
 
+from ftfy import fix_text
 from surya.model.detection.model import EfficientViTForSemanticSegmentation
 from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
 from surya.ocr import run_ocr
 
-from marker.settings import settings
 from marker.builders import BaseBuilder
 from marker.providers import ProviderOutput, ProviderPageLines
 from marker.providers.pdf import PdfProvider
@@ -14,6 +14,7 @@ from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
 from marker.schema.text.span import Span
+from marker.settings import settings
 
 
 class OcrBuilder(BaseBuilder):
@@ -96,13 +97,13 @@ class OcrBuilder(BaseBuilder):
                 )
                 spans = [
                     SpanClass(
-                        text=ocr_line.text + "\n",
+                        text=fix_text(ocr_line.text) + "\n",
                         formats=['plain'],
                         page_id=page_id,
                         polygon=polygon,
                         minimum_position=0,
                         maximum_position=0,
-                        font='',
+                        font='Unknown',
                         font_weight=0,
                         font_size=0,
                     )

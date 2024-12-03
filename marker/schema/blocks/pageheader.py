@@ -3,7 +3,7 @@ from marker.schema.blocks import Block
 
 
 class PageHeader(Block):
-    block_type: str = BlockTypes.PageHeader
+    block_type: BlockTypes = BlockTypes.PageHeader
 
     def assemble_html(self, child_blocks, parent_structure):
         if self.ignore_for_output:

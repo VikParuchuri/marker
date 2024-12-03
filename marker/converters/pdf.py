@@ -10,6 +10,7 @@ from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
 from marker.converters import BaseConverter
+from marker.processors.blockquote import BlockquoteProcessor
 from marker.processors.code import CodeProcessor
 from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
@@ -17,6 +18,7 @@ from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
+from marker.processors.list import ListProcessor
 from marker.processors.page_header import PageHeaderProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
 from marker.processors.table import TableProcessor
@@ -52,16 +54,18 @@ class PdfConverter(BaseConverter):
             processor_list = strings_to_classes(processor_list)
         else:
             processor_list = [
-                FootnoteProcessor,
-                PageHeaderProcessor,
-                EquationProcessor,
-                TableProcessor,
-                SectionHeaderProcessor,
-                TextProcessor,
+                BlockquoteProcessor,
                 CodeProcessor,
                 DocumentTOCProcessor,
+                EquationProcessor,
+                FootnoteProcessor,
                 IgnoreTextProcessor,
                 LineNumbersProcessor,
+                ListProcessor,
+                PageHeaderProcessor,
+                SectionHeaderProcessor,
+                TableProcessor,
+                TextProcessor,
                 DebugProcessor,
             ]
 

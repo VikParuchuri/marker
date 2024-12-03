@@ -25,8 +25,7 @@ def load_models():
     return create_model_dict()
 
 
-def convert_pdf(fname: str, **kwargs) -> (str, Dict[str, Any], dict):
-    config_parser = ConfigParser(kwargs)
+def convert_pdf(fname: str, config_parser: ConfigParser) -> (str, Dict[str, Any], dict):
     config_dict = config_parser.generate_config_dict()
     config_dict["pdftext_workers"] = 1
     converter = PdfConverter(
@@ -122,18 +121,24 @@ if not run_marker:
     st.stop()
 
 # Run Marker
-with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
+with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb+") as temp_pdf:
     temp_pdf.write(in_file.getvalue())
     temp_pdf.seek(0)
     filename = temp_pdf.name
+    cli_options = {
+        "output_format": output_format,
+        "page_range": page_range,
+        "force_ocr": force_ocr,
+        "debug": debug,
+        "output_dir": settings.DEBUG_DATA_FOLDER if debug else None,
+    }
+    config_parser = ConfigParser(cli_options)
     rendered = convert_pdf(
         filename,
-        page_range=page_range,
-        force_ocr=force_ocr,
-        output_format=output_format,
-        output_dir=settings.DEBUG_DATA_FOLDER if debug else None,
-        debug=debug
+        config_parser
     )
+    page_range = config_parser.generate_config_dict()["page_range"]
+    first_page = page_range[0] if page_range else 0
 
 text, ext, images = text_from_rendered(rendered)
 with col2:
@@ -149,10 +154,10 @@ if debug:
     with col1:
         debug_data_path = rendered.metadata.get("debug_data_path")
         if debug_data_path:
-            pdf_image_path = os.path.join(debug_data_path, f"pdf_page_0.png")
+            pdf_image_path = os.path.join(debug_data_path, f"pdf_page_{first_page}.png")
             img = Image.open(pdf_image_path)
             st.image(img, caption="PDF debug image", use_container_width=True)
-            layout_image_path = os.path.join(debug_data_path, f"layout_page_0.png")
+            layout_image_path = os.path.join(debug_data_path, f"layout_page_{first_page}.png")
             img = Image.open(layout_image_path)
             st.image(img, caption="Layout debug image", use_container_width=True)
 

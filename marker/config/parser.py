@@ -32,6 +32,8 @@ class ConfigParser:
                           help="Path to JSON file with additional configuration.")(fn)
         fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
         fn = click.option("--disable_multiprocessing", is_flag=True, default=False, help="Disable multiprocessing.")(fn)
+        fn = click.option("--paginate_output", is_flag=True, default=False, help="Paginate output.")(fn)
+        fn = click.option("--disable_image_extraction", is_flag=True, default=False, help="Disable image extraction.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
@@ -61,6 +63,12 @@ class ConfigParser:
                 case "disable_multiprocessing":
                     if v:
                         config["pdftext_workers"] = 1
+                case "paginate_output":
+                    if v:
+                        config["paginate_output"] = True
+                case "disable_image_extraction":
+                    if v:
+                        config["extract_images"] = False
         return config
 
     def get_renderer(self):

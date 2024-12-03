@@ -42,15 +42,23 @@ class Document(BaseModel):
                 return page
         return None
 
-    def get_next_block(self, block: Block):
+    def get_next_block(self, block: Block, ignored_block_types: List[BlockTypes] = None):
+        if ignored_block_types is None:
+            ignored_block_types = []
+        next_block = None
+
+        # Try to find the next block in the current page
         page = self.get_page(block.page_id)
-        next_block = page.get_next_block(block)
+        next_block = page.get_next_block(block, ignored_block_types)
         if next_block:
             return next_block
-        next_page = self.get_next_page(page)
-        if not next_page:
-            return None
-        return next_page.get_block(next_page.structure[0])
+
+        # If no block found, search subsequent pages
+        for page in self.pages[self.pages.index(page) + 1:]:
+            next_block = page.get_next_block(None, ignored_block_types)
+            if next_block:
+                return next_block
+        return None
 
     def get_next_page(self, page: PageGroup):
         page_idx = self.pages.index(page)
@@ -85,7 +93,7 @@ class Document(BaseModel):
         section_hierarchy = None
         for page in self.pages:
             rendered = page.render(self, None, section_hierarchy)
-            section_hierarchy = rendered.section_hierarchy
+            section_hierarchy = rendered.section_hierarchy.copy()
             child_content.append(rendered)
 
         return DocumentOutput(

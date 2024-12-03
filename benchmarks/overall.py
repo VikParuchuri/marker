@@ -16,6 +16,8 @@ import os
 import subprocess
 import shutil
 from tabulate import tabulate
+
+from marker.settings import settings
 from scoring import score_text
 
 configure_logging()
@@ -53,7 +55,7 @@ def main(in_folder: str, reference_folder: str, out_file: str, nougat: bool, md_
         md_filename = fname.rsplit(".", 1)[0] + ".md"
 
         reference_filename = os.path.join(reference_folder, md_filename)
-        with open(reference_filename, "r", encoding="utf-8") as f:
+        with open(reference_filename, "r") as f:
             reference = f.read()
 
         pdf_filename = os.path.join(in_folder, fname)

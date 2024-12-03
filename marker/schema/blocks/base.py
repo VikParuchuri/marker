@@ -64,7 +64,7 @@ class Block(BaseModel):
     page_id: Optional[int] = None
     text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
-    ignore_for_output: bool = False # Whether this block should be ignored in output
+    ignore_for_output: bool = False  # Whether this block should be ignored in output
     source: Literal['layout', 'heuristics', 'processor'] = 'layout'
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -86,6 +86,32 @@ class Block(BaseModel):
         if self.structure is None:
             return []
         return [document_page.get_block(block_id) for block_id in self.structure]
+
+    def get_prev_block(self, document_page: Document | PageGroup, block: Block, ignored_block_types: Optional[List[BlockTypes]] = None):
+        if ignored_block_types is None:
+            ignored_block_types = []
+        
+        structure_idx = self.structure.index(block.id)
+        if structure_idx == 0:
+            return None
+        
+        for prev_block_id in reversed(self.structure[:structure_idx]):
+            if prev_block_id.block_type not in ignored_block_types:
+                return document_page.get_block(prev_block_id)
+
+    def get_next_block(self, document_page: Document | PageGroup, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
+        if ignored_block_types is None:
+            ignored_block_types = []
+
+        structure_idx = 0
+        if block is not None:
+            structure_idx = self.structure.index(block.id) + 1
+
+        for next_block_id in self.structure[structure_idx:]:
+            if next_block_id.block_type not in ignored_block_types:
+                return document_page.get_block(next_block_id)
+
+        return None  # No valid next block found
 
     def add_structure(self, block: Block):
         if self.structure is None:
@@ -170,7 +196,7 @@ class Block(BaseModel):
             for block_id in self.structure:
                 block = document.get_block(block_id)
                 rendered = block.render(document, self.structure, section_hierarchy)
-                section_hierarchy = rendered.section_hierarchy  # Update the section hierarchy from the peer blocks
+                section_hierarchy = rendered.section_hierarchy.copy()  # Update the section hierarchy from the peer blocks
                 child_content.append(rendered)
 
         return BlockOutput(

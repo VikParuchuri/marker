@@ -1,7 +1,6 @@
 from collections import defaultdict
-from typing import Dict, List, TYPE_CHECKING, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-import numpy as np
 from PIL import Image
 
 from marker.providers import ProviderOutput
@@ -18,7 +17,7 @@ class PageGroup(Group):
     block_type: BlockTypes = BlockTypes.Page
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
-    children: List[Block] | None = None
+    children: List[Union[Any, Block]] | None = None
     layout_sliced: bool = False # Whether the layout model had to slice the image (order may be wrong)
     excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
     maximum_assignment_distance: float = 20 # pixels
@@ -35,11 +34,20 @@ class PageGroup(Group):
         else:
             self.children.append(block)
 
-    def get_next_block(self, block: Block):
-        block_idx = self.structure.index(block.id)
-        if block_idx + 1 < len(self.structure):
-            return self.get_block(self.structure[block_idx + 1])
-        return None
+    def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
+        if ignored_block_types is None:
+            ignored_block_types = []
+        
+        structure_idx = 0
+        if block is not None:
+            structure_idx = self.structure.index(block.id) + 1
+
+        # Iterate over blocks following the given block
+        for next_block_id in self.structure[structure_idx:]:
+            if next_block_id.block_type not in ignored_block_types:
+                return self.get_block(next_block_id)
+
+        return None  # No valid next block found
 
     def get_prev_block(self, block: Block):
         block_idx = self.structure.index(block.id)
@@ -121,6 +129,11 @@ class PageGroup(Group):
         new_block = None
         for line_idx in provider_line_idxs:
             if line_idx in assigned_line_idxs:
+                continue
+
+            # if the unassociated line is a new line with minimal area, we can skip it
+            if provider_outputs[line_idx].line.polygon.area <= 1 and \
+                provider_outputs[line_idx].raw_text == "\n":
                 continue
 
             if new_block is None:
