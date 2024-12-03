@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from pydantic import BaseModel
@@ -21,11 +22,12 @@ class HTMLOutput(BaseModel):
 class HTMLRenderer(BaseRenderer):
     page_blocks: list = [BlockTypes.Page]
     paginate_output: bool = False
+    image_extraction_mode: Literal["lowres", "highres"] = "highres"
 
     def extract_image(self, document, image_id):
         image_block = document.get_block(image_id)
         page = document.get_page(image_block.page_id)
-        page_img = page.highres_image
+        page_img = page.lowres_image if self.image_extraction_mode == "lowres" else page.highres_image
         image_box = image_block.polygon.rescale(page.polygon.size, page_img.size)
         cropped = page_img.crop(image_box.bbox)
         return cropped

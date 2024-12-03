@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict
 
+from PIL import Image
 from pydantic import BaseModel
 
 from marker.schema.text import Span
@@ -25,7 +26,7 @@ class BaseProvider:
     def __len__(self):
         pass
 
-    def get_image(self, idx: int, dpi: int):
+    def get_images(self, idxs: List[int], dpi: int) -> List[Image.Image]:
         pass
 
     def get_page_bbox(self, idx: int) -> List[float]:

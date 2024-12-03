@@ -1,6 +1,10 @@
 import atexit
 import re
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures.process import ProcessPoolExecutor
+from itertools import repeat
 from typing import List, Set
+import multiprocessing as mp
 
 import pypdfium2 as pdfium
 from ftfy import fix_text
@@ -195,11 +199,16 @@ class PdfProvider(BaseProvider):
 
         return False
 
-    def get_image(self, idx: int, dpi: int) -> Image.Image:
-        page = self.doc[idx]
+    @staticmethod
+    def _render_image(pdf: pdfium.PdfDocument, idx: int, dpi: int) -> Image.Image:
+        page = pdf[idx]
         image = page.render(scale=dpi / 72, draw_annots=False).to_pil()
         image = image.convert("RGB")
         return image
+
+    def get_images(self, idxs: List[int], dpi: int) -> List[Image.Image]:
+        images = [self._render_image(self.doc, idx, dpi) for idx in idxs]
+        return images
 
     def get_page_bbox(self, idx: int) -> PolygonBox | None:
         bbox = self.page_bboxes.get(idx)

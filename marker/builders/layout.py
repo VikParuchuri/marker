@@ -82,6 +82,10 @@ class LayoutBuilder(BaseBuilder):
                 layout_block.polygon = layout_block.polygon.rescale(layout_page_size, provider_page_size)
                 page.add_structure(layout_block)
 
+            # Ensure page has non-empty structure
+            if page.structure is None:
+                page.structure = []
+
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: ProviderPageLines):
         good_pages = []
         for document_page in document_pages:
