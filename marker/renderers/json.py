@@ -23,7 +23,7 @@ class JSONBlockOutput(BaseModel):
 
 class JSONOutput(BaseModel):
     children: List[JSONBlockOutput]
-    block_type: BlockTypes = BlockTypes.Document
+    block_type: str = str(BlockTypes.Document)
     metadata: dict
 
 

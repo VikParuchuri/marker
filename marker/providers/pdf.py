@@ -1,10 +1,6 @@
 import atexit
 import re
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures.process import ProcessPoolExecutor
-from itertools import repeat
 from typing import List, Set
-import multiprocessing as mp
 
 import pypdfium2 as pdfium
 from ftfy import fix_text
@@ -39,14 +35,14 @@ class PdfProvider(BaseProvider):
         if self.page_range is None:
             self.page_range = range(len(self.doc))
 
-        assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, f"Invalid page range, values must be between 0 and {len(self.doc) - 1}.  Min of provided page range is {min(self.page_range)} and max is {max(self.page_range)}."
+        assert max(self.page_range) < len(self.doc) and min(self.page_range) >= 0, \
+            f"Invalid page range, values must be between 0 and {len(self.doc) - 1}.  Min of provided page range is {min(self.page_range)} and max is {max(self.page_range)}."
 
         if self.force_ocr:
             # Manually assign page bboxes, since we can't get them from pdftext
             self.page_bboxes = {i: self.doc[i].get_bbox() for i in self.page_range}
         else:
             self.page_lines = self.pdftext_extraction()
-
 
         atexit.register(self.cleanup_pdf_doc)
 
@@ -115,7 +111,8 @@ class PdfProvider(BaseProvider):
             page_range=self.page_range,
             keep_chars=False,
             workers=self.pdftext_workers,
-            flatten_pdf=self.flatten_pdf
+            flatten_pdf=self.flatten_pdf,
+            quote_loosebox=False
         )
         self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_char_blocks)}
 

@@ -35,7 +35,7 @@ class BaseRenderer:
         cropped = page_img.crop(image_box.bbox)
         if to_base64:
             image_buffer = io.BytesIO()
-            cropped.save(image_buffer, format='PNG')
+            cropped.save(image_buffer, format=settings.OUTPUT_IMAGE_FORMAT)
             cropped = base64.b64encode(image_buffer.getvalue()).decode(settings.OUTPUT_ENCODING)
         return cropped
 

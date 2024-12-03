@@ -1,4 +1,3 @@
-import re
 from typing import Literal
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
@@ -7,10 +6,15 @@ from pydantic import BaseModel
 from marker.renderers import BaseRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import BlockId
+from marker.settings import settings
 
 # Ignore beautifulsoup warnings
 import warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+
+# Suppress DecompressionBombError
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
 
 
 class HTMLOutput(BaseModel):
@@ -53,7 +57,7 @@ class HTMLRenderer(BaseRenderer):
             elif ref_block_id.block_type in self.image_blocks:
                 if self.extract_images:
                     image = self.extract_image(document, ref_block_id)
-                    image_name = f"{ref_block_id.to_path()}.png"
+                    image_name = f"{ref_block_id.to_path()}.{settings.OUTPUT_IMAGE_FORMAT.lower()}"
                     images[image_name] = image
                     ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
                 else:

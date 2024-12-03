@@ -110,7 +110,7 @@ async def _convert_pdf(params: CommonParams):
     encoded = {}
     for k, v in images.items():
         byte_stream = io.BytesIO()
-        v.save(byte_stream, format="PNG")
+        v.save(byte_stream, format=settings.OUTPUT_IMAGE_FORMAT)
         encoded[k] = base64.b64encode(byte_stream.getvalue()).decode(settings.OUTPUT_ENCODING)
 
     return {
