@@ -38,4 +38,4 @@ def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
         f.write(json.dumps(rendered.metadata, indent=2))
 
     for img_name, img in images.items():
-        img.save(os.path.join(output_dir, img_name), "PNG", optimize=False, compress_level=3)
+        img.save(os.path.join(output_dir, img_name), settings.OUTPUT_IMAGE_FORMAT)

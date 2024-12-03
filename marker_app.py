@@ -44,10 +44,10 @@ def open_pdf(pdf_file):
 
 def img_to_html(img, img_alt):
     img_bytes = io.BytesIO()
-    img.save(img_bytes, format="PNG")
+    img.save(img_bytes, format=settings.OUTPUT_IMAGE_FORMAT)
     img_bytes = img_bytes.getvalue()
     encoded = base64.b64encode(img_bytes).decode()
-    img_html = f'<img src="data:image/png;base64,{encoded}" alt="{img_alt}" style="max-width: 100%;">'
+    img_html = f'<img src="data:image/{settings.OUTPUT_IMAGE_FORMAT.lower()};base64,{encoded}" alt="{img_alt}" style="max-width: 100%;">'
     return img_html
 
 

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     # General
     OUTPUT_ENCODING: str = "utf-8"
+    OUTPUT_IMAGE_FORMAT: str = "JPEG"
 
     # General models
     TORCH_DEVICE: Optional[str] = None # Note: MPS device does not work for text detection, and will default to CPU
