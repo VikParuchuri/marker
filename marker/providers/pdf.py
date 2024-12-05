@@ -4,6 +4,7 @@ import re
 from ctypes import byref, c_int, create_string_buffer
 from typing import List, Set
 
+import numpy as np
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
@@ -17,6 +18,7 @@ from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
 from marker.schema.text.span import Span
+from marker.util import matrix_intersection_area
 
 
 def get_fontname(textpage, i):
@@ -35,8 +37,8 @@ def get_fontname(textpage, i):
         if length > 0:
             font_name_str = font_name.value.decode('utf-8')
             flags = font_flags.value
-    except Exception as e:
-        print(f"Error getting font info for {i}: {e}")
+    except:
+        pass
     return font_name_str, flags
 
 
@@ -58,7 +60,7 @@ def get_chars(textpage):
                 "size": pdfium_c.FPDFText_GetFontSize(textpage, i),
                 "weight": pdfium_c.FPDFText_GetFontWeight(textpage, i),
             },
-            "idx": i,
+            "char_idx": i,
             "char_start_idx": start_idx,
             "char_end_idx": end_idx
         })
@@ -121,6 +123,7 @@ def merge_bboxes(bboxes, page_width, page_height, vertical_factor=0.01, horizont
 
 def merge_chars_into_bboxes(line_bboxes, chars, tolerance=2):
     merged_lines = []
+    remaining_chars = []
 
     for line_bbox in line_bboxes:
         # Expand the line bbox by the tolerance
@@ -153,6 +156,18 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=2):
 
         # Update the chars list with unmerged characters
         chars = remaining_chars
+
+    if remaining_chars:
+        char_bboxes = [char["bbox"] for char in remaining_chars]
+        intersection_matrix = matrix_intersection_area(line_bboxes, char_bboxes)
+
+        for char_idx, _ in enumerate(char_bboxes):
+            line_with_max_intersection = np.argmax(intersection_matrix[:, char_idx])
+            if intersection_matrix[line_with_max_intersection, char_idx] > 0:
+                merged_lines[line_with_max_intersection]["chars"].append(remaining_chars[char_idx])
+
+    for line in merged_lines:
+        line["chars"] = sorted(line["chars"], key=lambda c: c["char_idx"])
 
     return merged_lines
 
