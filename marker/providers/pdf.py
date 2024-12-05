@@ -121,7 +121,7 @@ def merge_bboxes(bboxes, page_width, page_height, vertical_factor=0.01, horizont
     return merged_bboxes
 
 
-def merge_chars_into_bboxes(line_bboxes, chars, tolerance=2):
+def merge_chars_into_bboxes(line_bboxes, chars, tolerance=0):
     merged_lines = []
     remaining_chars = []
 
@@ -156,18 +156,6 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=2):
 
         # Update the chars list with unmerged characters
         chars = remaining_chars
-
-    if remaining_chars:
-        char_bboxes = [char["bbox"] for char in remaining_chars]
-        intersection_matrix = matrix_intersection_area(line_bboxes, char_bboxes)
-
-        for char_idx, _ in enumerate(char_bboxes):
-            line_with_max_intersection = np.argmax(intersection_matrix[:, char_idx])
-            if intersection_matrix[line_with_max_intersection, char_idx] > 0:
-                merged_lines[line_with_max_intersection]["chars"].append(remaining_chars[char_idx])
-
-    for line in merged_lines:
-        line["chars"] = sorted(line["chars"], key=lambda c: c["char_idx"])
 
     return merged_lines
 
