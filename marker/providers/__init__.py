@@ -19,7 +19,7 @@ class ProviderOutput(BaseModel):
 ProviderPageLines = Dict[int, List[ProviderOutput]]
 
 class BaseProvider:
-    def __init__(self, filepath: str, config: Optional[BaseModel | dict] = None):
+    def __init__(self, filepath: str | bytes, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
         self.filepath = filepath
 
