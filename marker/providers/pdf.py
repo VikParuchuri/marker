@@ -125,6 +125,7 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=0):
     merged_lines = []
     remaining_chars = []
 
+    char_idx = -1
     for line_bbox in line_bboxes:
         # Expand the line bbox by the tolerance
         line_x1, line_y1, line_x2, line_y2 = (
@@ -145,9 +146,11 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=0):
                 line_x1 <= char_x1 <= line_x2 and
                 line_y1 <= char_y1 <= line_y2 and
                 line_x1 <= char_x2 <= line_x2 and
-                line_y1 <= char_y2 <= line_y2
+                line_y1 <= char_y2 <= line_y2 and
+                char["char_idx"] > char_idx
             ):
                 line_chars.append(char)
+                char_idx = char["char_idx"]
             else:
                 remaining_chars.append(char)
 
@@ -156,9 +159,6 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=0):
 
         # Update the chars list with unmerged characters
         chars = remaining_chars
-
-    for line in merged_lines:
-        line["chars"] = sorted(line["chars"], key=lambda c: c["char_idx"])
 
     if remaining_chars:
         line_ranges = []
@@ -183,8 +183,17 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=0):
                 for i, (min_idx, max_idx) in reversed(list(enumerate(line_ranges))):
                     if min_idx is None or max_idx is None:
                         continue
-                    if min_idx < char_idx and char_idx > max_idx:
+                    if char_idx > max_idx and char["bbox"][0] >= merged_lines[i]["bbox"][2]:  # char appended to the end of a line
                         merged_lines[i]["chars"].append(char)
+                        added_to_line = True
+                        break
+
+            if not added_to_line:
+                for i, (min_idx, max_idx) in enumerate(line_ranges):
+                    if min_idx is None or max_idx is None:
+                        continue
+                    if char_idx < min_idx and char["bbox"][0] <= merged_lines[i]["bbox"][0]:  # char appended to the beginning of a line
+                        merged_lines[i]["chars"].insert(0, char)
                         added_to_line = True
                         break
 
@@ -196,16 +205,10 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=0):
         if line["chars"]:
             line["chars"] = sorted(line["chars"], key=lambda c: c["char_idx"])
 
-            min_x1 = min(char["bbox"][0] for char in line["chars"])
-            min_y1 = min(char["bbox"][1] for char in line["chars"])
-            max_x2 = max(char["bbox"][2] for char in line["chars"])
-            max_y2 = max(char["bbox"][3] for char in line["chars"])
-            line["bbox"] = [min_x1, min_y1, max_x2, max_y2]
-
     return merged_lines
 
 
-def get_pages(pdf: pdfium.PdfDocument, page_range: range, tolerance=2):
+def get_pages(pdf: pdfium.PdfDocument, page_range: range, tolerance=0):
     pages = []
     for page_idx in page_range:
         page = pdf.get_page(page_idx)
