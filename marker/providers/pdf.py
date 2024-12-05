@@ -26,8 +26,8 @@ class PdfProvider(BaseProvider):
     ocr_newline_threshold: float = .6
     ocr_alphanum_threshold: float = .3
 
-    def __init__(self, filepath: str, config=None):
-        super().__init__(filepath, config)
+    def __init__(self, file: str | bytes, config=None):
+        super().__init__(file, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
         self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
