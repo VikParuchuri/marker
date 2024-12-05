@@ -208,7 +208,7 @@ def merge_chars_into_bboxes(line_bboxes, chars, tolerance=0):
     return merged_lines
 
 
-def get_pages(pdf: pdfium.PdfDocument, page_range: range, tolerance=0):
+def get_pages(pdf: pdfium.PdfDocument, page_range: range, tolerance=2):
     pages = []
     for page_idx in page_range:
         page = pdf.get_page(page_idx)
