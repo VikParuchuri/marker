@@ -1,19 +1,204 @@
 import atexit
+import math
 import re
+from ctypes import byref, c_int, create_string_buffer
 from typing import List, Set
 
 import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
-from pdftext.extraction import dictionary_output
+from pdftext.postprocessing import handle_hyphens, postprocess_text
 from PIL import Image
 
-from marker.providers.utils import alphanum_ratio
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
-from marker.schema.polygon import PolygonBox
+from marker.providers.utils import alphanum_ratio
 from marker.schema import BlockTypes
+from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
 from marker.schema.text.span import Span
+
+
+def get_fontname(textpage, i):
+    font_name_str = ""
+    flags = 0
+    try:
+        buffer_size = 256
+        font_name = create_string_buffer(buffer_size)
+        font_flags = c_int()
+
+        length = pdfium_c.FPDFText_GetFontInfo(textpage, i, font_name, buffer_size, byref(font_flags))
+        if length > buffer_size:
+            font_name = create_string_buffer(length)
+            pdfium_c.FPDFText_GetFontInfo(textpage, i, font_name, length, byref(font_flags))
+
+        if length > 0:
+            font_name_str = font_name.value.decode('utf-8')
+            flags = font_flags.value
+    except Exception as e:
+        print(f"Error getting font info for {i}: {e}")
+    return font_name_str, flags
+
+
+def get_chars(textpage):
+    chars = []
+    start_idx = 0
+    end_idx = 0
+    for i in range(textpage.count_chars()):
+        fontname, fontflag = get_fontname(textpage, i)
+        text = chr(pdfium_c.FPDFText_GetUnicode(textpage, i))
+        end_idx = start_idx + len(text)
+        chars.append({
+            "bbox": textpage.get_charbox(i, loose=False),
+            "text": text,
+            "rotation": pdfium_c.FPDFText_GetCharAngle(textpage, i),
+            "font": {
+                "name": fontname,
+                "flags": fontflag,
+                "size": pdfium_c.FPDFText_GetFontSize(textpage, i),
+                "weight": pdfium_c.FPDFText_GetFontWeight(textpage, i),
+            },
+            "idx": i,
+            "char_start_idx": start_idx,
+            "char_end_idx": end_idx
+        })
+        start_idx = end_idx
+    return chars
+
+
+def merge_bboxes(bboxes, page_width, page_height, vertical_factor=0.01, horizontal_factor=0.02):
+    vertical_threshold = page_height * vertical_factor
+    horizontal_threshold = page_width * horizontal_factor
+
+    lines = []
+    current_line = []
+
+    for bbox in bboxes:
+        if not current_line:
+            current_line.append(bbox)
+            continue
+
+        # Check if bbox is vertically aligned with the current line
+        _, y0, _, y1 = bbox
+        _, line_y0, _, line_y1 = current_line[-1]  # Last box in the current line
+
+        if abs((y0 + y1) / 2 - (line_y0 + line_y1) / 2) <= vertical_threshold:
+            current_line.append(bbox)
+        else:
+            lines.append(current_line)
+            current_line = [bbox]
+
+    if current_line:
+        lines.append(current_line)
+
+    merged_bboxes = []
+    for line in lines:
+        # Merge boxes
+        merged_line = []
+        current_box = line[0]
+
+        for bbox in line[1:]:
+            # Check if bbox is close enough horizontally to merge
+            _, _, x1, _ = current_box
+            x0, _, x1_next, _ = bbox
+
+            if x0 - x1 <= horizontal_threshold:  # Merge
+                current_box = (
+                    min(current_box[0], bbox[0]),
+                    min(current_box[1], bbox[1]),
+                    max(current_box[2], bbox[2]),
+                    max(current_box[3], bbox[3]),
+                )
+            else:
+                merged_line.append(current_box)
+                current_box = bbox
+
+        merged_line.append(current_box)
+        merged_bboxes.extend(merged_line)
+
+    return merged_bboxes
+
+
+def merge_chars_into_bboxes(line_bboxes, chars, tolerance=2):
+    merged_lines = []
+
+    for line_bbox in line_bboxes:
+        # Expand the line bbox by the tolerance
+        line_x1, line_y1, line_x2, line_y2 = (
+            line_bbox[0] - tolerance,
+            line_bbox[1] - tolerance,
+            line_bbox[2] + tolerance,
+            line_bbox[3] + tolerance,
+        )
+
+        # Collect characters within this line
+        line_chars = []
+        remaining_chars = []
+
+        for char in chars:
+            char_x1, char_y1, char_x2, char_y2 = char["bbox"]
+            # Check if char is within the expanded line bbox
+            if (
+                line_x1 <= char_x1 <= line_x2 and
+                line_y1 <= char_y1 <= line_y2 and
+                line_x1 <= char_x2 <= line_x2 and
+                line_y1 <= char_y2 <= line_y2
+            ):
+                line_chars.append(char)
+            else:
+                remaining_chars.append(char)
+
+        # Add merged line data to the result
+        merged_lines.append({"bbox": line_bbox, "chars": line_chars})
+
+        # Update the chars list with unmerged characters
+        chars = remaining_chars
+
+    return merged_lines
+
+
+def get_pages(pdf: pdfium.PdfDocument, page_range: range, tolerance=2):
+    pages = []
+    for page_idx in page_range:
+        page = pdf.get_page(page_idx)
+        textpage = page.get_textpage()
+
+        page_bbox = page.get_bbox()
+        page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
+        page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
+
+        line_bboxes = []
+        for i in range(textpage.count_rects()):
+            bbox = textpage.get_rect(i)
+            bbox = [bbox[0] - tolerance, bbox[1] - tolerance, bbox[2] + tolerance, bbox[3] + tolerance]
+            line_bboxes.append(bbox)
+        line_bboxes = merge_bboxes(line_bboxes, page_width, page_height)
+
+        chars = get_chars(textpage)
+
+        lines = []
+        for line in merge_chars_into_bboxes(line_bboxes, chars):
+            line["bbox"] = [line["bbox"][0], page_height - line["bbox"][3], line["bbox"][2], page_height - line["bbox"][1]]
+
+            spans = []
+            for char in line["chars"]:
+                char["bbox"] = [char["bbox"][0], page_height - char["bbox"][3], char["bbox"][2], page_height - char["bbox"][1]]
+
+                if not spans or (spans and any(char['font'][k] != spans[-1]['font'][k] for k in ['name', 'flags', 'size', 'weight'])):
+                    spans.append({key: char[key] for key in char.keys()})
+                else:
+                    spans[-1]['text'] += char['text']
+                    spans[-1]['char_end_idx'] = char['char_end_idx']
+            lines.append({"bbox": line["bbox"], "spans": spans})
+
+        pages.append({
+            "page": page_idx,
+            "bbox": page_bbox,
+            "width": page_width,
+            "height": page_height,
+            "blocks": [{"lines": lines}]
+        })
+    return pages
 
 
 class PdfProvider(BaseProvider):
@@ -106,14 +291,7 @@ class PdfProvider(BaseProvider):
 
     def pdftext_extraction(self) -> ProviderPageLines:
         page_lines: ProviderPageLines = {}
-        page_char_blocks = dictionary_output(
-            self.filepath,
-            page_range=self.page_range,
-            keep_chars=False,
-            workers=self.pdftext_workers,
-            flatten_pdf=self.flatten_pdf,
-            quote_loosebox=False
-        )
+        page_char_blocks = get_pages(self.doc, self.page_range)
         self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_char_blocks)}
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
@@ -135,7 +313,7 @@ class PdfProvider(BaseProvider):
                         spans.append(
                             SpanClass(
                                 polygon=polygon,
-                                text=fix_text(span["text"]),
+                                text=fix_text(handle_hyphens(postprocess_text(span["text"]), keep_hyphens=True)),
                                 font=font_name,
                                 font_weight=font_weight,
                                 font_size=font_size,
@@ -199,7 +377,12 @@ class PdfProvider(BaseProvider):
     @staticmethod
     def _render_image(pdf: pdfium.PdfDocument, idx: int, dpi: int) -> Image.Image:
         page = pdf[idx]
-        image = page.render(scale=dpi / 72, draw_annots=False).to_pil()
+        page_rotation = 0
+        try:
+            page_rotation = page.get_rotation()
+        except:
+            pass
+        image = page.render(scale=dpi / 72, draw_annots=False).to_pil().rotate(page_rotation, expand=True)
         image = image.convert("RGB")
         return image
 

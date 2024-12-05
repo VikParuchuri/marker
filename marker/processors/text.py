@@ -35,14 +35,14 @@ class TextProcessor(BaseProcessor):
                     continue
 
                 next_block = document.get_next_block(block, self.ignored_block_types)
-                if next_block is None: # we've reached the end of the document
+                if next_block is None:  # we've reached the end of the document
                     continue
                 if next_block.block_type not in self.block_types:
-                    continue # we found a non-text block
+                    continue  # we found a non-text block
                 if next_block.structure is None:
                     continue  # This is odd though, why do we have text blocks with no structure?
                 if next_block.ignore_for_output:
-                    continue # skip ignored blocks
+                    continue  # skip ignored blocks
 
                 column_gap = block.polygon.width * self.column_gap_ratio
 
@@ -53,7 +53,7 @@ class TextProcessor(BaseProcessor):
                 last_line_is_hyphentated = False
                 new_block_lines = []
 
-                if next_block.page_id == block.page_id: # block on the same page
+                if next_block.page_id == block.page_id:  # block on the same page
                     # we check for a column break
                     column_break = (
                         math.floor(next_block.polygon.y_start) <= math.ceil(block.polygon.y_start) and
@@ -63,22 +63,22 @@ class TextProcessor(BaseProcessor):
                     page_break = True
                     next_page = document.get_page(next_block.page_id)
                     next_block_in_first_quadrant = (next_block.polygon.x_start < next_page.polygon.width // 2) and \
-                                        (next_block.polygon.y_start < next_page.polygon.height // 2)
+                        (next_block.polygon.y_start < next_page.polygon.height // 2)
 
                 if not (column_break or page_break):
                     continue
-    
+
                 new_block_lines = next_block.structure_blocks(document)
 
                 # we check for next_block indentation
                 if len(new_block_lines):
                     min_x = math.ceil(min([l.polygon.x_start for l in new_block_lines]))
-                    next_block_starts_indented = new_block_lines[0].polygon.x_start > min_x
+                    next_block_starts_indented = math.floor(new_block_lines[0].polygon.x_start) > min_x
 
                 lines: List[Line] = [l for l in block.structure_blocks(document) if l.polygon.width > 1]
                 if len(lines):
                     max_x = math.floor(max([l.polygon.x_end for l in lines]))
-                    last_line_is_full_width = lines[-1].polygon.x_end >= max_x
+                    last_line_is_full_width = math.ceil(lines[-1].polygon.x_end) >= max_x
 
                     last_line_is_hyphentated = regex.compile(r'.*[\p{Ll}|\d][-—¬]\s?$', regex.DOTALL).match(lines[-1].raw_text(document).strip())
 

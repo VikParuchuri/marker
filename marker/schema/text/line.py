@@ -48,7 +48,8 @@ class Line(Block):
             next_line_raw_text = next_line.raw_text(document)
             template = strip_trailing_hyphens(raw_text, next_line_raw_text, template)
         else:
-            template = template.strip(' ') # strip any trailing whitespace from the last line
+            template = template.strip(' ')  # strip any trailing whitespace from the last line
+
         return template
 
     def render(self, document, parent_structure, section_hierarchy=None):
