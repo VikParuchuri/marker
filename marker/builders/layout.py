@@ -40,7 +40,7 @@ class LayoutBuilder(BaseBuilder):
     """
     batch_size = None
     layout_coverage_min_lines = 1
-    layout_coverage_threshold = .1
+    layout_coverage_threshold = .13
     document_ocr_threshold = .8
     excluded_for_coverage = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
 
