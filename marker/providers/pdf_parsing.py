@@ -79,7 +79,7 @@ def get_fontname(textpage, i):
     return font_name_str, flags
 
 
-def get_chars(page, textpage, loose=False) -> Chars:
+def get_chars(page, textpage, loose=True) -> Chars:
     chars: Chars = []
     start_idx = 0
     end_idx = 1
@@ -93,7 +93,11 @@ def get_chars(page, textpage, loose=False) -> Chars:
         text = chr(pdfium_c.FPDFText_GetUnicode(textpage, i))
         end_idx = start_idx + len(text)
 
-        char_box = textpage.get_charbox(i, loose=loose)
+        loosebox = loose
+        if text in ["'"]:
+            loosebox = False
+
+        char_box = textpage.get_charbox(i, loose=loosebox)
         cx_start, cy_start, cx_end, cy_end = char_box
 
         cx_start -= x_start
