@@ -9,38 +9,13 @@ from ftfy import fix_text
 from PIL import Image
 
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
-from marker.providers.pdf_parsing import get_blocks, get_chars, get_lines, get_spans
+from marker.providers.pdf_parsing import get_pages
 from marker.providers.utils import alphanum_ratio
 from marker.schema import BlockTypes
 from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
 from marker.schema.text.span import Span
-
-
-def get_pages(pdf: pdfium.PdfDocument, page_range: range):
-    pages = []
-    for page_idx in page_range:
-        page = pdf.get_page(page_idx)
-        textpage = page.get_textpage()
-
-        page_bbox = page.get_bbox()
-        page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
-        page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
-
-        chars = get_chars(textpage, page_width, page_height)
-        spans = get_spans(chars)
-        lines = get_lines(spans)
-        blocks = get_blocks(lines)
-
-        pages.append({
-            "page": page_idx,
-            "bbox": page_bbox,
-            "width": page_width,
-            "height": page_height,
-            "blocks": blocks
-        })
-    return pages
 
 
 class PdfProvider(BaseProvider):
@@ -57,6 +32,9 @@ class PdfProvider(BaseProvider):
         super().__init__(filepath, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
+        if self.flatten_pdf:
+            self.doc.init_forms()
+
         self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
 
         if self.page_range is None:
@@ -133,12 +111,12 @@ class PdfProvider(BaseProvider):
 
     def pdftext_extraction(self) -> ProviderPageLines:
         page_lines: ProviderPageLines = {}
-        page_char_blocks = get_pages(self.doc, self.page_range)
-        self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_char_blocks)}
+        page_blocks = get_pages(self.doc, self.page_range, self.flatten_pdf)
+        self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_blocks)}
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
-        for page in page_char_blocks:
+        for page in page_blocks:
             page_id = page["page"]
             lines: List[ProviderOutput] = []
             for block in page["blocks"]:

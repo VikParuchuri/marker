@@ -5,6 +5,12 @@ import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 
 
+def flatten(page, flag=pdfium_c.FLAT_NORMALDISPLAY):
+    rc = pdfium_c.FPDFPage_Flatten(page, flag)
+    if rc == pdfium_c.FLATTEN_FAIL:
+        raise pdfium.PdfiumError("Failed to flatten annotations / form fields.")
+
+
 def get_fontname(textpage, i):
     font_name_str = ""
     flags = 0
@@ -26,16 +32,32 @@ def get_fontname(textpage, i):
     return font_name_str, flags
 
 
-def get_chars(textpage, page_width, page_height, loose=False):
+def get_chars(page, textpage, loose=False):
     chars = []
     start_idx = 0
     end_idx = 1
+
+    x_start, y_start, x_end, y_end = page.get_bbox()
+    page_width = math.ceil(abs(x_end - x_start))
+    page_height = math.ceil(abs(y_end - y_start))
+
     for i in range(textpage.count_chars()):
         fontname, fontflag = get_fontname(textpage, i)
         text = chr(pdfium_c.FPDFText_GetUnicode(textpage, i))
         end_idx = start_idx + len(text)
-        bbox = [round(coord, 2) for coord in textpage.get_charbox(i, loose=loose)]
-        bbox = [bbox[0], page_height - bbox[3], bbox[2], page_height - bbox[1]]
+
+        char_box = textpage.get_charbox(i, loose=loose)
+        cx_start, cy_start, cx_end, cy_end = char_box
+
+        cx_start -= x_start
+        cx_end -= x_start
+        cy_start -= y_start
+        cy_end -= y_start
+
+        ty_start = page_height - cy_start
+        ty_end = page_height - cy_end
+
+        bbox = [round(cx_start, 2), round(min(ty_start, ty_end), 2), round(cx_end, 2), round(max(ty_start, ty_end), 2)]
 
         chars.append({
             "bbox": bbox,
@@ -131,8 +153,37 @@ def get_blocks(lines):
     return blocks
 
 
+def get_pages(pdf: pdfium.PdfDocument, page_range: range, flatten_pdf: bool = True):
+    pages = []
+    for page_idx in page_range:
+        page = pdf.get_page(page_idx)
+        if flatten_pdf:
+            flatten(page)
+            page = pdf.get_page(page_idx)
+
+        textpage = page.get_textpage()
+
+        page_bbox = page.get_bbox()
+        page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
+        page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
+
+        chars = get_chars(page, textpage)
+        spans = get_spans(chars)
+        lines = get_lines(spans)
+        blocks = get_blocks(lines)
+
+        pages.append({
+            "page": page_idx,
+            "bbox": page_bbox,
+            "width": page_width,
+            "height": page_height,
+            "blocks": blocks
+        })
+    return pages
+
+
 if __name__ == "__main__":
-    pdf_path = '/home/ubuntu/surya-test/pdfs/adversarial.pdf'
+    pdf_path = '/home/ubuntu/surya-test/pdfs/nested-lists.pdf'
     pdf = pdfium.PdfDocument(pdf_path)
 
     for page_idx in range(len(pdf)):
@@ -153,5 +204,4 @@ if __name__ == "__main__":
                 text = ""
                 for span_idx, span in enumerate(line["spans"]):
                     text += span["text"]
-                if 'accuracy against strong' in text:
-                    breakpoint()
+                print(text, [span["text"] for span in line["spans"]])
