@@ -13,7 +13,6 @@ if [[ -z "$NUM_WORKERS" ]]; then
     exit 1
 fi
 
-
 # Get input folder and output folder from args
 if [[ -z "$1" ]]; then
     echo "Please provide an input folder."
@@ -28,14 +27,17 @@ fi
 INPUT_FOLDER=$1
 OUTPUT_FOLDER=$2
 
-# Loop from 0 to NUM_DEVICES and run the Python script in parallel
+# Ensure output folder exists
+mkdir -p "$OUTPUT_FOLDER"
+
+# Loop from 0 to NUM_DEVICES and run the marker command in parallel
 for (( i=0; i<$NUM_DEVICES; i++ )); do
     DEVICE_NUM=$i
     export DEVICE_NUM
     export NUM_DEVICES
     export NUM_WORKERS
-    echo "Running convert.py on GPU $DEVICE_NUM"
-    cmd="CUDA_VISIBLE_DEVICES=$DEVICE_NUM marker $INPUT_FOLDER $OUTPUT_FOLDER --num_chunks $NUM_DEVICES --chunk_idx $DEVICE_NUM --workers $NUM_WORKERS"
+    echo "Running marker on GPU $DEVICE_NUM"
+    cmd="CUDA_VISIBLE_DEVICES=$DEVICE_NUM marker $INPUT_FOLDER --output_dir $OUTPUT_FOLDER --num_chunks $NUM_DEVICES --chunk_idx $DEVICE_NUM --workers $NUM_WORKERS"
     eval $cmd &
 
     sleep 5
