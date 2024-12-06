@@ -40,15 +40,9 @@ class Line(Block):
         for c in child_blocks:
             template += c.html
 
-        raw_text = remove_tags(template).strip()
         structure_idx = parent_structure.index(self.id)
-        if structure_idx < len(parent_structure) - 1:
-            next_block_id = parent_structure[structure_idx + 1]
-            next_line = document.get_block(next_block_id)
-            next_line_raw_text = next_line.raw_text(document)
-            template = strip_trailing_hyphens(raw_text, next_line_raw_text, template)
-        else:
-            template = template.strip(' ')  # strip any trailing whitespace from the last line
+        if not structure_idx < len(parent_structure) - 1:
+            template = template.removesuffix(' ')  # strip any trailing whitespace from the last line
 
         return template
 
