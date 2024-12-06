@@ -129,7 +129,7 @@ class PdfProvider(BaseProvider):
                         font_name = span["font"]["name"] or "Unknown"
                         font_weight = span["font"]["weight"] or 0
                         font_size = span["font"]["size"] or 0
-                        polygon = PolygonBox.from_bbox(span["bbox"], ensure_nonzero_area=True)
+                        polygon = PolygonBox.from_bbox(span["bbox"].bbox, ensure_nonzero_area=True)
                         spans.append(
                             SpanClass(
                                 polygon=polygon,
@@ -144,7 +144,7 @@ class PdfProvider(BaseProvider):
                                 text_extraction_method="pdftext"
                             )
                         )
-                    polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
+                    polygon = PolygonBox.from_bbox(line["bbox"].bbox, ensure_nonzero_area=True)
                     lines.append(
                         ProviderOutput(
                             line=LineClass(polygon=polygon, page_id=page_id),

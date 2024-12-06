@@ -3,6 +3,8 @@ import re
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 
+BULLETS = r'•●○ഠ ം◦■▪▫–—-'
+
 
 def replace_bullets(child_blocks):
     # Replace bullet characters with a -
@@ -12,8 +14,11 @@ def replace_bullets(child_blocks):
         child_blocks = first_block.children
 
     if first_block is not None and first_block.id.block_type == BlockTypes.Line:
-        bullet_pattern = r"(^|[\n ]|<[^>]*>)[•●○ഠ ം◦■▪▫–—-]( )"
-        first_block.html = re.sub(bullet_pattern, r"\1\2", first_block.html)
+        if first_block.html.startswith(tuple(BULLETS)):
+            first_block.html = first_block.html.lstrip(BULLETS)
+        else:
+            bullet_pattern = rf"(^|[\n ]|<[^>]*>)[{BULLETS}]( )"
+            first_block.html = re.sub(bullet_pattern, r"\1\2", first_block.html)
 
 
 class ListItem(Block):

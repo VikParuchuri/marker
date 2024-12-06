@@ -1,8 +1,55 @@
 import math
 from ctypes import byref, c_int, create_string_buffer
+from typing import Any, Dict, List, TypedDict, Union
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
+
+from marker.schema.polygon import PolygonBox
+
+
+class Char(TypedDict):
+    bbox: PolygonBox
+    text: str
+    rotation: float
+    font: Dict[str, Union[Any, str]]
+    char_idx: int
+    char_start_idx: int
+    char_end_idx: int
+
+
+class Span(TypedDict):
+    bbox: PolygonBox
+    text: str
+    font: Dict[str, Union[Any, str]]
+    font_weight: float
+    font_size: float
+    chars: List[Char]
+
+
+class Line(TypedDict):
+    spans: List[Span]
+    bbox: PolygonBox
+
+
+class Block(TypedDict):
+    lines: List[Line]
+    bbox: PolygonBox
+
+
+class Page(TypedDict):
+    page: int
+    bbox: PolygonBox
+    width: int
+    height: int
+    blocks: List[Block]
+
+
+Chars = List[Char]
+Spans = List[Span]
+Lines = List[Line]
+Blocks = List[Block]
+Pages = List[Page]
 
 
 def flatten(page, flag=pdfium_c.FLAT_NORMALDISPLAY):
@@ -32,8 +79,8 @@ def get_fontname(textpage, i):
     return font_name_str, flags
 
 
-def get_chars(page, textpage, loose=False):
-    chars = []
+def get_chars(page, textpage, loose=False) -> Chars:
+    chars: Chars = []
     start_idx = 0
     end_idx = 1
 
@@ -58,6 +105,7 @@ def get_chars(page, textpage, loose=False):
         ty_end = page_height - cy_end
 
         bbox = [round(cx_start, 2), round(min(ty_start, ty_end), 2), round(cx_end, 2), round(max(ty_start, ty_end), 2)]
+        bbox = PolygonBox.from_bbox(bbox)
 
         chars.append({
             "bbox": bbox,
@@ -77,84 +125,84 @@ def get_chars(page, textpage, loose=False):
     return chars
 
 
-def get_spans(chars):
-    spans = []
+def get_spans(chars: Chars) -> Spans:
+    spans: Spans = []
+    span: Span = None
+
     for char in chars:
-        if not spans or (
-            spans and
-            any(char['font'][k] != spans[-1]['font'][k] for k in ['name', 'flags', 'size', 'weight'])
-        ) or (spans and spans[-1]['text'].endswith("\x02")):
-            spans.append({key: char[key] for key in char.keys() if key != 'char_idx'})
+        if spans:
+            span = spans[-1]
+
+        if not span:
+            spans.append({key: char[key] for key in char.keys() if key != 'char_idx'} | {"chars": [char]})
+        elif (
+            any(char['font'][k] != span['font'][k] for k in ['name', 'flags', 'size', 'weight'])
+            or span['text'].endswith("\x02")
+        ):
+            spans.append({key: char[key] for key in char.keys() if key != 'char_idx'} | {"chars": [char]})
         else:
-            spans[-1]['text'] += char['text']
-            spans[-1]['char_end_idx'] = char['char_end_idx']
-            spans[-1]['bbox'] = [
-                min(spans[-1]['bbox'][0], char['bbox'][0]),
-                min(spans[-1]['bbox'][1], char['bbox'][1]),
-                max(spans[-1]['bbox'][2], char['bbox'][2]),
-                max(spans[-1]['bbox'][3], char['bbox'][3])
-            ]
+            span['text'] += char['text']
+            span['char_end_idx'] = char['char_end_idx']
+            span['bbox'] = span['bbox'].merge([char['bbox']])
+            span['chars'].append(char)
 
     return spans
 
 
-def get_lines(spans):
-    lines = []
-    current_line = None
+def get_lines(spans: Spans) -> Lines:
+    lines: Lines = []
+    line: Line = None
 
     for span in spans:
-        if current_line is None:
-            current_line = {
+        if lines:
+            line = lines[-1]
+
+        if not line:
+            lines.append({
                 "spans": [span],
                 "bbox": span["bbox"],
-            }
+            })
+        elif any(line["spans"][-1]["text"].endswith(suffix) for suffix in ["\r\n", "\x02"]):
+            line["spans"][-1]["text"] = line["spans"][-1]["text"].replace("\x02", "-")
+            lines.append({
+                "spans": [span],
+                "bbox": span["bbox"],
+            })
+        elif span["bbox"].y_start > line["bbox"].y_end:
+            lines.append({
+                "spans": [span],
+                "bbox": span["bbox"],
+            })
         else:
-            current_line["spans"].append(span)
-            current_line["bbox"] = [
-                min(current_line["bbox"][0], span["bbox"][0]),
-                min(current_line["bbox"][1], span["bbox"][1]),
-                max(current_line["bbox"][2], span["bbox"][2]),
-                max(current_line["bbox"][3], span["bbox"][3])
-            ]
-
-        if span["text"].endswith("\r\n") or span["text"].endswith("\x02"):
-            span["text"] = span["text"].replace("\x02", "-")
-            lines.append(current_line)
-            current_line = None
-
-    if current_line is not None:
-        lines.append(current_line)
+            line["spans"].append(span)
+            line["bbox"] = line["bbox"].merge([span["bbox"]])
 
     return lines
 
 
-def get_blocks(lines):
-    blocks = []
-    current_block = None
+def get_blocks(lines: Lines) -> Blocks:
+    blocks: Blocks = []
+    block: Block = None
 
     for line in lines:
-        if current_block is None:
-            current_block = {
+        if blocks:
+            block = blocks[-1]
+
+        if not block:
+            blocks.append({
                 "lines": [line],
                 "bbox": line["bbox"],
-            }
+            })
         else:
-            current_block["lines"].append(line)
-            current_block["bbox"] = [
-                min(current_block["bbox"][0], line["bbox"][0]),
-                min(current_block["bbox"][1], line["bbox"][1]),
-                max(current_block["bbox"][2], line["bbox"][2]),
-                max(current_block["bbox"][3], line["bbox"][3])
-            ]
-
-    if current_block is not None:
-        blocks.append(current_block)
+            block["lines"].append(line)
+            block["bbox"] = block["bbox"].merge([line["bbox"]])
 
     return blocks
 
 
-def get_pages(pdf: pdfium.PdfDocument, page_range: range, flatten_pdf: bool = True):
-    pages = []
+def get_pages(pdf: pdfium.PdfDocument, page_range: range, flatten_pdf: bool = True) -> Pages:
+    pages: Pages = []
+
     for page_idx in page_range:
         page = pdf.get_page(page_idx)
         if flatten_pdf:
@@ -163,7 +211,7 @@ def get_pages(pdf: pdfium.PdfDocument, page_range: range, flatten_pdf: bool = Tr
 
         textpage = page.get_textpage()
 
-        page_bbox = page.get_bbox()
+        page_bbox: List[float] = page.get_bbox()
         page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
         page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
 
@@ -183,23 +231,11 @@ def get_pages(pdf: pdfium.PdfDocument, page_range: range, flatten_pdf: bool = Tr
 
 
 if __name__ == "__main__":
-    pdf_path = '/home/ubuntu/surya-test/pdfs/nested-lists.pdf'
+    pdf_path = '/home/ubuntu/surya-test/pdfs/chinese_progit.pdf'
     pdf = pdfium.PdfDocument(pdf_path)
 
-    for page_idx in range(len(pdf)):
-        page = pdf.get_page(page_idx)
-        textpage = page.get_textpage()
-
-        page_bbox = page.get_bbox()
-        page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
-        page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
-
-        chars = get_chars(textpage, page_width, page_height)
-        spans = get_spans(chars)
-        lines = get_lines(spans)
-        blocks = get_blocks(lines)
-
-        for block in blocks:
+    for page in get_pages(pdf, [481]):
+        for block in page["blocks"]:
             for line_idx, line in enumerate(block["lines"]):
                 text = ""
                 for span_idx, span in enumerate(line["spans"]):
