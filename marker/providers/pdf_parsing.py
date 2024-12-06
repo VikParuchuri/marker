@@ -96,6 +96,7 @@ def get_lines(spans):
             ]
 
         if span["text"].endswith("\r\n") or span["text"].endswith("\x02"):
+            span["text"] = span["text"].replace("\x02", "-")
             lines.append(current_line)
             current_line = None
 
