@@ -1,4 +1,5 @@
 import math
+import statistics
 from ctypes import byref, c_int, create_string_buffer
 from typing import Any, Dict, List, TypedDict, Union
 
@@ -185,21 +186,63 @@ def get_lines(spans: Spans) -> Lines:
 
 
 def get_blocks(lines: Lines) -> Blocks:
+    if not lines:
+        return []
+
+    x_diffs = []
+    y_diffs = []
+    for i in range(len(lines) - 1):
+        prev_center = lines[i]["bbox"].center
+        curr_center = lines[i + 1]["bbox"].center
+        x_diffs.append(abs(curr_center[0] - prev_center[0]))
+        y_diffs.append(abs(curr_center[1] - prev_center[1]))
+
+    median_x_gap = statistics.median(x_diffs)
+    median_y_gap = statistics.median(y_diffs)
+
+    tolerance_factor = 1.5
+    allowed_x_gap = median_x_gap * tolerance_factor
+    allowed_y_gap = median_y_gap * tolerance_factor
+
     blocks: Blocks = []
-    block: Block = None
-
     for line in lines:
-        if blocks:
-            block = blocks[-1]
+        if not blocks:
+            # First block
+            blocks.append({"lines": [line], "bbox": line["bbox"]})
+            continue
 
-        if not block:
-            blocks.append({
-                "lines": [line],
-                "bbox": line["bbox"],
-            })
-        else:
+        block = blocks[-1]
+        last_line = block["lines"][-1]
+
+        last_center = last_line["bbox"].center
+        current_center = line["bbox"].center
+
+        x_diff = abs(current_center[0] - last_center[0])
+        y_diff = abs(current_center[1] - last_center[1])
+
+        if x_diff <= allowed_x_gap and y_diff <= allowed_y_gap:
             block["lines"].append(line)
             block["bbox"] = block["bbox"].merge([line["bbox"]])
+            continue
+
+        line_x_indented_start = last_line["bbox"].x_start > line["bbox"].x_start
+        if len(block["lines"]) == 1 and line_x_indented_start and y_diff <= allowed_y_gap:
+            block["lines"].append(line)
+            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            continue
+
+        line_x_indented_end = last_line["bbox"].x_end > line["bbox"].x_end
+        if line_x_indented_end and y_diff <= allowed_y_gap:
+            block["lines"].append(line)
+            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            continue
+
+        if y_diff < allowed_y_gap * 0.2 and last_line["bbox"].x_end > line["bbox"].x_start:
+            block["lines"].append(line)
+            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            continue
+
+        blocks.append({"lines": [line], "bbox": line["bbox"]})
 
     return blocks
 
