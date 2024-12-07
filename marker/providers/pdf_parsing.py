@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import statistics
 from ctypes import byref, c_int, create_string_buffer
@@ -6,11 +8,74 @@ from typing import Any, Dict, List, TypedDict, Union
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 
-from marker.schema.polygon import PolygonBox
+
+class Bbox:
+    def __init__(self, bbox: List[float]):
+        self.bbox = bbox
+
+    @property
+    def height(self):
+        return self.bbox[3] - self.bbox[1]
+
+    @property
+    def width(self):
+        return self.bbox[2] - self.bbox[0]
+
+    @property
+    def area(self):
+        return self.width * self.height
+
+    @property
+    def center(self):
+        return [(self.bbox[0] + self.bbox[2]) / 2, (self.bbox[1] + self.bbox[3]) / 2]
+
+    @property
+    def size(self):
+        return [self.width, self.height]
+
+    @property
+    def x_start(self):
+        return self.bbox[0]
+
+    @property
+    def y_start(self):
+        return self.bbox[1]
+
+    @property
+    def x_end(self):
+        return self.bbox[2]
+
+    @property
+    def y_end(self):
+        return self.bbox[3]
+
+    def merge(self, other: Bbox) -> Bbox:
+        x_start = self.x_start if self.x_start < other.x_start else other.x_start
+        y_start = self.y_start if self.y_start < other.y_start else other.y_start
+        x_end = self.x_end if self.x_end > other.x_end else other.x_end
+        y_end = self.y_end if self.y_end > other.y_end else other.y_end
+
+        return Bbox([x_start, y_start, x_end, y_end])
+
+    def overlap_x(self, other: Bbox):
+        return max(0, min(self.bbox[2], other.bbox[2]) - max(self.bbox[0], other.bbox[0]))
+
+    def overlap_y(self, other: Bbox):
+        return max(0, min(self.bbox[3], other.bbox[3]) - max(self.bbox[1], other.bbox[1]))
+
+    def intersection_area(self, other: Bbox):
+        return self.overlap_x(other) * self.overlap_y(other)
+
+    def intersection_pct(self, other: Bbox):
+        if self.area == 0:
+            return 0
+
+        intersection = self.intersection_area(other)
+        return intersection / self.area
 
 
 class Char(TypedDict):
-    bbox: PolygonBox
+    bbox: Bbox
     text: str
     rotation: float
     font: Dict[str, Union[Any, str]]
@@ -20,7 +85,7 @@ class Char(TypedDict):
 
 
 class Span(TypedDict):
-    bbox: PolygonBox
+    bbox: Bbox
     text: str
     font: Dict[str, Union[Any, str]]
     font_weight: float
@@ -30,17 +95,17 @@ class Span(TypedDict):
 
 class Line(TypedDict):
     spans: List[Span]
-    bbox: PolygonBox
+    bbox: Bbox
 
 
 class Block(TypedDict):
     lines: List[Line]
-    bbox: PolygonBox
+    bbox: Bbox
 
 
 class Page(TypedDict):
     page: int
-    bbox: PolygonBox
+    bbox: Bbox
     width: int
     height: int
     blocks: List[Block]
@@ -109,8 +174,8 @@ def get_chars(page, textpage, loose=True) -> Chars:
         ty_start = page_height - cy_start
         ty_end = page_height - cy_end
 
-        bbox = [round(cx_start, 2), round(min(ty_start, ty_end), 2), round(cx_end, 2), round(max(ty_start, ty_end), 2)]
-        bbox = PolygonBox.from_bbox(bbox)
+        bbox = [cx_start, min(ty_start, ty_end), cx_end, max(ty_start, ty_end)]
+        bbox = Bbox(bbox)
 
         chars.append({
             "bbox": bbox,
@@ -148,7 +213,7 @@ def get_spans(chars: Chars) -> Spans:
         else:
             span['text'] += char['text']
             span['char_end_idx'] = char['char_end_idx']
-            span['bbox'] = span['bbox'].merge([char['bbox']])
+            span['bbox'] = span['bbox'].merge(char['bbox'])
             span['chars'].append(char)
 
     return spans
@@ -180,7 +245,7 @@ def get_lines(spans: Spans) -> Lines:
             })
         else:
             line["spans"].append(span)
-            line["bbox"] = line["bbox"].merge([span["bbox"]])
+            line["bbox"] = line["bbox"].merge(span["bbox"])
 
     return lines
 
@@ -222,29 +287,29 @@ def get_blocks(lines: Lines) -> Blocks:
 
         if x_diff <= allowed_x_gap and y_diff <= allowed_y_gap:
             block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            block["bbox"] = block["bbox"].merge(line["bbox"])
             continue
 
         line_x_indented_start = last_line["bbox"].x_start > line["bbox"].x_start
         if len(block["lines"]) == 1 and line_x_indented_start and y_diff <= allowed_y_gap:
             block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            block["bbox"] = block["bbox"].merge(line["bbox"])
             continue
 
         line_x_indented_end = last_line["bbox"].x_end > line["bbox"].x_end
         if line_x_indented_end and y_diff <= allowed_y_gap:
             block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            block["bbox"] = block["bbox"].merge(line["bbox"])
             continue
 
         if y_diff < allowed_y_gap * 0.2 and last_line["bbox"].x_end > line["bbox"].x_start:
             block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            block["bbox"] = block["bbox"].merge(line["bbox"])
             continue
 
         if block["bbox"].intersection_pct(line["bbox"]) > 0:
             block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            block["bbox"] = block["bbox"].merge(line["bbox"])
             continue
 
         blocks.append({"lines": [line], "bbox": line["bbox"]})
@@ -261,7 +326,7 @@ def get_blocks(lines: Lines) -> Blocks:
         if prev_block["bbox"].intersection_pct(curr_block["bbox"]) > 0:
             merged_blocks[-1] = {
                 "lines": prev_block["lines"] + curr_block["lines"],
-                "bbox": prev_block["bbox"].merge([curr_block["bbox"]])
+                "bbox": prev_block["bbox"].merge(curr_block["bbox"])
             }
         else:
             merged_blocks.append(curr_block)
@@ -300,13 +365,17 @@ def get_pages(pdf: pdfium.PdfDocument, page_range: range, flatten_pdf: bool = Tr
 
 
 if __name__ == "__main__":
+    import cProfile
+
     pdf_path = '/home/ubuntu/surya-test/pdfs/chinese_progit.pdf'
     pdf = pdfium.PdfDocument(pdf_path)
 
-    for page in get_pages(pdf, [481]):
-        for block in page["blocks"]:
-            for line_idx, line in enumerate(block["lines"]):
-                text = ""
-                for span_idx, span in enumerate(line["spans"]):
-                    text += span["text"]
-                print(text, [span["text"] for span in line["spans"]])
+    cProfile.run('get_pages(pdf, range(len(pdf)))', filename='pdf_parsing_bbox.prof')
+
+    # for page in get_pages(pdf, [481]):
+    #     for block in page["blocks"]:
+    #         for line_idx, line in enumerate(block["lines"]):
+    #             text = ""
+    #             for span_idx, span in enumerate(line["spans"]):
+    #                 text += span["text"]
+    #             print(text, [span["text"] for span in line["spans"]])
