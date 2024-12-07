@@ -197,16 +197,8 @@ def get_blocks(lines: Lines) -> Blocks:
         x_diffs.append(abs(curr_center[0] - prev_center[0]))
         y_diffs.append(abs(curr_center[1] - prev_center[1]))
 
-    min_x_diff = 0.1
-    min_y_diff = 0.1
-
-    if not len(x_diffs):
-        x_diffs = [min_x_diff]
-    if not len(y_diffs):
-        y_diffs = [min_y_diff]
-
-    median_x_gap = statistics.median(x_diffs) or min_x_diff
-    median_y_gap = statistics.median(y_diffs) or min_y_diff
+    median_x_gap = statistics.median(x_diffs) or 0.1
+    median_y_gap = statistics.median(y_diffs) or 0.1
 
     tolerance_factor = 1.5
     allowed_x_gap = median_x_gap * tolerance_factor
@@ -250,9 +242,31 @@ def get_blocks(lines: Lines) -> Blocks:
             block["bbox"] = block["bbox"].merge([line["bbox"]])
             continue
 
+        if block["bbox"].intersection_pct(line["bbox"]) > 0:
+            block["lines"].append(line)
+            block["bbox"] = block["bbox"].merge([line["bbox"]])
+            continue
+
         blocks.append({"lines": [line], "bbox": line["bbox"]})
 
-    return blocks
+    merged_blocks = []
+    for i in range(len(blocks)):
+        if not merged_blocks:
+            merged_blocks.append(blocks[i])
+            continue
+
+        prev_block = merged_blocks[-1]
+        curr_block = blocks[i]
+
+        if prev_block["bbox"].intersection_pct(curr_block["bbox"]) > 0:
+            merged_blocks[-1] = {
+                "lines": prev_block["lines"] + curr_block["lines"],
+                "bbox": prev_block["bbox"].merge([curr_block["bbox"]])
+            }
+        else:
+            merged_blocks.append(curr_block)
+
+    return merged_blocks
 
 
 def get_pages(pdf: pdfium.PdfDocument, page_range: range, flatten_pdf: bool = True) -> Pages:
