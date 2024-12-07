@@ -197,8 +197,8 @@ def get_blocks(lines: Lines) -> Blocks:
         x_diffs.append(abs(curr_center[0] - prev_center[0]))
         y_diffs.append(abs(curr_center[1] - prev_center[1]))
 
-    median_x_gap = statistics.median(x_diffs)
-    median_y_gap = statistics.median(y_diffs)
+    median_x_gap = statistics.median(x_diffs) or 0.1
+    median_y_gap = statistics.median(y_diffs) or 0.1
 
     tolerance_factor = 1.5
     allowed_x_gap = median_x_gap * tolerance_factor
