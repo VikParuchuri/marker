@@ -73,6 +73,40 @@ class Bbox:
         intersection = self.intersection_area(other)
         return intersection / self.area
 
+    def rotate(self, page_width: float, page_height: float, rotation: int) -> Bbox:
+        if rotation not in [0, 90, 180, 270]:
+            raise ValueError("Rotation must be one of [0, 90, 180, 270] degrees.")
+
+        x_min, y_min, x_max, y_max = self.bbox
+
+        if rotation == 0:
+            return Bbox(self.bbox)
+        elif rotation == 90:
+            new_x_min = page_height - y_max
+            new_y_min = x_min
+            new_x_max = page_height - y_min
+            new_y_max = x_max
+        elif rotation == 180:
+            new_x_min = page_width - x_max
+            new_y_min = page_height - y_max
+            new_x_max = page_width - x_min
+            new_y_max = page_height - y_min
+        elif rotation == 270:
+            new_x_min = y_min
+            new_y_min = page_width - x_max
+            new_x_max = y_max
+            new_y_max = page_width - x_min
+
+        # Ensure that x_min < x_max and y_min < y_max
+        rotated_bbox = (
+            min(new_x_min, new_x_max),
+            min(new_y_min, new_y_max),
+            max(new_x_min, new_x_max),
+            max(new_y_min, new_y_max)
+        )
+
+        return Bbox(rotated_bbox)
+
 
 class Char(TypedDict):
     bbox: Bbox
@@ -154,6 +188,12 @@ def get_chars(page, textpage, loose=True) -> Chars:
     page_width = math.ceil(abs(x_end - x_start))
     page_height = math.ceil(abs(y_end - y_start))
 
+    page_rotation = 0
+    try:
+        page_rotation = page.get_rotation()
+    except:
+        pass
+
     for i in range(textpage.count_chars()):
         fontname, fontflag = get_fontname(textpage, i)
         text = chr(pdfium_c.FPDFText_GetUnicode(textpage, i))
@@ -176,7 +216,7 @@ def get_chars(page, textpage, loose=True) -> Chars:
         ty_end = page_height - cy_end
 
         bbox = [cx_start, min(ty_start, ty_end), cx_end, max(ty_start, ty_end)]
-        bbox = Bbox(bbox)
+        bbox = Bbox(bbox).rotate(page_width, page_height, page_rotation)
 
         chars.append({
             "bbox": bbox,

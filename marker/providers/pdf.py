@@ -197,14 +197,7 @@ class PdfProvider(BaseProvider):
     @staticmethod
     def _render_image(pdf: pdfium.PdfDocument, idx: int, dpi: int) -> Image.Image:
         page = pdf[idx]
-        page_rotation = 0
-        try:
-            page_rotation = page.get_rotation()
-            if page_rotation == 180:
-                page_rotation = 0
-        except:
-            pass
-        image = page.render(scale=dpi / 72, draw_annots=False).to_pil().rotate(page_rotation, expand=True)
+        image = page.render(scale=dpi / 72, draw_annots=False).to_pil()
         image = image.convert("RGB")
         return image
 
