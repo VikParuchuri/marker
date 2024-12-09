@@ -158,9 +158,11 @@ def get_chars(page, textpage, loose=True) -> Chars:
         fontname, fontflag = get_fontname(textpage, i)
         text = chr(pdfium_c.FPDFText_GetUnicode(textpage, i))
         end_idx = start_idx + len(text)
+        
+        rotation = pdfium_c.FPDFText_GetCharAngle(textpage, i)
 
         loosebox = loose
-        if text in ["'"]:
+        if text in ["'"] or rotation != 0:
             loosebox = False
 
         char_box = textpage.get_charbox(i, loose=loosebox)
@@ -180,7 +182,7 @@ def get_chars(page, textpage, loose=True) -> Chars:
         chars.append({
             "bbox": bbox,
             "text": text,
-            "rotation": pdfium_c.FPDFText_GetCharAngle(textpage, i),
+            "rotation": rotation,
             "font": {
                 "name": fontname,
                 "flags": fontflag,
