@@ -1,15 +1,13 @@
 import atexit
-import math
 import re
 from typing import List, Set
 
-import numpy as np
 import pypdfium2 as pdfium
 from ftfy import fix_text
+from pdftext.extraction import dictionary_output
 from PIL import Image
 
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
-from marker.providers.pdf_parsing import get_pages
 from marker.providers.utils import alphanum_ratio
 from marker.schema import BlockTypes
 from marker.schema.polygon import PolygonBox
@@ -111,7 +109,14 @@ class PdfProvider(BaseProvider):
 
     def pdftext_extraction(self) -> ProviderPageLines:
         page_lines: ProviderPageLines = {}
-        page_blocks = get_pages(self.doc, self.page_range, self.flatten_pdf)
+        page_blocks = dictionary_output(
+            self.filepath,
+            page_range=self.page_range,
+            keep_chars=False,
+            workers=self.pdftext_workers,
+            flatten_pdf=self.flatten_pdf,
+            quote_loosebox=False
+        )
         self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_blocks)}
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
