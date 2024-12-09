@@ -158,9 +158,8 @@ def get_chars(page, textpage, loose=True) -> Chars:
         fontname, fontflag = get_fontname(textpage, i)
         text = chr(pdfium_c.FPDFText_GetUnicode(textpage, i))
         end_idx = start_idx + len(text)
-        
-        rotation = pdfium_c.FPDFText_GetCharAngle(textpage, i)
 
+        rotation = pdfium_c.FPDFText_GetCharAngle(textpage, i)
         loosebox = loose
         if text in ["'"] or rotation != 0:
             loosebox = False
@@ -201,22 +200,28 @@ def get_spans(chars: Chars) -> Spans:
     spans: Spans = []
     span: Span = None
 
+    def span_break(): return spans.append({key: char[key] for key in char.keys() if key != 'char_idx'} | {"chars": [char]})
+
     for char in chars:
         if spans:
             span = spans[-1]
 
         if not span:
-            spans.append({key: char[key] for key in char.keys() if key != 'char_idx'} | {"chars": [char]})
-        elif (
-            any(char['font'][k] != span['font'][k] for k in ['name', 'flags', 'size', 'weight'])
-            or span['text'].endswith("\x02")
-        ):
-            spans.append({key: char[key] for key in char.keys() if key != 'char_idx'} | {"chars": [char]})
-        else:
-            span['text'] += char['text']
-            span['char_end_idx'] = char['char_end_idx']
-            span['bbox'] = span['bbox'].merge(char['bbox'])
-            span['chars'].append(char)
+            span_break()
+            continue
+
+        if any(char['font'][k] != span['font'][k] for k in ['name', 'flags', 'size', 'weight']):
+            span_break()
+            continue
+
+        if span['text'].endswith("\x02"):
+            span_break()
+            continue
+
+        span['text'] += char['text']
+        span['char_end_idx'] = char['char_end_idx']
+        span['bbox'] = span['bbox'].merge(char['bbox'])
+        span['chars'].append(char)
 
     return spans
 
@@ -225,29 +230,27 @@ def get_lines(spans: Spans) -> Lines:
     lines: Lines = []
     line: Line = None
 
+    def line_break(): return lines.append({"spans": [span], "bbox": span["bbox"]})
+
     for span in spans:
         if lines:
             line = lines[-1]
 
         if not line:
-            lines.append({
-                "spans": [span],
-                "bbox": span["bbox"],
-            })
-        elif any(line["spans"][-1]["text"].endswith(suffix) for suffix in ["\r\n", "\x02"]):
+            line_break()
+            continue
+
+        if any(line["spans"][-1]["text"].endswith(suffix) for suffix in ["\r\n", "\x02"]):
             line["spans"][-1]["text"] = line["spans"][-1]["text"].replace("\x02", "-")
-            lines.append({
-                "spans": [span],
-                "bbox": span["bbox"],
-            })
-        elif span["bbox"].y_start > line["bbox"].y_end:
-            lines.append({
-                "spans": [span],
-                "bbox": span["bbox"],
-            })
-        else:
-            line["spans"].append(span)
-            line["bbox"] = line["bbox"].merge(span["bbox"])
+            line_break()
+            continue
+
+        if span["bbox"].y_start > line["bbox"].y_end:
+            line_break()
+            continue
+
+        line["spans"].append(span)
+        line["bbox"] = line["bbox"].merge(span["bbox"])
 
     return lines
 
@@ -264,12 +267,20 @@ def get_blocks(lines: Lines) -> Blocks:
         x_diffs.append(abs(curr_center[0] - prev_center[0]))
         y_diffs.append(abs(curr_center[1] - prev_center[1]))
 
-    median_x_gap = statistics.median(x_diffs) or 0.1
-    median_y_gap = statistics.median(y_diffs) or 0.1
+    median_x_gap = 0.1
+    if x_diffs:
+        median_x_gap = statistics.median(x_diffs) or median_x_gap
+    median_y_gap = 0.1
+    if y_diffs:
+        median_y_gap = statistics.median(y_diffs) or median_y_gap
 
     tolerance_factor = 1.5
     allowed_x_gap = median_x_gap * tolerance_factor
     allowed_y_gap = median_y_gap * tolerance_factor
+
+    def block_merge():
+        block["lines"].append(line)
+        block["bbox"] = block["bbox"].merge(line["bbox"])
 
     blocks: Blocks = []
     for line in lines:
@@ -288,30 +299,25 @@ def get_blocks(lines: Lines) -> Blocks:
         y_diff = abs(current_center[1] - last_center[1])
 
         if x_diff <= allowed_x_gap and y_diff <= allowed_y_gap:
-            block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge(line["bbox"])
+            block_merge()
             continue
 
         line_x_indented_start = last_line["bbox"].x_start > line["bbox"].x_start
         if len(block["lines"]) == 1 and line_x_indented_start and y_diff <= allowed_y_gap:
-            block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge(line["bbox"])
+            block_merge()
             continue
 
         line_x_indented_end = last_line["bbox"].x_end > line["bbox"].x_end
         if line_x_indented_end and y_diff <= allowed_y_gap:
-            block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge(line["bbox"])
+            block_merge()
             continue
 
         if y_diff < allowed_y_gap * 0.2 and last_line["bbox"].x_end > line["bbox"].x_start:
-            block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge(line["bbox"])
+            block_merge()
             continue
 
         if block["bbox"].intersection_pct(line["bbox"]) > 0:
-            block["lines"].append(line)
-            block["bbox"] = block["bbox"].merge(line["bbox"])
+            block_merge()
             continue
 
         blocks.append({"lines": [line], "bbox": line["bbox"]})
