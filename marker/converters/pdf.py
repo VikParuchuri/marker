@@ -1,5 +1,5 @@
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
@@ -16,6 +16,7 @@ from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
 from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
+from marker.processors.high_quality_inlinemath import HighQualityInlineMathProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 from marker.processors.list import ListProcessor
@@ -36,7 +37,7 @@ class PdfConverter(BaseConverter):
     A converter for processing and rendering PDF files into Markdown, JSON, HTML and other formats.
 
     Attributes:
-        override_map (Dict[BlockTypes, Type[Block]]): 
+        override_map (Dict[BlockTypes, Type[Block]]):
             A mapping to override the default block classes for specific block types. 
             The keys are `BlockTypes` enum values, representing the types of blocks, 
             and the values are corresponding `Block` class implementations to use 
@@ -46,7 +47,7 @@ class PdfConverter(BaseConverter):
 
     def __init__(self, artifact_dict: Dict[str, Any], processor_list: List[str] | None = None, renderer: str | None = None, config=None):
         super().__init__(config)
-        
+
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
 
@@ -66,6 +67,7 @@ class PdfConverter(BaseConverter):
                 SectionHeaderProcessor,
                 TableProcessor,
                 TextProcessor,
+                HighQualityInlineMathProcessor,
                 DebugProcessor,
             ]
 
