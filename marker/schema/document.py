@@ -19,7 +19,7 @@ class TocItem(BaseModel):
     title: str
     heading_level: int
     page_id: int
-    polygon: List[List[int]]
+    polygon: List[List[float]]
 
 
 class Document(BaseModel):
