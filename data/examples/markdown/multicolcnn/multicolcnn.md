@@ -28,7 +28,7 @@ Following on the intuition that multiscale integration is key to achieving good 
 
 Counting using a supervised regressor to formulate a density map was first shown by [15]. In this paper, Lempitsky et al. show that the minimal annotation of a single dot blurred by a Gaussian kernel produces a sufficient density map to train a network to count. All of the counting methods that we examine as well as the method we use in
 
-![](_page_1_Figure_0.png)
+![](_page_1_Figure_0.jpeg)
 
 Figure 1. Fully convolutional architecture diagram (not to scale). Arrows show separate columns that all take the same input. At the end of the columns, the feature maps are merged (concatenated) together and passed to another series of dilated convolutions: the aggregator, which can aggregate the multiscale information collected by the columns [25]. The input image is I with C channels. The output single channel density map is D, and integrating over this map (summing the pixels) results in the final count. Initial filter sizes are labeled with brackets or lines. Convolution operations are shown as flat rectangles, feature maps are shown as prisms. The number below each filter represents the dilation rate (1 means no dilation).
 
@@ -40,7 +40,7 @@ However, the architectures of both [18] and [27] are not fully convolutional due
 
 It should be noted that other methods of counting exist, including training a network to recognize deep object features via only providing the counts of the objects of interest in an image [21] and using CNNs (convolutional neural networks) along with boosting in order to improve the results
 
-![](_page_2_Picture_0.png)
+![](_page_2_Picture_0.jpeg)
 
 Figure 2. UCF sample results. Left: input counting image. Middle: Ground truth density map. Right: AMDCN prediction of density map on test image. The network never saw these images during training. All density maps are one channel only (i.e. grayscale), but are colored here for clarity.
 
@@ -76,7 +76,7 @@ The network as shown in Figure 1 contains 5 columns. Note that dilations allow u
 
 training, we use a scaled mean absolute error for our loss function:
 
-$$L=\frac{1}{n}\sum_{i=1}^{n}\vert\hat{y}_{i}-\gamma y_{i}\vert\qquad\qquad(3)$$
+$$L=\frac{1}{n}\sum_{i=1}^{n}|\hat{y}_{i}-\gamma y_{i}|\tag{3}$$
 
 where γ is the scale factor, yˆi is the prediction, yi is the true value, and n is the number of pixels. We use a scaled mean absolute error because the target values are so small that it is numerically unstable to regress to these values. At testing time, when retrieving the output density map from the network, we scale the pixel values by γ −1 to obtain the correct value. This approach is more numerically stable and avoids having the network learn to output only zeros by weighting the nonzero values highly. For all our datasets, we set γ = 255.
 
@@ -124,7 +124,7 @@ Without perspective maps, we generate label density maps for this dataset in the
 
 When perspective maps are used, however, we follow the procedure as described in [27], which involves estimating a "crowd density distribution kernel" as the sum of two 2D Gaussians: a symmetric Gaussian for the head and an ellipsoid Gaussian for the body. These are scaled by the perspective map M provided, where M(x) gives the number of pixels that represents a meter at pixel x [27]. Note that the meaning of this perspective map is distinct from the meaning of the perspective map provided for the UCSD dataset. Using this information, the density contribution from a person with head pixel x is given by the following sum of normalized Gaussians:
 
-$$D_{\bf x}=\frac{1}{||Z||}({\cal N}_{h}({\bf x},\sigma_{h})+{\cal N}_{b}({\bf x}_{b},\Sigma_{b}))\tag{5}$$
+$$D_{\bf x}=\frac{1}{||Z||}({\cal N}_{h}({\bf x},\sigma_{h})+{\cal N}_{b}({\bf x}_{b},\Sigma_{b}))\qquad\qquad(5)$$
 
 where xb is the center of the body, which is 0.875 meters down from the head on average, and can be determined from the perspective map M and the head center x [27]. We sum these Gaussians for each person to pro-
 
@@ -143,13 +143,13 @@ duce the final density map. We set σ = 0.2M(x) for Nh and σx = 0.2M(x), σy = 
 
 # 4. Results
 
-#### 4.1. UCF Crowd Counting
+### 4.1. UCF Crowd Counting
 
 The UCF dataset is particularly challenging due to the large number of people in the images, the variety of the scenes, as well as the low number of training images. We see in Figure 2 that because the UCF dataset has over 1000 people on average in each image, the shapes output by the network in the density map are not as well defined or separated as in the UCSD dataset.
 
 We report a state of the art result on this dataset in Table 1, following the standard protocol of 5-fold cross validation. Our MAE on the dataset is 290.82, which is approximately 5 lower than the previous state of the art, HydraCNN [18]. This is particularly indicative of the power of an aggregated multicolumn dilation network. Despite not making use of perspective information, the AMDCN is still able to produce highly accurate density maps for UCF.
 
-#### 4.2. TRANCOS Traffic Counting
+### 4.2. TRANCOS Traffic Counting
 
 Our network performs very well on the TRANCOS dataset. Indeed, as confirmed by the GAME score, AMDCN produces the most accurate count and shape combined as compared to other methods. Table 2 shows that we achieve state of the art results as measured by the GAME metric [14] across all levels.
 
@@ -174,15 +174,15 @@ Table 2. Mean absolute error of various methods on TRANCOS traffic
 
 creating image pyramids or requiring perspective maps as labels using the techniques presented by the AMDCN.
 
-#### 4.4. WorldExpo '10 Crowd Counting
+### 4.4. WorldExpo '10 Crowd Counting
 
 Our network performs reasonably well on the more challenging WorldExpo dataset. While it does not beat the state of the art, our results are comparable. What is more, we do not need to use the perspective maps to obtain these results. As seen in Table 4, the AMDCN is capable of incorporating the perspective effects without scaling the Gaussians with perspective information. This shows that it is possible to achieve counting results that approach the state of the art with much simpler labels for the counting training data.
 
-#### 4.5. Ablation Studies
+### 4.5. Ablation Studies
 
 We report the results of the ablation studies in Figure 4. We note from these plots that while there is variation in performance, a few trends stand out. Most importantly, the lowest errors are consistently with a combination of a larger number of columns and including the aggregator module. Notably for the TRANCOS dataset, including the aggregator consistently improves performance. Generally, the aggregator tends to decrease the variance in performance of the network. Some of the variance that we see in the plots can be explained by: (1) for lower numbers of columns, including an aggregator is not as likely to help as there is not much separation of multiscale information across columns and (2) for the UCSD dataset, there is less of a perspective effect than TRANCOS and WorldExpo so a simpler network is more likely to perform comparably to a larger network. These results verify the notion that using more columns increases accuracy, and also support our justification for the use of the aggregator module.
 
-![](_page_6_Figure_0.png)
+![](_page_6_Figure_0.jpeg)
 
 Figure 3. UCSD crowd counting dataset. Both plots show comparisons of predicted and ground truth counts over time. While AMDCN does not beat the state of the art on the original split, the predictions still follow the true counts reasonably. The jump in the original split is due to that testing set including multiple scenes of highly varying counts.
 
@@ -211,19 +211,19 @@ Table 3. Mean absolute error of various methods on UCSD crowds
 
 We have proposed the use of aggregated multicolumn dilated convolutions, the AMDCN, as an alternative to the HydraCNN [18] or multicolumn CNN [28] for the vision task of counting objects in images. Inspired by the multicolumn approach to multiscale problems, we also employ dilations to increase the receptive field of our columns. We then aggregate this multiscale information using another series of dilated convolutions to enable a wide network and detect features at more scales. This method takes advantage of the ability of dilated convolutions to provide exponentially increasing receptive fields. We have performed experiments on the challenging UCF crowd counting dataset, the TRANCOS traffic dataset, multiple splits of the UCSD crowd counting dataset, and the WorldExpo crowd counting dataset.
 
-![](_page_7_Figure_0.png)
+![](_page_7_Figure_0.jpeg)
 
 Figure 4. Ablation studies on various datasets in which the number of columns is varied and the aggregator is included or not included. The results generally support the use of more columns and an aggregator module.
 
 | Method | MAE |
 | --- | --- |
-| AMDCN (without perspective infor | 16.6 |
+| AMDCN (without perspective infor | 16.6 |
 | mation) |  |
-| AMDCN (with perspective informa | 14.9 |
+| AMDCN (with perspective informa | 14.9 |
 | tion) |  |
-| LBP+RR [28] (with perspective infor | 31.0 |
+| LBP+RR [28] (with perspective infor | 31.0 |
 | mation) |  |
-| MCNN [28] (with perspective informa | 11.6 |
+| MCNN [28] (with perspective informa | 11.6 |
 | tion) |  |
 | [27] (with perspective information) | 12.9 |
 
@@ -231,7 +231,7 @@ Table 4. Mean absolute error of various methods on WorldExpo crowds
 
 We obtain superior or comparable results in most of these datasets. The AMDCN is capable of outperforming these approaches completely especially when perspective information is not provided, as in UCF and TRANCOS. These results show that the AMDCN performs surprisingly well and is also robust to scale effects. Further, our ablation study of removing the aggregator network shows that using more columns and an aggregator provides the best accuracy for counting — especially so when there is no perspective information.
 
-#### 5.2. Future Work
+### 5.2. Future Work
 
 In addition to an analysis of performance on counting, a density regressor can also be used to locate objects in the image. As mentioned previously, if the regressor is accurate and precise enough, the resulting density map can be used to locate the objects in the image. We expect that in order to do this, one must regress each object to a single point rather than a region specified by a Gaussian. Perhaps this might be accomplished by applying non-maxima suppression to the final layer activations.
 
@@ -260,7 +260,6 @@ counting. In *Proceedings of the IEEE Conference on Computer Vision and Pattern 
 - [12] C. Farabet, C. Couprie, L. Najman, and Y. Le-Cun. Learning hierarchical features for scene labeling. *IEEE transactions on pattern analysis and machine intelligence*, 35(8):1915–1929, 2013.
 - [13] L. Fiaschi, U. Kothe, R. Nair, and F. A. Hamprecht. ¨ Learning to count with regression forest and structured labels. In *Pattern Recognition (ICPR), 2012 21st International Conference on*, pages 2685–2688. IEEE, 2012.
 - [14] R. Guerrero-Gomez-Olmedo, B. Torre-Jim ´ enez, S. M. ´ Lopez-Sastre, Roberto Basc ´ on, and D. O ´ noro Rubio. ˜ Extremely overlapping vehicle counting. In *Iberian Conference on Pattern Recognition and Image Analysis (IbPRIA)*, 2015.
-
 - [15] V. Lempitsky and A. Zisserman. Learning to count objects in images. In *Advances in Neural Information Processing Systems*, pages 1324–1332, 2010.
 - [16] G. Lin, C. Shen, A. van den Hengel, and I. Reid. Efficient piecewise training of deep structured models for semantic segmentation. In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition*, pages 3194–3203, 2016.
 - [17] H. Noh, S. Hong, and B. Han. Learning deconvolution network for semantic segmentation. In *Proceedings of the IEEE International Conference on Computer Vision*, pages 1520–1528, 2015.

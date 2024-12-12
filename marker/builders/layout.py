@@ -86,6 +86,10 @@ class LayoutBuilder(BaseBuilder):
             if page.structure is None:
                 page.structure = []
 
+            # Ensure page has non-empty children
+            if page.children is None:
+                page.children = []
+
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: ProviderPageLines):
         good_pages = []
         for document_page in document_pages:
