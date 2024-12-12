@@ -84,8 +84,6 @@ class PageGroup(Group):
 
     def compute_line_block_intersections(self, provider_outputs: List[ProviderOutput]):
         max_intersections = {}
-        if not self.children:
-            return max_intersections
 
         blocks = [
             block for block in self.children
