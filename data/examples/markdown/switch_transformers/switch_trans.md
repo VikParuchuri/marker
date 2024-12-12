@@ -6,17 +6,15 @@ liamfedus@google.com
 
 Barret Zoph∗
 
-barretzoph@google.com 
+barretzoph@google.com
 
 #### Noam Shazeer
 
 noam@google.com Google, Mountain View, CA 94043, USA
 
- 
-
 Editor: Alexander Clark
 
-## Abstract
+### Abstract
 
 In deep learning, models typically reuse the same parameters for all inputs. Mixture of Experts (MoE) models defy this and instead select different parameters for each incoming example. The result is a sparsely-activated model—with an outrageous number of parameters—but a constant computational cost. However, despite several notable successes of MoE, widespread adoption has been hindered by complexity, communication costs, and training instability. We address these with the introduction of the Switch Transformer. We simplify the MoE routing algorithm and design intuitive improved models with reduced communication and computational costs. Our proposed training techniques mitigate the instabilities, and we show large sparse models may be trained, for the first time, with lower precision (bfloat16) formats. We design models based off T5-Base and T5-Large (Raffel et al., 2019) to obtain up to 7x increases in pre-training speed with the same computational resources. These improvements extend into multilingual settings where we measure gains over the mT5-Base version across all 101 languages. Finally, we advance the current scale of language models by pre-training up to trillion parameter models on the "Colossal Clean Crawled Corpus", and achieve a 4x speedup over the T5-XXL model.12
 
@@ -37,41 +35,41 @@ License: CC-BY 4.0, see https://creativecommons.org/licenses/by/4.0/. Attributio
 | 1 | Introduction |  | 3 |
 | --- | --- | --- | --- |
 | 2 | Switch Transformer |  | 4 |
-|  | 2.1 Simplifying Sparse Routing |  | 5 |
-|  | 2.2 Efficient Sparse Routing |  | 6 |
-|  | 2.3 Putting It All Together: The Switch Transformer |  | 8 |
-|  | 2.4 Improved Training and Fine-Tuning Techniques |  | 8 |
-| 3 | Scaling Properties |  | 11 |
-|  | 3.1 Scaling Results on a Step-Basis |  | 12 |
-|  | 3.2 Scaling Results on a Time-Basis |  | 13 |
-|  | 3.3 Scaling Versus a Larger Dense Model |  | 13 |
-| 4 | Downstream Results |  | 14 |
-|  | 4.1 Fine-Tuning |  | 14 |
-|  | 4.2 Distillation |  | 16 |
-|  | 4.3 Multilingual Learning |  | 17 |
-| 5 | Designing Models with Data, Model, and Expert-Parallelism |  | 18 |
-|  | 5.1 Data Parallelism |  | 20 |
-|  | 5.2 Model Parallelism |  | 20 |
-|  | 5.3 Model and Data Parallelism |  | 21 |
-|  | 5.4 Expert and Data Parallelism |  | 22 |
-|  | 5.5 Expert, Model and Data Parallelism |  | 22 |
-|  | 5.6 Towards Trillion Parameter Models |  | 22 |
-| 6 | Related Work |  | 24 |
+|  | 2.1 | Simplifying Sparse Routing | 5 |
+|  | 2.2 | Efficient Sparse Routing | 6 |
+|  | 2.3 | Putting It All Together: The Switch Transformer | 8 |
+|  | 2.4 | Improved Training and Fine-Tuning Techniques | 8 |
+| 3 |  | Scaling Properties | 11 |
+|  | 3.1 | Scaling Results on a Step-Basis | 12 |
+|  | 3.2 | Scaling Results on a Time-Basis | 13 |
+|  | 3.3 | Scaling Versus a Larger Dense Model | 13 |
+| 4 |  | Downstream Results | 14 |
+|  | 4.1 | Fine-Tuning | 14 |
+|  | 4.2 | Distillation | 16 |
+|  | 4.3 | Multilingual Learning | 17 |
+| 5 |  | Designing Models with Data, Model, and Expert-Parallelism | 18 |
+|  | 5.1 | Data Parallelism | 20 |
+|  | 5.2 | Model Parallelism | 20 |
+|  | 5.3 | Model and Data Parallelism | 21 |
+|  | 5.4 | Expert and Data Parallelism | 22 |
+|  | 5.5 | Expert, Model and Data Parallelism | 22 |
+|  | 5.6 | Towards Trillion Parameter Models | 22 |
+| 6 |  | Related Work | 24 |
 | 7 | Discussion |  | 25 |
 | 8 | Future Work |  | 26 |
 | 9 | Conclusion |  | 27 |
-| A | Switch for Attention |  | 27 |
-| B | Preventing Token Dropping with | No-Token-Left-Behind | 29 |
-| C | Encouraging Exploration Across Experts |  | 29 |
-|  | D Switch Transformers in Lower Compute Regimes |  | 29 |
-| E | Relation of Upstream to Downstream Model Performance |  | 32 |
-| F | Pseudo Code for Switch Transformers |  | 33 |
+| A |  | Switch for Attention | 27 |
+| B |  | Preventing Token Dropping with No-Token-Left-Behind | 29 |
+| C |  | Encouraging Exploration Across Experts | 29 |
+| D |  | Switch Transformers in Lower Compute Regimes | 29 |
+| E |  | Relation of Upstream to Downstream Model Performance | 32 |
+| F |  | Pseudo Code for Switch Transformers | 33 |
 
-## 1. Introduction
+### 1. Introduction
 
 Large scale training has been an effective path towards flexible and powerful neural language models (Radford et al., 2018; Kaplan et al., 2020; Brown et al., 2020). Simple architectures backed by a generous computational budget, data set size and parameter count—surpass more complicated algorithms (Sutton, 2019). An approach followed in Radford et al. (2018); Raffel et al. (2019); Brown et al. (2020) expands the model size of a densely-activated Transformer (Vaswani et al., 2017). While effective, it is also extremely computationally intensive (Strubell et al., 2019). Inspired by the success of model scale, but seeking greater computational efficiency, we instead propose a sparsely-activated expert model: the Switch Transformer. In our case the sparsity comes from activating a subset of the neural network weights for each incoming example.
 
-![](_page_2_Figure_3.png)
+![](_page_2_Figure_3.jpeg)
 
 Figure 1: Scaling and sample efficiency of Switch Transformers. Left Plot: Scaling properties for increasingly sparse (more experts) Switch Transformers. Right Plot: Negative log perplexity comparing Switch Transformers to T5 (Raffel et al., 2019) models using the same compute budget.
 
@@ -86,16 +84,16 @@ We address these issues, and then go beyond translation, to find that these clas
 - A measurement of the pre-training benefits on multilingual data where we find a universal improvement across all 101 languages and with 91% of languages benefiting from 4x+ speedups over the mT5 baseline (Xue et al., 2020).
 - An increase in the scale of neural language models achieved by efficiently combining data, model, and expert-parallelism to create models with up to a trillion parameters. These models improve the pre-training speed of a strongly tuned T5-XXL baseline by 4x.
 
-## 2. Switch Transformer
+### 2. Switch Transformer
 
 The guiding design principle for Switch Transformers is to maximize the parameter count of a Transformer model (Vaswani et al., 2017) in a simple and computationally efficient way. The benefit of scale was exhaustively studied in Kaplan et al. (2020) which uncovered powerlaw scaling with model size, data set size and computational budget. Importantly, this work advocates training large models on relatively small amounts of data as the computationally optimal approach.
 
 Heeding these results, we investigate a fourth axis: increase the parameter count while keeping the floating point operations (FLOPs) per example constant. Our hypothesis is that the parameter count, independent of total computation performed, is a separately important axis on which to scale. We achieve this by designing a sparsely activated model that efficiently uses hardware designed for dense matrix multiplications such as GPUs and TPUs. Our work here focuses on TPU architectures, but these class of models may be similarly trained on GPU clusters. In our distributed training setup, our sparsely activated layers split unique weights on different devices. Therefore, the weights of the model increase with the number of devices, all while maintaining a manageable memory and computational footprint on each device.
 
-![](_page_4_Figure_1.png)
+![](_page_4_Figure_1.jpeg)
 
 - Figure 2: Illustration of a Switch Transformer encoder block. We replace the dense feed forward network (FFN) layer present in the Transformer with a sparse Switch FFN layer (light blue). The layer operates independently on the tokens in the sequence. We diagram two tokens (x1 = "More" and x2 = "Parameters" below) being routed (solid lines) across four FFN experts, where the router independently routes each token. The switch FFN layer returns the output of the selected FFN multiplied by the router gate value (dotted-line).
-## 2.1 Simplifying Sparse Routing
+### 2.1 Simplifying Sparse Routing
 
 Mixture of Expert Routing. Shazeer et al. (2017) proposed a natural language Mixtureof-Experts (MoE) layer which takes as an input a token representation x and then routes this to the best determined top-k experts, selected from a set {Ei(x)} N i=1 of N experts. The router variable Wr produces logits h(x) = Wr · x which are normalized via a softmax distribution over the available N experts at that layer. The gate-value for expert i is given by,
 
@@ -109,10 +107,10 @@ Switch Routing: Rethinking Mixture-of-Experts. Shazeer et al. (2017) conjectured
 
 The benefits for the Switch layer are three-fold: (1) The router computation is reduced as we are only routing a token to a single expert. (2) The batch size (expert capacity) of each expert can be at least halved since each token is only being routed to a single expert.3 (3) The routing implementation is simplified and communication costs are reduced. Figure 3 shows an example of routing with different expert capacity factors.
 
-![](_page_5_Figure_3.png)
+![](_page_5_Figure_3.jpeg)
 
 - Figure 3: Illustration of token routing dynamics. Each expert processes a fixed batch-size of tokens modulated by the capacity factor. Each token is routed to the expert with the highest router probability, but each expert has a fixed batch size of (total tokens / num experts) × capacity factor. If the tokens are unevenly dispatched then certain experts will overflow (denoted by dotted red lines), resulting in these tokens not being processed by this layer. A larger capacity factor alleviates this overflow issue, but also increases computation and communication costs (depicted by padded white/empty slots).
-## 2.2 Efficient Sparse Routing
+### 2.2 Efficient Sparse Routing
 
 We use Mesh-Tensorflow (MTF) (Shazeer et al., 2018) which is a library, with similar semantics and API to Tensorflow (Abadi et al., 2016) that facilitates efficient distributed data and model parallel architectures. It does so by abstracting the physical set of cores to a logical mesh of processors. Tensors and computations may then be sharded per named dimensions, facilitating easy partitioning of models across dimensions. We design our model with TPUs in mind, which require statically declared sizes. Below we describe our distributed Switch Transformer implementation.
 
@@ -130,7 +128,7 @@ $$\text{loss}=\alpha\cdot N\cdot\sum_{i=1}^{N}f_{i}\cdot P_{i}\tag{4}$$
 
 where fi is the fraction of tokens dispatched to expert i,
 
-$$f_{i}=\frac{1}{T}\sum_{x\in\mathcal{B}}1\{\operatorname*{argmax}p(x)=i\}\tag{5}$$
+$$f_{i}=\frac{1}{T}\sum_{x\in\mathcal{B}}1\left\{\operatorname*{argmax}p(x)=i\right\}\tag{5}$$
 
 and Pi is the fraction of the router probability allocated for expert i, 2
 
@@ -158,9 +156,9 @@ Sparse expert models may introduce training difficulties over a vanilla Transfor
 
 <sup>5.</sup> Note that speed measurements are both a function of the algorithm and the implementation details. Switch Transformer reduces the necessary computation relative to MoE (algorithm), but the final speed differences are impacted by low-level optimizations (implementation).
 
-| Model | Capacity Factor | Quality after | Time to Quality Threshold (↓) | Speed (↑) (examples/sec) |
+| Model | Capacity Factor | Quality after | Time to Quality Threshold (↓) | Speed (↑) |
 | --- | --- | --- | --- | --- |
-|  |  | 100k steps (↑) |  |  |
+|  |  | 100k steps (↑) |  | (examples/sec) |
 |  |  | (Neg. Log Perp.) | (hours) |  |
 | T5-Base | — | -1.731 | Not achieved† | 1600 |
 | T5-Large | — | -1.550 | 131.1 | 470 |
@@ -218,7 +216,7 @@ Regularizing large sparse models. Our paper considers the common NLP approach of
 - Table 4: Fine-tuning regularization results. A sweep of dropout rates while fine-tuning Switch Transformer models pre-trained on 34B tokens of the C4 data set (higher numbers are better). We observe that using a lower standard dropout rate at all non-expert layer, with a much larger dropout rate on the expert feed-forward layers, to perform the best.
 We thus propose a simple way to alleviate this issue during fine-tuning: increase the dropout inside the experts, which we name as expert dropout. During fine-tuning we simply increase the dropout rate by a significant amount only at the interim feed-forward computation at each expert layer. Table 4 has the results for our expert dropout protocol. We observe that simply increasing the dropout across all layers leads to worse performance. However, setting a smaller dropout rate (0.1) at non-expert layers and a much larger dropout rate (0.4) at expert layers leads to performance improvements on four smaller downstream tasks.
 
-## 3. Scaling Properties
+### 3. Scaling Properties
 
 We present a study of the scaling properties of the Switch Transformer architecture during pre-training. Per Kaplan et al. (2020), we consider a regime where the model is not bottlenecked by either the computational budget or amount of data. To avoid the data bottleneck, we use the large C4 corpus with over 180B target tokens (Raffel et al., 2019) and we train until diminishing returns are observed.
 
@@ -228,7 +226,7 @@ The number of experts is the most efficient dimension for scaling our model. Inc
 
 Figure 4 demonstrates consistent scaling benefits with the number of experts when training all models for a fixed number of steps. We observe a clear trend: when keeping the FLOPS per token fixed, having more parameters (experts) speeds up training. The left Figure demonstrates consistent scaling properties (with fixed FLOPS per token) between sparse model parameters and test loss. This reveals the advantage of scaling along this additional axis of sparse model parameters. Our right Figure measures sample efficiency of a dense model variant and four FLOP-matched sparse variants. We find that increasing the number of experts leads to more sample efficient models. Our Switch-Base 64 expert model achieves the same performance of the T5-Base model at step 60k at step 450k, which is a 7.5x speedup in terms of step time. In addition, consistent with the findings of Kaplan et al. (2020), we find that larger models are also more sample efficient—learning more quickly for a fixed number of observed tokens.
 
-![](_page_11_Figure_4.png)
+![](_page_11_Figure_4.jpeg)
 
 - Figure 4: Scaling properties of the Switch Transformer. Left Plot: We measure the quality improvement, as measured by perplexity, as the parameters increase by scaling the number of experts. The top-left point corresponds to the T5-Base model with 223M parameters. Moving from top-left to bottom-right, we double the number of experts from 2, 4, 8 and so on until the bottom-right point of a 256 expert model with 14.7B parameters. Despite all models using an equal computational budget, we observe consistent improvements scaling the number of experts. Right Plot: Negative log perplexity per step sweeping over the number of experts. The dense baseline is shown with the purple line and we note improved sample efficiency of our Switch-Base models.
 #### 3.2 Scaling Results on a Time-Basis
@@ -237,17 +235,17 @@ Figure 4 demonstrates that on a step basis, as we increase the number of experts
 
 For a fixed training duration and computational budget, should one train a dense or a sparse model?
 
-![](_page_12_Figure_4.png)
+![](_page_12_Figure_4.jpeg)
 
 Figure 5: Speed advantage of Switch Transformer. All models trained on 32 TPUv3 cores with equal FLOPs per example. For a fixed amount of computation and training time, Switch Transformers significantly outperform the dense Transformer baseline. Our 64 expert Switch-Base model achieves the same quality in one-seventh the time of the T5-Base and continues to improve.
 
 Figures 5 and 6 address this question. Figure 5 measures the pre-training model quality as a function of time. For a fixed training duration and computational budget, Switch Transformers yield a substantial speed-up. In this setting, our Switch-Base 64 expert model trains in one-seventh the time that it would take the T5-Base to get similar perplexity.
 
-### 3.3 Scaling Versus a Larger Dense Model
+#### 3.3 Scaling Versus a Larger Dense Model
 
 The above analysis shows that a computationally-matched dense model is outpaced by its Switch counterpart. Figure 6 considers a different scenario: what if we instead had allocated our resources to a larger dense model? We do so now, measuring Switch-Base against the next strong baseline, T5-Large. But despite T5-Large applying 3.5x more FLOPs per token, Switch-Base is still more sample efficient and yields a 2.5x speedup. Furthermore, more gains can be had simply by designing a new, larger sparse version, Switch-Large, which is FLOP-matched to T5-Large. We do this and demonstrate superior scaling and fine-tuning in the following section.
 
-![](_page_13_Figure_2.png)
+![](_page_13_Figure_2.jpeg)
 
 Figure 6: Scaling Transformer models with Switch layers or with standard dense model scaling. Left Plot: Switch-Base is more sample efficient than both the T5-Base, and T5-Large variant, which applies 3.5x more FLOPS per token. Right Plot: As before, on a wall-clock basis, we find that Switch-Base is still faster, and yields a 2.5x speedup over T5-Large.
 
@@ -255,13 +253,11 @@ Figure 6: Scaling Transformer models with Switch layers or with standard dense m
 
 Section 3 demonstrated the superior scaling properties while pre-training, but we now validate that these gains translate to improved language learning abilities on downstream tasks. We begin by fine-tuning on a diverse set of NLP tasks. Next we study reducing the memory footprint of our sparse models by over 90% by distilling into small—and easily deployed—dense baselines. Finally, we conclude this section measuring the improvements in a multi-task, multilingual setting, where we show that Switch Transformers are strong multi-task learners, improving over the multilingual T5-base model across all 101 languages.
 
-### 4.1 Fine-Tuning
+#### 4.1 Fine-Tuning
 
 Baseline and Switch models used for fine-tuning. Our baselines are the highly-tuned 223M parameter T5-Base model and the 739M parameter T5-Large model (Raffel et al., 2019). For both versions, we design a FLOP-matched Switch Transformer, with many more parameters, which is summarized in Table 9. 7 Our baselines differ slightly from those in Raffel et al. (2019) because we pre-train on an improved C4 corpus which removes intraexample text duplication and thus increases the efficacy as a pre-training task Lee et al.
 
 <sup>7.</sup> FLOPS are calculated for the forward pass as done in Kaplan et al. (2020).
-
-#### Switch Transformers
 
 (2021). In our protocol we pre-train with 220 (1,048,576) tokens per batch for 550k steps amounting to 576B total tokens. We then fine-tune across a diverse set of tasks using a dropout rate of 0.1 for all layers except the Switch layers, which use a dropout rate of 0.4 (see Table 4). We fine-tune using a batch-size of 1M for 16k steps and for each task, we evaluate model quality every 200-steps and report the peak performance as computed on the validation set.
 
@@ -316,19 +312,19 @@ Achievable compression rates. Using our best distillation technique described in
 
 Distilling a fine-tuned model. We conclude this with a study of distilling a finetuned sparse model into a dense model. Table 8 shows results of distilling a 7.4B parameter Switch-Base model, fine-tuned on the SuperGLUE task, into the 223M T5-Base. Similar to our pre-training results, we find we are able to preserve 30% of the gains of the sparse model when distilling into a FLOP matched dense variant. One potential future avenue, not considered here, may examine the specific experts being used for fine-tuning tasks and extracting them to achieve better model compression.
 
-## 4.3 Multilingual Learning
+### 4.3 Multilingual Learning
 
 In our final set of downstream experiments, we measure the model quality and speed tradeoffs while pre-training on a mixture of 101 different languages. We build and benchmark off the recent work of mT5 (Xue et al., 2020), a multilingual extension to T5. We pre-train on the multilingual variant of the Common Crawl data set (mC4) spanning 101 languages introduced in mT5, but due to script variants within certain languages, the mixture contains 107 tasks.
 
 In Figure 7 we plot the quality improvement in negative log perplexity for all languages of a FLOP-matched Switch model, mSwitch-Base to the T5 base variant, mT5-Base. After
 
-|  | Dense |  | Sparse |  |  |
-| --- | --- | --- | --- | --- | --- |
-| Parameters | 223M 1.1B | 2.0B | 3.8B | 7.4B | 14.7B |
-| Pre-trained Neg. Log Perp. (↑) | -1.636 -1.505 | -1.474 | -1.444 | -1.432 | -1.427 |
-| Distilled Neg. Log Perp. (↑) | — -1.587 | -1.585 | -1.579 | -1.582 | -1.578 |
-| Percent of Teacher Performance | — 37% | 32% | 30 % | 27 % | 28 % |
-| Compression Percent | — 82 % | 90 % | 95 % | 97 % | 99 % |
+|  | Dense |  |  | Sparse |  |  |
+| --- | --- | --- | --- | --- | --- | --- |
+| Parameters | 223M | 1.1B | 2.0B | 3.8B | 7.4B | 14.7B |
+| Pre-trained Neg. Log Perp. (↑) | -1.636 | -1.505 | -1.474 | -1.444 | -1.432 | -1.427 |
+| Distilled Neg. Log Perp. (↑) | — | -1.587 | -1.585 | -1.579 | -1.582 | -1.578 |
+| Percent of Teacher Performance | — | 37% | 32% | 30 % | 27 % | 28 % |
+| Compression Percent | — | 82 % | 90 % | 95 % | 97 % | 99 % |
 
 - Table 7: Distillation compression rates. We measure the quality when distilling large sparse models into a dense baseline. Our baseline, T5-Base, has a -1.636 Neg. Log Perp. quality. In the right columns, we then distill increasingly large sparse models into this same architecture. Through a combination of weight-initialization and a mixture of hard and soft losses, we can shrink our sparse teachers by 95%+ while preserving 30% of the quality gain. However, for significantly better and larger pre-trained teachers, we expect larger student models would be necessary to achieve these compression rates.
 
@@ -341,19 +337,17 @@ In Figure 7 we plot the quality improvement in negative log perplexity for all l
 - Table 8: Distilling a fine-tuned SuperGLUE model. We distill a Switch-Base model finetuned on the SuperGLUE tasks into a T5-Base model. We observe that on smaller data sets our large sparse model can be an effective teacher for distillation. We find that we again achieve 30% of the teacher's performance on a 97% compressed model.
 pre-training both versions for 1M steps, we find that on all 101 languages considered, Switch Transformer increases the final negative log perplexity over the baseline. In Figure 8, we present a different view and now histogram the per step speed-up of using Switch Transformer over the mT5-Base.9 We find a mean speed-up over mT5-Base of 5x and that 91% of languages achieve at least a 4x speedup. This presents evidence that Switch Transformers are effective multi-task and multi-lingual learners.
 
-## 5. Designing Models with Data, Model, and Expert-Parallelism
+# 5. Designing Models with Data, Model, and Expert-Parallelism
 
 Arbitrarily increasing the number of experts is subject to diminishing returns (Figure 4). Here we describe complementary scaling strategies. The common way to scale a Transformer is to increase dimensions in tandem, like dmodel or df f . This increases both the parameters
 
 <sup>9.</sup> The speedup on a step basis is computed as the ratio of the number of steps for the baseline divided by the number of steps required by our model to reach that same quality.
 
-#### Switch Transformers
-
-![](_page_18_Figure_1.png)
+![](_page_18_Figure_1.jpeg)
 
 Figure 7: Multilingual pre-training on 101 languages. Improvements of Switch T5 Base model over dense baseline when multi-task training on 101 languages. We observe Switch Transformers to do quite well in the multi-task training setup and yield improvements on all 101 languages.
 
-![](_page_18_Figure_3.png)
+![](_page_18_Figure_3.jpeg)
 
 Figure 8: Multilingual pre-training on 101 languages. We histogram for each language, the step speedup of Switch Transformers over the FLOP matched T5 dense baseline to reach the same quality. Over all 101 languages, we achieve a mean step speedup over mT5-Base of 5x and, for 91% of languages, we record a 4x, or greater, speedup to reach the final perplexity of mT5-Base.
 
@@ -380,16 +374,16 @@ When training data parallel models, which is the standard for distributed traini
 
 We now consider a scenario where all cores are allocated exclusively to the model-parallel dimension and so n = 1, m = N. Now all cores must keep the full B tokens and each core will contain a unique slice of the weights. For each forward and backward pass, a communication cost is now incurred. Each core sends a tensor of [B, dmodel] to compute the second matrix multiplication ReLU(h)Wout because the df f dimension is partitioned and must be summed over. As a general rule, whenever a dimension that is partitioned across cores must be summed, then an all-reduce operation is added for both the forward and backward pass. This contrasts with pure data parallelism where an all-reduce only occurs at the end of the entire forward and backward pass.
 
-![](_page_20_Figure_1.png)
+![](_page_20_Figure_1.jpeg)
 
 #### **How the** *model weights* **are split over cores**
 
-## **How the** *data* **is split over cores**
+### **How the** *data* **is split over cores**
 
-![](_page_20_Figure_4.png)
+![](_page_20_Figure_4.jpeg)
 
 - Figure 9: Data and weight partitioning strategies. Each 4×4 dotted-line grid represents 16 cores and the shaded squares are the data contained on that core (either model weights or batch of tokens). We illustrate both how the model weights and the data tensors are split for each strategy. First Row: illustration of how model weights are split across the cores. Shapes of different sizes in this row represent larger weight matrices in the Feed Forward Network (FFN) layers (e.g larger df f sizes). Each color of the shaded squares identifies a unique weight matrix. The number of parameters per core is fixed, but larger weight matrices will apply more computation to each token. Second Row: illustration of how the data batch is split across cores. Each core holds the same number of tokens which maintains a fixed memory usage across all strategies. The partitioning strategies have different properties of allowing each core to either have the same tokens or different tokens across cores, which is what the different colors symbolize.
-## 5.3 Model and Data Parallelism
+#### 5.3 Model and Data Parallelism
 
 It is common to mix both model and data parallelism for large scale models, which was done in the largest T5 models (Raffel et al., 2019; Xue et al., 2020) and in GPT-3 (Brown et al., 2020). With a total of N = n × m cores, now each core will be responsible for B/n tokens and df f /m of both the weights and intermediate activation. In the forward and backward pass each core communicates a tensor of size [B/n, dmodel] in an all-reduce operation.
 
@@ -412,8 +406,6 @@ When combining both model and expert-parallelism, we will have all-to-all commun
 Combining expert, model and data parallelism, we design two large Switch Transformer models, one with 395 billion and 1.6 trillion parameters, respectively. We study how these models perform on both up-stream pre-training as language models and their downstream fine-tuning performance. The parameters, FLOPs per sequence and hyper-parameters of the two different models are listed below in Table 9. Standard hyper-parameters of the Transformer, including dmodel, df f , dkv, number of heads and number of layers are described, as well as a less common feature, F F NGEGLU , which refers to a variation of the FFN layer where the expansion matrix is substituted with two sets of weights which are non-linearly combined (Shazeer, 2020).
 
 The Switch-C model is designed using only expert-parallelism, and no model-parallelism, as described earlier in Section 5.4. As a result, the hyper-parameters controlling the width,
-
-#### Switch Transformers
 
 | Model | Parameters | FLOPs/seq | dmodel | F F NGEGLU | df f | dkv | Num. Heads |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -449,7 +441,7 @@ Knowledge-based fine-tuning performance. Finally, we also conduct an early exami
 
 Summing up, despite training on less than half the data of other models, we already find comparable, and sometimes state-of-the-art, model quality. Currently, the Switch Transformer translates substantial upstream gains better to knowledge-based tasks, than reasoning-tasks (see Appendix E). Extracting stronger fine-tuning performance from large expert models is an active research question, and the pre-training perplexity indicates future improvements should be possible.
 
-## 6. Related Work
+### 6. Related Work
 
 The importance of scale in neural networks is widely recognized and several approaches have been proposed. Recent works have scaled models to billions of parameters through using model parallelism (e.g. splitting weights and tensors across multiple cores) (Shazeer et al., 2018; Rajbhandari et al., 2019; Raffel et al., 2019; Brown et al., 2020; Shoeybi et al., 2019). Alternatively, Harlap et al. (2018); Huang et al. (2019) propose using pipeline based model parallelism, where different layers are split across devices and micro-batches are pipelined to the different layers. Finally, Product Key networks (Lample et al., 2019) were proposed to scale up the capacity of neural networks by doing a lookup for learnable embeddings based on the incoming token representations to a given layer.
 
@@ -459,7 +451,7 @@ Mixture of Experts (MoE), in the context of modern deep learning architectures, 
 
 Sparsity along the sequence length dimension (L) in the Transformer attention patterns has been a successful technique to reduce the attention complexity from O(L 2 ) (Child et al., 2019; Correia et al., 2019; Sukhbaatar et al., 2019; Kitaev et al., 2020; Zaheer et al., 2020; Beltagy et al., 2020). This has enabled learning longer sequences than previously possible. This version of the Switch Transformer does not employ attention sparsity, but these techniques are complimentary, and, as future work, these could be combined to potentially improve learning on tasks requiring long contexts.
 
-## 7. Discussion
+### 7. Discussion
 
 We pose and discuss questions about the Switch Transformer, and sparse expert models generally, where sparsity refers to weights, not on attention patterns.
 
@@ -475,7 +467,7 @@ Why use Switch Transformer instead of a model-parallel dense model? On a time ba
 
 Why aren't sparse models widely used already? The motivation to try sparse models has been stymied by the massive success of scaling dense models (the success of which is partially driven by co-adaptation with deep learning hardware as argued in Hooker (2020)). Further, sparse models have been subject to multiple issues including (1) model complexity, (2) training difficulties, and (3) communication costs. Switch Transformer makes strides to alleviate these issues.
 
-## 8. Future Work
+### 8. Future Work
 
 This paper lays out a simplified architecture, improved training procedures, and a study of how sparse models scale. However, there remain many open future directions which we briefly describe here:
 
@@ -490,11 +482,11 @@ layer replaces the weight matrices which produce Q, K, V. However, due to traini
 - 6. Examining Switch Transformer in new and across different modalities. We have thus far only considered language, but we believe that model sparsity can similarly provide advantages in new modalities, as well as multi-modal networks.
 This list could easily be extended, but we hope this gives a flavor for the types of challenges that we are thinking about and what we suspect are promising future directions.
 
-## 9. Conclusion
+### 9. Conclusion
 
 Switch Transformers are scalable and effective natural language learners. We simplify Mixture of Experts to produce an architecture that is easy to understand, stable to train and vastly more sample efficient than equivalently-sized dense models. We find that these models excel across a diverse set of natural language tasks and in different training regimes, including pre-training, fine-tuning and multi-task training. These advances make it possible to train models with hundreds of billion to trillion parameters and which achieve substantial speedups relative to dense T5 baselines. We hope our work motivates sparse models as an effective architecture and that this encourages researchers and practitioners to consider these flexible models in natural language tasks, and beyond.
 
-## Acknowledgments
+# Acknowledgments
 
 The authors would like to thank Margaret Li who provided months of key insights into algorithmic improvements and suggestions for empirical studies. Hugo Larochelle for sage advising and clarifying comments on the draft, Irwan Bello for detailed comments and careful revisions, Colin Raffel and Adam Roberts for timely advice on neural language models and the T5 code-base, Yoshua Bengio for advising and encouragement on research in adaptive computation, Jascha Sohl-dickstein for interesting new directions for stabilizing new large scale models and paper revisions, and the Google Brain Team for useful discussions on the paper. Blake Hechtman who provided invaluable help in profiling and improving the training performance of our models.
 
@@ -504,7 +496,7 @@ Shazeer et al. (2018); Lepikhin et al. (2020) designed MoE Transformers (Shazeer
 
 Table 10 records the quality after a fixed number of steps as well as training time for several variants. Though we find improvements, we also found these layers to be more unstable when using bfloat16 precision and thus we did not include them in the final variant.
 
-![](_page_27_Figure_1.png)
+![](_page_27_Figure_1.jpeg)
 
 Figure 10: Switch layers in attention. We diagram how to incorporate the Switch layer into the Self-Attention transformer block. For each token (here we show two tokens, x1 = "More" and x2 = "Parameters"), one set of weights produces the query and the other set of unique weights produces the shared keys and values. We experimented with each expert being a linear operation, as well as a FFN, as was the case throughout this work. While we found quality improvements using this, we found this to be more unstable when used with low precision number formats, and thus leave it for future work.
 
@@ -529,20 +521,19 @@ Due to software constraints on TPU accelerators, the shapes of our Tensors must 
 
 We suspected that having no computation applied to tokens could be very wasteful, especially since if there is overflow on one expert, that means another expert will have extra capacity. With this intuition we create No-Token-Left-Behind, which iteratively reroutes any tokens that are at first routed to an expert that is overflowing. Figure 11 shows a graphical description of this method, which will allow us to guarantee almost no tokens will be dropped during training and inference. We hypothesised that this could improve performance and further stabilize training, but we found no empirical benefits. We suspect that once the network learns associations between different tokens and experts, if this association is changed (e.g. sending a token to its second highest expert) then performance could be degraded.
 
-## C. Encouraging Exploration Across Experts
+### C. Encouraging Exploration Across Experts
 
 At each expert-layer, the router determines to which expert to send the token. This is a discrete decision over the available experts, conditioned on information about the token's representation. Based on the incoming token representation, the router determines the best expert, however, it receives no counterfactual information about how well it would have done selecting an alternate expert. As in reinforcement learning, a classic explorationexploitation dilemma arises (Sutton and Barto, 2018). These issues have been similarly noted and addressed differently by Rosenbaum et al. (2017) which demonstrated success in multi-task learning. This particular setting most closely matches that of a contextual bandit (Robbins, 1952). Deterministically selecting the top expert always amounts to an exploitative strategy – we consider balancing exploration to seek better expert assignment.
 
 To introduce exploration, we consider several approaches: 1) deterministic or argmax 2) sampling from the softmax distribution 3) input dropout on the incoming representation 4) multiplicative jitter noise on the incoming representation. The resulting impact on model quality is reported in Table 11. Throughout this work, we use input jitter to inject noise as we have found it to empirically perform the best.
 
-## D. Switch Transformers in Lower Compute Regimes
+### D. Switch Transformers in Lower Compute Regimes
 
 Switch Transformer is also an effective architecture at small scales as well as in regimes with thousands of cores and trillions of parameters. Many of our prior experiments were
 
-![](_page_29_Figure_1.png)
+![](_page_29_Figure_1.jpeg)
 
 - Figure 11: Diagram of the No-Token-Left-Behind Routing. Stage 1 is equivalent to Switch routing where tokens are routed to the expert with the highest probability from the router. In Stage 2 we look at all tokens that have overflowed and route them to the expert with which has the second highest probability. Tokens can still be overflowed if their second highest expert has too many tokens, but this allows most of the tokens to be routed. This process can be iterated to guarantee virtually no tokens are dropped at all.
-Probabilities
 
 | Model | Quality (Neg. Log Perp.) (↑) |
 | --- | --- |
@@ -554,15 +545,15 @@ Probabilities
 - Table 11: Router Exploration Strategies. Quality of the Switch Transformer, measured by the negative log perplexity, under different randomness-strategies for selecting the expert (lower is better). There is no material speed performance difference between the variants.
 at the scale of 10B+ parameter models, but we show in Figure 12 as few as 2 experts produce compelling gains over a FLOP-matched counterpart. Even if a super computer is not readily available, training Switch Transformers with 2, 4, or 8 experts (as we typically recommend one expert per core) results in solid improvements over T5 dense baselines.
 
-![](_page_30_Figure_1.png)
+![](_page_30_Figure_1.jpeg)
 
 Figure 12: Switch Transformer with few experts. Switch Transformer improves over the baseline even with very few experts. Here we show scaling properties at very small scales, where we improve over the T5-Base model using 2, 4, and 8 experts.
 
-## E. Relation of Upstream to Downstream Model Performance
+### E. Relation of Upstream to Downstream Model Performance
 
 There is no guarantee that a model's quality on a pre-training objective will translate to downstream task results. Figure 13 presents the correlation of the upstream model quality, for both dense and Switch models, on the C4 pre-training task with two downstream task measures: average SuperGLUE performance and TriviaQA score. We choose these two tasks as one probes the model's reasoning and the other factual knowledge.
 
-![](_page_31_Figure_3.png)
+![](_page_31_Figure_3.jpeg)
 
 - Figure 13: Upstream pre-trained quality to downstream model quality. We correlate the upstream performance with downstream quality on both SuperGLUE and TriviaQA (SOTA recorded without SSM), reasoning and knowledge-heavy benchmarks, respectively (validation sets). We find that, as with the baseline, the Switch model scales with improvements in the upstream pre-training task. For SuperGLUE, we find a loosely linear relation between negative log perplexity and the average SuperGLUE score. However, the dense model often performs better for a fixed perplexity, particularly in the large-scale regime. Conversely, on the knowledge-heavy task, TriviaQA, we find that the Switch Transformer may follow an improved scaling relationship – for a given upstream perplexity, it does better than a dense counterpart. Further statistics (expensive to collect and left to future work) would be necessary to confirm these observations.
 We find a consistent correlation, indicating that for both baseline and Switch models, improved pre-training leads to better downstream results. Additionally, for a fixed upstream perplexity we find that both Switch and dense models perform similarly in the small to medium model size regime. However, in the largest model regime (T5-11B/T5-XXL) our largest Switch models, as mentioned in Section 5.6, do not always translate their upstream perplexity well to downstream fine-tuning on the SuperGLUE task. This warrants future investigation and study to fully realize the potential of sparse models. Understanding the fine-tuning dynamics with expert-models is very complicated and is dependent on regularization, load-balancing, and fine-tuning hyper-parameters.
@@ -704,7 +695,7 @@ def switch layer(inputs, n, capacity factor, num experts):
 ```
 Figure 16: Pseudo code of the Switch Transformer layer in Mesh Tensorflow.
 
-## References
+### References
 
 - Mart´ın Abadi, Paul Barham, Jianmin Chen, Zhifeng Chen, Andy Davis, Jeffrey Dean, Matthieu Devin, Sanjay Ghemawat, Geoffrey Irving, Michael Isard, et al. Tensorflow: A system for large-scale machine learning. In 12th {USENIX} symposium on operating systems design and implementation ({OSDI} 16), pages 265–283, 2016.
 - Iz Beltagy, Matthew E Peters, and Arman Cohan. Longformer: The long-document transformer. arXiv preprint arXiv:2004.05150, 2020.
@@ -720,7 +711,6 @@ Figure 16: Pseudo code of the Switch Transformer layer in Mesh Tensorflow.
 - William Fedus, Ian Goodfellow, and Andrew M Dai. Maskgan: Better text generation via filling in the . arXiv preprint arXiv:1801.07736, 2018.
 - Trevor Gale, Matei Zaharia, Cliff Young, and Erich Elsen. Sparse gpu kernels for deep learning. arXiv preprint arXiv:2006.10901, 2020.
 - Scott Gray, Alec Radford, and Diederik P Kingma. Gpu kernels for block-sparse weights. https://openai.com/blog/block-sparse-gpu-kernels/, 2017.
-
 - Kelvin Guu, Kenton Lee, Zora Tung, Panupong Pasupat, and Ming-Wei Chang. Realm: Retrieval-augmented language model pre-training. arXiv preprint arXiv:2002.08909, 2020.
 - Aaron Harlap, Deepak Narayanan, Amar Phanishayee, Vivek Seshadri, Nikhil Devanur, Greg Ganger, and Phil Gibbons. Pipedream: Fast and efficient pipeline parallel dnn training. arXiv preprint arXiv:1806.03377, 2018.
 - Karl Moritz Hermann, Tomas Kocisky, Edward Grefenstette, Lasse Espeholt, Will Kay, Mustafa Suleyman, and Phil Blunsom. Teaching machines to read and comprehend. In C. Cortes, N. Lawrence, D. Lee, M. Sugiyama, and R. Garnett, editors, Advances in Neural Information Processing Systems, volume 28, pages 1693–1701. Curran Associates, Inc., 2015. URL https://proceedings.neurips.cc/paper/2015/file/ afdec7005cc9f14302cd0474fd0f3c96-Paper.pdf.
@@ -734,7 +724,6 @@ Figure 16: Pseudo code of the Switch Transformer layer in Mesh Tensorflow.
 - Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. Scaling laws for neural language models. arXiv preprint arXiv:2001.08361, 2020.
 - Nikita Kitaev, Lukasz Kaiser, and Anselm Levskaya. Reformer: The efficient transformer. arXiv preprint arXiv:2001.04451, 2020.
 - Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redfield, Michael Collins, Ankur Parikh, Chris Alberti, Danielle Epstein, Illia Polosukhin, Jacob Devlin, Kenton Lee, et al. Natural questions: a benchmark for question answering research. Transactions of the Association for Computational Linguistics, 7:453–466, 2019.
-
 - Guillaume Lample, Alexandre Sablayrolles, Marc'Aurelio Ranzato, Ludovic Denoyer, and Herv´e J´egou. Large memory layers with product keys. In Advances in Neural Information Processing Systems, pages 8548–8559, 2019.
 - Katherine Lee, Daphne Ippolito, Andrew Nystrom, Chiyuan Zhang, Douglas Eck, Chris Callison-Burch, and Nicholas Carlini. Deduplicating training data makes language models better. arXiv preprint arXiv:2107.06499, 2021.
 - Dmitry Lepikhin, HyoukJoong Lee, Yuanzhong Xu, Dehao Chen, Orhan Firat, Yanping Huang, Maxim Krikun, Noam Shazeer, and Zhifeng Chen. Gshard: Scaling giant models with conditional computation and automatic sharding. arXiv preprint arXiv:2006.16668, 2020.
@@ -748,7 +737,6 @@ Figure 16: Pseudo code of the Switch Transformer layer in Mesh Tensorflow.
 - Pranav Rajpurkar, Jian Zhang, Konstantin Lopyrev, and Percy Liang. Squad: 100,000+ questions for machine comprehension of text. arXiv preprint arXiv:1606.05250, 2016.
 - Prajit Ramachandran and Quoc V Le. Diversity and depth in per-example routing models. In International Conference on Learning Representations, 2018.
 - Herbert Robbins. Some aspects of the sequential design of experiments. Bulletin of the American Mathematical Society, 58(5):527–535, 1952.
-
 - Adam Roberts, Colin Raffel, and Noam Shazeer. How much knowledge can you pack into the parameters of a language model? arXiv preprint arXiv:2002.08910, 2020.
 - Clemens Rosenbaum, Tim Klinger, and Matthew Riemer. Routing networks: Adaptive selection of non-linear functions for multi-task learning. arXiv preprint arXiv:1711.01239, 2017.
 - Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Winogrande: An adversarial winograd schema challenge at scale. In Proceedings of the AAAI Conference on Artificial Intelligence, volume 34, pages 8732–8740, 2020.
@@ -763,7 +751,6 @@ Figure 16: Pseudo code of the Switch Transformer layer in Mesh Tensorflow.
 - Rich Sutton. The Bitter Lesson. http://www.incompleteideas.net/IncIdeas/BitterLesson.html, 2019.
 - Richard S Sutton and Andrew G Barto. Reinforcement learning: An introduction. Stanford University, 2018.
 - Wilson L Taylor. "cloze procedure": A new tool for measuring readability. Journalism quarterly, 30(4):415–433, 1953.
-
 - Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and Illia Polosukhin. Attention is all you need. In Advances in neural information processing systems, pages 5998–6008, 2017.
 - Alex Wang, Amanpreet Singh, Julian Michael, Felix Hill, Omer Levy, and Samuel R Bowman. Glue: A multi-task benchmark and analysis platform for natural language understanding. arXiv preprint arXiv:1804.07461, 2018.
 - Alex Wang, Yada Pruksachatkun, Nikita Nangia, Amanpreet Singh, Julian Michael, Felix Hill, Omer Levy, and Samuel Bowman. Superglue: A stickier benchmark for generalpurpose language understanding systems. In Advances in Neural Information Processing Systems, pages 3266–3280, 2019.

@@ -19,7 +19,10 @@ class Settings(BaseSettings):
     OUTPUT_IMAGE_FORMAT: str = "JPEG"
 
     # General models
-    TORCH_DEVICE: Optional[str] = None # Note: MPS device does not work for text detection, and will default to CPU
+    TORCH_DEVICE: Optional[str] = None  # Note: MPS device does not work for text detection, and will default to CPU
+
+    # Enhancements
+    GOOGLE_API_KEY: Optional[str] = 'AIzaSyDenIF3PJT9DTVuGYeD0a6B_zLW7EF8Zg0'
 
     @computed_field
     @property
