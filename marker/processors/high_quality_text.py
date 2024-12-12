@@ -14,6 +14,7 @@ from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.registry import get_block_class
 from marker.schema.text.span import Span
+from marker.settings import settings
 
 gemini_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
@@ -70,35 +71,41 @@ Output:
 """
 
 
-class HighQualityInlineMathProcessor(BaseProcessor):
-    block_types = (BlockTypes.TextInlineMath,)
-    google_api_key: Optional[str] = None
+class HighQualityTextProcessor(BaseProcessor):
+    block_types = (BlockTypes.TextInlineMath, BlockTypes.Handwriting)
+    google_api_key: Optional[str] = settings.GOOGLE_API_KEY
 
     def __init__(self, config):
         super().__init__(config)
-        genai.configure(api_key=self.google_api_key)
-        self.model = genai.GenerativeModel(
-            "gemini-1.5-flash",
-            generation_config={
-                "response_schema": content.Schema(
-                    type=content.Type.OBJECT,
-                    enum=[],
-                    required=["corrected_lines"],
-                    properties={
-                        "corrected_lines": content.Schema(
-                            type=content.Type.ARRAY,
-                            items=content.Schema(
-                                type=content.Type.STRING,
-                            ),
-                        )
-                    },
-                ),
-                "response_mime_type": "application/json",
-            }
-        )
+        self.model = None
+
+        if self.google_api_key is not None:
+            genai.configure(api_key=self.google_api_key)
+            self.model = genai.GenerativeModel(
+                "gemini-1.5-flash",
+                generation_config={
+                    "response_schema": content.Schema(
+                        type=content.Type.OBJECT,
+                        enum=[],
+                        required=["corrected_lines"],
+                        properties={
+                            "corrected_lines": content.Schema(
+                                type=content.Type.ARRAY,
+                                items=content.Schema(
+                                    type=content.Type.STRING,
+                                ),
+                            )
+                        },
+                    ),
+                    "response_mime_type": "application/json",
+                }
+            )
 
     def __call__(self, document: Document):
         SpanClass: Span = get_block_class(BlockTypes.Span)
+
+        if self.model is None:
+            return
 
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
