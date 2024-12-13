@@ -1,15 +1,17 @@
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional
 
 import google.generativeai as genai
 import PIL
 from google.ai.generativelanguage_v1beta.types import content
 from google.api_core.exceptions import ResourceExhausted
+from tqdm import tqdm
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
-from marker.schema.blocks import BlockId
+from marker.schema.blocks import Block, BlockId
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.registry import get_block_class
@@ -84,6 +86,7 @@ class HighQualityTextProcessor(BaseProcessor):
             self.model = genai.GenerativeModel(
                 "gemini-1.5-flash",
                 generation_config={
+                    "temperature": 0,
                     "response_schema": content.Schema(
                         type=content.Type.OBJECT,
                         enum=[],
@@ -102,38 +105,52 @@ class HighQualityTextProcessor(BaseProcessor):
             )
 
     def __call__(self, document: Document):
-        SpanClass: Span = get_block_class(BlockTypes.Span)
-
         if self.model is None:
             return
 
-        for page in document.pages:
-            for block in page.contained_blocks(document, self.block_types):
-                text_lines = block.contained_blocks(document, (BlockTypes.Line,))
-                extracted_lines = [line.formatted_text(document) for line in text_lines]
-                corrected_lines = self.generate(extracted_lines, self.extract_image(page, block.id))
+        pbar = tqdm(desc="High quality text processor")
+        with ThreadPoolExecutor() as executor:
+            future_to_block = {
+                executor.submit(self.process_block, document, page, block): block
+                for page in document.pages
+                for block in page.contained_blocks(document, self.block_types)
+            }
 
-                if corrected_lines and len(corrected_lines) == len(extracted_lines):
-                    for text_line, corrected_text in zip(text_lines, corrected_lines):
-                        span_block = page.add_full_block(
-                            SpanClass(
-                                polygon=text_line.polygon,
-                                text=corrected_text + "\n",
-                                font='Unknown',
-                                font_weight=0,
-                                font_size=0,
-                                minimum_position=0,
-                                maximum_position=0,
-                                formats=['plain', 'math'],
-                                page_id=text_line.page_id,
-                                text_extraction_method="gemini",
-                            )
-                        )
-                        text_line.structure = [span_block.id]
+            for future in as_completed(future_to_block):
+                future.result()  # Raise exceptions if any occurred
+                pbar.update(1)
+
+        pbar.close()
+
+    def process_block(self, document: Document, page: PageGroup, block: Block):
+        SpanClass: Span = get_block_class(BlockTypes.Span)
+
+        text_lines = block.contained_blocks(document, (BlockTypes.Line,))
+        extracted_lines = [line.formatted_text(document) for line in text_lines]
+        corrected_lines = self.generate(extracted_lines, self.extract_image(page, block.id))
+
+        if corrected_lines and len(corrected_lines) == len(extracted_lines):
+            for text_line, corrected_text in zip(text_lines, corrected_lines):
+                span_block = page.add_full_block(
+                    SpanClass(
+                        polygon=text_line.polygon,
+                        text=corrected_text + "\n",
+                        font='Unknown',
+                        font_weight=0,
+                        font_size=0,
+                        minimum_position=0,
+                        maximum_position=0,
+                        formats=['plain', 'math'],
+                        page_id=text_line.page_id,
+                        text_extraction_method="gemini",
+                    )
+                )
+                text_line.structure = [span_block.id]
+        return block
 
     def extract_image(self, page: PageGroup, block_id: BlockId, expand: float = 0.01):
         image_block = page.get_block(block_id)
-        page_img = page.highres_image
+        page_img = page.lowres_image
         image_box = image_block.polygon\
             .rescale(page.polygon.size, page_img.size)\
             .expand(expand, expand)
@@ -143,8 +160,7 @@ class HighQualityTextProcessor(BaseProcessor):
     def generate(self, extracted_lines: List[str], image: PIL.Image.Image) -> List[str]:
         filled_prompt = gemini_prompt + '```json\n`' + json.dumps({"extracted_lines": extracted_lines}, indent=2) + '`\n```\n'
 
-        tries = 1
-        while tries <= 3:
+        while True:
             try:
                 responses = self.model.generate_content(
                     [filled_prompt, image],
@@ -156,8 +172,8 @@ class HighQualityTextProcessor(BaseProcessor):
 
             except ResourceExhausted as e:
                 print(f"ResourceExhausted: {e}")
-                tries += 1
                 time.sleep(tries * 2)
+                tries += 1
             except Exception as e:
                 print(e)
                 break
