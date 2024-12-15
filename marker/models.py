@@ -12,12 +12,15 @@ from surya.model.recognition.model import load_model as load_recognition_model
 from surya.model.recognition.processor import load_processor as load_recognition_processor
 from surya.model.table_rec.model import load_model as load_table_model
 from surya.model.table_rec.processor import load_processor as load_table_processor
+from surya.model.ocr_error.model import load_model as load_ocr_error_model
+from surya.model.ocr_error.model import load_tokenizer as load_ocr_error_tokenizer
 
 from texify.model.model import GenerateVisionEncoderDecoderModel
 from surya.model.layout.encoderdecoder import SuryaLayoutModel
 from surya.model.detection.model import EfficientViTForSemanticSegmentation
 from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
 from surya.model.table_rec.encoderdecoder import TableRecEncoderDecoderModel
+from surya.model.ocr_error.model import DistilBertForSequenceClassification
 
 
 def setup_table_rec_model(device=None, dtype=None) -> TableRecEncoderDecoderModel:
@@ -64,6 +67,13 @@ def setup_layout_model(device=None, dtype=None) -> SuryaLayoutModel:
     model.processor = load_layout_processor()
     return model
 
+def setup_ocr_error_model(device=None, dtype=None) -> DistilBertForSequenceClassification:
+    if device:
+        model = load_ocr_error_model(device=device, dtype=dtype)
+    else:
+        model = load_ocr_error_model()
+    model.tokenizer = load_ocr_error_tokenizer()
+    return model
 
 def create_model_dict(device=None, dtype=None) -> dict:
     return {
@@ -72,4 +82,5 @@ def create_model_dict(device=None, dtype=None) -> dict:
         "recognition_model": setup_recognition_model(device, dtype),
         "table_rec_model": setup_table_rec_model(device, dtype),
         "detection_model": setup_detection_model(device, dtype),
+        "ocr_error_model": setup_ocr_error_model(device,dtype)
     }

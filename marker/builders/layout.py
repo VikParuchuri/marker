@@ -5,6 +5,10 @@ from surya.layout import batch_layout_detection
 from surya.schema import LayoutResult
 from surya.model.layout.encoderdecoder import SuryaLayoutModel
 
+from surya.ocr_error import batch_ocr_error_detection
+from surya.schema import OCRErrorDetectionResult
+from surya.model.ocr_error.model import DistilBertForSequenceClassification
+
 from marker.settings import settings
 from marker.builders import BaseBuilder
 from marker.providers import ProviderOutput, ProviderPageLines
@@ -44,8 +48,9 @@ class LayoutBuilder(BaseBuilder):
     document_ocr_threshold = .8
     excluded_for_coverage = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
 
-    def __init__(self, layout_model: SuryaLayoutModel, config=None):
+    def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):
         self.layout_model = layout_model
+        self.ocr_error_model = ocr_error_model
 
         super().__init__(config)
 
@@ -71,6 +76,25 @@ class LayoutBuilder(BaseBuilder):
         )
         return layout_results
 
+    def surya_ocr_error_detection(self, pages:List[PageGroup], provider_page_lines: ProviderPageLines) -> List[OCRErrorDetectionResult]:
+        tokenizer = self.ocr_error_model.tokenizer
+        page_texts = []
+        for document_page in pages:
+            page_text = ''
+            provider_lines = provider_page_lines.get(document_page.page_id, [])
+            for line in provider_lines:
+                page_text += ' '.join([s.text for s in line.spans])
+                page_text += '\n'
+            page_texts.append(page_text)
+
+        ocr_error_detection_results = batch_ocr_error_detection(
+            page_texts,
+            self.ocr_error_model,
+            tokenizer,
+            batch_size=int(self.get_batch_size())       #TODO Better Multiplier
+        )
+        return ocr_error_detection_results
+
     def add_blocks_to_pages(self, pages: List[PageGroup], layout_results: List[LayoutResult]):
         for page, layout_result in zip(pages, layout_results):
             layout_page_size = PolygonBox.from_bbox(layout_result.image_bbox).size
@@ -91,6 +115,9 @@ class LayoutBuilder(BaseBuilder):
                 page.children = []
 
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: ProviderPageLines):
+        ocr_error_detection_result = self.surya_ocr_error_detection(document_pages, provider_page_lines).labels
+        ocr_error_detected = [True if result=='bad' else False for result in ocr_error_detection_result]
+
         good_pages = []
         for document_page in document_pages:
             provider_lines = provider_page_lines.get(document_page.page_id, [])
@@ -99,7 +126,7 @@ class LayoutBuilder(BaseBuilder):
         ocr_document = sum(good_pages) / len(good_pages) < self.document_ocr_threshold
         for idx, document_page in enumerate(document_pages):
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            needs_ocr = not good_pages[idx]
+            needs_ocr = not good_pages[idx] or ocr_error_detected
 
             if needs_ocr and ocr_document:
                 document_page.text_extraction_method = "surya"
