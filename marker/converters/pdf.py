@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Type
 
 from marker.builders.document import DocumentBuilder
+from marker.builders.high_quality import HighQualityBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
@@ -16,7 +17,6 @@ from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
 from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
-from marker.processors.high_quality_text import HighQualityTextProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 from marker.processors.list import ListProcessor
@@ -67,7 +67,6 @@ class PdfConverter(BaseConverter):
                 SectionHeaderProcessor,
                 TableProcessor,
                 TextProcessor,
-                HighQualityTextProcessor,
                 DebugProcessor,
             ]
 
@@ -104,6 +103,7 @@ class PdfConverter(BaseConverter):
         layout_builder = self.resolve_dependencies(LayoutBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
+        HighQualityBuilder(self.config)(document)
         StructureBuilder(self.config)(document)
 
         for processor_cls in self.processor_list:
