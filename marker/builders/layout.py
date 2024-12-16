@@ -116,18 +116,17 @@ class LayoutBuilder(BaseBuilder):
 
     def merge_blocks(self, document_pages: List[PageGroup], provider_page_lines: ProviderPageLines):
         ocr_error_detection_result = self.surya_ocr_error_detection(document_pages, provider_page_lines).labels
-        ocr_error_detected = [True if result=='bad' else False for result in ocr_error_detection_result]
+        ocr_error_detected_pages = [True if result=='bad' else False for result in ocr_error_detection_result]
 
         good_pages = []
-        for document_page in document_pages:
+        for (document_page, ocr_error_detected_page) in zip(document_pages, ocr_error_detected_pages):
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            good_pages.append(self.check_layout_coverage(document_page, provider_lines))
+            good_pages.append(self.check_layout_coverage(document_page, provider_lines) and (not ocr_error_detected_page))
 
         ocr_document = sum(good_pages) / len(good_pages) < self.document_ocr_threshold
         for idx, document_page in enumerate(document_pages):
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            needs_ocr = not good_pages[idx] or ocr_error_detected
-
+            needs_ocr = not good_pages[idx]
             if needs_ocr and ocr_document:
                 document_page.text_extraction_method = "surya"
                 continue
