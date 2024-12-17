@@ -1,3 +1,6 @@
+from marker.processors import BaseProcessor
+from marker.schema import BlockTypes
+from marker.schema.document import Document
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -9,7 +12,6 @@ from google.ai.generativelanguage_v1beta.types import content
 from google.api_core.exceptions import ResourceExhausted
 from tqdm import tqdm
 
-from marker.builders import BaseBuilder
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
@@ -18,19 +20,28 @@ from marker.schema.registry import get_block_class
 from marker.schema.text.span import Span
 from marker.settings import settings
 
-gemini_relabelling_prompt = """You are a layout expert specializing in document analysis.
-Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
-You will be provided with an image of a layout block and the top k predictions from the current model, along with their confidence scores.
-Your job is to analyze the image and choose the single most appropriate label from the provided top k predictions.
-Do not invent any new labels. 
-Carefully examine the image and consider the provided predictions. 
-Choose the label you believe is the most accurate representation of the layout block.
 
-Here are the top k predictions from the model followed by the image:
+class HighQualityTextProcessor(BaseProcessor):
+    """
+    A processor for rewriting text to improve the quality of inline math and handwritten blocks.
+    Attributes:
+        google_api_key (str):
+            The Google API key to use for the Gemini model.
+            Default is None.
+        confidence_threshold (float):
+            The confidence threshold to use for relabeling.
+            Default is 0.8.
+        model_name (str):
+            The name of the Gemini model to use.
+            Default is "gemini-1.5-flash".
+    """
 
-"""
+    block_types = (BlockTypes.TextInlineMath, BlockTypes.Handwriting)
+    google_api_key: Optional[str] = settings.GOOGLE_API_KEY
+    confidence_threshold: float = 0.7
+    model_name: str = "gemini-1.5-flash"
 
-gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
+    gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
 The number of output lines MUST match the number of input lines.
@@ -84,24 +95,6 @@ Output:
 
 """
 
-
-class HighQualityBuilder(BaseBuilder):
-    """
-    Attributes:
-        google_api_key (str):
-            The Google API key to use for the Gemini model.
-            Default is None.
-        confidence_threshold (float):
-            The confidence threshold to use for relabeling.
-            Default is 0.8.
-        model_name (str):
-            The name of the Gemini model to use.
-            Default is "gemini-1.5-flash".
-    """
-    google_api_key: Optional[str] = settings.GOOGLE_API_KEY
-    confidence_threshold: float = 0.7
-    model_name: str = "gemini-1.5-flash"
-
     def __init__(self, config=None):
         super().__init__(config)
 
@@ -113,56 +106,7 @@ class HighQualityBuilder(BaseBuilder):
         if self.model is None:
             return
 
-        self.relabel_blocks(document)
         self.rewrite_blocks(document)
-
-    def relabel_blocks(self, document: Document):
-        pbar = tqdm(desc="High quality layout relabelling")
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for page in document.pages:
-                for block_id in page.structure:
-                    block = page.get_block(block_id)
-                    if block.top_k:
-                        confidence = block.top_k.get(block.block_type)
-                        if confidence < self.confidence_threshold:
-                            futures.append(executor.submit(self.process_block_relabelling, page, block))
-
-            for future in as_completed(futures):
-                future.result()  # Raise exceptions if any occurred
-                pbar.update(1)
-
-        pbar.close()
-
-    def process_block_relabelling(self, page: PageGroup, block: Block):
-        topk = {str(k): round(v, 3) for k, v in block.top_k.items()}
-
-        prompt = gemini_relabelling_prompt + '```json' + json.dumps(topk) + '```\n'
-        image = self.extract_image(page, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["label"],
-            properties={
-                "label": content.Schema(
-                    type=content.Type.STRING,
-                ),
-            },
-        )
-
-        response = self.generate(prompt, image, response_schema)
-        generated_label = None
-        if response and "label" in response:
-            generated_label = response["label"]
-
-        if generated_label and generated_label != str(block.block_type):
-            generated_block_class = get_block_class(BlockTypes[generated_label])
-            generated_block = generated_block_class(
-                polygon=block.polygon,
-                page_id=block.page_id,
-                structure=block.structure,
-            )
-            page.replace_block(block, generated_block)
 
     def rewrite_blocks(self, document: Document):
         pbar = tqdm(desc="High quality text processor")
@@ -183,7 +127,7 @@ class HighQualityBuilder(BaseBuilder):
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))
         extracted_lines = [line.formatted_text(document) for line in text_lines]
 
-        prompt = gemini_rewriting_prompt + '```json\n`' + json.dumps({"extracted_lines": extracted_lines}, indent=2) + '`\n```\n'
+        prompt = self.gemini_rewriting_prompt + '```json\n`' + json.dumps({"extracted_lines": extracted_lines}, indent=2) + '`\n```\n'
         image = self.extract_image(page, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
