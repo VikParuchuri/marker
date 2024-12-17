@@ -79,7 +79,7 @@ class PolygonBox(BaseModel):
         new_polygon = []
         x_margin = x_margin * self.width
         y_margin = y_margin * self.height
-        for idx, poly in self.polygon:
+        for idx, poly in enumerate(self.polygon):
             if idx == 0:
                 new_polygon.append([poly[0] - x_margin, poly[1] - y_margin])
             elif idx == 1:
