@@ -28,19 +28,29 @@ class HighQualityTextProcessor(BaseProcessor):
         google_api_key (str):
             The Google API key to use for the Gemini model.
             Default is None.
-        confidence_threshold (float):
-            The confidence threshold to use for relabeling.
-            Default is 0.8.
         model_name (str):
             The name of the Gemini model to use.
             Default is "gemini-1.5-flash".
+        max_retries (int):
+            The maximum number of retries to use for the Gemini model.
+            Default is 3.
+        max_concurrency (int):
+            The maximum number of concurrent requests to make to the Gemini model.
+            Default is 3.
+        timeout (int):
+            The timeout for requests to the Gemini model.
+        gemini_rewriting_prompt (str):
+            The prompt to use for rewriting text.
+            Default is a string containing the Gemini rewriting prompt.
     """
 
     block_types = (BlockTypes.TextInlineMath, BlockTypes.Handwriting)
     google_api_key: Optional[str] = settings.GOOGLE_API_KEY
-    confidence_threshold: float = 0.7
     model_name: str = "gemini-1.5-flash"
     high_quality: bool = False
+    max_retries: int = 3
+    max_concurrency: int = 3
+    timeout: int = 60
 
     gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
@@ -117,7 +127,7 @@ Output:
 
     def rewrite_blocks(self, document: Document):
         pbar = tqdm(desc="High quality text processor")
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             for future in as_completed([
                 executor.submit(self.process_block_rewriting, document, page, block)
                 for page in document.pages
@@ -182,7 +192,8 @@ Output:
         return cropped
 
     def generate(self, prompt: str, image: PIL.Image.Image, response_schema: content.Schema):
-        while True:
+        tries = 0
+        while tries < self.max_retries:
             try:
                 responses = self.model.generate_content(
                     [prompt, image],
@@ -191,15 +202,17 @@ Output:
                         "temperature": 0,
                         "response_schema": response_schema,
                         "response_mime_type": "application/json",
-                    }
+                    },
+                    request_options={'timeout': self.timeout}
                 )
                 output = responses.candidates[0].content.parts[0].text
                 return json.loads(output)
 
             except ResourceExhausted as e:
-                print(f"ResourceExhausted: {e}")
-                time.sleep(tries * 2)
                 tries += 1
+                wait_time = tries * 2
+                print(f"ResourceExhausted: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{self.max_retries})")
+                time.sleep(wait_time)
             except Exception as e:
                 print(e)
                 break

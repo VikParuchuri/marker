@@ -34,6 +34,15 @@ class HighQualityLayoutBuilder(LayoutBuilder):
         model_name (str):
             The name of the Gemini model to use.
             Default is "gemini-1.5-flash".
+        max_retries (int):
+            The maximum number of retries to use for the Gemini model.
+            Default is 3.
+        max_concurrency (int):
+            The maximum number of concurrent requests to make to the Gemini model.
+            Default is 3.
+        timeout (int):
+            The timeout for requests to the Gemini model.
+            Default is 60 seconds.
         gemini_relabelling_prompt (str):
             The prompt to use for relabelling blocks.
             Default is a string containing the Gemini relabelling prompt.
@@ -42,6 +51,10 @@ class HighQualityLayoutBuilder(LayoutBuilder):
     google_api_key: Optional[str] = settings.GOOGLE_API_KEY
     confidence_threshold: float = 0.7
     model_name: str = "gemini-1.5-flash"
+    max_retries: int = 3
+    max_concurrency: int = 3
+    timeout: int = 60
+
     gemini_relabelling_prompt = """You are a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
 You will be provided with an image of a layout block and the top k predictions from the current model, along with their confidence scores.
@@ -60,7 +73,7 @@ Here are the top k predictions from the model followed by the image:
         self.model = None
         if self.google_api_key is None:
             raise ValueError("Google API key is not set")
-        
+
         genai.configure(api_key=self.google_api_key)
         self.model = genai.GenerativeModel(self.model_name)
 
@@ -71,7 +84,7 @@ Here are the top k predictions from the model followed by the image:
 
     def relabel_blocks(self, document: Document):
         pbar = tqdm(desc="High quality layout relabelling")
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             futures = []
             for page in document.pages:
                 for block_id in page.structure:
@@ -126,7 +139,8 @@ Here are the top k predictions from the model followed by the image:
         return cropped
 
     def generate(self, prompt: str, image: PIL.Image.Image, response_schema: content.Schema):
-        while True:
+        tries = 0
+        while tries < self.max_retries:
             try:
                 responses = self.model.generate_content(
                     [prompt, image],
@@ -135,15 +149,17 @@ Here are the top k predictions from the model followed by the image:
                         "temperature": 0,
                         "response_schema": response_schema,
                         "response_mime_type": "application/json",
-                    }
+                    },
+                    request_options={'timeout': self.timeout}
                 )
                 output = responses.candidates[0].content.parts[0].text
                 return json.loads(output)
 
             except ResourceExhausted as e:
-                print(f"ResourceExhausted: {e}")
-                time.sleep(tries * 2)
                 tries += 1
+                wait_time = tries * 2
+                print(f"ResourceExhausted: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{self.max_retries})")
+                time.sleep(wait_time)
             except Exception as e:
                 print(e)
                 break
