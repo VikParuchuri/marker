@@ -43,6 +43,15 @@ class Markdownify(MarkdownConverter):
                 return f"{text}"
         return f"{text}\n\n" if text else ""  # default convert_p behavior
 
+    def convert_td(self, el, text, convert_as_inline):
+        text = text.replace("|", " ").replace("\n", " ")
+        return super().convert_td(el, text, convert_as_inline)
+
+    def convert_th(self, el, text, convert_as_inline):
+        text = text.replace("|", " ").replace("\n", " ")
+        return super().convert_th(el, text, convert_as_inline)
+
+
 
 class MarkdownOutput(BaseModel):
     markdown: str
