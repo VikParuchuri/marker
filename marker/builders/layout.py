@@ -75,11 +75,12 @@ class LayoutBuilder(BaseBuilder):
         for page, layout_result in zip(pages, layout_results):
             layout_page_size = PolygonBox.from_bbox(layout_result.image_bbox).size
             provider_page_size = page.polygon.size
-            page.layout_sliced = layout_result.sliced # This indicates if the page was sliced by the layout model
+            page.layout_sliced = layout_result.sliced  # This indicates if the page was sliced by the layout model
             for bbox in sorted(layout_result.bboxes, key=lambda x: x.position):
                 block_cls = get_block_class(BlockTypes[bbox.label])
                 layout_block = page.add_block(block_cls, PolygonBox(polygon=bbox.polygon))
                 layout_block.polygon = layout_block.polygon.rescale(layout_page_size, provider_page_size)
+                layout_block.top_k = {BlockTypes[label]: prob for (label, prob) in bbox.top_k.items()}
                 page.add_structure(layout_block)
 
             # Ensure page has non-empty structure
@@ -141,4 +142,3 @@ class LayoutBuilder(BaseBuilder):
         if not text_okay and (total_blocks == 1 and large_text_blocks == 1):
             text_okay = True
         return text_okay
-
