@@ -40,6 +40,7 @@ class HighQualityTextProcessor(BaseProcessor):
     google_api_key: Optional[str] = settings.GOOGLE_API_KEY
     confidence_threshold: float = 0.7
     model_name: str = "gemini-1.5-flash"
+    high_quality: bool = False
 
     gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
@@ -98,12 +99,18 @@ Output:
     def __init__(self, config=None):
         super().__init__(config)
 
-        if self.google_api_key is not None:
-            genai.configure(api_key=self.google_api_key)
-            self.model = genai.GenerativeModel(self.model_name)
+        self.model = None
+        if not self.high_quality:
+            return
+
+        if self.google_api_key is None:
+            raise ValueError("Google API key is not set")
+
+        genai.configure(api_key=self.google_api_key)
+        self.model = genai.GenerativeModel(self.model_name)
 
     def __call__(self, document: Document):
-        if self.model is None:
+        if not self.high_quality or self.model is None:
             return
 
         self.rewrite_blocks(document)

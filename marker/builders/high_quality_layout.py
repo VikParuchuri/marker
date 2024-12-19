@@ -57,15 +57,15 @@ Here are the top k predictions from the model followed by the image:
     def __init__(self, layout_model: SuryaLayoutModel, config=None):
         super().__init__(layout_model, config)
 
-        if self.google_api_key is not None:
-            genai.configure(api_key=self.google_api_key)
-            self.model = genai.GenerativeModel(self.model_name)
+        self.model = None
+        if self.google_api_key is None:
+            raise ValueError("Google API key is not set")
+        
+        genai.configure(api_key=self.google_api_key)
+        self.model = genai.GenerativeModel(self.model_name)
 
     def __call__(self, document: Document, provider: PdfProvider):
         super().__call__(document, provider)
-
-        if self.model is None:
-            return
 
         self.relabel_blocks(document)
 

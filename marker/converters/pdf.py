@@ -45,6 +45,7 @@ class PdfConverter(BaseConverter):
             instead of the defaults.
     """
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
+    high_quality: bool = False
 
     def __init__(self, artifact_dict: Dict[str, Any], processor_list: List[str] | None = None, renderer: str | None = None, config=None):
         super().__init__(config)
@@ -81,6 +82,10 @@ class PdfConverter(BaseConverter):
         self.processor_list = processor_list
         self.renderer = renderer
 
+        self.layout_builder_class = LayoutBuilder
+        if self.high_quality:
+            self.layout_builder_class = HighQualityLayoutBuilder
+
     def resolve_dependencies(self, cls):
         init_signature = inspect.signature(cls.__init__)
         parameters = init_signature.parameters
@@ -102,7 +107,7 @@ class PdfConverter(BaseConverter):
 
     def __call__(self, filepath: str):
         pdf_provider = PdfProvider(filepath, self.config)
-        layout_builder = self.resolve_dependencies(HighQualityLayoutBuilder)
+        layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
