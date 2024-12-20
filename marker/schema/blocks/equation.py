@@ -10,7 +10,7 @@ class Equation(Block):
 
     def assemble_html(self, child_blocks, parent_structure=None):
         if self.latex:
-            return f"\n<p><math>{html.escape(self.latex)}</math></p>\n"
+            return f"\n<p><math display=\"block\">{html.escape(self.latex)}</math></p>\n"
         else:
             template = super().assemble_html(child_blocks, parent_structure)
             return f"<p>{template}</p>"

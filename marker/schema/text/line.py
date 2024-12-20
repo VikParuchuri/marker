@@ -1,3 +1,4 @@
+import html
 import re
 
 import regex
@@ -38,12 +39,14 @@ class Line(Block):
     def formatted_text(self, document):
         text = ""
         for block in self.contained_blocks(document, (BlockTypes.Span,)):
+            block_text = html.escape(block.text)
+
             if block.italic:
-                text += f"*{block.text}*"
+                text += f"<i>{block_text}</i>"
             elif block.bold:
-                text += f"**{block.text}**"
+                text += f"<b>{block_text}</b>"
             else:
-                text += block.text
+                text += block_text
 
         return text
 

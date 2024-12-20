@@ -30,7 +30,7 @@ class Markdownify(MarkdownConverter):
         else:
             return text
 
-    def convert_p(self, el, text, *args):
+    def convert_p(self, el, text, convert_as_inline):
         hyphens = r'-—¬'
         has_continuation = el.has_attr('class') and 'has-continuation' in el['class']
         if has_continuation:
@@ -42,6 +42,13 @@ class Markdownify(MarkdownConverter):
             if block_type == BlockTypes.ListGroup:
                 return f"{text}"
         return f"{text}\n\n" if text else ""  # default convert_p behavior
+
+    def convert_math(self, el, text, convert_as_inline):
+        block = el.has_attr('display') and el['display'] == 'block'
+        if block:
+            return text  # TODO: Fix block math handling
+
+        return f"${text}$"
 
 
 class MarkdownOutput(BaseModel):

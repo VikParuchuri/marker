@@ -31,6 +31,10 @@ class Span(Block):
     def italic(self):
         return 'italic' in self.formats
 
+    @property
+    def math(self):
+        return 'math' in self.formats
+
     def assemble_html(self, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
@@ -58,4 +62,6 @@ class Span(Block):
             return f"<i>{text}</i>"
         elif self.bold:
             return f"<b>{text}</b>"
+        elif self.math:
+            return f"<math>{text}</math>"
         return text

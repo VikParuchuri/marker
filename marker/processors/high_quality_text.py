@@ -1,6 +1,3 @@
-from marker.processors import BaseProcessor
-from marker.schema import BlockTypes
-from marker.schema.document import Document
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -8,10 +5,12 @@ from typing import Optional
 
 import google.generativeai as genai
 import PIL
+from bs4 import BeautifulSoup
 from google.ai.generativelanguage_v1beta.types import content
 from google.api_core.exceptions import ResourceExhausted
 from tqdm import tqdm
 
+from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
@@ -67,7 +66,7 @@ The number of output lines MUST match the number of input lines.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
 5. Do not remove any formatting i.e bold, italics, etc from the extracted lines unless it is necessary to correct the error.
-6. Ensure that inline math is properly enclosed in dollar signs.
+6. Ensure that inline math is properly with inline math tags.
 7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.
 8. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.
 
@@ -96,7 +95,7 @@ Output:
   "the model's risk under the worst-case perturbations, is cur-\n",
   "rently the most effective approach for improving the robust-\n",
   "ness of deep neural networks. For a given neural network\n",
-  "$f(x, w)$ with parameters $w$, the optimization objective of\n",
+  "<math>f(x, w)</math> with parameters <math>w</math>, the optimization objective of\n",
   "AT can be formulated as follows:\n"
  ]
 }
@@ -167,21 +166,54 @@ Output:
 
         if corrected_lines and len(corrected_lines) == len(extracted_lines):
             for text_line, corrected_text in zip(text_lines, corrected_lines):
-                span_block = page.add_full_block(
-                    SpanClass(
-                        polygon=text_line.polygon,
-                        text=corrected_text + "\n",
-                        font='Unknown',
-                        font_weight=0,
-                        font_size=0,
-                        minimum_position=0,
-                        maximum_position=0,
-                        formats=['plain', 'math'],
-                        page_id=text_line.page_id,
-                        text_extraction_method="gemini",
+                text_line.structure = []
+                corrected_spans = self.text_to_spans(corrected_text)
+
+                for span_idx, span in enumerate(corrected_spans):
+                    if span_idx == len(corrected_spans) - 1:
+                        span['content'] += "\n"
+
+                    span_block = page.add_full_block(
+                        SpanClass(
+                            polygon=text_line.polygon,
+                            text=span['content'],
+                            font='Unknown',
+                            font_weight=0,
+                            font_size=0,
+                            minimum_position=0,
+                            maximum_position=0,
+                            formats=[span['type']],
+                            page_id=text_line.page_id,
+                            text_extraction_method="gemini",
+                        )
                     )
-                )
-                text_line.structure = [span_block.id]
+                    text_line.structure.append(span_block.id)
+
+    def text_to_spans(self, text):
+        soup = BeautifulSoup(text, 'html.parser')
+
+        tag_types = {
+            'b': 'bold',
+            'i': 'italic',
+            'math': 'math'
+        }
+        spans = []
+
+        for element in soup.descendants:
+            if not len(list(element.parents)) == 1:
+                continue
+            if element.name in tag_types:
+                spans.append({
+                    'type': tag_types[element.name],
+                    'content': element.get_text()
+                })
+            elif element.string:
+                spans.append({
+                    'type': 'plain',
+                    'content': element.string
+                })
+
+        return spans
 
     def extract_image(self, page: PageGroup, image_block: Block, expand: float = 0.01):
         page_img = page.lowres_image
