@@ -1,12 +1,12 @@
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
 from typing import Any, Dict, List, Type
 
 from marker.builders.document import DocumentBuilder
-from marker.builders.high_quality_layout import HighQualityLayoutBuilder
+from marker.builders.llm_layout import LLMLayoutBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
@@ -17,7 +17,9 @@ from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
 from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
-from marker.processors.high_quality_text import HighQualityTextProcessor
+from marker.processors.llm.llm_form import LLMFormProcessor
+from marker.processors.llm.llm_table import LLMTableProcessor
+from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 from marker.processors.list import ListProcessor
@@ -45,7 +47,7 @@ class PdfConverter(BaseConverter):
             instead of the defaults.
     """
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
-    high_quality: bool = False
+    use_llm: bool = False
 
     def __init__(self, artifact_dict: Dict[str, Any], processor_list: List[str] | None = None, renderer: str | None = None, config=None):
         super().__init__(config)
@@ -68,8 +70,10 @@ class PdfConverter(BaseConverter):
                 PageHeaderProcessor,
                 SectionHeaderProcessor,
                 TableProcessor,
+                LLMTableProcessor,
+                LLMFormProcessor,
                 TextProcessor,
-                HighQualityTextProcessor,
+                LLMTextProcessor,
                 DebugProcessor,
             ]
 
@@ -83,8 +87,8 @@ class PdfConverter(BaseConverter):
         self.renderer = renderer
 
         self.layout_builder_class = LayoutBuilder
-        if self.high_quality:
-            self.layout_builder_class = HighQualityLayoutBuilder
+        if self.use_llm:
+            self.layout_builder_class = LLMLayoutBuilder
 
     def resolve_dependencies(self, cls):
         init_signature = inspect.signature(cls.__init__)
@@ -105,7 +109,7 @@ class PdfConverter(BaseConverter):
 
         return cls(**resolved_kwargs)
 
-    def __call__(self, filepath: str):
+    def build_document(self, filepath: str):
         pdf_provider = PdfProvider(filepath, self.config)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
@@ -116,5 +120,9 @@ class PdfConverter(BaseConverter):
             processor = self.resolve_dependencies(processor_cls)
             processor(document)
 
+        return document
+
+    def __call__(self, filepath: str):
+        document = self.build_document(filepath)
         renderer = self.resolve_dependencies(self.renderer)
         return renderer(document)

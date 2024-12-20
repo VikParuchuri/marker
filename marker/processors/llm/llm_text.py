@@ -1,56 +1,18 @@
 import json
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
 
-import google.generativeai as genai
-import PIL
+from marker.processors.llm import BaseLLMProcessor
 from bs4 import BeautifulSoup
 from google.ai.generativelanguage_v1beta.types import content
-from google.api_core.exceptions import ResourceExhausted
-from tqdm import tqdm
-
-from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.registry import get_block_class
 from marker.schema.text.span import Span
-from marker.settings import settings
 
 
-class HighQualityTextProcessor(BaseProcessor):
-    """
-    A processor for rewriting text to improve the quality of inline math and handwritten blocks.
-    Attributes:
-        google_api_key (str):
-            The Google API key to use for the Gemini model.
-            Default is None.
-        model_name (str):
-            The name of the Gemini model to use.
-            Default is "gemini-1.5-flash".
-        max_retries (int):
-            The maximum number of retries to use for the Gemini model.
-            Default is 3.
-        max_concurrency (int):
-            The maximum number of concurrent requests to make to the Gemini model.
-            Default is 3.
-        timeout (int):
-            The timeout for requests to the Gemini model.
-        gemini_rewriting_prompt (str):
-            The prompt to use for rewriting text.
-            Default is a string containing the Gemini rewriting prompt.
-    """
-
+class LLMTextProcessor(BaseLLMProcessor):
     block_types = (BlockTypes.TextInlineMath, BlockTypes.Handwriting)
-    google_api_key: Optional[str] = settings.GOOGLE_API_KEY
-    model_name: str = "gemini-1.5-flash"
-    high_quality: bool = False
-    max_retries: int = 3
-    max_concurrency: int = 3
-    timeout: int = 60
-
     gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
@@ -105,39 +67,7 @@ Output:
 
 """
 
-    def __init__(self, config=None):
-        super().__init__(config)
-
-        self.model = None
-        if not self.high_quality:
-            return
-
-        if self.google_api_key is None:
-            raise ValueError("Google API key is not set")
-
-        genai.configure(api_key=self.google_api_key)
-        self.model = genai.GenerativeModel(self.model_name)
-
-    def __call__(self, document: Document):
-        if not self.high_quality or self.model is None:
-            return
-
-        self.rewrite_blocks(document)
-
-    def rewrite_blocks(self, document: Document):
-        pbar = tqdm(desc="High quality text processor")
-        with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
-            for future in as_completed([
-                executor.submit(self.process_block_rewriting, document, page, block)
-                for page in document.pages
-                for block in page.contained_blocks(document, (BlockTypes.TextInlineMath, BlockTypes.Handwriting))
-            ]):
-                future.result()  # Raise exceptions if any occurred
-                pbar.update(1)
-
-        pbar.close()
-
-    def process_block_rewriting(self, document: Document, page: PageGroup, block: Block):
+    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
         SpanClass: Span = get_block_class(BlockTypes.Span)
 
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))
@@ -159,7 +89,7 @@ Output:
             },
         )
 
-        response = self.generate(prompt, image, response_schema)
+        response = self.model.generate_response(prompt, image, response_schema)
         corrected_lines = []
         if response and "corrected_lines" in response:
             corrected_lines = response["corrected_lines"]
@@ -214,39 +144,3 @@ Output:
                 })
 
         return spans
-
-    def extract_image(self, page: PageGroup, image_block: Block, expand: float = 0.01):
-        page_img = page.lowres_image
-        image_box = image_block.polygon\
-            .rescale(page.polygon.size, page_img.size)\
-            .expand(expand, expand)
-        cropped = page_img.crop(image_box.bbox)
-        return cropped
-
-    def generate(self, prompt: str, image: PIL.Image.Image, response_schema: content.Schema):
-        tries = 0
-        while tries < self.max_retries:
-            try:
-                responses = self.model.generate_content(
-                    [prompt, image],
-                    stream=False,
-                    generation_config={
-                        "temperature": 0,
-                        "response_schema": response_schema,
-                        "response_mime_type": "application/json",
-                    },
-                    request_options={'timeout': self.timeout}
-                )
-                output = responses.candidates[0].content.parts[0].text
-                return json.loads(output)
-
-            except ResourceExhausted as e:
-                tries += 1
-                wait_time = tries * 2
-                print(f"ResourceExhausted: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{self.max_retries})")
-                time.sleep(wait_time)
-            except Exception as e:
-                print(e)
-                break
-
-        return {}
