@@ -1,5 +1,5 @@
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
@@ -17,6 +17,8 @@ from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
 from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
+from marker.processors.llm.highqualityformprocessor import HighQualityFormProcessor
+from marker.processors.llm.highqualitytableprocessor import HighQualityTableProcessor
 from marker.processors.high_quality_text import HighQualityTextProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
@@ -68,6 +70,8 @@ class PdfConverter(BaseConverter):
                 PageHeaderProcessor,
                 SectionHeaderProcessor,
                 TableProcessor,
+                HighQualityTableProcessor,
+                HighQualityFormProcessor,
                 TextProcessor,
                 HighQualityTextProcessor,
                 DebugProcessor,
