@@ -8,6 +8,7 @@ import PIL
 from google.ai.generativelanguage_v1beta.types import content
 from google.api_core.exceptions import ResourceExhausted
 from surya.model.layout.encoderdecoder import SuryaLayoutModel
+from surya.model.ocr_error.model import DistilBertForSequenceClassification
 from tqdm import tqdm
 
 from marker.builders.layout import LayoutBuilder
@@ -67,8 +68,9 @@ Here are the top k predictions from the model followed by the image:
 
 """
 
-    def __init__(self, layout_model: SuryaLayoutModel, config=None):
-        super().__init__(layout_model, config)
+    def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):
+        self.layout_model = layout_model
+        self.ocr_error_model = ocr_error_model
 
         self.model = None
         if self.google_api_key is None:
