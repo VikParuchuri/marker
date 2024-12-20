@@ -63,5 +63,5 @@ class Span(Block):
         elif self.bold:
             return f"<b>{text}</b>"
         elif self.math:
-            return f"<math>{text}</math>"
+            return f"<math display='inline'>{text}</math>"
         return text

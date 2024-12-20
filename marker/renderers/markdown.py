@@ -44,11 +44,10 @@ class Markdownify(MarkdownConverter):
         return f"{text}\n\n" if text else ""  # default convert_p behavior
 
     def convert_math(self, el, text, convert_as_inline):
-        block = el.has_attr('display') and el['display'] == 'block'
-        if block:
-            return text  # TODO: Fix block math handling
-
-        return f"${text}$"
+        inline = el.has_attr('display') and el['display'] == 'inline'
+        if inline:
+            return f"${text}$"
+        return f"\n$${text}$$\n\n"
 
 
 class MarkdownOutput(BaseModel):
