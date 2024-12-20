@@ -21,7 +21,7 @@ def test_llm_form_processor_no_config(pdf_document):
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_form_processor_no_cells(pdf_document):
-    processor = LLMFormProcessor({"use_llm": True})
+    processor = LLMFormProcessor({"use_llm": True, "google_api_key": "test"})
     processor(pdf_document)
 
     forms = pdf_document.contained_blocks((BlockTypes.Form,))
@@ -43,7 +43,7 @@ def test_llm_form_processor(pdf_document, detection_model, table_rec_model, reco
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)
     cell_processor(pdf_document)
 
-    processor = LLMFormProcessor({"use_llm": True})
+    processor = LLMFormProcessor({"use_llm": True, "google_api_key": "test"})
     processor(pdf_document)
 
     forms = pdf_document.contained_blocks((BlockTypes.Form,))
@@ -69,7 +69,7 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)
     cell_processor(pdf_document)
 
-    processor = LLMTableProcessor({"use_llm": True})
+    processor = LLMTableProcessor({"use_llm": True, "google_api_key": "test"})
     processor(pdf_document)
 
     tables = pdf_document.contained_blocks((BlockTypes.Table,))
@@ -87,7 +87,7 @@ def test_llm_text_processor(pdf_document, mocker):
     mock_cls.return_value.generate_response.return_value = {"corrected_lines": corrected_lines}
     mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
 
-    processor = LLMTextProcessor({"use_llm": True})
+    processor = LLMTextProcessor({"use_llm": True, "google_api_key": "test"})
     processor(pdf_document)
 
     contained_spans = text_lines[0].contained_blocks(pdf_document, (BlockTypes.Span,))
