@@ -101,13 +101,14 @@ def pdf_document(request, config, pdf_provider, layout_model, ocr_error_model, r
 
 
 @pytest.fixture(scope="function")
-def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model, renderer):
+def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model, ocr_error_model, renderer):
     model_dict = {
         "layout_model": layout_model,
         "texify_model": texify_model,
         "recognition_model": recognition_model,
         "table_rec_model": table_rec_model,
-        "detection_model": detection_model
+        "detection_model": detection_model,
+        "ocr_error_model": ocr_error_model
     }
     yield PdfConverter(
         artifact_dict=model_dict,
