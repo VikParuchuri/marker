@@ -109,7 +109,7 @@ class PdfConverter(BaseConverter):
 
         return cls(**resolved_kwargs)
 
-    def __call__(self, filepath: str):
+    def build_document(self, filepath: str):
         pdf_provider = PdfProvider(filepath, self.config)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
@@ -120,5 +120,9 @@ class PdfConverter(BaseConverter):
             processor = self.resolve_dependencies(processor_cls)
             processor(document)
 
+        return document
+
+    def __call__(self, filepath: str):
+        document = self.build_document(filepath)
         renderer = self.resolve_dependencies(self.renderer)
         return renderer(document)

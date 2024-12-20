@@ -50,6 +50,7 @@ fastapi = "^0.115.4"
 uvicorn = "^0.32.0"
 python-multipart = "^0.0.16"
 pytest = "^8.3.3"
+pytest-mock = "^3.14.0"
 
 [tool.poetry.scripts]
 marker = "convert:main"

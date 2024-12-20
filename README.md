@@ -149,7 +149,7 @@ text, _, images = text_from_rendered(rendered)
 
 ### Custom configuration
 
-You can also pass configuration using the `ConfigParser`:
+You can pass configuration using the `ConfigParser`:
 
 ```python
 from marker.converters.pdf import PdfConverter
@@ -170,6 +170,26 @@ converter = PdfConverter(
 )
 rendered = converter("FILEPATH")
 ```
+
+### Extract blocks
+
+Each document consists of one or more pages.  Pages contain blocks, which can themselves contain other blocks.  It's possible to programatically manipulate these blocks.  
+
+Here's an example of extracting all forms from a document:
+
+```python
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
+from marker.schema import BlockTypes
+
+converter = PdfConverter(
+    artifact_dict=create_model_dict(),
+)
+document = converter.build_document("FILEPATH")
+forms = document.contained_blocks((BlockTypes.Form,))
+```
+
+Look at the processors for more examples of extracting and manipulating blocks.
 
 # Output Formats
 

@@ -1,11 +1,8 @@
 import markdown2
 
 from marker.processors.llm import BaseLLMProcessor
-from marker.processors.llm.utils import GoogleModel
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from google.ai.generativelanguage_v1beta.types import content
-from tqdm import tqdm
 from tabled.formats import markdown_format
 
 from marker.schema import BlockTypes

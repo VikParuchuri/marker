@@ -51,7 +51,7 @@ class LLMLayoutBuilder(LayoutBuilder):
     """
 
     google_api_key: Optional[str] = settings.GOOGLE_API_KEY
-    confidence_threshold: float = 0.7
+    confidence_threshold: float = 0.75
     model_name: str = "gemini-1.5-flash"
     max_retries: int = 3
     max_concurrency: int = 3

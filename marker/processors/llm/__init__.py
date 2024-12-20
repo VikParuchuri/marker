@@ -32,6 +32,9 @@ class BaseLLMProcessor(BaseProcessor):
         gemini_rewriting_prompt (str):
             The prompt to use for rewriting text.
             Default is a string containing the Gemini rewriting prompt.
+        use_llm (bool):
+            Whether to use the LLM model.
+            Default is False.
     """
 
     google_api_key: Optional[str] = settings.GOOGLE_API_KEY
@@ -57,7 +60,10 @@ class BaseLLMProcessor(BaseProcessor):
         if not self.use_llm or self.model is None:
             return
 
-        self.rewrite_blocks(document)
+        try:
+            self.rewrite_blocks(document)
+        except Exception as e:
+            print(f"Error rewriting blocks in {self.__class__.__name__}: {e}")
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
         raise NotImplementedError()
