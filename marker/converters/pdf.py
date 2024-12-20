@@ -1,11 +1,12 @@
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
 from typing import Any, Dict, List, Type
 
 from marker.builders.document import DocumentBuilder
+from marker.builders.high_quality_layout import HighQualityLayoutBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
@@ -16,6 +17,7 @@ from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
 from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
+from marker.processors.high_quality_text import HighQualityTextProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 from marker.processors.list import ListProcessor
@@ -36,17 +38,18 @@ class PdfConverter(BaseConverter):
     A converter for processing and rendering PDF files into Markdown, JSON, HTML and other formats.
 
     Attributes:
-        override_map (Dict[BlockTypes, Type[Block]]): 
+        override_map (Dict[BlockTypes, Type[Block]]):
             A mapping to override the default block classes for specific block types. 
             The keys are `BlockTypes` enum values, representing the types of blocks, 
             and the values are corresponding `Block` class implementations to use 
             instead of the defaults.
     """
     override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
+    high_quality: bool = False
 
     def __init__(self, artifact_dict: Dict[str, Any], processor_list: List[str] | None = None, renderer: str | None = None, config=None):
         super().__init__(config)
-        
+
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
 
@@ -66,6 +69,7 @@ class PdfConverter(BaseConverter):
                 SectionHeaderProcessor,
                 TableProcessor,
                 TextProcessor,
+                HighQualityTextProcessor,
                 DebugProcessor,
             ]
 
@@ -77,6 +81,10 @@ class PdfConverter(BaseConverter):
         self.artifact_dict = artifact_dict
         self.processor_list = processor_list
         self.renderer = renderer
+
+        self.layout_builder_class = LayoutBuilder
+        if self.high_quality:
+            self.layout_builder_class = HighQualityLayoutBuilder
 
     def resolve_dependencies(self, cls):
         init_signature = inspect.signature(cls.__init__)
@@ -99,7 +107,7 @@ class PdfConverter(BaseConverter):
 
     def __call__(self, filepath: str):
         pdf_provider = PdfProvider(filepath, self.config)
-        layout_builder = self.resolve_dependencies(LayoutBuilder)
+        layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)

@@ -79,7 +79,7 @@ class PdfProvider(BaseProvider):
         formats = set()
         if set_flags == {"Symbolic", "Italic"} or \
                 set_flags == {"Symbolic", "Italic", "UseExternAttr"}:
-            formats.add("math")
+            formats.add("plain")
         elif set_flags == {"UseExternAttr"}:
             formats.add("plain")
         elif set_flags == {"Plain"}:
