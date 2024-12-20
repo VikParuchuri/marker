@@ -9,6 +9,7 @@ Marker converts PDFs to markdown, JSON, and HTML quickly and accurately.
 - Extracts and saves images along with the markdown
 - Converts equations to latex
 - Easily extensible with your own formatting and logic
+- Optionally boost accuracy with an LLM
 - Works on GPU, CPU, or MPS
 
 ## How it works
@@ -99,10 +100,11 @@ marker_single /path/to/file.pdf
 
 Options:
 - `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
-- `--debug`: Enable debug mode for additional logging and diagnostic information.
 - `--output_format [markdown|json|html]`: Specify the format for the output results.
+- `--use_llm`: Uses an LLM to improve accuracy.  You must set your Gemini API key using the `GOOGLE_API_KEY` env var.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
 - `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
+- `--debug`: Enable debug mode for additional logging and diagnostic information.
 - `--processors TEXT`: Override the default processors by providing their full module paths, separated by commas. Example: `--processors "module1.processor1,module2.processor2"`
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
 - `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "eng,fra,deu"` for English, French, and German.
@@ -127,7 +129,6 @@ NUM_DEVICES=4 NUM_WORKERS=15 marker_chunk_convert ../pdf_in ../md_out
 
 - `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
 - `NUM_WORKERS` is the number of parallel processes to run on each GPU.
-- 
 
 ## Use from python
 
@@ -332,6 +333,7 @@ Note that this is not a very robust API, and is only intended for small-scale us
 
 There are some settings that you may find useful if things aren't working the way you expect:
 
+- If you have issues with accuracy, try setting `--use_llm` to use an LLM to improve quality.  You must set `GOOGLE_API_KEY` to a Gemini API key for this to work.
 - Make sure to set `force_ocr` if you see garbled text - this will re-OCR the document.
 - `TORCH_DEVICE` - set this to force marker to use a given torch device for inference.
 - If you're getting out of memory errors, decrease worker count.  You can also try splitting up long PDFs into multiple files.
