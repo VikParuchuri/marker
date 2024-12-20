@@ -53,6 +53,15 @@ class Markdownify(MarkdownConverter):
         else:
             return "\n" + self.block_math_delimiters[0] + text + self.block_math_delimiters[1] + "\n\n"
 
+    def convert_td(self, el, text, convert_as_inline):
+        text = text.replace("|", " ").replace("\n", " ")
+        return super().convert_td(el, text, convert_as_inline)
+
+    def convert_th(self, el, text, convert_as_inline):
+        text = text.replace("|", " ").replace("\n", " ")
+        return super().convert_th(el, text, convert_as_inline)
+
+
 
 class MarkdownOutput(BaseModel):
     markdown: str
