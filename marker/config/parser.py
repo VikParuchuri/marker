@@ -34,7 +34,7 @@ class ConfigParser:
         fn = click.option("--disable_multiprocessing", is_flag=True, default=False, help="Disable multiprocessing.")(fn)
         fn = click.option("--paginate_output", is_flag=True, default=False, help="Paginate output.")(fn)
         fn = click.option("--disable_image_extraction", is_flag=True, default=False, help="Disable image extraction.")(fn)
-        fn = click.option("--high_quality", is_flag=True, default=False, help="Enable high quality processing with LLMs.")(fn)
+        fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
@@ -65,8 +65,8 @@ class ConfigParser:
                     config["paginate_output"] = True
                 case "disable_image_extraction":
                     config["extract_images"] = False
-                case "high_quality":
-                    config["high_quality"] = True
+                case "use_llm":
+                    config["use_llm"] = True
         return config
 
     def get_renderer(self):

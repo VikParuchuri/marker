@@ -12,6 +12,7 @@ from surya.model.ocr_error.model import DistilBertForSequenceClassification
 from tqdm import tqdm
 
 from marker.builders.layout import LayoutBuilder
+from marker.processors.llm import GoogleModel
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -21,7 +22,7 @@ from marker.schema.registry import get_block_class
 from marker.settings import settings
 
 
-class HighQualityLayoutBuilder(LayoutBuilder):
+class LLMLayoutBuilder(LayoutBuilder):
     """
     A builder for relabelling blocks to improve the quality of the layout.
 
@@ -69,23 +70,19 @@ Here are the top k predictions from the model followed by the image:
 """
 
     def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):
-        self.layout_model = layout_model
-        self.ocr_error_model = ocr_error_model
+        super().__init__(layout_model, ocr_error_model, config)
 
-        self.model = None
-        if self.google_api_key is None:
-            raise ValueError("Google API key is not set")
-
-        genai.configure(api_key=self.google_api_key)
-        self.model = genai.GenerativeModel(self.model_name)
+        self.model = GoogleModel(self.google_api_key, self.model_name)
 
     def __call__(self, document: Document, provider: PdfProvider):
         super().__call__(document, provider)
-
-        self.relabel_blocks(document)
+        try:
+            self.relabel_blocks(document)
+        except Exception as e:
+            print(f"Error relabelling blocks: {e}")
 
     def relabel_blocks(self, document: Document):
-        pbar = tqdm(desc="High quality layout relabelling")
+        pbar = tqdm(desc="LLM layout relabelling")
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             futures = []
             for page in document.pages:
@@ -118,12 +115,12 @@ Here are the top k predictions from the model followed by the image:
             },
         )
 
-        response = self.generate(prompt, image, response_schema)
+        response = self.model.generate_response(prompt, image, response_schema)
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]
 
-        if generated_label and generated_label != str(block.block_type):
+        if generated_label and generated_label != str(block.block_type) and generated_label in BlockTypes:
             generated_block_class = get_block_class(BlockTypes[generated_label])
             generated_block = generated_block_class(
                 polygon=block.polygon,
@@ -139,31 +136,3 @@ Here are the top k predictions from the model followed by the image:
             .expand(expand, expand)
         cropped = page_img.crop(image_box.bbox)
         return cropped
-
-    def generate(self, prompt: str, image: PIL.Image.Image, response_schema: content.Schema):
-        tries = 0
-        while tries < self.max_retries:
-            try:
-                responses = self.model.generate_content(
-                    [prompt, image],
-                    stream=False,
-                    generation_config={
-                        "temperature": 0,
-                        "response_schema": response_schema,
-                        "response_mime_type": "application/json",
-                    },
-                    request_options={'timeout': self.timeout}
-                )
-                output = responses.candidates[0].content.parts[0].text
-                return json.loads(output)
-
-            except ResourceExhausted as e:
-                tries += 1
-                wait_time = tries * 2
-                print(f"ResourceExhausted: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{self.max_retries})")
-                time.sleep(wait_time)
-            except Exception as e:
-                print(e)
-                break
-
-        return {}
