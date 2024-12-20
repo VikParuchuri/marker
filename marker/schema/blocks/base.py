@@ -62,10 +62,11 @@ class Block(BaseModel):
     block_type: Optional[BlockTypes] = None
     block_id: Optional[int] = None
     page_id: Optional[int] = None
-    text_extraction_method: Optional[Literal['pdftext', 'surya']] = None
+    text_extraction_method: Optional[Literal['pdftext', 'surya', 'gemini']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
     ignore_for_output: bool = False  # Whether this block should be ignored in output
     source: Literal['layout', 'heuristics', 'processor'] = 'layout'
+    top_k: Optional[Dict[BlockTypes, float]] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -90,11 +91,11 @@ class Block(BaseModel):
     def get_prev_block(self, document_page: Document | PageGroup, block: Block, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:
             ignored_block_types = []
-        
+
         structure_idx = self.structure.index(block.id)
         if structure_idx == 0:
             return None
-        
+
         for prev_block_id in reversed(self.structure[:structure_idx]):
             if prev_block_id.block_type not in ignored_block_types:
                 return document_page.get_block(prev_block_id)

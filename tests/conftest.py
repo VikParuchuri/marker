@@ -11,7 +11,7 @@ from marker.builders.ocr import OcrBuilder
 from marker.converters.pdf import PdfConverter
 from marker.models import setup_detection_model, setup_layout_model, \
     setup_recognition_model, setup_table_rec_model, \
-    setup_texify_model
+    setup_texify_model, setup_ocr_error_model
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.renderers.markdown import MarkdownRenderer
@@ -54,6 +54,11 @@ def table_rec_model():
     yield table_rec_m
     del table_rec_m
 
+@pytest.fixture(scope="session")
+def ocr_error_model():
+    ocr_error_m = setup_ocr_error_model()
+    yield ocr_error_m
+    del ocr_error_m
 
 @pytest.fixture(scope="function")
 def config(request):
@@ -87,8 +92,8 @@ def pdf_provider(request, config, temp_pdf):
 
 
 @pytest.fixture(scope="function")
-def pdf_document(request, config, pdf_provider, layout_model, recognition_model, detection_model):
-    layout_builder = LayoutBuilder(layout_model, config)
+def pdf_document(request, config, pdf_provider, layout_model, ocr_error_model, recognition_model, detection_model):
+    layout_builder = LayoutBuilder(layout_model, ocr_error_model, config)
     ocr_builder = OcrBuilder(detection_model, recognition_model, config)
     builder = DocumentBuilder(config)
     document = builder(pdf_provider, layout_builder, ocr_builder)
@@ -96,13 +101,14 @@ def pdf_document(request, config, pdf_provider, layout_model, recognition_model,
 
 
 @pytest.fixture(scope="function")
-def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model, renderer):
+def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model, ocr_error_model, renderer):
     model_dict = {
         "layout_model": layout_model,
         "texify_model": texify_model,
         "recognition_model": recognition_model,
         "table_rec_model": table_rec_model,
-        "detection_model": detection_model
+        "detection_model": detection_model,
+        "ocr_error_model": ocr_error_model
     }
     yield PdfConverter(
         artifact_dict=model_dict,

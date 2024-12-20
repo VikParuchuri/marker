@@ -1,3 +1,4 @@
+import html
 import re
 
 import regex
@@ -35,6 +36,20 @@ def strip_trailing_hyphens(line_text, next_line_text, line_html) -> str:
 class Line(Block):
     block_type: BlockTypes = BlockTypes.Line
 
+    def formatted_text(self, document):
+        text = ""
+        for block in self.contained_blocks(document, (BlockTypes.Span,)):
+            block_text = html.escape(block.text)
+
+            if block.italic:
+                text += f"<i>{block_text}</i>"
+            elif block.bold:
+                text += f"<b>{block_text}</b>"
+            else:
+                text += block_text
+
+        return text
+
     def assemble_html(self, document, child_blocks, parent_structure):
         template = ""
         for c in child_blocks:
@@ -48,7 +63,7 @@ class Line(Block):
             next_line_raw_text = next_line.raw_text(document)
             template = strip_trailing_hyphens(raw_text, next_line_raw_text, template)
         else:
-            template = template.strip(' ') # strip any trailing whitespace from the last line
+            template = template.strip(' ')  # strip any trailing whitespace from the last line
         return template
 
     def render(self, document, parent_structure, section_hierarchy=None):

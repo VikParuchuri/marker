@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Sequence
 
 from pydantic import BaseModel
 
@@ -100,3 +100,9 @@ class Document(BaseModel):
             children=child_content,
             html=self.assemble_html(child_content)
         )
+
+    def contained_blocks(self, block_types: Sequence[BlockTypes] = None) -> List[Block]:
+        blocks = []
+        for page in self.pages:
+            blocks += page.contained_blocks(self, block_types)
+        return blocks

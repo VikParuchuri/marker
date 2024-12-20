@@ -8,7 +8,7 @@ from marker.schema.blocks import Block
 
 def cleanup_text(full_text):
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
-    full_text = full_text.replace('\xa0', ' ') # Replace non-breaking spaces
+    full_text = full_text.replace('\xa0', ' ')  # Replace non-breaking spaces
     return full_text
 
 
@@ -30,6 +30,10 @@ class Span(Block):
     @property
     def italic(self):
         return 'italic' in self.formats
+
+    @property
+    def math(self):
+        return 'math' in self.formats
 
     def assemble_html(self, child_blocks, parent_structure):
         if self.ignore_for_output:
@@ -54,9 +58,10 @@ class Span(Block):
         text = html.escape(text)
         text = cleanup_text(text)
 
-        if len(text) > 3:
-            if self.italic:
-                return f"<i>{text}</i>"
-            elif self.bold:
-                return f"<b>{text}</b>"
+        if self.italic:
+            return f"<i>{text}</i>"
+        elif self.bold:
+            return f"<b>{text}</b>"
+        elif self.math:
+            return f"<math display='inline'>{text}</math>"
         return text
