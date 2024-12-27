@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     OUTPUT_IMAGE_FORMAT: str = "JPEG"
 
     # General models
-    TORCH_DEVICE: Optional[str] = None # Note: MPS device does not work for text detection, and will default to CPU
+    TORCH_DEVICE: Optional[str] = None  # Note: MPS device does not work for text detection, and will default to CPU
 
     @computed_field
     @property
