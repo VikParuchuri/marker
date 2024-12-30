@@ -51,7 +51,7 @@ class Markdownify(MarkdownConverter):
         if inline:
             return self.inline_math_delimiters[0] + text + self.inline_math_delimiters[1]
         else:
-            return "\n" + self.block_math_delimiters[0] + text + self.block_math_delimiters[1] + "\n\n"
+            return "\n" + text + "\n\n"
 
     def convert_td(self, el, text, convert_as_inline):
         text = text.replace("|", " ").replace("\n", " ")
