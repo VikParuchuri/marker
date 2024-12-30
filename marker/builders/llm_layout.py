@@ -85,11 +85,11 @@ Choose the label you believe is the most accurate representation of the layout b
 
 Potential labels:
 
-- Figure - A figure or diagram in the document.
-- Picture - A picture or image in the document.
-- ComplexRegion - a complex region containing multiple elements, including pictures, text, tables, or figures.
-- Table - A table in the document.
-- Form - A form in the document.
+- Picture
+- Table
+- Form
+- Figure - A graph or diagram with text.
+- ComplexRegion - a complex region containing multiple text and other elements.
 
 Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form`.
 
