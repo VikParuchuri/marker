@@ -1,7 +1,6 @@
 import atexit
 import ctypes
 import io
-import os
 import re
 import tempfile
 from typing import List, Set, Tuple, Union
@@ -341,7 +340,6 @@ class PdfProvider(BaseProvider):
 
                     return T1Font(tmpfile.name)
             except Exception as e:
-                print(font_name, e)
                 return None
 
         if raw_data.startswith(b'\x01\x00\x04'):
@@ -351,8 +349,6 @@ class PdfProvider(BaseProvider):
                 fontSet[0].Encoding, fontSet[0].Notice
                 return fontSet
             except Exception as e:
-                print(font_name, e)
                 return None
 
-        print(self.filepath, page_id, f"Unknown font format for {font_name} with raw data: {bytes(raw_data)[:100]}")
         return None
