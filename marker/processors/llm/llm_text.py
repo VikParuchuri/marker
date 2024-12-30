@@ -89,35 +89,39 @@ Output:
             },
         )
 
-        response = self.model.generate_response(prompt, image, response_schema)
-        corrected_lines = []
-        if response and "corrected_lines" in response:
-            corrected_lines = response["corrected_lines"]
+        response = self.model.generate_response(prompt, image, block, response_schema)
+        if not response or "corrected_lines" not in response:
+            block.update_metadata(llm_error_count=1)
+            return
 
-        if corrected_lines and len(corrected_lines) == len(extracted_lines):
-            for text_line, corrected_text in zip(text_lines, corrected_lines):
-                text_line.structure = []
-                corrected_spans = self.text_to_spans(corrected_text)
+        corrected_lines = response["corrected_lines"]
+        if not corrected_lines or len(corrected_lines) != len(extracted_lines):
+            block.update_metadata(llm_error_count=1)
+            return
 
-                for span_idx, span in enumerate(corrected_spans):
-                    if span_idx == len(corrected_spans) - 1:
-                        span['content'] += "\n"
+        for text_line, corrected_text in zip(text_lines, corrected_lines):
+            text_line.structure = []
+            corrected_spans = self.text_to_spans(corrected_text)
 
-                    span_block = page.add_full_block(
-                        SpanClass(
-                            polygon=text_line.polygon,
-                            text=span['content'],
-                            font='Unknown',
-                            font_weight=0,
-                            font_size=0,
-                            minimum_position=0,
-                            maximum_position=0,
-                            formats=[span['type']],
-                            page_id=text_line.page_id,
-                            text_extraction_method="gemini",
-                        )
+            for span_idx, span in enumerate(corrected_spans):
+                if span_idx == len(corrected_spans) - 1:
+                    span['content'] += "\n"
+
+                span_block = page.add_full_block(
+                    SpanClass(
+                        polygon=text_line.polygon,
+                        text=span['content'],
+                        font='Unknown',
+                        font_weight=0,
+                        font_size=0,
+                        minimum_position=0,
+                        maximum_position=0,
+                        formats=[span['type']],
+                        page_id=text_line.page_id,
+                        text_extraction_method="gemini",
                     )
-                    text_line.structure.append(span_block.id)
+                )
+                text_line.structure.append(span_block.id)
 
     def text_to_spans(self, text):
         soup = BeautifulSoup(text, 'html.parser')

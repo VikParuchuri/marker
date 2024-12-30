@@ -6,6 +6,8 @@ import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import content
 from google.api_core.exceptions import ResourceExhausted
 
+from marker.schema.blocks import Block
+
 
 class GoogleModel:
     def __init__(self, api_key: str, model_name: str):
@@ -24,6 +26,7 @@ class GoogleModel:
             self,
             prompt: str,
             image: PIL.Image.Image,
+            block: Block,
             response_schema: content.Schema,
             max_retries: int = 3,
             timeout: int = 60
@@ -42,6 +45,8 @@ class GoogleModel:
                     request_options={'timeout': timeout}
                 )
                 output = responses.candidates[0].content.parts[0].text
+                total_tokens = responses.usage_metadata.total_token_count
+                block.update_metadata(llm_tokens_used=total_tokens, llm_request_count=1)
                 return json.loads(output)
             except ResourceExhausted as e:
                 tries += 1

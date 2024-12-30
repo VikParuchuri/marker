@@ -15,4 +15,5 @@ def test_list_grouping(pdf_document):
         if block.block_type == BlockTypes.ListGroup:
             list_groups.append(block)
 
-    assert len(list_groups) == 1
+    # The model breaks this up, since it has equations in it
+    assert len(list_groups) == 3

@@ -23,7 +23,7 @@ def test_ocr_pipeline(pdf_document):
     # Ensure we match all text lines up properly
     # Makes sure the OCR bbox is being scaled to the same scale as the layout boxes
     text_lines = first_page.contained_blocks(pdf_document, (BlockTypes.Line,))
-    text_blocks = first_page.contained_blocks(pdf_document, (BlockTypes.Text,))
+    text_blocks = first_page.contained_blocks(pdf_document, (BlockTypes.Text,BlockTypes.TextInlineMath))
     assert len(text_lines) == 75
 
     # Ensure the bbox sizes match up

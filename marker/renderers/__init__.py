@@ -61,10 +61,12 @@ class BaseRenderer:
         page_stats = []
         for page in document.pages:
             block_counts = Counter([str(block.block_type) for block in page.children]).most_common()
+            block_metadata = page.aggregate_block_metadata()
             page_stats.append({
                 "page_id": page.page_id,
                 "text_extraction_method": page.text_extraction_method,
                 "block_counts": block_counts,
+                "block_metadata": block_metadata.model_dump()
             })
         return page_stats
 

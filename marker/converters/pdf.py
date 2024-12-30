@@ -1,4 +1,7 @@
 import os
+
+from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 import inspect
@@ -74,6 +77,7 @@ class PdfConverter(BaseConverter):
                 LLMFormProcessor,
                 TextProcessor,
                 LLMTextProcessor,
+                LLMComplexRegionProcessor,
                 DebugProcessor,
             ]
 
