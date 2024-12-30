@@ -1,5 +1,6 @@
 import json
 import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
@@ -153,12 +154,12 @@ Here is the image of the layout block:
             },
         )
 
-        response = self.model.generate_response(prompt, image, response_schema)
+        response = self.model.generate_response(prompt, image, block, response_schema)
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]
 
-        if generated_label and generated_label != str(block.block_type) and generated_label in BlockTypes:
+        if generated_label and generated_label != str(block.block_type) and generated_label in [str(t) for t in BlockTypes]:
             generated_block_class = get_block_class(BlockTypes[generated_label])
             generated_block = generated_block_class(
                 polygon=block.polygon,

@@ -67,9 +67,10 @@ No corrections needed.
             },
         )
 
-        response = self.model.generate_response(prompt, image, response_schema)
+        response = self.model.generate_response(prompt, image, block, response_schema)
 
         if not response or "corrected_html" not in response:
+            block.update_metadata(llm_error_count=1)
             return
 
         corrected_html = response["corrected_html"]
@@ -80,6 +81,7 @@ No corrections needed.
 
         parsed_cells = self.parse_html_table(corrected_html, block)
         if len(parsed_cells) <= 1:
+            block.update_metadata(llm_error_count=1)
             return
 
         parsed_cell_text = "".join([cell.text for cell in parsed_cells])
@@ -87,6 +89,7 @@ No corrections needed.
 
         # Potentially a partial response
         if len(parsed_cell_text) < len(orig_cell_text) * .5:
+            block.update_metadata(llm_error_count=1)
             return
 
 
@@ -103,7 +106,7 @@ No corrections needed.
         max_cols = max(len(row.find_all(['td', 'th'])) for row in rows)
         if max_cols == 0:
             return []
-        
+
         grid = [[True] * max_cols for _ in range(len(rows))]
 
         for i, row in enumerate(rows):

@@ -60,9 +60,10 @@ Output:
             },
         )
 
-        response = self.model.generate_response(prompt, image, response_schema)
+        response = self.model.generate_response(prompt, image, block, response_schema)
 
         if not response or "corrected_markdown" not in response:
+            block.update_metadata(llm_error_count=1)
             return
 
         corrected_markdown = response["corrected_markdown"]
@@ -75,6 +76,7 @@ Output:
 
         # Potentially a partial response
         if len(corrected_markdown) < len(orig_cell_text) * .5:
+            block.update_metadata(llm_error_count=1)
             return
 
         # Convert LLM markdown to html

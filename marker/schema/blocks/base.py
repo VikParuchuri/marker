@@ -11,6 +11,17 @@ if TYPE_CHECKING:
     from marker.schema.document import Document
     from marker.schema.groups.page import PageGroup
 
+class BlockMetadata(BaseModel):
+    llm_request_count: int = 0
+    llm_error_count: int = 0
+    llm_tokens_used: int = 0
+
+    def merge(self, model2):
+        return self.__class__(**{
+            field: getattr(self, field) + getattr(model2, field)
+            for field in self.model_fields
+        })
+
 
 class BlockOutput(BaseModel):
     html: str
@@ -67,6 +78,7 @@ class Block(BaseModel):
     ignore_for_output: bool = False  # Whether this block should be ignored in output
     source: Literal['layout', 'heuristics', 'processor'] = 'layout'
     top_k: Optional[Dict[BlockTypes, float]] = None
+    metadata: BlockMetadata | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -213,3 +225,14 @@ class Block(BaseModel):
         if len(lines) == 0:
             return 0
         return self.polygon.height / len(lines)
+
+    def update_metadata(self, **kwargs):
+        if self.metadata is None:
+            self.metadata = BlockMetadata()
+
+        for key, value in kwargs.items():
+            metadata_attr = getattr(self.metadata, key)
+            if isinstance(metadata_attr, int) and isinstance(value, int):
+                setattr(self.metadata, key, metadata_attr + value)
+            else:
+                raise ValueError(f"Metadata attribute {key} is not an integer")

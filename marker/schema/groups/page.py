@@ -6,6 +6,7 @@ from PIL import Image
 from marker.providers import ProviderOutput
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId, Text
+from marker.schema.blocks.base import BlockMetadata
 from marker.schema.groups.base import Group
 from marker.schema.polygon import PolygonBox
 from marker.util import matrix_intersection_area
@@ -244,5 +245,14 @@ class PageGroup(Group):
 
         # Add blocks to the page
         self.add_initial_blocks(block_lines, text_extraction_method)
+
+    def aggregate_block_metadata(self) -> BlockMetadata:
+        if self.metadata is None:
+            self.metadata = BlockMetadata()
+
+        for block in self.children:
+            if block.metadata is not None:
+                self.metadata = self.metadata.merge(block.metadata)
+        return self.metadata
 
 
