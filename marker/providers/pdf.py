@@ -243,11 +243,11 @@ class PdfProvider(BaseProvider):
         if not any([tt_font_check, t1_font_check, cff_font_check]):
             return False
 
-        # # if we see very large images covering most of the page, we can skip this page
-        # for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
-        #     img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
-        #     if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
-        #         return False
+        # if we see very large images covering most of the page, we can skip this page
+        for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
+            img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
+            if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
+                return False
 
         return True
 
