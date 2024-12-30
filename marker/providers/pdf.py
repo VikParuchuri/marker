@@ -1,10 +1,16 @@
 import atexit
 import ctypes
+import io
+import os
 import re
-from typing import List, Set
+import tempfile
+from typing import List, Set, Tuple, Union
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
+from fontTools.cffLib import CFFFontSet
+from fontTools.t1Lib import T1Font, assertType1
+from fontTools.ttLib import TTFont
 from ftfy import fix_text
 from pdftext.extraction import dictionary_output
 from PIL import Image
@@ -194,6 +200,7 @@ class PdfProvider(BaseProvider):
 
         non_embedded_fonts = []
         empty_fonts = []
+        font_map = {}
         for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
             font = pdfium_c.FPDFTextObj_GetFont(text_obj)
             font_name = self.get_fontname(font)
@@ -201,15 +208,47 @@ class PdfProvider(BaseProvider):
             # we also skip pages without embedded fonts and fonts without names
             non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
             empty_fonts.append(not font_name or font_name == "GlyphLessFont")
+            if font_name not in font_map:
+                font_map[font_name or 'Unknown'] = font
 
         if all(non_embedded_fonts) or all(empty_fonts):
             return False
 
-        # if we see very large images covering most of the page, we can skip this page
-        for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
-            img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
-            if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
-                return False
+        font_data_map = {}
+        for font_name, font in font_map.items():
+            buffer, success = self.get_font_data(font)
+            if success:
+                font_data_map[font_name] = self.parse_font_data(page_id, font_name, bytes(buffer))
+        
+        unique_font_types = set([type(i) for i in font_data_map.values() if i is not None])
+
+        tt_fonts = list(filter(lambda i: isinstance(i, TTFont), font_data_map.values()))
+        t1_fonts = list(filter(lambda i: isinstance(i, T1Font), font_data_map.values()))
+        cff_fonts = list(filter(lambda i: isinstance(i, CFFFontSet), font_data_map.values()))
+
+        font_has_unicode_cmap = []
+        for font_data in tt_fonts:
+            try: # we need to do this first to initialize the cmap
+                font_data.getBestCmap()
+            except:
+                pass
+            font_tables = getattr(font_data.tables.get('cmap', {}), 'tables', [])
+            font_has_unicode_cmap.append(any(table.isUnicode() for table in font_tables))
+        tt_font_check = tt_fonts and any(font_has_unicode_cmap)
+        t1_font_check = t1_fonts and any(font_data.encoding == "ascii" for font_data in t1_fonts)
+        cff_font_check = cff_fonts and any(
+            font_data[0].Encoding == 'StandardEncoding' or \
+            '<http://www.ams.org>' in font_data[0].Notice for font_data in cff_fonts
+        )
+
+        if not any([tt_font_check, t1_font_check, cff_font_check]):
+            return False
+
+        # # if we see very large images covering most of the page, we can skip this page
+        # for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
+        #     img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
+        #     if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
+        #         return False
 
         return True
 
@@ -273,3 +312,47 @@ class PdfProvider(BaseProvider):
             pass
 
         return font_name
+
+    def get_font_data(self, font)-> Tuple[ctypes.c_uint8, bool]:
+        buffer = None
+        out_buflen = ctypes.c_size_t()
+        success = pdfium_c.FPDFFont_GetFontData(font, None, 0, ctypes.byref(out_buflen))
+        if success:
+            font_data_size = out_buflen.value    
+            buffer = (ctypes.c_uint8 * font_data_size)()
+            success = pdfium_c.FPDFFont_GetFontData(font, buffer, font_data_size, ctypes.byref(out_buflen))
+        return buffer, success
+
+    def parse_font_data(self, page_id, font_name: str, raw_data: bytes) -> Union[TTFont, CFFFontSet, T1Font]:
+        if not raw_data:
+            return None
+
+        if raw_data[:4] in (b'\x00\x01\x00\x00', b'OTTO', b'true'):
+            return TTFont(io.BytesIO(raw_data))
+
+        if raw_data.startswith(b'%!PS-AdobeFont-1.0') or raw_data.startswith(b'%!FontType1'):
+            # T1Font requires a file path, so write temp file
+            try:
+                assertType1(raw_data)
+                with tempfile.NamedTemporaryFile(suffix=".pfa", delete=True) as tmpfile:
+                    # a little hack to make the pfa file complete, we're not getting the cleartomark from pdfium
+                    tmpfile.write(raw_data + ("\n".join(["0" * 64] * 8 + ["cleartomark"])).encode('utf-8'))
+                    tmpfile.flush()
+
+                    return T1Font(tmpfile.name)
+            except Exception as e:
+                print(font_name, e)
+                return None
+
+        if raw_data.startswith(b'\x01\x00\x04'):
+            try:
+                fontSet = CFFFontSet()
+                fontSet.decompile(io.BytesIO(raw_data), otFont=0)
+                fontSet[0].Encoding, fontSet[0].Notice
+                return fontSet
+            except Exception as e:
+                print(font_name, e)
+                return None
+
+        print(self.filepath, page_id, f"Unknown font format for {font_name} with raw data: {bytes(raw_data)[:100]}")
+        return None
