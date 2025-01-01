@@ -54,16 +54,31 @@ def test_llm_form_processor(pdf_document, detection_model, table_rec_model, reco
 @pytest.mark.filename("table_ex2.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_table_processor(pdf_document, detection_model, table_rec_model, recognition_model, mocker):
-    corrected_markdown = """
-| Column 1 | Column 2 | Column 3 | Column 4 |
-|----------|----------|----------|----------|
-| Value 1  | Value 2  | Value 3  | Value 4  |
-| Value 5  | Value 6  | Value 7  | Value 8  |
-| Value 9  | Value 10 | Value 11 | Value 12 |
+    corrected_html = """
+<table>
+    <tr>
+        <td>Column 1</td>
+        <td>Column 2</td>
+        <td>Column 3</td>
+        <td>Column 4</td>
+    </tr>
+    <tr>
+        <td>Value 1</td>
+        <td>Value 2</td>
+        <td>Value 3</td>
+        <td>Value 4</td>
+    </tr>
+    <tr>
+        <td>Value 5</td>
+        <td>Value 6</td>
+        <td>Value 7</td>
+        <td>Value 8</td>
+    </tr>
+</table>
     """.strip()
 
     mock_cls = Mock()
-    mock_cls.return_value.generate_response.return_value = {"corrected_markdown": corrected_markdown}
+    mock_cls.return_value.generate_response.return_value = {"corrected_html": corrected_html}
     mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
 
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)

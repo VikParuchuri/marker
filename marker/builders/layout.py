@@ -165,7 +165,7 @@ class LayoutBuilder(BaseBuilder):
             total_blocks += 1
             intersecting_lines = np.count_nonzero(intersection_matrix[idx] > 0)
 
-            if intersecting_lines > self.layout_coverage_min_lines:
+            if intersecting_lines >= self.layout_coverage_min_lines:
                 covered_blocks += 1
 
             if layout_block.polygon.intersection_pct(document_page.polygon) > 0.8 and layout_block.block_type == BlockTypes.Text:
