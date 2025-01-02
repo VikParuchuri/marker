@@ -12,3 +12,18 @@ class BaseConverter:
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
+
+def converter_from_mimetype(mimetype: str):
+    from marker.converters.misc import LibreOfficeConverter
+    from marker.converters.pdf import PdfConverter
+
+    if any(mimetype.startswith(pdf_mimetype) for pdf_mimetype in [
+        'text/pdf',
+        'text/x-pdf',
+        'application/pdf',
+        'application/x-pdf',
+        'applications/vnd.pdf',
+    ]):
+        return PdfConverter
+    else:
+        return LibreOfficeConverter

@@ -11,8 +11,7 @@ import magic
 
 from marker.config.parser import ConfigParser
 from marker.config.printer import CustomClickPrinter
-from marker.converters.misc import LibreOfficeConverter
-from marker.converters.pdf import PdfConverter
+from marker.converters import converter_from_mimetype
 from marker.logger import configure_logging
 from marker.models import create_model_dict
 from marker.output import save_output
@@ -29,17 +28,7 @@ def main(fpath: str, **kwargs):
     config_parser = ConfigParser(kwargs)
 
     mimetype = magic.Magic(mime=True).from_file(fpath)
-    if any(mimetype.startswith(pdf_mimetype) for pdf_mimetype in [
-        'text/pdf',
-        'text/x-pdf',
-        'application/pdf',
-        'application/x-pdf',
-        'applications/vnd.pdf',
-    ]):
-        converter_class = PdfConverter
-    else:
-        converter_class = LibreOfficeConverter
-
+    converter_class = converter_from_mimetype(mimetype)
     converter = converter_class(
         config=config_parser.generate_config_dict(),
         artifact_dict=models,
