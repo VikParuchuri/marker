@@ -5,10 +5,13 @@ os.environ["GLOG_minloglevel"] = "2"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for a simple op, which is not supported on MPS
 
 import time
+
 import click
+import magic
 
 from marker.config.parser import ConfigParser
 from marker.config.printer import CustomClickPrinter
+from marker.converters.misc import LibreOfficeConverter
 from marker.converters.pdf import PdfConverter
 from marker.logger import configure_logging
 from marker.models import create_model_dict
@@ -17,7 +20,7 @@ from marker.output import save_output
 configure_logging()
 
 
-@click.command(cls=CustomClickPrinter, help="Convert a single PDF to markdown.")
+@click.command(cls=CustomClickPrinter, help="Convert a single Document to markdown.")
 @click.argument("fpath", type=str)
 @ConfigParser.common_options
 def main(fpath: str, **kwargs):
@@ -25,7 +28,19 @@ def main(fpath: str, **kwargs):
     start = time.time()
     config_parser = ConfigParser(kwargs)
 
-    converter = PdfConverter(
+    mimetype = magic.Magic(mime=True).from_file(fpath)
+    if any(mimetype.startswith(pdf_mimetype) for pdf_mimetype in [
+        'text/pdf',
+        'text/x-pdf',
+        'application/pdf',
+        'application/x-pdf',
+        'applications/vnd.pdf',
+    ]):
+        converter_class = PdfConverter
+    else:
+        converter_class = LibreOfficeConverter
+
+    converter = converter_class(
         config=config_parser.generate_config_dict(),
         artifact_dict=models,
         processor_list=config_parser.get_processors(),

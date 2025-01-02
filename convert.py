@@ -9,11 +9,13 @@ import math
 import traceback
 
 import click
+import magic
 import torch.multiprocessing as mp
 from tqdm import tqdm
 
 from marker.config.parser import ConfigParser
 from marker.converters.pdf import PdfConverter
+from marker.converters.misc import LibreOfficeConverter
 from marker.logger import configure_logging
 from marker.models import create_model_dict
 from marker.output import output_exists, save_output
@@ -45,7 +47,19 @@ def process_single_pdf(args):
         return
 
     try:
-        converter = PdfConverter(
+        mimetype = magic.Magic(mime=True).from_file(fpath)
+        if any(mimetype.startswith(pdf_mimetype) for pdf_mimetype in [
+            'text/pdf',
+            'text/x-pdf',
+            'application/pdf',
+            'application/x-pdf',
+            'applications/vnd.pdf',
+        ]):
+            converter_class = PdfConverter
+        else:
+            converter_class = LibreOfficeConverter
+
+        converter = converter_class(
             config=config_parser.generate_config_dict(),
             artifact_dict=model_refs,
             processor_list=config_parser.get_processors(),

@@ -90,9 +90,13 @@ class PdfConverter(BaseConverter):
         self.processor_list = processor_list
         self.renderer = renderer
 
+        self.provider_class = PdfProvider
+
         self.layout_builder_class = LayoutBuilder
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
+        
+        self.ocr_builder_class = OcrBuilder
 
     def resolve_dependencies(self, cls):
         init_signature = inspect.signature(cls.__init__)
@@ -114,9 +118,9 @@ class PdfConverter(BaseConverter):
         return cls(**resolved_kwargs)
 
     def build_document(self, filepath: str):
-        pdf_provider = PdfProvider(filepath, self.config)
+        pdf_provider = self.provider_class(filepath, self.config)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
-        ocr_builder = self.resolve_dependencies(OcrBuilder)
+        ocr_builder = self.resolve_dependencies(self.ocr_builder_class)
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
