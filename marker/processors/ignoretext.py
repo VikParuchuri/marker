@@ -13,12 +13,27 @@ from marker.schema.document import Document
 
 class IgnoreTextProcessor(BaseProcessor):
     """
-    A processor for ignoring text blocks that are common elements in the document.
+    A processor for identifying and ignoring common text blocks in a document. 
+    These blocks often represent repetitive or non-essential elements, such as headers, footers, or page numbers.
 
     Attributes:
         common_element_threshold (float):
-            The minimum fraction of pages that a block must appear in to be considered a common element.
-            Default is 0.6.
+            The fraction of pages a text block must appear on to be considered a common element. 
+            Blocks that meet or exceed this threshold are marked as common elements. 
+            Default is 0.6 (60% of pages).
+
+        common_element_min_blocks (int):
+            The minimum number of occurrences of a text block within a document to consider it a common element. 
+            This ensures that rare blocks are not mistakenly flagged. 
+            Default is 3.
+
+        max_streak (int):
+            The maximum number of consecutive occurrences of a text block allowed before it is classified as a common element. Helps to identify patterns like repeated headers or footers. 
+            Default is 3.
+
+        text_match_threshold (int):
+            The minimum fuzzy match score (0-100) required to classify a text block as similar to a common element. Higher values enforce stricter matching. 
+            Default is 90.
     """
     block_types = (
         BlockTypes.Text, BlockTypes.PageHeader, 

@@ -35,6 +35,18 @@ def reformat_section_hierarchy(section_hierarchy):
 
 
 class JSONRenderer(BaseRenderer):
+    """
+    A renderer for JSON output.
+
+    Attributes:
+        image_blocks (list):
+            The list of block types to consider as images.
+            Default is [BlockTypes.Picture, BlockTypes.Figure].
+
+        page_blocks (list):
+            The list of block types to consider as pages.
+            Default is [BlockTypes.Page].
+    """
     image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
     page_blocks: list = [BlockTypes.Page]
 

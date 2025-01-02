@@ -9,6 +9,16 @@ from marker.schema.document import Document
 class ListProcessor(BaseProcessor):
     """
     A processor for merging lists across pages and columns
+
+    Attributes:
+        ignored_block_types (List[BlockTypes]):
+            The list of block types to ignore when merging lists.
+            Default is [BlockTypes.PageHeader, BlockTypes.PageFooter].
+
+        min_x_indent (float):
+            The minimum horizontal indentation required to consider a block as a nested list item.
+            This is expressed as a percentage of the page width and is used to determine hierarchical relationships within a list.
+            Default is 0.01 (1% of page width).
     """
     block_types = (BlockTypes.ListGroup,)
     ignored_block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)

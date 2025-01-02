@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ftfy import fix_text
 from surya.model.detection.model import EfficientViTForSemanticSegmentation
@@ -33,9 +33,9 @@ class OcrBuilder(BaseBuilder):
         languages (List[str]):
             A list of languages to use for OCR. Default is None.
     """
-    recognition_batch_size: int | None = None
-    detection_batch_size: int | None = None
-    languages: List[str] | None = None
+    recognition_batch_size: Optional[int] = None
+    detection_batch_size: Optional[int] = None
+    languages: Optional[List[str]] = None
 
     def __init__(self, detection_model: EfficientViTForSemanticSegmentation, recognition_model: OCREncoderDecoderModel, config=None):
         super().__init__(config)
