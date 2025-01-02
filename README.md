@@ -5,10 +5,11 @@ Marker converts PDFs to markdown, JSON, and HTML quickly and accurately.
 - Supports a wide range of documents
 - Supports all languages
 - Removes headers/footers/other artifacts
-- Formats tables and code blocks
+- Formats tables, forms, and code blocks
 - Extracts and saves images along with the markdown
 - Converts equations to latex
 - Easily extensible with your own formatting and logic
+- Optionally boost accuracy with an LLM
 - Works on GPU, CPU, or MPS
 
 ## How it works
@@ -18,6 +19,7 @@ Marker is a pipeline of deep learning models:
 - Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
 - Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
 - Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify). [tabled](https://github.com/VikParuchuri/tabled))
+- Optionally use an LLM to improve quality
 - Combine blocks and postprocess complete text
 
 It only uses models where necessary, which improves speed and accuracy.
@@ -65,6 +67,8 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 - Forms are not converted optimally
 - Very complex layouts, with nested tables and forms, may not work
 
+Note: Passing the `--use_llm` flag will mostly solve all of these issues.
+
 # Installation
 
 You'll need python 3.10+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
@@ -99,13 +103,16 @@ marker_single /path/to/file.pdf
 
 Options:
 - `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
-- `--debug`: Enable debug mode for additional logging and diagnostic information.
 - `--output_format [markdown|json|html]`: Specify the format for the output results.
+- `--use_llm`: Uses an LLM to improve accuracy.  You must set your Gemini API key using the `GOOGLE_API_KEY` env var.
+- `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
 - `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
+- `--strip_existing_ocr`: Remove all existing OCR text in the document and re-OCR with surya.
+- `--debug`: Enable debug mode for additional logging and diagnostic information.
 - `--processors TEXT`: Override the default processors by providing their full module paths, separated by commas. Example: `--processors "module1.processor1,module2.processor2"`
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
-- `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "eng,fra,deu"` for English, French, and German.
+- `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "en,fr,de"` for English, French, and German.
 - `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
 
 The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you don't need OCR, marker can work with any language.
@@ -127,7 +134,6 @@ NUM_DEVICES=4 NUM_WORKERS=15 marker_chunk_convert ../pdf_in ../md_out
 
 - `NUM_DEVICES` is the number of GPUs to use.  Should be `2` or greater.
 - `NUM_WORKERS` is the number of parallel processes to run on each GPU.
-- 
 
 ## Use from python
 
@@ -149,7 +155,7 @@ text, _, images = text_from_rendered(rendered)
 
 ### Custom configuration
 
-You can also pass configuration using the `ConfigParser`:
+You can pass configuration using the `ConfigParser`:
 
 ```python
 from marker.converters.pdf import PdfConverter
@@ -170,6 +176,26 @@ converter = PdfConverter(
 )
 rendered = converter("FILEPATH")
 ```
+
+### Extract blocks
+
+Each document consists of one or more pages.  Pages contain blocks, which can themselves contain other blocks.  It's possible to programatically manipulate these blocks.  
+
+Here's an example of extracting all forms from a document:
+
+```python
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
+from marker.schema import BlockTypes
+
+converter = PdfConverter(
+    artifact_dict=create_model_dict(),
+)
+document = converter.build_document("FILEPATH")
+forms = document.contained_blocks((BlockTypes.Form,))
+```
+
+Look at the processors for more examples of extracting and manipulating blocks.
 
 # Output Formats
 
@@ -312,6 +338,7 @@ Note that this is not a very robust API, and is only intended for small-scale us
 
 There are some settings that you may find useful if things aren't working the way you expect:
 
+- If you have issues with accuracy, try setting `--use_llm` to use an LLM to improve quality.  You must set `GOOGLE_API_KEY` to a Gemini API key for this to work.
 - Make sure to set `force_ocr` if you see garbled text - this will re-OCR the document.
 - `TORCH_DEVICE` - set this to force marker to use a given torch device for inference.
 - If you're getting out of memory errors, decrease worker count.  You can also try splitting up long PDFs into multiple files.

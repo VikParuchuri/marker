@@ -18,8 +18,12 @@ class Settings(BaseSettings):
     OUTPUT_ENCODING: str = "utf-8"
     OUTPUT_IMAGE_FORMAT: str = "JPEG"
 
+    # LLM
+    GOOGLE_API_KEY: Optional[str] = None
+
     # General models
     TORCH_DEVICE: Optional[str] = None  # Note: MPS device does not work for text detection, and will default to CPU
+    GOOGLE_API_KEY: Optional[str] = None
 
     @computed_field
     @property

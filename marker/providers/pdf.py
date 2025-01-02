@@ -1,16 +1,18 @@
 import atexit
+import ctypes
 import re
 from typing import List, Set
 
 import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
 from pdftext.extraction import dictionary_output
 from PIL import Image
 
-from marker.providers.utils import alphanum_ratio
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
-from marker.schema.polygon import PolygonBox
+from marker.providers.utils import alphanum_ratio
 from marker.schema import BlockTypes
+from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
 from marker.schema.text.span import Span
@@ -25,6 +27,8 @@ class PdfProvider(BaseProvider):
     ocr_space_threshold: float = .7
     ocr_newline_threshold: float = .6
     ocr_alphanum_threshold: float = .3
+    image_threshold: float = .65
+    strip_existing_ocr: bool = False
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
@@ -79,7 +83,7 @@ class PdfProvider(BaseProvider):
         formats = set()
         if set_flags == {"Symbolic", "Italic"} or \
                 set_flags == {"Symbolic", "Italic", "UseExternAttr"}:
-            formats.add("math")
+            formats.add("plain")
         elif set_flags == {"UseExternAttr"}:
             formats.add("plain")
         elif set_flags == {"Plain"}:
@@ -121,6 +125,9 @@ class PdfProvider(BaseProvider):
         for page in page_char_blocks:
             page_id = page["page"]
             lines: List[ProviderOutput] = []
+            if not self.check_page(page_id):
+                continue
+
             for block in page["blocks"]:
                 for line in block["lines"]:
                     spans: List[Span] = []
@@ -172,6 +179,47 @@ class PdfProvider(BaseProvider):
             return False
         return True
 
+    def check_page(self, page_id: int) -> bool:
+        page = self.doc.get_page(page_id)
+        page_bbox = PolygonBox.from_bbox(page.get_bbox())
+        page_objs = list(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_TEXT, pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+
+        # if we do not see any text objects in the pdf, we can skip this page
+        if not any([obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT for obj in page_objs]):
+            return False
+
+        if not self.strip_existing_ocr:
+            return True
+
+        # If any text objects on the page are in invisible render mode, skip this page
+        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+            if pdfium_c.FPDFTextObj_GetTextRenderMode(text_obj) in [pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_UNKNOWN]:
+                return False
+
+        non_embedded_fonts = []
+        empty_fonts = []
+        font_map = {}
+        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+            font = pdfium_c.FPDFTextObj_GetFont(text_obj)
+            font_name = self.get_fontname(font)
+    
+            # we also skip pages without embedded fonts and fonts without names
+            non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
+            empty_fonts.append(not font_name or font_name == "GlyphLessFont")
+            if font_name not in font_map:
+                font_map[font_name or 'Unknown'] = font
+
+        if all(non_embedded_fonts) or all(empty_fonts):
+            return False
+
+        # if we see very large images covering most of the page, we can skip this page
+        for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
+            img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
+            if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
+                return False
+
+        return True
+
     def detect_bad_ocr(self, text):
         if len(text) == 0:
             # Assume OCR failed if we have no text
@@ -214,3 +262,21 @@ class PdfProvider(BaseProvider):
 
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
+
+    def get_fontname(self, font) -> str:
+        font_name = ""
+        buffer_size = 256 
+        
+        try:
+            font_name_buffer = ctypes.create_string_buffer(buffer_size)
+            length = pdfium_c.FPDFFont_GetBaseFontName(font, font_name_buffer, buffer_size)
+            if length < buffer_size:
+                font_name = font_name_buffer.value.decode("utf-8")
+            else:
+                font_name_buffer = ctypes.create_string_buffer(length)
+                pdfium_c.FPDFFont_GetBaseFontName(font, font_name_buffer, length)
+                font_name = font_name_buffer.value.decode("utf-8")
+        except:
+            pass
+
+        return font_name

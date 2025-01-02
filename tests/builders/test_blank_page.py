@@ -2,11 +2,10 @@ from surya.schema import LayoutResult
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
-from marker.builders.ocr import OcrBuilder
 
 
-def test_blank_page(config, pdf_provider, layout_model, recognition_model, detection_model):
-    layout_builder = LayoutBuilder(layout_model, config)
+def test_blank_page(config, pdf_provider, layout_model, ocr_error_model, recognition_model, detection_model):
+    layout_builder = LayoutBuilder(layout_model, ocr_error_model, config)
     builder = DocumentBuilder(config)
     document = builder.build_document(pdf_provider)
 

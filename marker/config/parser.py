@@ -34,41 +34,42 @@ class ConfigParser:
         fn = click.option("--disable_multiprocessing", is_flag=True, default=False, help="Disable multiprocessing.")(fn)
         fn = click.option("--paginate_output", is_flag=True, default=False, help="Paginate output.")(fn)
         fn = click.option("--disable_image_extraction", is_flag=True, default=False, help="Disable image extraction.")(fn)
+        fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
+        fn = click.option("--strip_existing_ocr", is_flag=True, default=False, help="Strip existing OCR text from the PDF.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
         config = {}
         output_dir = self.cli_options.get("output_dir", settings.OUTPUT_DIR)
         for k, v in self.cli_options.items():
+            if not v:
+                continue
+
             match k:
                 case "debug":
-                    if v:
-                        config["debug_pdf_images"] = True
-                        config["debug_layout_images"] = True
-                        config["debug_json"] = True
-                        config["debug_data_folder"] = output_dir
+                    config["debug_pdf_images"] = True
+                    config["debug_layout_images"] = True
+                    config["debug_json"] = True
+                    config["debug_data_folder"] = output_dir
                 case "page_range":
-                    if v:
-                        config["page_range"] = parse_range_str(v)
+                    config["page_range"] = parse_range_str(v)
                 case "force_ocr":
-                    if v:
-                        config["force_ocr"] = True
+                    config["force_ocr"] = True
                 case "languages":
-                    if v:
-                        config["languages"] = v.split(",")
+                    config["languages"] = v.split(",")
                 case "config_json":
-                    if v:
-                        with open(v, "r") as f:
-                            config.update(json.load(f))
+                    with open(v, "r") as f:
+                        config.update(json.load(f))
                 case "disable_multiprocessing":
-                    if v:
-                        config["pdftext_workers"] = 1
+                    config["pdftext_workers"] = 1
                 case "paginate_output":
-                    if v:
-                        config["paginate_output"] = True
+                    config["paginate_output"] = True
                 case "disable_image_extraction":
-                    if v:
-                        config["extract_images"] = False
+                    config["extract_images"] = False
+                case "use_llm":
+                    config["use_llm"] = True
+                case "strip_existing_ocr":
+                    config["strip_existing_ocr"] = True
         return config
 
     def get_renderer(self):

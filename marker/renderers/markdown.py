@@ -1,4 +1,5 @@
 import re
+from typing import List
 
 import regex
 from markdownify import MarkdownConverter
@@ -16,10 +17,12 @@ def cleanup_text(full_text):
 
 
 class Markdownify(MarkdownConverter):
-    def __init__(self, paginate_output, page_separator, **kwargs):
+    def __init__(self, paginate_output, page_separator, inline_math_delimiters, block_math_delimiters, **kwargs):
         super().__init__(**kwargs)
         self.paginate_output = paginate_output
         self.page_separator = page_separator
+        self.inline_math_delimiters = inline_math_delimiters
+        self.block_math_delimiters = block_math_delimiters
 
     def convert_div(self, el, text, convert_as_inline):
         is_page = el.has_attr('class') and el['class'][0] == 'page'
@@ -30,7 +33,7 @@ class Markdownify(MarkdownConverter):
         else:
             return text
 
-    def convert_p(self, el, text, *args):
+    def convert_p(self, el, text, convert_as_inline):
         hyphens = r'-—¬'
         has_continuation = el.has_attr('class') and 'has-continuation' in el['class']
         if has_continuation:
@@ -43,6 +46,22 @@ class Markdownify(MarkdownConverter):
                 return f"{text}"
         return f"{text}\n\n" if text else ""  # default convert_p behavior
 
+    def convert_math(self, el, text, convert_as_inline):
+        inline = el.has_attr('display') and el['display'] == 'inline'
+        if inline:
+            return self.inline_math_delimiters[0] + text + self.inline_math_delimiters[1]
+        else:
+            return "\n" + self.block_math_delimiters[0] + text + self.block_math_delimiters[1] + "\n"
+
+    def convert_td(self, el, text, convert_as_inline):
+        text = text.replace("|", " ").replace("\n", " ")
+        return super().convert_td(el, text, convert_as_inline)
+
+    def convert_th(self, el, text, convert_as_inline):
+        text = text.replace("|", " ").replace("\n", " ")
+        return super().convert_th(el, text, convert_as_inline)
+
+
 
 class MarkdownOutput(BaseModel):
     markdown: str
@@ -52,6 +71,8 @@ class MarkdownOutput(BaseModel):
 
 class MarkdownRenderer(HTMLRenderer):
     page_separator: str = "-" * 48
+    inline_math_delimiters: List[str] = ["$", "$"]
+    block_math_delimiters: List[str] = ["$$", "$$"]
 
     def __call__(self, document: Document) -> MarkdownOutput:
         document_output = document.render()
@@ -66,6 +87,8 @@ class MarkdownRenderer(HTMLRenderer):
             escape_asterisks=False,
             sub_symbol="<sub>",
             sup_symbol="<sup>",
+            inline_math_delimiters=self.inline_math_delimiters,
+            block_math_delimiters=self.block_math_delimiters
         )
         markdown = md_cls.convert(full_html)
         markdown = cleanup_text(markdown)

@@ -10,7 +10,7 @@ def test_rotated_bboxes(pdf_document):
 
     # Ensure we match all text lines up properly
     text_lines = first_page.contained_blocks(pdf_document, (BlockTypes.Line,))
-    text_blocks = first_page.contained_blocks(pdf_document, (BlockTypes.Text,))
+    text_blocks = first_page.contained_blocks(pdf_document, (BlockTypes.Text, BlockTypes.TextInlineMath))
     assert len(text_lines) == 86
 
     # Ensure the bbox sizes match up

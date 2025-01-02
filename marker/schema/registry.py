@@ -7,6 +7,7 @@ from marker.schema.blocks import Block, Caption, Code, Equation, Figure, \
     ListItem, PageFooter, PageHeader, Picture, \
     SectionHeader, Table, TableOfContents, \
     Text
+from marker.schema.blocks.complexregion import ComplexRegion
 from marker.schema.document import Document
 from marker.schema.groups import FigureGroup, ListGroup, PageGroup, \
     PictureGroup, TableGroup
@@ -49,6 +50,7 @@ register_block_class(BlockTypes.SectionHeader, SectionHeader)
 register_block_class(BlockTypes.Table, Table)
 register_block_class(BlockTypes.Text, Text)
 register_block_class(BlockTypes.TableOfContents, TableOfContents)
+register_block_class(BlockTypes.ComplexRegion, ComplexRegion)
 register_block_class(BlockTypes.Document, Document)
 
 assert len(BLOCK_REGISTRY) == len(BlockTypes)

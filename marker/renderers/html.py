@@ -45,6 +45,7 @@ class HTMLRenderer(BaseRenderer):
         for ref in content_refs:
             src = ref.get('src')
             sub_images = {}
+            content = ""
             for item in document_output.children:
                 if item.id == src:
                     content, sub_images_ = self.extract_html(document, item, level + 1)
@@ -61,7 +62,8 @@ class HTMLRenderer(BaseRenderer):
                     images[image_name] = image
                     ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
                 else:
-                    ref.replace_with('')
+                    # This will be the image description if using llm mode, or empty if not
+                    ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))
             elif ref_block_id.block_type in self.page_blocks:
                 images.update(sub_images)
                 if self.paginate_output:
