@@ -69,6 +69,9 @@ class ConfigParser:
                 case "disable_image_extraction":
                     if v:
                         config["extract_images"] = False
+                case _:
+                    if v:
+                        config[k] = v
         return config
 
     def get_renderer(self):
