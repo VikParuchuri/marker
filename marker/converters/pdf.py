@@ -1,7 +1,4 @@
 import os
-
-from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 import inspect
@@ -24,6 +21,7 @@ from marker.processors.footnote import FootnoteProcessor
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 from marker.processors.list import ListProcessor

@@ -1,17 +1,11 @@
-from tabled.schema import SpanTableCell
-
 from marker.processors.llm import BaseLLMProcessor
-from bs4 import BeautifulSoup
-from typing import List
 
 from google.ai.generativelanguage_v1beta.types import content
-from tabled.formats import html_format
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
-from marker.schema.polygon import PolygonBox
 
 
 class LLMImageDescriptionProcessor(BaseLLMProcessor):
@@ -66,62 +60,3 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
             return
 
         block.description = image_description
-
-
-    def parse_html_table(self, html_text: str, block: Block) -> List[SpanTableCell]:
-        soup = BeautifulSoup(html_text, 'html.parser')
-        table = soup.find('table')
-
-        # Initialize grid
-        rows = table.find_all('tr')
-        cells = []
-        max_cols = max(len(row.find_all(['td', 'th'])) for row in rows)
-        if max_cols == 0:
-            return []
-
-        grid = [[True] * max_cols for _ in range(len(rows))]
-
-        for i, row in enumerate(rows):
-            cur_col = 0
-            row_cells = row.find_all(['td', 'th'])
-            for j, cell in enumerate(row_cells):
-                while cur_col < max_cols and not grid[i][cur_col]:
-                    cur_col += 1
-
-                if cur_col >= max_cols:
-                    print("Table parsing warning: too many columns found")
-                    break
-
-                cell_text = cell.text.strip()
-                rowspan = min(int(cell.get('rowspan', 1)), len(rows) - i)
-                colspan = min(int(cell.get('colspan', 1)), max_cols - cur_col)
-                cell_rows = list(range(i, i + rowspan))
-                cell_cols = list(range(cur_col, cur_col + colspan))
-
-                if colspan == 0 or rowspan == 0:
-                    print("Table parsing warning: invalid colspan or rowspan")
-                    continue
-
-                for r in cell_rows:
-                    for c in cell_cols:
-                        grid[r][c] = False
-
-                cell_bbox = [
-                    block.polygon.bbox[0] + cur_col,
-                    block.polygon.bbox[1] + i,
-                    block.polygon.bbox[0] + cur_col + colspan,
-                    block.polygon.bbox[1] + i + rowspan
-                ]
-                cell_polygon = PolygonBox.from_bbox(cell_bbox)
-
-                cell_obj = SpanTableCell(
-                    text=cell_text,
-                    row_ids=cell_rows,
-                    col_ids=cell_cols,
-                    bbox=cell_polygon.bbox
-                )
-                cells.append(cell_obj)
-                cur_col += colspan
-
-
-        return cells
