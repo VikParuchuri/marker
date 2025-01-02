@@ -114,7 +114,9 @@ page_range = st.sidebar.text_input("Page range to parse, comma separated like 0,
 output_format = st.sidebar.selectbox("Output format", ["markdown", "json", "html"], index=0)
 run_marker = st.sidebar.button("Run Marker")
 
+use_llm = st.sidebar.checkbox("Use LLM", help="Use LLM for higher quality processing", value=False)
 force_ocr = st.sidebar.checkbox("Force OCR", help="Force OCR on all pages", value=False)
+strip_existing_ocr = st.sidebar.checkbox("Strip existing OCR", help="Strip existing OCR text from the PDF and re-OCR.", value=False)
 debug = st.sidebar.checkbox("Debug", help="Show debug information", value=False)
 
 if not run_marker:
@@ -131,6 +133,8 @@ with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb+") as temp_pdf:
         "force_ocr": force_ocr,
         "debug": debug,
         "output_dir": settings.DEBUG_DATA_FOLDER if debug else None,
+        "use_llm": use_llm,
+        "strip_existing_ocr": strip_existing_ocr
     }
     config_parser = ConfigParser(cli_options)
     rendered = convert_pdf(

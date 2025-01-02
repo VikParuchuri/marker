@@ -19,12 +19,10 @@ class IgnoreTextProcessor(BaseProcessor):
     Attributes:
         common_element_threshold (float):
             The fraction of pages a text block must appear on to be considered a common element. 
-            Blocks that meet or exceed this threshold are marked as common elements. 
             Default is 0.6 (60% of pages).
 
         common_element_min_blocks (int):
             The minimum number of occurrences of a text block within a document to consider it a common element. 
-            This ensures that rare blocks are not mistakenly flagged. 
             Default is 3.
 
         max_streak (int):
