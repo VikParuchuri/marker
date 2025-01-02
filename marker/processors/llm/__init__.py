@@ -1,7 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
-import tqdm
+from tqdm import tqdm
+
 from marker.processors import BaseProcessor
 from marker.processors.llm.utils import GoogleModel
 from marker.schema.blocks import Block
