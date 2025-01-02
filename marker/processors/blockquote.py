@@ -5,7 +5,20 @@ from marker.schema.document import Document
 
 class BlockquoteProcessor(BaseProcessor):
     """
-    A processor for tagging blockquotes
+    A processor for tagging blockquotes.
+    
+    Attributes:
+        min_x_indent (float):
+            The minimum horizontal indentation required to consider a block as part of a blockquote. Expressed as a percentage of the block width.
+            Default is 0.05 (5%).
+
+        x_start_tolerance (float):
+            The maximum allowable difference between the starting x-coordinates of consecutive blocks to consider them aligned. Expressed as a percentage of the block width.
+            Default is 0.01 (1%).
+
+        x_end_tolerance (float):
+            The maximum allowable difference between the ending x-coordinates of consecutive blocks to consider them aligned. Expressed as a percentage of the block width.
+            Default is 0.01 (1%).
     """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
     min_x_indent = 0.05  # % of block width

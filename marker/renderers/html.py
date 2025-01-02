@@ -24,6 +24,22 @@ class HTMLOutput(BaseModel):
 
 
 class HTMLRenderer(BaseRenderer):
+    """
+    A renderer for HTML output.
+
+    Attributes:
+        page_blocks (list):
+            The list of block types to consider as pages.
+            Default is [BlockTypes.Page].
+
+        paginate_output (bool):
+            Whether to paginate the output.
+            Default is False.
+
+        image_extraction_mode (Literal["lowres", "highres"]):
+            The mode to use for extracting images.
+            Default is "highres".
+    """
     page_blocks: list = [BlockTypes.Page]
     paginate_output: bool = False
     image_extraction_mode: Literal["lowres", "highres"] = "highres"

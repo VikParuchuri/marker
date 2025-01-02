@@ -13,6 +13,7 @@ import torch.multiprocessing as mp
 from tqdm import tqdm
 
 from marker.config.parser import ConfigParser
+from marker.config.printer import CustomClickPrinter
 from marker.converters.pdf import PdfConverter
 from marker.logger import configure_logging
 from marker.models import create_model_dict
@@ -59,7 +60,7 @@ def process_single_pdf(args):
         print(traceback.format_exc())
 
 
-@click.command()
+@click.command(cls=CustomClickPrinter)
 @click.argument("in_folder", type=str)
 @ConfigParser.common_options
 @click.option("--chunk_idx", type=int, default=0, help="Chunk index to convert")

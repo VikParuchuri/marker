@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Literal, Optional, Dict, Sequence
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -33,7 +33,7 @@ class BlockOutput(BaseModel):
 
 class BlockId(BaseModel):
     page_id: int
-    block_id: int | None = None
+    block_id: Optional[int] = None
     block_type: BlockTypes | None = None
 
     def __str__(self):

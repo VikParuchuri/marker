@@ -29,6 +29,10 @@ class BaseLLMProcessor(BaseProcessor):
             Default is 3.
         timeout (int):
             The timeout for requests to the Gemini model.
+            Default is 60 seconds.
+        image_expansion_ratio (float):
+            The ratio to expand the image by when cropping.
+            Default is 0.01.
         gemini_rewriting_prompt (str):
             The prompt to use for rewriting text.
             Default is a string containing the Gemini rewriting prompt.

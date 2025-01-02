@@ -4,6 +4,23 @@ from marker.schema.document import Document
 
 
 class LineNumbersProcessor(BaseProcessor):
+    """
+    A processor for ignoring line numbers.
+    Attributes:
+        strip_numbers_threshold (float):
+            The fraction of lines or tokens in a block that must be numeric to consider them as line numbers.
+            Default is 0.6 (60%).
+
+        min_lines_in_block (int):
+            The minimum number of lines required in a block for it to be considered during processing.
+            Ensures that small blocks are ignored as they are unlikely to contain meaningful line numbers.
+            Default is 4.
+
+        min_line_length (int):
+            The minimum length of a line (in characters) to consider it significant when checking for 
+            numeric prefixes or suffixes. Prevents false positives for short lines.
+            Default is 10.
+    """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
     strip_numbers_threshold: int = .6
     min_lines_in_block: int = 4

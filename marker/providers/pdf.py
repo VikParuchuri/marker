@@ -1,7 +1,7 @@
 import atexit
 import ctypes
 import re
-from typing import List, Set
+from typing import List, Optional, Set
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
@@ -19,6 +19,54 @@ from marker.schema.text.span import Span
 
 
 class PdfProvider(BaseProvider):
+    """
+    A provider for PDF files.
+
+    Attributes:
+        filepath (str):
+            The path to the PDF file.
+
+        page_range (List[int]):
+            The range of pages to process.
+            Default is None, which will process all pages.
+
+        pdftext_workers (int):
+            The number of workers to use for pdftext.
+            Default is 4.
+
+        flatten_pdf (bool):
+            Whether to flatten the PDF structure.
+            Default is True.
+
+        force_ocr (bool):
+            Whether to force OCR on the whole document.
+            Default is False.
+
+        ocr_invalid_chars (tuple):
+            The characters to consider invalid for OCR.
+            Default is (chr(0xfffd), "�").
+
+        ocr_space_threshold (float):
+            The minimum ratio of spaces to non-spaces to detect bad text.
+            Default is 0.7.
+
+        ocr_newline_threshold (float):
+            The minimum ratio of newlines to non-newlines to detect bad text.
+            Default is 0.6.
+
+        ocr_alphanum_threshold (float):
+            The minimum ratio of alphanumeric characters to non-alphanumeric characters to consider an alphanumeric character.
+            Default is 0.3.
+        
+        image_threshold (float):
+            The minimum coverage ratio of the image to the page to consider skipping the page.
+            Default is .65.
+
+        strip_existing_ocr (bool):
+            Whether to strip existing OCR text from the PDF.
+            Default is True.
+    """
+
     page_range: List[int] | None = None
     pdftext_workers: int = 4
     flatten_pdf: bool = True
@@ -57,7 +105,7 @@ class PdfProvider(BaseProvider):
         if self.doc is not None:
             self.doc.close()
 
-    def font_flags_to_format(self, flags: int | None) -> Set[str]:
+    def font_flags_to_format(self, flags: Optional[int]) -> Set[str]:
         if flags is None:
             return {"plain"}
 
