@@ -30,8 +30,8 @@ class PdfProvider(BaseProvider):
     image_threshold: float = .65
     strip_existing_ocr: bool = False
 
-    def __init__(self, filepath: str, config=None):
-        super().__init__(filepath, config)
+    def __init__(self, file: str | bytes, config=None):
+        super().__init__(file, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
         self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
