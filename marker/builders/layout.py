@@ -132,7 +132,7 @@ class LayoutBuilder(BaseBuilder):
         good_pages = []
         for (document_page, ocr_error_detection_label) in zip(document_pages, ocr_error_detection_labels):
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            good_pages.append(self.check_layout_coverage(document_page, provider_lines) and (ocr_error_detection_label != "bad"))
+            good_pages.append(bool(provider_lines) and self.check_layout_coverage(document_page, provider_lines) and (ocr_error_detection_label != "bad"))
 
         ocr_document = sum(good_pages) / len(good_pages) < self.document_ocr_threshold
         for idx, document_page in enumerate(document_pages):

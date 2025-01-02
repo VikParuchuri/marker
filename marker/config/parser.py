@@ -35,6 +35,7 @@ class ConfigParser:
         fn = click.option("--paginate_output", is_flag=True, default=False, help="Paginate output.")(fn)
         fn = click.option("--disable_image_extraction", is_flag=True, default=False, help="Disable image extraction.")(fn)
         fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
+        fn = click.option("--strip_existing_ocr", is_flag=True, default=False, help="Strip existing OCR text from the PDF.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
@@ -67,6 +68,8 @@ class ConfigParser:
                     config["extract_images"] = False
                 case "use_llm":
                     config["use_llm"] = True
+                case "strip_existing_ocr":
+                    config["strip_existing_ocr"] = True
         return config
 
     def get_renderer(self):
