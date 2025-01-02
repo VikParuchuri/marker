@@ -3,9 +3,11 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from marker.processors.llm.llm_form import LLMFormProcessor
+from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.table import TableProcessor
+from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
 
 @pytest.mark.filename("form_1040.pdf")
@@ -108,3 +110,32 @@ def test_llm_text_processor(pdf_document, mocker):
     contained_spans = text_lines[0].contained_blocks(pdf_document, (BlockTypes.Span,))
     assert contained_spans[0].text == "Text\n" # Newline inserted at end of line
     assert contained_spans[0].formats == ["italic"]
+
+
+@pytest.mark.filename("A17_FlightPlan.pdf")
+@pytest.mark.config({"page_range": [0]})
+def test_llm_caption_processor_disabled(pdf_document):
+    processor = LLMImageDescriptionProcessor({"use_llm": True, "google_api_key": "test"})
+    processor(pdf_document)
+
+    contained_pictures = pdf_document.contained_blocks((BlockTypes.Picture, BlockTypes.Figure))
+    assert all(picture.description is None for picture in contained_pictures)
+
+@pytest.mark.filename("A17_FlightPlan.pdf")
+@pytest.mark.config({"page_range": [0]})
+def test_llm_caption_processor(pdf_document, mocker):
+    description = "This is an image description."
+    mock_cls = Mock()
+    mock_cls.return_value.generate_response.return_value = {"image_description": description}
+    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
+    processor = LLMImageDescriptionProcessor({"use_llm": True, "google_api_key": "test", "extract_images": False})
+    processor(pdf_document)
+
+    contained_pictures = pdf_document.contained_blocks((BlockTypes.Picture, BlockTypes.Figure))
+    assert all(picture.description == description for picture in contained_pictures)
+
+    # Ensure the rendering includes the description
+    renderer = MarkdownRenderer({"extract_images": False})
+    md = renderer(pdf_document).markdown
+
+    assert description in md

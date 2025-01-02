@@ -1,7 +1,4 @@
 import os
-
-from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
 
 import inspect
@@ -14,6 +11,7 @@ from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
 from marker.converters import BaseConverter
+from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
 from marker.processors.blockquote import BlockquoteProcessor
 from marker.processors.code import CodeProcessor
 from marker.processors.debug import DebugProcessor
@@ -23,6 +21,7 @@ from marker.processors.footnote import FootnoteProcessor
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 from marker.processors.list import ListProcessor
@@ -78,6 +77,7 @@ class PdfConverter(BaseConverter):
                 TextProcessor,
                 LLMTextProcessor,
                 LLMComplexRegionProcessor,
+                LLMImageDescriptionProcessor,
                 DebugProcessor,
             ]
 
