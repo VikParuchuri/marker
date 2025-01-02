@@ -5,7 +5,7 @@ Marker converts PDFs to markdown, JSON, and HTML quickly and accurately.
 - Supports a wide range of documents
 - Supports all languages
 - Removes headers/footers/other artifacts
-- Formats tables and code blocks
+- Formats tables, forms, and code blocks
 - Extracts and saves images along with the markdown
 - Converts equations to latex
 - Easily extensible with your own formatting and logic
@@ -19,6 +19,7 @@ Marker is a pipeline of deep learning models:
 - Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
 - Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
 - Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify). [tabled](https://github.com/VikParuchuri/tabled))
+- Optionally use an LLM to improve quality
 - Combine blocks and postprocess complete text
 
 It only uses models where necessary, which improves speed and accuracy.
@@ -66,6 +67,8 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 - Forms are not converted optimally
 - Very complex layouts, with nested tables and forms, may not work
 
+Note: Passing the `--use_llm` flag will mostly solve all of these issues.
+
 # Installation
 
 You'll need python 3.10+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
@@ -105,6 +108,7 @@ Options:
 - `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
 - `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
+- `--strip_existing_ocr`: Remove all existing OCR text in the document and re-OCR with surya.
 - `--debug`: Enable debug mode for additional logging and diagnostic information.
 - `--processors TEXT`: Override the default processors by providing their full module paths, separated by commas. Example: `--processors "module1.processor1,module2.processor2"`
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
