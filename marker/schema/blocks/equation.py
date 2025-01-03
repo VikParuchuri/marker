@@ -11,7 +11,17 @@ class Equation(Block):
     def assemble_html(self, child_blocks, parent_structure=None):
         if self.latex:
             html_out = f"<p block-type='{self.block_type}'>"
-            for el in self.parse_latex(html.escape(self.latex)):
+
+            try:
+                latex = self.parse_latex(html.escape(self.latex))
+            except ValueError as e:
+                # If we have mismatched delimiters, we'll treat it as a single block
+                # Strip the $'s from the latex
+                latex = [
+                    {"class": "block", "content": self.latex.replace("$", "")}
+                ]
+
+            for el in latex:
                 if el["class"] == "block":
                     html_out += f'<math display="block">{el["content"]}</math>'
                 elif el["class"] == "inline":
@@ -26,6 +36,9 @@ class Equation(Block):
 
     @staticmethod
     def parse_latex(text: str):
+        if text.count("$") % 2 != 0:
+            raise ValueError("Mismatched delimiters in LaTeX")
+
         DELIMITERS = [
             ("$$", "block"),
             ("$", "inline")
