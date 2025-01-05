@@ -123,10 +123,11 @@ if not run_marker:
     st.stop()
 
 # Run Marker
-with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb+") as temp_pdf:
-    temp_pdf.write(in_file.getvalue())
-    temp_pdf.seek(0)
-    filename = temp_pdf.name
+with tempfile.TemporaryDirectory() as tmp_dir:
+    temp_pdf = os.path.join(tmp_dir, 'temp.pdf')
+    with open(temp_pdf, 'wb') as f:
+        f.write(in_file.getvalue())
+
     cli_options = {
         "output_format": output_format,
         "page_range": page_range,
@@ -138,7 +139,7 @@ with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb+") as temp_pdf:
     }
     config_parser = ConfigParser(cli_options)
     rendered = convert_pdf(
-        filename,
+        temp_pdf,
         config_parser
     )
     page_range = config_parser.generate_config_dict()["page_range"]

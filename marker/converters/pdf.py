@@ -120,6 +120,10 @@ class PdfConverter(BaseConverter):
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
+        # close pdf file on Windows
+        if os.name == "nt":
+            pdf_provider.cleanup_pdf_doc()
+
         for processor_cls in self.processor_list:
             processor = self.resolve_dependencies(processor_cls)
             processor(document)
