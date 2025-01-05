@@ -1,5 +1,3 @@
-import markdown2
-
 from marker.processors.llm import BaseLLMProcessor
 
 from google.ai.generativelanguage_v1beta.types import content
@@ -79,4 +77,4 @@ No corrections needed.
             return
 
         # Convert LLM markdown to html
-        block.html = markdown2.markdown(corrected_markdown)
+        block.markdown = corrected_markdown
