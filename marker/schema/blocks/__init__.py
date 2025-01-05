@@ -17,3 +17,4 @@ from marker.schema.blocks.sectionheader import SectionHeader
 from marker.schema.blocks.table import Table
 from marker.schema.blocks.text import Text
 from marker.schema.blocks.toc import TableOfContents
+from marker.schema.blocks.complexregion import ComplexRegion

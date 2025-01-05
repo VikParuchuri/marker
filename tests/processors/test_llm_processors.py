@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
 
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
@@ -9,6 +10,7 @@ from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.table import TableProcessor
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
+from marker.schema.blocks import ComplexRegion
 
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
@@ -139,3 +141,29 @@ def test_llm_caption_processor(pdf_document, mocker):
     md = renderer(pdf_document).markdown
 
     assert description in md
+
+
+@pytest.mark.filename("A17_FlightPlan.pdf")
+@pytest.mark.config({"page_range": [0]})
+def test_llm_complex_region_processor(pdf_document, mocker):
+    md = "This is some *markdown* for a complex region."
+    mock_cls = Mock()
+    mock_cls.return_value.generate_response.return_value = {"corrected_markdown": md * 25}
+    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
+
+    # Replace the block with a complex region
+    old_block = pdf_document.pages[0].children[0]
+    new_block = ComplexRegion(
+        **old_block.dict(exclude=["id", "block_id", "block_type"]),
+    )
+    pdf_document.pages[0].replace_block(old_block, new_block)
+
+    # Test processor
+    processor = LLMComplexRegionProcessor({"use_llm": True, "google_api_key": "test"})
+    processor(pdf_document)
+
+    # Ensure the rendering includes the description
+    renderer = MarkdownRenderer()
+    rendered_md = renderer(pdf_document).markdown
+
+    assert md in rendered_md
