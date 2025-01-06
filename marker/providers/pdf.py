@@ -63,7 +63,7 @@ class PdfProvider(BaseProvider):
     strip_existing_ocr: Annotated[
         bool,
         "Whether to strip existing OCR text from the PDF.",
-    ] = True
+    ] = False
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
@@ -223,35 +223,33 @@ class PdfProvider(BaseProvider):
         if not any([obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT for obj in page_objs]):
             return False
 
-        if not self.strip_existing_ocr:
-            return True
+        if self.strip_existing_ocr:
+            # If any text objects on the page are in invisible render mode, skip this page
+            for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+                if pdfium_c.FPDFTextObj_GetTextRenderMode(text_obj) in [pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_UNKNOWN]:
+                    return False
 
-        # If any text objects on the page are in invisible render mode, skip this page
-        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
-            if pdfium_c.FPDFTextObj_GetTextRenderMode(text_obj) in [pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_UNKNOWN]:
+            non_embedded_fonts = []
+            empty_fonts = []
+            font_map = {}
+            for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+                font = pdfium_c.FPDFTextObj_GetFont(text_obj)
+                font_name = self.get_fontname(font)
+
+                # we also skip pages without embedded fonts and fonts without names
+                non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
+                empty_fonts.append(not font_name or font_name == "GlyphLessFont")
+                if font_name not in font_map:
+                    font_map[font_name or 'Unknown'] = font
+
+            if all(non_embedded_fonts) or all(empty_fonts):
                 return False
 
-        non_embedded_fonts = []
-        empty_fonts = []
-        font_map = {}
-        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
-            font = pdfium_c.FPDFTextObj_GetFont(text_obj)
-            font_name = self.get_fontname(font)
-
-            # we also skip pages without embedded fonts and fonts without names
-            non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
-            empty_fonts.append(not font_name or font_name == "GlyphLessFont")
-            if font_name not in font_map:
-                font_map[font_name or 'Unknown'] = font
-
-        if all(non_embedded_fonts) or all(empty_fonts):
-            return False
-
-        # if we see very large images covering most of the page, we can skip this page
-        for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
-            img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
-            if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
-                return False
+            # if we see very large images covering most of the page, we can skip this page
+            for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
+                img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
+                if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
+                    return False
 
         return True
 
