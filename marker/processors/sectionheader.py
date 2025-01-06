@@ -21,22 +21,18 @@ class SectionHeaderProcessor(BaseProcessor):
     level_count: Annotated[
         int,
         "The number of levels to use for headings.",
-        "Default is 4."
     ] = 4
     merge_threshold: Annotated[
         float,
         "The minimum gap between headings to consider them part of the same group.",
-        "Default is 0.25."
     ] = 0.25
     default_level: Annotated[
         int,
         "The default heading level to use if no heading level is detected.",
-        "Default is 2."
     ] = 2
     height_tolerance: Annotated[
         float,
         "The minimum height of a heading to consider it a heading.",
-        "Default is 0.99."
     ] = 0.99
 
     def __call__(self, document: Document):

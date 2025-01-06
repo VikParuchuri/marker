@@ -39,12 +39,10 @@ class JSONRenderer(BaseRenderer):
     image_blocks: Annotated[
         List[BlockTypes],
         "The list of block types to consider as images.",
-        "Default is [BlockTypes.Picture, BlockTypes.Figure]."
     ] = [BlockTypes.Picture, BlockTypes.Figure]
     page_blocks: Annotated[
         List[BlockTypes],
         "The list of block types to consider as pages.",
-        "Default is [BlockTypes.Page]."
     ] = [BlockTypes.Page]
 
     def extract_json(self, document: Document, block_output: BlockOutput):

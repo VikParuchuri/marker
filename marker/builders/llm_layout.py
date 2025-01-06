@@ -26,37 +26,30 @@ class LLMLayoutBuilder(LayoutBuilder):
     google_api_key: Annotated[
         Optional[str],
         "The Google API key to use for the Gemini model.",
-        "Default is None."
     ] = settings.GOOGLE_API_KEY
     confidence_threshold: Annotated[
         float,
         "The confidence threshold to use for relabeling.",
-        "Default is 0.75."
     ] = 0.75
     picture_height_threshold: Annotated[
         float,
         "The height threshold for pictures that may actually be complex regions.",
-        "Default is 0.8."
     ] = 0.8
     model_name: Annotated[
         str,
         "The name of the Gemini model to use.",
-        "Default is 'gemini-1.5-flash'."
     ] = "gemini-1.5-flash"
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the Gemini model.",
-        "Default is 3."
     ] = 3
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
-        "Default is 3."
     ] = 3
     timeout: Annotated[
         int,
         "The timeout for requests to the Gemini model.",
-        "Default is 60 seconds."
     ] = 60
     topk_relabelling_prompt: Annotated[
         str,

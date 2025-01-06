@@ -18,7 +18,6 @@ class TextProcessor(BaseProcessor):
     column_gap_ratio: Annotated[
         float,
         "The minimum ratio of the page width to the column gap to consider a column break.",
-        "Default is 0.02."
     ] = 0.02
 
     def __init__(self, config):

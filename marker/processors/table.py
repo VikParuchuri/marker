@@ -23,7 +23,6 @@ class TableProcessor(BaseProcessor):
     detect_boxes: Annotated[
         bool,
         "Whether to detect boxes for the table recognition model.",
-        "Default is False."
     ] = False
     detector_batch_size: Annotated[
         int,

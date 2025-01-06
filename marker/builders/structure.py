@@ -15,12 +15,10 @@ class StructureBuilder(BaseBuilder):
     gap_threshold: Annotated[
         float,
         "The minimum gap between blocks to consider them part of the same group.",
-        "Default is 0.05."
     ] = 0.05
     list_gap_threshold: Annotated[
         float,
         "The minimum gap between list items to consider them part of the same group.",
-        "Default is 0.1."
     ] = 0.1
 
     def __init__(self, config=None):

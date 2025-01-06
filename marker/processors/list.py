@@ -14,12 +14,10 @@ class ListProcessor(BaseProcessor):
     ignored_block_types: Annotated[
         List[BlockTypes],
         "The list of block types to ignore when merging lists.",
-        "Default is [BlockTypes.PageHeader, BlockTypes.PageFooter]."
     ] = (BlockTypes.PageHeader, BlockTypes.PageFooter)
     min_x_indent: Annotated[
         float, "The minimum horizontal indentation required to consider a block as a nested list item.",
         "This is expressed as a percentage of the page width and is used to determine hierarchical relationships within a list.",
-        "Default is 0.01 (1% of page width)."
     ] = 0.01
 
     def __init__(self, config):

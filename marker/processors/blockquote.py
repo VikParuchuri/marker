@@ -12,25 +12,21 @@ class BlockquoteProcessor(BaseProcessor):
     block_types: Annotated[
         List[BlockTypes],
         "The block types to process.",
-        "Default is [BlockTypes.Text, BlockTypes.TextInlineMath]."
     ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
     min_x_indent: Annotated[
         float,
         "The minimum horizontal indentation required to consider a block as part of a blockquote.",
         "Expressed as a percentage of the block width.",
-        "Default is 0.05 (5%)."
     ] = 0.05
     x_start_tolerance: Annotated[
         float,
         "The maximum allowable difference between the starting x-coordinates of consecutive blocks to consider them aligned.",
         "Expressed as a percentage of the block width.",
-        "Default is 0.01 (1%)."
     ] = 0.01
     x_end_tolerance: Annotated[
         float,
         "The maximum allowable difference between the ending x-coordinates of consecutive blocks to consider them aligned.",
         "Expressed as a percentage of the block width.",
-        "Default is 0.01 (1%)."
     ] = 0.01
 
     def __init__(self, config):

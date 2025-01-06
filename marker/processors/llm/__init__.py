@@ -18,42 +18,35 @@ class BaseLLMProcessor(BaseProcessor):
     google_api_key: Annotated[
         Optional[str],
         "The Google API key to use for the Gemini model.",
-        "Default is None."
     ] = settings.GOOGLE_API_KEY
     model_name: Annotated[
         str,
         "The name of the Gemini model to use.",
-        "Default is 'gemini-1.5-flash'."
     ] = "gemini-1.5-flash"
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the Gemini model.",
-        "Default is 3."
     ] = 3
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
-        "Default is 3."
     ] = 3
     timeout: Annotated[
         int,
         "The timeout for requests to the Gemini model.",
-        "Default is 60 seconds."
     ] = 60
     image_expansion_ratio: Annotated[
         float,
         "The ratio to expand the image by when cropping.",
-        "Default is 0.01."
     ] = 0.01
     gemini_rewriting_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt."
-    ] = None
+    ] = ''
     use_llm: Annotated[
         bool,
         "Whether to use the LLM model.",
-        "Default is False."
     ] = False
     block_types = None
 

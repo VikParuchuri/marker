@@ -17,12 +17,10 @@ class EquationProcessor(BaseProcessor):
     block_types: Annotated[
         List[BlockTypes],
         "The block types to process.",
-        "Default is [BlockTypes.Equation]."
     ] = (BlockTypes.Equation,)
     model_max_length: Annotated[
         int,
         "The maximum number of tokens to allow for the Texify model.",
-        "Default is 384."
     ] = 384
     texify_batch_size: Annotated[
         Optional[int],
@@ -32,7 +30,6 @@ class EquationProcessor(BaseProcessor):
     token_buffer: Annotated[
         int,
         "The number of tokens to buffer above max for the Texify model.",
-        "Default is 256."
     ] = 256
 
     def __init__(self, texify_model: GenerateVisionEncoderDecoderModel, config=None):

@@ -1,3 +1,4 @@
+from PIL import Image
 from typing import Annotated, List, Literal
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
@@ -13,7 +14,6 @@ import warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 # Suppress DecompressionBombError
-from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 
@@ -30,17 +30,14 @@ class HTMLRenderer(BaseRenderer):
     page_blocks: Annotated[
         List[BlockTypes],
         "The block types to consider as pages.",
-        "Default is [BlockTypes.Page]."
     ] = [BlockTypes.Page]
     paginate_output: Annotated[
         bool,
         "Whether to paginate the output.",
-        "Default is False."
     ] = False
     image_extraction_mode: Annotated[
         Literal["lowres", "highres"],
         "The mode to use for extracting images.",
-        "Default is 'highres'."
     ] = "highres"
 
     def extract_image(self, document, image_id):

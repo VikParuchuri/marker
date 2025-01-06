@@ -69,14 +69,19 @@ class CustomClickPrinter(click.Command):
                     if get_origin(attr_type) is Annotated:
                         base_attr_type = get_args(attr_type)[0]
                         default = getattr(class_type, attr)
+                        default_help_str = ""
+                        if all('Default' not in desc for desc in attr_type.__metadata__):
+                            default_help_str = f"Default is {default}."
                         if display_help:
                             click.echo(" " * 8 + f"{attr} ({format_type(base_attr_type)}):")
                             click.echo("\n".join([f'{" " * 12}' + desc for desc in attr_type.__metadata__]))
+                            if default_help_str:
+                                click.echo(f'{" " * 12}' + default_help_str)
                         if base_attr_type in [str, int, float, bool, Optional[int], Optional[float], Optional[str]]:
                             if attr not in [p.name for p in ctx.command.params]:
                                 is_flag = base_attr_type in [bool, Optional[bool]] and not default
                                 ctx.command.params.append(
-                                    click.Option([f"--{attr}"], help=" ".join(attr_type.__metadata__), type=base_attr_type, default=default, is_flag=is_flag)
+                                    click.Option([f"--{attr}"], help=" ".join(attr_type.__metadata__ + (default_help_str,)), type=base_attr_type, default=default, is_flag=is_flag)
                                 )
         if display_help:
             ctx.exit()

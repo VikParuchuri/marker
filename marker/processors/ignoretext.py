@@ -25,25 +25,21 @@ class IgnoreTextProcessor(BaseProcessor):
         float,
         "The minimum ratio of pages a text block must appear on to be considered a common element.",
         "Blocks that meet or exceed this threshold are marked as common elements.",
-        "Default is 0.6 (60% of pages)."
     ] = 0.6
     common_element_min_blocks: Annotated[
         int,
         "The minimum number of occurrences of a text block within a document to consider it a common element.",
         "This ensures that rare blocks are not mistakenly flagged.",
-        "Default is 3."
     ] = 3
     max_streak: Annotated[
         int,
         "The maximum number of consecutive occurrences of a text block allowed before it is classified as a common element.",
         "Helps to identify patterns like repeated headers or footers.",
-        "Default is 3."
     ] = 3
     text_match_threshold: Annotated[
         int,
         "The minimum fuzzy match score (0-100) required to classify a text block as similar to a common element.",
         "Higher values enforce stricter matching.",
-        "Default is 90."
     ] = 90
 
     def __call__(self, document: Document):

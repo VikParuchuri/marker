@@ -17,12 +17,10 @@ class DocumentBuilder(BaseBuilder):
     lowres_image_dpi: Annotated[
         int,
         "DPI setting for low-resolution page images used for Layout and Line Detection.",
-        "Default is 96."
     ] = 96
     highres_image_dpi: Annotated[
         int,
         "DPI setting for high-resolution page images used for OCR.",
-        "Default is 192."
     ] = 192
 
     def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, ocr_builder: OcrBuilder):

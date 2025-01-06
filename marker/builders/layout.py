@@ -32,29 +32,24 @@ class LayoutBuilder(BaseBuilder):
         int,
         "The minimum number of PdfProvider lines that must be covered by the layout model",
         "to consider the lines from the PdfProvider valid.",
-        "Default is 1."
     ] = 1
     layout_coverage_threshold: Annotated[
         float,
         "The minimum coverage ratio required for the layout model to consider",
         "the lines from the PdfProvider valid.",
-        "Default is 0.1."
     ] = .1
     document_ocr_threshold: Annotated[
         float,
         "The minimum ratio of pages that must pass the layout coverage check",
         "to avoid OCR.",
-        "Default is 0.8."
     ] = .8
     error_model_segment_length: Annotated[
         int,
         "The maximum number of characters to send to the OCR error model.",
-        "Default is 512."
     ] = 512
     excluded_for_coverage: Annotated[
         List[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
-        "Default is [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup]."
     ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
 
     def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):

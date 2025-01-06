@@ -13,19 +13,16 @@ class LineNumbersProcessor(BaseProcessor):
     strip_numbers_threshold: Annotated[
         float,
         "The fraction of lines or tokens in a block that must be numeric to consider them as line numbers.",
-        "Default is 0.6 (60%)."
     ] = 0.6
     min_lines_in_block: Annotated[
         int,
         "The minimum number of lines required in a block for it to be considered during processing.",
         "Ensures that small blocks are ignored as they are unlikely to contain meaningful line numbers.",
-        "Default is 4."
     ] = 4
     min_line_length: Annotated[
         int,
         "The minimum length of a line (in characters) to consider it significant when checking for",
         "numeric prefixes or suffixes. Prevents false positives for short lines.",
-        "Default is 10."
     ] = 10
 
     def __init__(self, config):

@@ -23,32 +23,26 @@ class DebugProcessor(BaseProcessor):
     debug_data_folder: Annotated[
         str,
         "The folder to dump debug data to.",
-        "Default is 'debug_data'."
     ] = "debug_data"
     debug_layout_images: Annotated[
         bool,
         "Whether to dump layout debug images.",
-        "Default is False."
     ] = False
     debug_pdf_images: Annotated[
         bool,
         "Whether to dump PDF debug images.",
-        "Default is False."
     ] = False
     debug_json: Annotated[
         bool,
         "Whether to dump block debug data.",
-        "Default is False."
     ] = False
     render_font: Annotated[
         str,
         "The path to the font to use for rendering debug images.",
-        "Default is 'GoNotoCurrent-Regular.ttf' in the FONT_DIR folder."
     ] = os.path.join(settings.FONT_DIR, "GoNotoCurrent-Regular.ttf")
     font_dl_path: Annotated[
         str,
         "The path to download the font from.",
-        "Default is 'https://github.com/satbyy/go-noto-universal/releases/download/v7.0'."
     ] = "https://github.com/satbyy/go-noto-universal/releases/download/v7.0"
 
     def __call__(self, document: Document):

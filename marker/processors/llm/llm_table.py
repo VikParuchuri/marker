@@ -17,7 +17,6 @@ class LLMTableProcessor(BaseLLMProcessor):
     block_types: Annotated[
         List[BlockTypes],
         "The block types to process.",
-        "Default is [BlockTypes.Table]."
     ] = (BlockTypes.Table,)
     gemini_rewriting_prompt: Annotated[
         str,
