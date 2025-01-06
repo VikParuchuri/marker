@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+from typing import Annotated, Optional
 
 from tqdm import tqdm
 
@@ -14,41 +14,47 @@ from marker.settings import settings
 class BaseLLMProcessor(BaseProcessor):
     """
     A processor for using LLMs to convert blocks.
-    Attributes:
-        google_api_key (str):
-            The Google API key to use for the Gemini model.
-            Default is None.
-        model_name (str):
-            The name of the Gemini model to use.
-            Default is "gemini-1.5-flash".
-        max_retries (int):
-            The maximum number of retries to use for the Gemini model.
-            Default is 3.
-        max_concurrency (int):
-            The maximum number of concurrent requests to make to the Gemini model.
-            Default is 3.
-        timeout (int):
-            The timeout for requests to the Gemini model.
-            Default is 60 seconds.
-        image_expansion_ratio (float):
-            The ratio to expand the image by when cropping.
-            Default is 0.01.
-        gemini_rewriting_prompt (str):
-            The prompt to use for rewriting text.
-            Default is a string containing the Gemini rewriting prompt.
-        use_llm (bool):
-            Whether to use the LLM model.
-            Default is False.
     """
-
-    google_api_key: Optional[str] = settings.GOOGLE_API_KEY
-    model_name: str = "gemini-1.5-flash"
-    use_llm: bool = False
-    max_retries: int = 3
-    max_concurrency: int = 3
-    timeout: int = 60
-    image_expansion_ratio: float = 0.01
-    gemini_rewriting_prompt = None
+    google_api_key: Annotated[
+        Optional[str],
+        "The Google API key to use for the Gemini model.",
+        "Default is None."
+    ] = settings.GOOGLE_API_KEY
+    model_name: Annotated[
+        str,
+        "The name of the Gemini model to use.",
+        "Default is 'gemini-1.5-flash'."
+    ] = "gemini-1.5-flash"
+    max_retries: Annotated[
+        int,
+        "The maximum number of retries to use for the Gemini model.",
+        "Default is 3."
+    ] = 3
+    max_concurrency: Annotated[
+        int,
+        "The maximum number of concurrent requests to make to the Gemini model.",
+        "Default is 3."
+    ] = 3
+    timeout: Annotated[
+        int,
+        "The timeout for requests to the Gemini model.",
+        "Default is 60 seconds."
+    ] = 60
+    image_expansion_ratio: Annotated[
+        float,
+        "The ratio to expand the image by when cropping.",
+        "Default is 0.01."
+    ] = 0.01
+    gemini_rewriting_prompt: Annotated[
+        str,
+        "The prompt to use for rewriting text.",
+        "Default is a string containing the Gemini rewriting prompt."
+    ] = None
+    use_llm: Annotated[
+        bool,
+        "Whether to use the LLM model.",
+        "Default is False."
+    ] = False
     block_types = None
 
     def __init__(self, config=None):

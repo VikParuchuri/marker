@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated, List, Literal
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from pydantic import BaseModel
@@ -26,23 +26,22 @@ class HTMLOutput(BaseModel):
 class HTMLRenderer(BaseRenderer):
     """
     A renderer for HTML output.
-
-    Attributes:
-        page_blocks (list):
-            The list of block types to consider as pages.
-            Default is [BlockTypes.Page].
-
-        paginate_output (bool):
-            Whether to paginate the output.
-            Default is False.
-
-        image_extraction_mode (Literal["lowres", "highres"]):
-            The mode to use for extracting images.
-            Default is "highres".
     """
-    page_blocks: list = [BlockTypes.Page]
-    paginate_output: bool = False
-    image_extraction_mode: Literal["lowres", "highres"] = "highres"
+    page_blocks: Annotated[
+        List[BlockTypes],
+        "The block types to consider as pages.",
+        "Default is [BlockTypes.Page]."
+    ] = [BlockTypes.Page]
+    paginate_output: Annotated[
+        bool,
+        "Whether to paginate the output.",
+        "Default is False."
+    ] = False
+    image_extraction_mode: Annotated[
+        Literal["lowres", "highres"],
+        "The mode to use for extracting images.",
+        "Default is 'highres'."
+    ] = "highres"
 
     def extract_image(self, document, image_id):
         image_block = document.get_block(image_id)

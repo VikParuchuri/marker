@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from ftfy import fix_text
 from surya.model.detection.model import EfficientViTForSemanticSegmentation
@@ -20,22 +20,22 @@ from marker.settings import settings
 class OcrBuilder(BaseBuilder):
     """
     A builder for performing OCR on PDF pages and merging the results into the document.
-
-    Attributes:
-        detection_batch_size (int):
-            The batch size to use for the detection model.
-            Default is None, which will use the default batch size for the model.
-
-        recognition_batch_size (int):
-            The batch size to use for the recognition model.
-            Default is None, which will use the default batch size for the model.
-
-        languages (List[str]):
-            A list of languages to use for OCR. Default is None.
     """
-    recognition_batch_size: Optional[int] = None
-    detection_batch_size: Optional[int] = None
-    languages: Optional[List[str]] = None
+    recognition_batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the recognition model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    detection_batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the detection model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    languages: Annotated[
+        Optional[List[str]],
+        "A list of languages to use for OCR.",
+        "Default is None."
+    ] = None
 
     def __init__(self, detection_model: EfficientViTForSemanticSegmentation, recognition_model: OCREncoderDecoderModel, config=None):
         super().__init__(config)

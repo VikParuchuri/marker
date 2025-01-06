@@ -1,12 +1,11 @@
+from typing import Annotated, List
+
+from bs4 import BeautifulSoup
+from google.ai.generativelanguage_v1beta.types import content
+from tabled.formats import html_format
 from tabled.schema import SpanTableCell
 
 from marker.processors.llm import BaseLLMProcessor
-from bs4 import BeautifulSoup
-from typing import List
-
-from google.ai.generativelanguage_v1beta.types import content
-from tabled.formats import html_format
-
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
@@ -15,8 +14,16 @@ from marker.schema.polygon import PolygonBox
 
 
 class LLMTableProcessor(BaseLLMProcessor):
-    block_types = (BlockTypes.Table,)
-    gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
+    block_types: Annotated[
+        List[BlockTypes],
+        "The block types to process.",
+        "Default is [BlockTypes.Table]."
+    ] = (BlockTypes.Table,)
+    gemini_rewriting_prompt: Annotated[
+        str,
+        "The prompt to use for rewriting text.",
+        "Default is a string containing the Gemini rewriting prompt."
+    ] = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and an html representation of the table in the image.
 Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table as possible.
 **Instructions:**
@@ -92,9 +99,7 @@ No corrections needed.
             block.update_metadata(llm_error_count=1)
             return
 
-
         block.cells = parsed_cells
-
 
     def parse_html_table(self, html_text: str, block: Block) -> List[SpanTableCell]:
         soup = BeautifulSoup(html_text, 'html.parser')
@@ -150,6 +155,5 @@ No corrections needed.
                 )
                 cells.append(cell_obj)
                 cur_col += colspan
-
 
         return cells

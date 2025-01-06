@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from marker.builders import BaseBuilder
 from marker.schema import BlockTypes
 from marker.schema.document import Document
@@ -9,18 +11,17 @@ from marker.schema.registry import get_block_class
 class StructureBuilder(BaseBuilder):
     """
     A builder for grouping blocks together based on their structure.
-
-    Attributes:
-        gap_threshold (float):
-            The minimum gap between blocks to consider them part of the same group.
-            Default is 0.05.
-
-        list_gap_threshold (float):
-            The minimum gap between list items to consider them part of the same group.
-            Default is 0.1.
     """
-    gap_threshold: int = .05
-    list_gap_threshold: int = .1
+    gap_threshold: Annotated[
+        float,
+        "The minimum gap between blocks to consider them part of the same group.",
+        "Default is 0.05."
+    ] = 0.05
+    list_gap_threshold: Annotated[
+        float,
+        "The minimum gap between list items to consider them part of the same group.",
+        "Default is 0.1."
+    ] = 0.1
 
     def __init__(self, config=None):
         super().__init__(config)
@@ -58,8 +59,8 @@ class StructureBuilder(BaseBuilder):
                 selected_polygons.append(prev_block.polygon)
 
             if next_block and \
-                next_block.block_type in caption_types and \
-                next_block.polygon.minimum_gap(block.polygon) < gap_threshold_px:
+                    next_block.block_type in caption_types and \
+                    next_block.polygon.minimum_gap(block.polygon) < gap_threshold_px:
                 block_structure.append(next_block.id)
                 selected_polygons.append(next_block.polygon)
 

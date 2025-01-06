@@ -1,7 +1,7 @@
 import atexit
 import ctypes
 import re
-from typing import List, Optional, Set
+from typing import Annotated, List, Optional, Set
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
@@ -21,62 +21,58 @@ from marker.schema.text.span import Span
 class PdfProvider(BaseProvider):
     """
     A provider for PDF files.
-
-    Attributes:
-        filepath (str):
-            The path to the PDF file.
-
-        page_range (List[int]):
-            The range of pages to process.
-            Default is None, which will process all pages.
-
-        pdftext_workers (int):
-            The number of workers to use for pdftext.
-            Default is 4.
-
-        flatten_pdf (bool):
-            Whether to flatten the PDF structure.
-            Default is True.
-
-        force_ocr (bool):
-            Whether to force OCR on the whole document.
-            Default is False.
-
-        ocr_invalid_chars (tuple):
-            The characters to consider invalid for OCR.
-            Default is (chr(0xfffd), "�").
-
-        ocr_space_threshold (float):
-            The minimum ratio of spaces to non-spaces to detect bad text.
-            Default is 0.7.
-
-        ocr_newline_threshold (float):
-            The minimum ratio of newlines to non-newlines to detect bad text.
-            Default is 0.6.
-
-        ocr_alphanum_threshold (float):
-            The minimum ratio of alphanumeric characters to non-alphanumeric characters to consider an alphanumeric character.
-            Default is 0.3.
-        
-        image_threshold (float):
-            The minimum coverage ratio of the image to the page to consider skipping the page.
-            Default is .65.
-
-        strip_existing_ocr (bool):
-            Whether to strip existing OCR text from the PDF.
-            Default is True.
     """
 
-    page_range: List[int] | None = None
-    pdftext_workers: int = 4
-    flatten_pdf: bool = True
-    force_ocr: bool = False
-    ocr_invalid_chars: tuple = (chr(0xfffd), "�")
-    ocr_space_threshold: float = .7
-    ocr_newline_threshold: float = .6
-    ocr_alphanum_threshold: float = .3
-    image_threshold: float = .65
-    strip_existing_ocr: bool = False
+    page_range: Annotated[
+        Optional[List[int]],
+        "The range of pages to process.",
+        "Default is None, which will process all pages."
+    ] = None
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+        "Default is 4."
+    ] = 4
+    flatten_pdf: Annotated[
+        bool,
+        "Whether to flatten the PDF structure.",
+        "Default is True."
+    ] = True
+    force_ocr: Annotated[
+        bool,
+        "Whether to force OCR on the whole document.",
+        "Default is False."
+    ] = False
+    ocr_invalid_chars: Annotated[
+        tuple,
+        "The characters to consider invalid for OCR.",
+        "Default is (chr(0xfffd), '�')."
+    ] = (chr(0xfffd), "�")
+    ocr_space_threshold: Annotated[
+        float,
+        "The minimum ratio of spaces to non-spaces to detect bad text.",
+        "Default is 0.7."
+    ] = .7
+    ocr_newline_threshold: Annotated[
+        float,
+        "The minimum ratio of newlines to non-newlines to detect bad text.",
+        "Default is 0.6."
+    ] = .6
+    ocr_alphanum_threshold: Annotated[
+        float,
+        "The minimum ratio of alphanumeric characters to non-alphanumeric characters to consider an alphanumeric character.",
+        "Default is 0.3."
+    ] = .3
+    image_threshold: Annotated[
+        float,
+        "The minimum coverage ratio of the image to the page to consider skipping the page.",
+        "Default is .65."
+    ] = .65
+    strip_existing_ocr: Annotated[
+        bool,
+        "Whether to strip existing OCR text from the PDF.",
+        "Default is True."
+    ] = True
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
@@ -250,7 +246,7 @@ class PdfProvider(BaseProvider):
         for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
             font = pdfium_c.FPDFTextObj_GetFont(text_obj)
             font_name = self.get_fontname(font)
-    
+
             # we also skip pages without embedded fonts and fonts without names
             non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
             empty_fonts.append(not font_name or font_name == "GlyphLessFont")
@@ -313,8 +309,8 @@ class PdfProvider(BaseProvider):
 
     def get_fontname(self, font) -> str:
         font_name = ""
-        buffer_size = 256 
-        
+        buffer_size = 256
+
         try:
             font_name_buffer = ctypes.create_string_buffer(buffer_size)
             length = pdfium_c.FPDFFont_GetBaseFontName(font, font_name_buffer, buffer_size)

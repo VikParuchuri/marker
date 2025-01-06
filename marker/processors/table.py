@@ -1,4 +1,6 @@
 
+from typing import Annotated
+
 from ftfy import fix_text
 from surya.input.pdflines import get_page_text_lines
 from surya.model.detection.model import EfficientViTForSemanticSegmentation
@@ -16,29 +18,28 @@ from marker.settings import settings
 class TableProcessor(BaseProcessor):
     """
     A processor for recognizing tables in the document.
-
-    Attributes:
-        detect_boxes (bool):
-            Whether to detect boxes for the table recognition model.
-            Default is False.
-
-        detector_batch_size (int):
-            The batch size to use for the table detection model.
-            Default is None, which will use the default batch size for the model.
-
-        table_rec_batch_size (int):
-            The batch size to use for the table recognition model.
-            Default is None, which will use the default batch size for the model.
-
-        recognition_batch_size (int):
-            The batch size to use for the table recognition model.
-            Default is None, which will use the default batch size for the model.
     """
     block_types = (BlockTypes.Table, BlockTypes.TableOfContents, BlockTypes.Form)
-    detect_boxes = False
-    detector_batch_size = None
-    table_rec_batch_size = None
-    recognition_batch_size = None
+    detect_boxes: Annotated[
+        bool,
+        "Whether to detect boxes for the table recognition model.",
+        "Default is False."
+    ] = False
+    detector_batch_size: Annotated[
+        int,
+        "The batch size to use for the table detection model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    table_rec_batch_size: Annotated[
+        int,
+        "The batch size to use for the table recognition model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    recognition_batch_size: Annotated[
+        int,
+        "The batch size to use for the table recognition model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
 
     def __init__(
         self,

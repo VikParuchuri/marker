@@ -1,7 +1,7 @@
 import re
 from collections import Counter
 from itertools import groupby
-from typing import List
+from typing import Annotated, List
 
 from rapidfuzz import fuzz
 
@@ -15,33 +15,36 @@ class IgnoreTextProcessor(BaseProcessor):
     """
     A processor for identifying and ignoring common text blocks in a document. 
     These blocks often represent repetitive or non-essential elements, such as headers, footers, or page numbers.
-
-    Attributes:
-        common_element_threshold (float):
-            The fraction of pages a text block must appear on to be considered a common element. 
-            Default is 0.6 (60% of pages).
-
-        common_element_min_blocks (int):
-            The minimum number of occurrences of a text block within a document to consider it a common element. 
-            Default is 3.
-
-        max_streak (int):
-            The maximum number of consecutive occurrences of a text block allowed before it is classified as a common element. Helps to identify patterns like repeated headers or footers. 
-            Default is 3.
-
-        text_match_threshold (int):
-            The minimum fuzzy match score (0-100) required to classify a text block as similar to a common element. Higher values enforce stricter matching. 
-            Default is 90.
     """
     block_types = (
-        BlockTypes.Text, BlockTypes.PageHeader, 
+        BlockTypes.Text, BlockTypes.PageHeader,
         BlockTypes.PageFooter, BlockTypes.SectionHeader,
         BlockTypes.TextInlineMath
     )
-    common_element_threshold = .20
-    common_element_min_blocks = 3
-    max_streak = 3 # The maximum number of blocks in a row to consider a common element
-    text_match_threshold = 90
+    common_element_threshold: Annotated[
+        float,
+        "The minimum ratio of pages a text block must appear on to be considered a common element.",
+        "Blocks that meet or exceed this threshold are marked as common elements.",
+        "Default is 0.6 (60% of pages)."
+    ] = 0.6
+    common_element_min_blocks: Annotated[
+        int,
+        "The minimum number of occurrences of a text block within a document to consider it a common element.",
+        "This ensures that rare blocks are not mistakenly flagged.",
+        "Default is 3."
+    ] = 3
+    max_streak: Annotated[
+        int,
+        "The maximum number of consecutive occurrences of a text block allowed before it is classified as a common element.",
+        "Helps to identify patterns like repeated headers or footers.",
+        "Default is 3."
+    ] = 3
+    text_match_threshold: Annotated[
+        int,
+        "The minimum fuzzy match score (0-100) required to classify a text block as similar to a common element.",
+        "Higher values enforce stricter matching.",
+        "Default is 90."
+    ] = 90
 
     def __call__(self, document: Document):
         first_blocks = []
@@ -68,8 +71,8 @@ class IgnoreTextProcessor(BaseProcessor):
     @staticmethod
     def clean_text(text):
         text = text.replace("\n", "").strip()
-        text = re.sub(r"^\d+\s*", "", text) # remove numbers at the start of the line
-        text = re.sub(r"\s*\d+$", "", text) # remove numbers at the end of the line
+        text = re.sub(r"^\d+\s*", "", text)  # remove numbers at the start of the line
+        text = re.sub(r"\s*\d+$", "", text)  # remove numbers at the end of the line
         return text
 
     def filter_common_elements(self, document, blocks: List[Block]):
@@ -87,7 +90,7 @@ class IgnoreTextProcessor(BaseProcessor):
         common = [
             k for k, v in counter.items()
             if (v >= len(blocks) * self.common_element_threshold or streaks[k] >= self.max_streak)
-               and v > self.common_element_min_blocks
+            and v > self.common_element_min_blocks
         ]
         if len(common) == 0:
             return

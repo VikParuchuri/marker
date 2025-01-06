@@ -1,10 +1,10 @@
 import os
 
-os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Type
+from typing import Annotated, Any, Dict, List, Optional, Type
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
@@ -41,20 +41,19 @@ from marker.util import strings_to_classes
 class PdfConverter(BaseConverter):
     """
     A converter for processing and rendering PDF files into Markdown, JSON, HTML and other formats.
-
-    Attributes:
-        override_map (Dict[BlockTypes, Type[Block]]):
-            A mapping to override the default block classes for specific block types. 
-            The keys are `BlockTypes` enum values, representing the types of blocks, 
-            and the values are corresponding `Block` class implementations to use 
-            instead of the defaults.
-
-        use_llm (bool):
-            Enable higher quality processing with LLMs.
-            Default is False.
     """
-    override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
-    use_llm: bool = False
+    override_map: Annotated[
+        Dict[BlockTypes, Type[Block]],
+        "A mapping to override the default block classes for specific block types.",
+        "The keys are `BlockTypes` enum values, representing the types of blocks,",
+        "and the values are corresponding `Block` class implementations to use",
+        "instead of the defaults."
+    ] = defaultdict()
+    use_llm: Annotated[
+        bool,
+        "Enable higher quality processing with LLMs.",
+        "Default is False."
+    ] = False
 
     def __init__(self, artifact_dict: Dict[str, Any], processor_list: Optional[List[str]] = None, renderer: str | None = None, config=None):
         super().__init__(config)
