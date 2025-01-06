@@ -8,6 +8,7 @@ import click
 from marker.builders import BaseBuilder
 from marker.converters import BaseConverter
 from marker.processors import BaseProcessor
+from marker.providers import BaseProvider
 from marker.renderers import BaseRenderer
 
 
@@ -54,7 +55,7 @@ class CustomClickPrinter(click.Command):
         if display_help:
             click.echo("Here is a list of all the Builders, Processors, Converters and Renderers in Marker along with their attributes:")
 
-        base_classes = [BaseBuilder, BaseProcessor, BaseConverter, BaseRenderer]
+        base_classes = [BaseBuilder, BaseProcessor, BaseConverter, BaseProvider, BaseRenderer]
         for base in base_classes:
             if display_help:
                 click.echo(f"{base.__name__.removeprefix('Base')}s:")
