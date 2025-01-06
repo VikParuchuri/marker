@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Tuple
 
 from texify.inference import batch_inference
 from texify.model.model import GenerateVisionEncoderDecoderModel
@@ -15,7 +15,7 @@ class EquationProcessor(BaseProcessor):
     A processor for recognizing equations in the document.
     """
     block_types: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "The block types to process.",
     ] = (BlockTypes.Equation,)
     model_max_length: Annotated[

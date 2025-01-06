@@ -1,4 +1,4 @@
-from typing import Annotated, List
+from typing import Annotated, Tuple
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
@@ -10,7 +10,7 @@ class BlockquoteProcessor(BaseProcessor):
     A processor for tagging blockquotes.
     """
     block_types: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "The block types to process.",
     ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
     min_x_indent: Annotated[

@@ -1,4 +1,4 @@
-from typing import Annotated, List
+from typing import Annotated, List, Tuple
 
 from bs4 import BeautifulSoup
 from google.ai.generativelanguage_v1beta.types import content
@@ -15,7 +15,7 @@ from marker.schema.polygon import PolygonBox
 
 class LLMTableProcessor(BaseLLMProcessor):
     block_types: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "The block types to process.",
     ] = (BlockTypes.Table,)
     gemini_rewriting_prompt: Annotated[

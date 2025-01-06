@@ -1,4 +1,4 @@
-from typing import Annotated, Dict, List
+from typing import Annotated, Dict, List, Tuple
 
 from pydantic import BaseModel
 
@@ -37,13 +37,13 @@ class JSONRenderer(BaseRenderer):
     A renderer for JSON output.
     """
     image_blocks: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "The list of block types to consider as images.",
-    ] = [BlockTypes.Picture, BlockTypes.Figure]
+    ] = (BlockTypes.Picture, BlockTypes.Figure)
     page_blocks: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "The list of block types to consider as pages.",
-    ] = [BlockTypes.Page]
+    ] = (BlockTypes.Page,)
 
     def extract_json(self, document: Document, block_output: BlockOutput):
         cls = get_block_class(block_output.id.block_type)

@@ -1,5 +1,5 @@
 from PIL import Image
-from typing import Annotated, List, Literal
+from typing import Annotated, Literal, Tuple
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from pydantic import BaseModel
@@ -28,9 +28,9 @@ class HTMLRenderer(BaseRenderer):
     A renderer for HTML output.
     """
     page_blocks: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "The block types to consider as pages.",
-    ] = [BlockTypes.Page]
+    ] = (BlockTypes.Page,)
     paginate_output: Annotated[
         bool,
         "Whether to paginate the output.",

@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
 from surya.layout import batch_layout_detection
@@ -48,7 +48,7 @@ class LayoutBuilder(BaseBuilder):
         "The maximum number of characters to send to the OCR error model.",
     ] = 512
     excluded_for_coverage: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
     ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
 

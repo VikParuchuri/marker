@@ -1,4 +1,4 @@
-from typing import Annotated, List
+from typing import Annotated, List, Tuple
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
@@ -12,7 +12,7 @@ class ListProcessor(BaseProcessor):
     """
     block_types = (BlockTypes.ListGroup,)
     ignored_block_types: Annotated[
-        List[BlockTypes],
+        Tuple[BlockTypes],
         "The list of block types to ignore when merging lists.",
     ] = (BlockTypes.PageHeader, BlockTypes.PageFooter)
     min_x_indent: Annotated[
