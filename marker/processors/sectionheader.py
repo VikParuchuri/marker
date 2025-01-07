@@ -54,11 +54,8 @@ class SectionHeaderProcessor(BaseProcessor):
         heading_ranges = self.bucket_headings(flat_line_heights)
 
         for page in document.pages:
-            for block in page.children:
-                if block.block_type not in self.block_types:
-                    continue
-
-                block_height = line_heights[block.id]
+            for block in page.contained_blocks(document, self.block_types):
+                block_height = line_heights.get(block.id, 0)
                 if block_height > 0:
                     for idx, (min_height, max_height) in enumerate(heading_ranges):
                         if block_height >= min_height * self.height_tolerance:

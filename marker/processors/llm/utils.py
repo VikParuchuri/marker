@@ -35,7 +35,7 @@ class GoogleModel:
         while tries < max_retries:
             try:
                 responses = self.model.generate_content(
-                    [prompt, image],
+                    [image, prompt], # According to gemini docs, it performs better if the image is the first element
                     stream=False,
                     generation_config={
                         "temperature": 0,

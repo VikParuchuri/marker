@@ -104,6 +104,7 @@ marker_single /path/to/file.pdf
 Options:
 - `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
 - `--output_format [markdown|json|html]`: Specify the format for the output results.
+- `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n` 
 - `--use_llm`: Uses an LLM to improve accuracy.  You must set your Gemini API key using the `GOOGLE_API_KEY` env var.
 - `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
