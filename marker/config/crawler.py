@@ -62,21 +62,6 @@ class ConfigCrawler:
                     canonical_attr_map[f"{class_name_snake_case}_{attr}"] = attr
         return canonical_attr_map
 
-    def validate_attr(self, attr_name: str, class_name: Optional[str] = None) -> bool:
-        if class_name is None:
-            # Look through all classes in all base types
-            for base_type_dict in self.class_config_map.values():
-                for class_map in base_type_dict.values():
-                    if attr_name in class_map['config']:
-                        return True
-            return False
-        else:
-            # We need to find the class_name in *any* base_type
-            for base_type_dict in self.class_config_map.values():
-                if class_name in base_type_dict:
-                    return attr_name in base_type_dict[class_name]['config']
-            return False
-
     def _find_subclasses(self, base_class):
         subclasses = {base_class.__name__: base_class}
         module_name = base_class.__module__
