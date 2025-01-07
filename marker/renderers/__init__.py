@@ -2,7 +2,7 @@ import base64
 import io
 import re
 from collections import Counter
-from typing import Optional
+from typing import Annotated, Optional, Tuple
 
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
@@ -15,9 +15,9 @@ from marker.util import assign_config
 
 
 class BaseRenderer:
-    remove_blocks: list = [BlockTypes.PageHeader, BlockTypes.PageFooter]
-    image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
-    extract_images: bool = True
+    remove_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to ignore while rendering."] = (BlockTypes.PageHeader, BlockTypes.PageFooter)
+    image_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to consider as images."] = (BlockTypes.Picture, BlockTypes.Figure)
+    extract_images: Annotated[bool, "Extract images from the document."] = True
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
@@ -71,7 +71,7 @@ class BaseRenderer:
         return page_stats
 
     def generate_document_metadata(self, document: Document, document_output):
-        metadata =  {
+        metadata = {
             "table_of_contents": document.table_of_contents,
             "page_stats": self.generate_page_stats(document, document_output),
         }

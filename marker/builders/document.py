@@ -1,4 +1,5 @@
-from marker.settings import settings
+from typing import Annotated
+
 from marker.builders import BaseBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
@@ -12,18 +13,15 @@ from marker.schema.registry import get_block_class
 class DocumentBuilder(BaseBuilder):
     """
     Constructs a Document given a PdfProvider, LayoutBuilder, and OcrBuilder.
-
-    Attributes:
-        lowres_image_dpi (int): 
-            DPI setting for low-resolution page images used for Layout and Line Detection.
-            Default is 96.
-
-        highres_image_dpi (int): 
-            DPI setting for high-resolution page images used for OCR.
-            Default is 192.
     """
-    lowres_image_dpi: int = 96
-    highres_image_dpi: int = 192
+    lowres_image_dpi: Annotated[
+        int,
+        "DPI setting for low-resolution page images used for Layout and Line Detection.",
+    ] = 96
+    highres_image_dpi: Annotated[
+        int,
+        "DPI setting for high-resolution page images used for OCR.",
+    ] = 192
 
     def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, ocr_builder: OcrBuilder):
         document = self.build_document(provider)

@@ -4,11 +4,12 @@ from typing import Dict
 
 import click
 
+from marker.config.crawler import crawler
 from marker.renderers.html import HTMLRenderer
-from marker.settings import settings
-from marker.util import parse_range_str, strings_to_classes, classes_to_strings
-from marker.renderers.markdown import MarkdownRenderer
 from marker.renderers.json import JSONRenderer
+from marker.renderers.markdown import MarkdownRenderer
+from marker.settings import settings
+from marker.util import classes_to_strings, parse_range_str, strings_to_classes
 
 
 class ConfigParser:
@@ -22,20 +23,22 @@ class ConfigParser:
         fn = click.option('--debug', '-d', is_flag=True, help='Enable debug mode.')(fn)
         fn = click.option("--output_format", type=click.Choice(["markdown", "json", "html"]), default="markdown",
                           help="Format to output results in.")(fn)
-        fn = click.option("--page_range", type=str, default=None,
-                          help="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20")(
-            fn)
-        fn = click.option("--force_ocr", is_flag=True, help="Force OCR on the whole document.")(fn)
         fn = click.option("--processors", type=str, default=None,
                           help="Comma separated list of processors to use.  Must use full module path.")(fn)
         fn = click.option("--config_json", type=str, default=None,
                           help="Path to JSON file with additional configuration.")(fn)
-        fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
         fn = click.option("--disable_multiprocessing", is_flag=True, default=False, help="Disable multiprocessing.")(fn)
-        fn = click.option("--paginate_output", is_flag=True, default=False, help="Paginate output.")(fn)
         fn = click.option("--disable_image_extraction", is_flag=True, default=False, help="Disable image extraction.")(fn)
+
+        # these are options that need a list transformation, i.e splitting/parsing a string
+        fn = click.option("--page_range", type=str, default=None,
+                          help="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20")(
+            fn)
+        fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
+
+        # we put common options here
+        fn = click.option("--google_api_key", type=str, default=None, help="Google API key for using LLMs.")(fn)
         fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
-        fn = click.option("--strip_existing_ocr", is_flag=True, default=False, help="Strip existing OCR text from the PDF.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
@@ -53,8 +56,6 @@ class ConfigParser:
                     config["debug_data_folder"] = output_dir
                 case "page_range":
                     config["page_range"] = parse_range_str(v)
-                case "force_ocr":
-                    config["force_ocr"] = True
                 case "languages":
                     config["languages"] = v.split(",")
                 case "config_json":
@@ -62,14 +63,11 @@ class ConfigParser:
                         config.update(json.load(f))
                 case "disable_multiprocessing":
                     config["pdftext_workers"] = 1
-                case "paginate_output":
-                    config["paginate_output"] = True
                 case "disable_image_extraction":
                     config["extract_images"] = False
-                case "use_llm":
-                    config["use_llm"] = True
-                case "strip_existing_ocr":
-                    config["strip_existing_ocr"] = True
+                case _:
+                    if k in crawler.attr_set:
+                        config[k] = v
         return config
 
     def get_renderer(self):

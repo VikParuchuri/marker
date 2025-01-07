@@ -7,11 +7,20 @@ from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 
+from typing import Annotated
+
 
 class LLMImageDescriptionProcessor(BaseLLMProcessor):
     block_types = (BlockTypes.Picture, BlockTypes.Figure,)
-    extract_images: bool = True
-    image_description_prompt = """You are a document analysis expert who specializes in creating text descriptions for images.
+    extract_images: Annotated[
+        bool,
+        "Extract images from the document."
+    ] = True
+    image_description_prompt: Annotated[
+        str,
+        "The prompt to use for generating image descriptions.",
+        "Default is a string containing the Gemini prompt."
+    ] = """You are a document analysis expert who specializes in creating text descriptions for images.
 You will receive an image of a picture or figure.  Your job will be to create a short description of the image.
 **Instructions:**
 1. Carefully examine the provided image.
