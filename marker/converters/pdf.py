@@ -1,39 +1,41 @@
-from marker.util import strings_to_classes
-from marker.schema.registry import register_block_class
-from marker.schema.blocks import Block
-from marker.schema import BlockTypes
-from marker.renderers.markdown import MarkdownRenderer
-from marker.providers.pdf import PdfProvider
-from marker.processors.text import TextProcessor
-from marker.processors.table import TableProcessor
-from marker.processors.sectionheader import SectionHeaderProcessor
-from marker.processors.page_header import PageHeaderProcessor
-from marker.processors.llm.llm_text import LLMTextProcessor
-from marker.processors.llm.llm_table import LLMTableProcessor
-from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
-from marker.processors.llm.llm_form import LLMFormProcessor
-from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
-from marker.processors.list import ListProcessor
-from marker.processors.line_numbers import LineNumbersProcessor
-from marker.processors.ignoretext import IgnoreTextProcessor
-from marker.processors.footnote import FootnoteProcessor
-from marker.processors.equation import EquationProcessor
-from marker.processors.document_toc import DocumentTOCProcessor
-from marker.processors.debug import DebugProcessor
-from marker.processors.code import CodeProcessor
-from marker.processors.blockquote import BlockquoteProcessor
-from marker.converters import BaseConverter
-from marker.builders.structure import StructureBuilder
-from marker.builders.ocr import OcrBuilder
-from marker.builders.llm_layout import LLMLayoutBuilder
-from marker.builders.layout import LayoutBuilder
-from marker.builders.document import DocumentBuilder
-from typing import Annotated, Any, Dict, List, Optional, Type
-from collections import defaultdict
-import inspect
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
+
+import inspect
+from collections import defaultdict
+from typing import Annotated, Any, Dict, List, Optional, Type
+
+from marker.builders.document import DocumentBuilder
+from marker.builders.layout import LayoutBuilder
+from marker.builders.llm_layout import LLMLayoutBuilder
+from marker.builders.ocr import OcrBuilder
+from marker.builders.structure import StructureBuilder
+from marker.converters import BaseConverter
+from marker.processors.blockquote import BlockquoteProcessor
+from marker.processors.code import CodeProcessor
+from marker.processors.debug import DebugProcessor
+from marker.processors.document_toc import DocumentTOCProcessor
+from marker.processors.equation import EquationProcessor
+from marker.processors.footnote import FootnoteProcessor
+from marker.processors.ignoretext import IgnoreTextProcessor
+from marker.processors.line_numbers import LineNumbersProcessor
+from marker.processors.list import ListProcessor
+from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
+from marker.processors.llm.llm_form import LLMFormProcessor
+from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
+from marker.processors.llm.llm_table import LLMTableProcessor
+from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.page_header import PageHeaderProcessor
+from marker.processors.sectionheader import SectionHeaderProcessor
+from marker.processors.table import TableProcessor
+from marker.processors.text import TextProcessor
+from marker.providers.pdf import PdfProvider
+from marker.renderers.markdown import MarkdownRenderer
+from marker.schema import BlockTypes
+from marker.schema.blocks import Block
+from marker.schema.registry import register_block_class
+from marker.util import strings_to_classes
 
 
 class PdfConverter(BaseConverter):
