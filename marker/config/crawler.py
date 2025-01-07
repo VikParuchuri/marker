@@ -27,7 +27,7 @@ class ConfigCrawler:
                     'class_type': class_type,
                     'config': {}
                 })
-                for attr, attr_type in class_type.__annotations__.items():
+                for attr, attr_type in self._gather_super_annotations(class_type).items():
                     default = getattr(class_type, attr)
                     metadata = (f"Default is {default}.",)
 
@@ -40,6 +40,22 @@ class ConfigCrawler:
 
                     formatted_type = self._format_type(attr_type)
                     self.class_config_map[base_class_type][class_name]['config'][attr] = (attr_type, formatted_type, default, metadata)
+
+    def _gather_super_annotations(self, cls: Type) -> Dict[str, Type]:
+        """
+        Collect all annotated attributes from `cls` and its superclasses, bottom-up.
+        Subclass attributes overwrite superclass attributes with the same name.
+        """
+        # We'll walk the MRO from base -> derived so subclass attributes overwrite
+        # the same attribute name from superclasses.
+        annotations = {}
+        for base in reversed(cls.__mro__):
+            if base is object:
+                continue
+            if hasattr(base, "__annotations__"):
+                for name, annotation in base.__annotations__.items():
+                    annotations[name] = annotation
+        return annotations
 
     @cached_property
     def attr_counts(self) -> Dict[str, int]:
