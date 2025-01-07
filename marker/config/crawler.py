@@ -23,6 +23,9 @@ class ConfigCrawler:
             base_class_type = base.__name__.removeprefix('Base')
             self.class_config_map.setdefault(base_class_type, {})
             for class_name, class_type in self._find_subclasses(base).items():
+                if class_name.startswith('Base'):
+                    continue
+
                 self.class_config_map[base_class_type].setdefault(class_name, {
                     'class_type': class_type,
                     'config': {}
@@ -77,7 +80,7 @@ class ConfigCrawler:
         return attr_set
 
     def _find_subclasses(self, base_class):
-        subclasses = {base_class.__name__: base_class}
+        subclasses = {}
         module_name = base_class.__module__
         package = importlib.import_module(module_name)
         if hasattr(package, '__path__'):
