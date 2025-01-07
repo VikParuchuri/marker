@@ -3,7 +3,6 @@ from typing import Optional
 import click
 
 from marker.config.crawler import crawler
-from marker.util import camel_to_snake
 
 
 class CustomClickPrinter(click.Command):
@@ -28,7 +27,7 @@ class CustomClickPrinter(click.Command):
                     click.echo(f"\n  {class_name}: {class_map['class_type'].__doc__ or ''}")
                     click.echo(" " * 4 + "Attributes:")
                 for attr, (attr_type, formatted_type, default, metadata) in class_map['config'].items():
-                    class_name_attr = camel_to_snake(class_name) + "_" + attr
+                    class_name_attr = class_name + "_" + attr
 
                     if display_help:
                         click.echo(" " * 8 + f"{attr} ({formatted_type}):")

@@ -2,14 +2,13 @@ import importlib
 import inspect
 import pkgutil
 from functools import cached_property
-from typing import Annotated, Dict, Optional, Type, get_args, get_origin
+from typing import Annotated, Dict, Set, Type, get_args, get_origin
 
 from marker.builders import BaseBuilder
 from marker.converters import BaseConverter
 from marker.processors import BaseProcessor
 from marker.providers import BaseProvider
 from marker.renderers import BaseRenderer
-from marker.util import camel_to_snake
 
 
 class ConfigCrawler:
@@ -52,15 +51,14 @@ class ConfigCrawler:
         return counts
 
     @cached_property
-    def canonical_attr_map(self) -> Dict[str, str]:
-        canonical_attr_map: Dict[str, str] = {}
+    def attr_set(self) -> Set[str]:
+        attr_set: Set[str] = set()
         for base_type_dict in self.class_config_map.values():
             for class_name, class_map in base_type_dict.items():
-                class_name_snake_case = camel_to_snake(class_name)
                 for attr in class_map['config'].keys():
-                    canonical_attr_map[attr] = attr
-                    canonical_attr_map[f"{class_name_snake_case}_{attr}"] = attr
-        return canonical_attr_map
+                    attr_set.add(attr)
+                    attr_set.add(f"{class_name}_{attr}")
+        return attr_set
 
     def _find_subclasses(self, base_class):
         subclasses = {base_class.__name__: base_class}

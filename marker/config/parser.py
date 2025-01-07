@@ -66,8 +66,8 @@ class ConfigParser:
                 case "disable_image_extraction":
                     config["extract_images"] = False
                 case _:
-                    if k in crawler.canonical_attr_map.keys():
-                        config[crawler.canonical_attr_map[k]] = v
+                    if k in crawler.attr_set:
+                        config[k] = v
         return config
 
     def get_renderer(self):
