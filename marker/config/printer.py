@@ -38,6 +38,7 @@ class CustomClickPrinter(click.Command):
                             options = ["--" + class_name_attr]
                         else:
                             options = ["--" + attr, "--" + class_name_attr]
+                        options.append(class_name_attr)
                         ctx.command.params.append(
                             click.Option(
                                 options,
