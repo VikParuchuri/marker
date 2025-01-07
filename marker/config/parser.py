@@ -4,11 +4,12 @@ from typing import Dict
 
 import click
 
+from marker.config.crawler import crawler
 from marker.renderers.html import HTMLRenderer
-from marker.settings import settings
-from marker.util import parse_range_str, strings_to_classes, classes_to_strings
-from marker.renderers.markdown import MarkdownRenderer
 from marker.renderers.json import JSONRenderer
+from marker.renderers.markdown import MarkdownRenderer
+from marker.settings import settings
+from marker.util import classes_to_strings, parse_range_str, strings_to_classes
 
 
 class ConfigParser:
@@ -22,16 +23,22 @@ class ConfigParser:
         fn = click.option('--debug', '-d', is_flag=True, help='Enable debug mode.')(fn)
         fn = click.option("--output_format", type=click.Choice(["markdown", "json", "html"]), default="markdown",
                           help="Format to output results in.")(fn)
-        fn = click.option("--page_range", type=str, default=None,
-                          help="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20")(
-            fn)
         fn = click.option("--processors", type=str, default=None,
                           help="Comma separated list of processors to use.  Must use full module path.")(fn)
         fn = click.option("--config_json", type=str, default=None,
                           help="Path to JSON file with additional configuration.")(fn)
-        fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
         fn = click.option("--disable_multiprocessing", is_flag=True, default=False, help="Disable multiprocessing.")(fn)
         fn = click.option("--disable_image_extraction", is_flag=True, default=False, help="Disable image extraction.")(fn)
+
+        # these are options that need a list transformation, i.e splitting/parsing a string
+        fn = click.option("--page_range", type=str, default=None,
+                          help="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20")(
+            fn)
+        fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
+
+        # we put common options here
+        fn = click.option("--google_api_key", type=str, default=None, help="Google API key for using LLMs.")(fn)
+        fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
@@ -59,7 +66,8 @@ class ConfigParser:
                 case "disable_image_extraction":
                     config["extract_images"] = False
                 case _:
-                    config[k] = v
+                    if k in crawler.canonical_attr_map.keys():
+                        config[crawler.canonical_attr_map[k]] = v
         return config
 
     def get_renderer(self):

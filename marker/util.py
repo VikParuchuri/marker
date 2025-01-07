@@ -1,4 +1,5 @@
 import inspect
+import re
 from importlib import import_module
 from typing import List
 
@@ -56,7 +57,7 @@ def parse_range_str(range_str: str) -> List[int]:
             page_lst += list(range(int(start), int(end) + 1))
         else:
             page_lst.append(int(i))
-    page_lst = sorted(list(set(page_lst))) # Deduplicate page numbers and sort in order
+    page_lst = sorted(list(set(page_lst)))  # Deduplicate page numbers and sort in order
     return page_lst
 
 
@@ -79,3 +80,11 @@ def matrix_intersection_area(boxes1: List[List[float]], boxes2: List[List[float]
     height = np.maximum(0, max_y - min_y)
 
     return width * height  # Shape: (N, M)
+
+
+def camel_to_snake(name: str) -> str:
+    # Split consecutive uppercase letters when followed by a capital+lowercase block
+    s1 = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', name)
+    # Insert underscores between a lowercase/digit and an uppercase
+    s2 = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1)
+    return s2.lower()

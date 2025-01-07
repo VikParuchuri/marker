@@ -25,7 +25,7 @@ class IgnoreTextProcessor(BaseProcessor):
         float,
         "The minimum ratio of pages a text block must appear on to be considered a common element.",
         "Blocks that meet or exceed this threshold are marked as common elements.",
-    ] = 0.6
+    ] = 0.2
     common_element_min_blocks: Annotated[
         int,
         "The minimum number of occurrences of a text block within a document to consider it a common element.",
