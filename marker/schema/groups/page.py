@@ -77,7 +77,7 @@ class PageGroup(Group):
         assert block.block_id == block_id.block_id
         return block
 
-    def assemble_html(self, child_blocks, parent_structure=None):
+    def assemble_html(self, document, child_blocks, parent_structure=None):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"

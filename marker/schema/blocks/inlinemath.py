@@ -8,11 +8,11 @@ class InlineMath(Block):
     blockquote: bool = False
     blockquote_level: int = 0
 
-    def assemble_html(self, child_blocks, parent_structure):
+    def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
 
-        template = super().assemble_html(child_blocks, parent_structure)
+        template = super().assemble_html(document, child_blocks, parent_structure)
         template = template.replace("\n", " ")
 
         el_attr = f" block-type='{self.block_type}'"

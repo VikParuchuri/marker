@@ -2,12 +2,10 @@ from typing import Annotated, List, Tuple
 
 from bs4 import BeautifulSoup
 from google.ai.generativelanguage_v1beta.types import content
-from tabled.formats import html_format
-from tabled.schema import SpanTableCell
 
 from marker.processors.llm import BaseLLMProcessor
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
+from marker.schema.blocks import Block, TableCell
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
@@ -55,12 +53,14 @@ No corrections needed.
 """
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        cells = block.cells
-        if cells is None:
+        children = block.contained_blocks(document, (BlockTypes.TableCell,))
+        if not children:
             # Happens if table/form processors didn't run
             return
 
-        prompt = self.gemini_rewriting_prompt + '```html\n`' + html_format(cells) + '`\n```\n'
+        block_html = block.render(document).html
+
+        prompt = self.gemini_rewriting_prompt + '```html\n`' + block_html + '`\n```\n'
         image = self.extract_image(page, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
@@ -91,8 +91,7 @@ No corrections needed.
             return
 
         parsed_cell_text = "".join([cell.text for cell in parsed_cells])
-        orig_cell_text = "".join([cell.text for cell in cells])
-
+        orig_cell_text = "".join([cell.text for cell in children])
         # Potentially a partial response
         if len(parsed_cell_text) < len(orig_cell_text) * .5:
             block.update_metadata(llm_error_count=1)
@@ -100,7 +99,7 @@ No corrections needed.
 
         block.cells = parsed_cells
 
-    def parse_html_table(self, html_text: str, block: Block) -> List[SpanTableCell]:
+    def parse_html_table(self, html_text: str, block: Block) -> List[TableCell]:
         soup = BeautifulSoup(html_text, 'html.parser')
         table = soup.find('table')
 
@@ -146,11 +145,14 @@ No corrections needed.
                 ]
                 cell_polygon = PolygonBox.from_bbox(cell_bbox)
 
-                cell_obj = SpanTableCell(
+                cell_obj = TableCell(
                     text=cell_text,
-                    row_ids=cell_rows,
-                    col_ids=cell_cols,
-                    bbox=cell_polygon.bbox
+                    row_id=i,
+                    col_id=cur_col,
+                    rowspan=rowspan,
+                    colspan=colspan,
+                    is_header=cell.name == 'th',
+                    polygon=cell_polygon
                 )
                 cells.append(cell_obj)
                 cur_col += colspan

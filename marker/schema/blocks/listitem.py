@@ -20,8 +20,8 @@ class ListItem(Block):
     block_type: BlockTypes = BlockTypes.ListItem
     list_indent_level: int = 0
 
-    def assemble_html(self, child_blocks, parent_structure):
-        template = super().assemble_html(child_blocks, parent_structure)
+    def assemble_html(self, document, child_blocks, parent_structure):
+        template = super().assemble_html(document, child_blocks, parent_structure)
         template = template.replace("\n", " ")
         # Remove the first bullet character
         replace_bullets(child_blocks)

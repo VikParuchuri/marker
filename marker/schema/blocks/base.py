@@ -161,7 +161,7 @@ class Block(BaseModel):
                 text += "\n"
         return text
 
-    def assemble_html(self, child_blocks: List[BlockOutput], parent_structure: Optional[List[str]] = None):
+    def assemble_html(self, document: Document, child_blocks: List[BlockOutput], parent_structure: Optional[List[str]] = None):
         if self.ignore_for_output:
             return ""
 
@@ -199,7 +199,7 @@ class Block(BaseModel):
                     self.structure[i] = new_block.id
                     break
 
-    def render(self, document: Document, parent_structure: Optional[List[str]], section_hierarchy=None):
+    def render(self, document: Document, parent_structure: Optional[List[str]] = None, section_hierarchy: dict | None = None):
         child_content = []
         if section_hierarchy is None:
             section_hierarchy = {}
@@ -213,7 +213,7 @@ class Block(BaseModel):
                 child_content.append(rendered)
 
         return BlockOutput(
-            html=self.assemble_html(child_content, parent_structure),
+            html=self.assemble_html(document, child_content, parent_structure),
             polygon=self.polygon,
             id=self.id,
             children=child_content,

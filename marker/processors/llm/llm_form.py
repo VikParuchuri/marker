@@ -3,7 +3,6 @@ import markdown2
 from marker.processors.llm import BaseLLMProcessor
 
 from google.ai.generativelanguage_v1beta.types import content
-from tabled.formats import markdown_format
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -42,12 +41,15 @@ Output:
 """
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        cells = block.cells
-        if cells is None:
+        children = block.contained_blocks(document, (BlockTypes.TableCell,))
+        if not children:
             # Happens if table/form processors didn't run
             return
 
-        prompt = self.gemini_rewriting_prompt + '```markdown\n`' + markdown_format(cells) + '`\n```\n'
+        block_html = block.render(document).html
+        table_md = markdown2.markdown(block_html)
+
+        prompt = self.gemini_rewriting_prompt + '```markdown\n`' + table_md + '`\n```\n'
         image = self.extract_image(page, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
@@ -72,10 +74,8 @@ Output:
         if "no corrections" in corrected_markdown.lower():
             return
 
-        orig_cell_text = "".join([cell.text for cell in cells])
-
         # Potentially a partial response
-        if len(corrected_markdown) < len(orig_cell_text) * .5:
+        if len(corrected_markdown) < len(table_md) * .33:
             block.update_metadata(llm_error_count=1)
             return
 
