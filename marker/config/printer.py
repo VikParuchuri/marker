@@ -34,11 +34,7 @@ class CustomClickPrinter(click.Command):
                         click.echo("\n".join([f'{" " * 12}' + desc for desc in metadata]))
                     if attr_type in [str, int, float, bool, Optional[int], Optional[float], Optional[str]]:
                         is_flag = attr_type in [bool, Optional[bool]] and not default
-                        if crawler.attr_counts.get(attr) > 1:
-                            options = ["--" + class_name_attr]
-                        else:
-                            options = ["--" + attr, "--" + class_name_attr]
-                        options.append(class_name_attr)
+                        options = ["--" + attr, "--" + class_name_attr, class_name_attr]
                         ctx.command.params.append(
                             click.Option(
                                 options,
