@@ -2,10 +2,9 @@
 from typing import Annotated
 
 from ftfy import fix_text
-from surya.input.pdflines import get_page_text_lines
-from surya.model.detection.model import EfficientViTForSemanticSegmentation
-from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
-from surya.model.table_rec.encoderdecoder import TableRecEncoderDecoderModel
+from surya.detection import DetectionPredictor
+from surya.recognition import RecognitionPredictor
+from surya.table_rec import TableRecPredictor
 from tabled.assignment import assign_rows_columns
 from tabled.inference.recognition import get_cells, recognize_tables
 
@@ -42,9 +41,9 @@ class TableProcessor(BaseProcessor):
 
     def __init__(
         self,
-        detection_model: EfficientViTForSemanticSegmentation,
-        recognition_model: OCREncoderDecoderModel,
-        table_rec_model: TableRecEncoderDecoderModel,
+        detection_model: DetectionPredictor,
+        recognition_model: RecognitionPredictor,
+        table_rec_model: TableRecPredictor,
         config=None
     ):
         super().__init__(config)

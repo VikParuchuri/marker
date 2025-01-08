@@ -1,11 +1,10 @@
 from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
-from surya.layout import batch_layout_detection
-from surya.model.layout.encoderdecoder import SuryaLayoutModel
-from surya.model.ocr_error.model import DistilBertForSequenceClassification
-from surya.ocr_error import batch_ocr_error_detection
-from surya.schema import LayoutResult, OCRErrorDetectionResult
+from surya.layout import LayoutPredictor
+from surya.layout.schema import LayoutResult
+from surya.ocr_error import OCRErrorPredictor
+from surya.ocr_error.schema import OCRErrorDetectionResult
 
 from marker.builders import BaseBuilder
 from marker.providers import ProviderOutput, ProviderPageLines
@@ -52,7 +51,7 @@ class LayoutBuilder(BaseBuilder):
         "A list of block types to exclude from the layout coverage check.",
     ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
 
-    def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):
+    def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         self.layout_model = layout_model
         self.ocr_error_model = ocr_error_model
 
@@ -71,11 +70,8 @@ class LayoutBuilder(BaseBuilder):
         return 6
 
     def surya_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
-        processor = self.layout_model.processor
-        layout_results = batch_layout_detection(
+        layout_results = self.layout_model(
             [p.lowres_image for p in pages],
-            self.layout_model,
-            processor,
             batch_size=int(self.get_batch_size())
         )
         return layout_results
@@ -97,10 +93,8 @@ class LayoutBuilder(BaseBuilder):
 
             page_texts.append(page_text)
 
-        ocr_error_detection_results = batch_ocr_error_detection(
+        ocr_error_detection_results = self.ocr_error_model(
             page_texts,
-            self.ocr_error_model,
-            self.ocr_error_model.tokenizer,
             batch_size=int(self.get_batch_size())  # TODO Better Multiplier
         )
         return ocr_error_detection_results

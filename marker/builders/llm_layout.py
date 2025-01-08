@@ -3,8 +3,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated, Optional
 
 from google.ai.generativelanguage_v1beta.types import content
-from surya.model.layout.encoderdecoder import SuryaLayoutModel
-from surya.model.ocr_error.model import DistilBertForSequenceClassification
+from surya.layout import LayoutPredictor
+from surya.ocr_error import OCRErrorPredictor
 from tqdm import tqdm
 
 from marker.builders.layout import LayoutBuilder
@@ -91,7 +91,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 Here is the image of the layout block:
 """
 
-    def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):
+    def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         super().__init__(layout_model, ocr_error_model, config)
 
         self.model = GoogleModel(self.google_api_key, self.model_name)
