@@ -1,13 +1,8 @@
 import json
-import time
-import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+from typing import Annotated, Optional
 
-import google.generativeai as genai
-import PIL
 from google.ai.generativelanguage_v1beta.types import content
-from google.api_core.exceptions import ResourceExhausted
 from surya.model.layout.encoderdecoder import SuryaLayoutModel
 from surya.model.ocr_error.model import DistilBertForSequenceClassification
 from tqdm import tqdm
@@ -26,45 +21,41 @@ from marker.settings import settings
 class LLMLayoutBuilder(LayoutBuilder):
     """
     A builder for relabelling blocks to improve the quality of the layout.
-
-    Attributes:
-        google_api_key (str):
-            The Google API key to use for the Gemini model.
-            Default is None.
-        confidence_threshold (float):
-            The confidence threshold to use for relabeling.
-            Default is 0.75.
-        picture_height_threshold (float):
-            The height threshold for pictures that may actually be complex regions.
-        model_name (str):
-            The name of the Gemini model to use.
-            Default is "gemini-1.5-flash".
-        max_retries (int):
-            The maximum number of retries to use for the Gemini model.
-            Default is 3.
-        max_concurrency (int):
-            The maximum number of concurrent requests to make to the Gemini model.
-            Default is 3.
-        timeout (int):
-            The timeout for requests to the Gemini model.
-            Default is 60 seconds.
-        topk_relabelling_prompt (str):
-            The prompt to use for relabelling blocks.
-            Default is a string containing the Gemini relabelling prompt.
-        complex_relabeling_prompt (str):
-            The prompt to use for complex relabelling blocks.
-            Default is a string containing the complex relabelling prompt.
     """
 
-    google_api_key: Optional[str] = settings.GOOGLE_API_KEY
-    confidence_threshold: float = 0.75
-    picture_height_threshold: float = 0.8
-    model_name: str = "gemini-1.5-flash"
-    max_retries: int = 3
-    max_concurrency: int = 3
-    timeout: int = 60
-
-    topk_relabelling_prompt = """You are a layout expert specializing in document analysis.
+    google_api_key: Annotated[
+        Optional[str],
+        "The Google API key to use for the Gemini model.",
+    ] = settings.GOOGLE_API_KEY
+    confidence_threshold: Annotated[
+        float,
+        "The confidence threshold to use for relabeling.",
+    ] = 0.75
+    picture_height_threshold: Annotated[
+        float,
+        "The height threshold for pictures that may actually be complex regions.",
+    ] = 0.8
+    model_name: Annotated[
+        str,
+        "The name of the Gemini model to use.",
+    ] = "gemini-1.5-flash"
+    max_retries: Annotated[
+        int,
+        "The maximum number of retries to use for the Gemini model.",
+    ] = 3
+    max_concurrency: Annotated[
+        int,
+        "The maximum number of concurrent requests to make to the Gemini model.",
+    ] = 3
+    timeout: Annotated[
+        int,
+        "The timeout for requests to the Gemini model.",
+    ] = 60
+    topk_relabelling_prompt: Annotated[
+        str,
+        "The prompt to use for relabelling blocks.",
+        "Default is a string containing the Gemini relabelling prompt."
+    ] = """You are a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
 You will be provided with an image of a layout block and the top k predictions from the current model, along with their confidence scores.
 Your job is to analyze the image and choose the single most appropriate label from the provided top k predictions.
@@ -75,7 +66,11 @@ Choose the label you believe is the most accurate representation of the layout b
 Here are the top k predictions from the model followed by the image:
 
 """
-    complex_relabeling_prompt = """You are a layout expert specializing in document analysis.
+    complex_relabeling_prompt: Annotated[
+        str,
+        "The prompt to use for complex relabelling blocks.",
+        "Default is a string containing the complex relabelling prompt."
+    ] = """You are a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
 You will be provided with an image of a layout block and some potential labels.
 Your job is to analyze the image and choose the single most appropriate label from the provided labels.
@@ -139,7 +134,6 @@ Here is the image of the layout block:
     def process_block_complex_relabeling(self, page: PageGroup, block: Block):
         complex_prompt = self.complex_relabeling_prompt
         return self.process_block_relabeling(page, block, complex_prompt)
-
 
     def process_block_relabeling(self, page: PageGroup, block: Block, prompt: str):
         image = self.extract_image(page, block)

@@ -1,4 +1,4 @@
-from typing import List
+from typing import Annotated, List, Optional, Tuple
 
 from texify.inference import batch_inference
 from texify.model.model import GenerateVisionEncoderDecoderModel
@@ -13,24 +13,24 @@ from marker.settings import settings
 class EquationProcessor(BaseProcessor):
     """
     A processor for recognizing equations in the document.
-
-    Attributes:
-        model_max_length (int):
-            The maximum number of tokens to allow for the Texify model.
-            Default is 384.
-
-        batch_size (int):
-            The batch size to use for the Texify model.
-            Default is None, which will use the default batch size for the model.
-
-        token_buffer (int):
-            The number of tokens to buffer above max for the Texify model.
-            Default is 256.
     """
-    block_types = (BlockTypes.Equation, )
-    model_max_length = 384
-    texify_batch_size = None
-    token_buffer = 256
+    block_types: Annotated[
+        Tuple[BlockTypes],
+        "The block types to process.",
+    ] = (BlockTypes.Equation,)
+    model_max_length: Annotated[
+        int,
+        "The maximum number of tokens to allow for the Texify model.",
+    ] = 384
+    texify_batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the Texify model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    token_buffer: Annotated[
+        int,
+        "The number of tokens to buffer above max for the Texify model.",
+    ] = 256
 
     def __init__(self, texify_model: GenerateVisionEncoderDecoderModel, config=None):
         super().__init__(config)

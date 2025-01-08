@@ -1,4 +1,5 @@
-from typing import Literal
+from PIL import Image
+from typing import Annotated, Literal, Tuple
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from pydantic import BaseModel
@@ -13,7 +14,6 @@ import warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 # Suppress DecompressionBombError
-from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 
@@ -24,9 +24,21 @@ class HTMLOutput(BaseModel):
 
 
 class HTMLRenderer(BaseRenderer):
-    page_blocks: list = [BlockTypes.Page]
-    paginate_output: bool = False
-    image_extraction_mode: Literal["lowres", "highres"] = "highres"
+    """
+    A renderer for HTML output.
+    """
+    page_blocks: Annotated[
+        Tuple[BlockTypes],
+        "The block types to consider as pages.",
+    ] = (BlockTypes.Page,)
+    paginate_output: Annotated[
+        bool,
+        "Whether to paginate the output.",
+    ] = False
+    image_extraction_mode: Annotated[
+        Literal["lowres", "highres"],
+        "The mode to use for extracting images.",
+    ] = "highres"
 
     def extract_image(self, document, image_id):
         image_block = document.get_block(image_id)

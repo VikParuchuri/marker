@@ -1,5 +1,5 @@
 import re
-from typing import List
+from typing import Annotated, Tuple
 
 import regex
 from markdownify import MarkdownConverter
@@ -62,7 +62,6 @@ class Markdownify(MarkdownConverter):
         return super().convert_th(el, text, convert_as_inline)
 
 
-
 class MarkdownOutput(BaseModel):
     markdown: str
     images: dict
@@ -70,9 +69,9 @@ class MarkdownOutput(BaseModel):
 
 
 class MarkdownRenderer(HTMLRenderer):
-    page_separator: str = "-" * 48
-    inline_math_delimiters: List[str] = ["$", "$"]
-    block_math_delimiters: List[str] = ["$$", "$$"]
+    page_separator: Annotated[str, "The separator to use between pages.", "Default is '-' * 48."] = "-" * 48
+    inline_math_delimiters: Annotated[Tuple[str], "The delimiters to use for inline math."] = ("$", "$")
+    block_math_delimiters: Annotated[Tuple[str], "The delimiters to use for block math."] = ("$$", "$$")
 
     def __call__(self, document: Document) -> MarkdownOutput:
         document_output = document.render()

@@ -1,5 +1,5 @@
 import warnings
-from typing import Dict, List
+from typing import Annotated, Dict, List
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -16,29 +16,24 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 class SectionHeaderProcessor(BaseProcessor):
     """
     A processor for recognizing section headers in the document.
-
-    Attributes:
-        level_count (int):
-            The number of levels to use for headings.
-            Default is 4.
-
-        merge_threshold (float):
-            The minimum gap between headings to consider them part of the same group.
-            Default is 0.25.
-
-        default_level (int):
-            The default heading level to use if no heading level is detected.
-            Default is 2.
-
-        height_tolerance (float):
-            The minimum height of a heading to consider it a heading.
-            Default is 0.99.
     """
     block_types = (BlockTypes.SectionHeader, )
-    level_count = 4
-    merge_threshold = .25
-    default_level = 2
-    height_tolerance = .99
+    level_count: Annotated[
+        int,
+        "The number of levels to use for headings.",
+    ] = 4
+    merge_threshold: Annotated[
+        float,
+        "The minimum gap between headings to consider them part of the same group.",
+    ] = 0.25
+    default_level: Annotated[
+        int,
+        "The default heading level to use if no heading level is detected.",
+    ] = 2
+    height_tolerance: Annotated[
+        float,
+        "The minimum height of a heading to consider it a heading.",
+    ] = 0.99
 
     def __call__(self, document: Document):
         line_heights: Dict[int, List[float]] = {}
@@ -48,7 +43,7 @@ class SectionHeaderProcessor(BaseProcessor):
                     line_heights[block.id] = block.line_height(document)
                 else:
                     line_heights[block.id] = 0
-                    block.ignore_for_output = True # Don't output an empty section header
+                    block.ignore_for_output = True  # Don't output an empty section header
 
         flat_line_heights = list(line_heights.values())
         heading_ranges = self.bucket_headings(flat_line_heights)

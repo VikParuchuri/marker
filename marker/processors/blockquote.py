@@ -1,3 +1,5 @@
+from typing import Annotated, Tuple
+
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
@@ -5,12 +7,27 @@ from marker.schema.document import Document
 
 class BlockquoteProcessor(BaseProcessor):
     """
-    A processor for tagging blockquotes
+    A processor for tagging blockquotes.
     """
-    block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    min_x_indent = 0.05  # % of block width
-    x_start_tolerance = 0.01  # % of block width
-    x_end_tolerance = 0.01  # % of block width
+    block_types: Annotated[
+        Tuple[BlockTypes],
+        "The block types to process.",
+    ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
+    min_x_indent: Annotated[
+        float,
+        "The minimum horizontal indentation required to consider a block as part of a blockquote.",
+        "Expressed as a percentage of the block width.",
+    ] = 0.05
+    x_start_tolerance: Annotated[
+        float,
+        "The maximum allowable difference between the starting x-coordinates of consecutive blocks to consider them aligned.",
+        "Expressed as a percentage of the block width.",
+    ] = 0.01
+    x_end_tolerance: Annotated[
+        float,
+        "The maximum allowable difference between the ending x-coordinates of consecutive blocks to consider them aligned.",
+        "Expressed as a percentage of the block width.",
+    ] = 0.01
 
     def __init__(self, config):
         super().__init__(config)

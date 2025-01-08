@@ -1,7 +1,7 @@
 import atexit
 import ctypes
 import re
-from typing import List, Set
+from typing import Annotated, List, Optional, Set
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
@@ -19,16 +19,51 @@ from marker.schema.text.span import Span
 
 
 class PdfProvider(BaseProvider):
-    page_range: List[int] | None = None
-    pdftext_workers: int = 4
-    flatten_pdf: bool = True
-    force_ocr: bool = False
-    ocr_invalid_chars: tuple = (chr(0xfffd), "�")
-    ocr_space_threshold: float = .7
-    ocr_newline_threshold: float = .6
-    ocr_alphanum_threshold: float = .3
-    image_threshold: float = .65
-    strip_existing_ocr: bool = False
+    """
+    A provider for PDF files.
+    """
+
+    page_range: Annotated[
+        Optional[List[int]],
+        "The range of pages to process.",
+        "Default is None, which will process all pages."
+    ] = None
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+    ] = 4
+    flatten_pdf: Annotated[
+        bool,
+        "Whether to flatten the PDF structure.",
+    ] = True
+    force_ocr: Annotated[
+        bool,
+        "Whether to force OCR on the whole document.",
+    ] = False
+    ocr_invalid_chars: Annotated[
+        tuple,
+        "The characters to consider invalid for OCR.",
+    ] = (chr(0xfffd), "�")
+    ocr_space_threshold: Annotated[
+        float,
+        "The minimum ratio of spaces to non-spaces to detect bad text.",
+    ] = .7
+    ocr_newline_threshold: Annotated[
+        float,
+        "The minimum ratio of newlines to non-newlines to detect bad text.",
+    ] = .6
+    ocr_alphanum_threshold: Annotated[
+        float,
+        "The minimum ratio of alphanumeric characters to non-alphanumeric characters to consider an alphanumeric character.",
+    ] = .3
+    image_threshold: Annotated[
+        float,
+        "The minimum coverage ratio of the image to the page to consider skipping the page.",
+    ] = .65
+    strip_existing_ocr: Annotated[
+        bool,
+        "Whether to strip existing OCR text from the PDF.",
+    ] = False
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
@@ -57,7 +92,7 @@ class PdfProvider(BaseProvider):
         if self.doc is not None:
             self.doc.close()
 
-    def font_flags_to_format(self, flags: int | None) -> Set[str]:
+    def font_flags_to_format(self, flags: Optional[int]) -> Set[str]:
         if flags is None:
             return {"plain"}
 
@@ -188,35 +223,33 @@ class PdfProvider(BaseProvider):
         if not any([obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT for obj in page_objs]):
             return False
 
-        if not self.strip_existing_ocr:
-            return True
+        if self.strip_existing_ocr:
+            # If any text objects on the page are in invisible render mode, skip this page
+            for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+                if pdfium_c.FPDFTextObj_GetTextRenderMode(text_obj) in [pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_UNKNOWN]:
+                    return False
 
-        # If any text objects on the page are in invisible render mode, skip this page
-        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
-            if pdfium_c.FPDFTextObj_GetTextRenderMode(text_obj) in [pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_UNKNOWN]:
+            non_embedded_fonts = []
+            empty_fonts = []
+            font_map = {}
+            for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+                font = pdfium_c.FPDFTextObj_GetFont(text_obj)
+                font_name = self.get_fontname(font)
+
+                # we also skip pages without embedded fonts and fonts without names
+                non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
+                empty_fonts.append(not font_name or font_name == "GlyphLessFont")
+                if font_name not in font_map:
+                    font_map[font_name or 'Unknown'] = font
+
+            if all(non_embedded_fonts) or all(empty_fonts):
                 return False
 
-        non_embedded_fonts = []
-        empty_fonts = []
-        font_map = {}
-        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
-            font = pdfium_c.FPDFTextObj_GetFont(text_obj)
-            font_name = self.get_fontname(font)
-    
-            # we also skip pages without embedded fonts and fonts without names
-            non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
-            empty_fonts.append(not font_name or font_name == "GlyphLessFont")
-            if font_name not in font_map:
-                font_map[font_name or 'Unknown'] = font
-
-        if all(non_embedded_fonts) or all(empty_fonts):
-            return False
-
-        # if we see very large images covering most of the page, we can skip this page
-        for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
-            img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
-            if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
-                return False
+            # if we see very large images covering most of the page, we can skip this page
+            for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
+                img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
+                if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
+                    return False
 
         return True
 
@@ -265,8 +298,8 @@ class PdfProvider(BaseProvider):
 
     def get_fontname(self, font) -> str:
         font_name = ""
-        buffer_size = 256 
-        
+        buffer_size = 256
+
         try:
             font_name_buffer = ctypes.create_string_buffer(buffer_size)
             length = pdfium_c.FPDFFont_GetBaseFontName(font, font_name_buffer, buffer_size)
