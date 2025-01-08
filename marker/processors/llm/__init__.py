@@ -16,7 +16,7 @@ class BaseLLMProcessor(BaseProcessor):
     A processor for using LLMs to convert blocks.
     """
     google_api_key: Annotated[
-        Optional[str],
+        str,
         "The Google API key to use for the Gemini model.",
     ] = settings.GOOGLE_API_KEY
     model_name: Annotated[

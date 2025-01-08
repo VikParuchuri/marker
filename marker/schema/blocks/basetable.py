@@ -1,7 +1,7 @@
 from typing import List
 
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
+from marker.schema.blocks import Block, BlockOutput
 from marker.schema.blocks.tablecell import TableCell
 
 
@@ -23,11 +23,11 @@ class BaseTable(Block):
         return html_repr
 
 
-    def assemble_html(self, document, child_blocks, parent_structure=None):
+    def assemble_html(self, document, child_blocks: List[BlockOutput], parent_structure=None):
         if self.html:
             # LLM processor
             return self.html
-        elif len(child_blocks) > 0 and child_blocks[0].block_type == BlockTypes.TableCell:
+        elif len(child_blocks) > 0 and child_blocks[0].id.block_type == BlockTypes.TableCell:
             # Table processor
             return self.format_cells(document, child_blocks)
         else:

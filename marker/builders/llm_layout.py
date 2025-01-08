@@ -24,7 +24,7 @@ class LLMLayoutBuilder(LayoutBuilder):
     """
 
     google_api_key: Annotated[
-        Optional[str],
+        str,
         "The Google API key to use for the Gemini model.",
     ] = settings.GOOGLE_API_KEY
     confidence_threshold: Annotated[

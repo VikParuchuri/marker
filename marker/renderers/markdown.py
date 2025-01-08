@@ -53,13 +53,62 @@ class Markdownify(MarkdownConverter):
         else:
             return "\n" + self.block_math_delimiters[0] + text + self.block_math_delimiters[1] + "\n"
 
-    def convert_td(self, el, text, convert_as_inline):
-        text = text.replace("|", " ").replace("\n", " ")
-        return super().convert_td(el, text, convert_as_inline)
+    def convert_table(self, el, text, convert_as_inline):
+        total_rows = len(el.find_all('tr'))
+        colspans = []
+        for row in el.find_all('tr'):
+            row_cols = 0
+            for cell in row.find_all(['td', 'th']):
+                colspan = int(cell.get('colspan', 1))
+                row_cols += colspan
+            colspans.append(row_cols)
+        total_cols = max(colspans)
 
-    def convert_th(self, el, text, convert_as_inline):
-        text = text.replace("|", " ").replace("\n", " ")
-        return super().convert_th(el, text, convert_as_inline)
+        grid = [[None for _ in range(total_cols)] for _ in range(total_rows)]
+
+        for row_idx, tr in enumerate(el.find_all('tr')):
+            col_idx = 0
+            for cell in tr.find_all(['td', 'th']):
+                # Skip filled positions
+                while col_idx < total_cols and grid[row_idx][col_idx] is not None:
+                    col_idx += 1
+
+                # Fill in grid
+                value = cell.get_text(strip=True).replace("\n", " ").replace("|", " ")
+                rowspan = int(cell.get('rowspan', 1))
+                colspan = int(cell.get('colspan', 1))
+
+                for r in range(rowspan):
+                    for c in range(colspan):
+                        if r == 0 and c == 0:
+                            grid[row_idx][col_idx] = value
+                        else:
+                            grid[row_idx + r][col_idx + c] = ''
+
+                col_idx += colspan
+
+        markdown_lines = []
+        col_widths = [0] * total_cols
+        for row in grid:
+            for col_idx, cell in enumerate(row):
+                if cell is not None:
+                    col_widths[col_idx] = max(col_widths[col_idx], len(str(cell)))
+
+        # Generate header and separator
+        markdown_lines.append('|' + '|'.join(f" {' ' * width} " for width in col_widths) + '|')
+        markdown_lines.append('|' + '|'.join('-' * (width + 2) for width in col_widths) + '|')
+
+        # Generate markdown rows
+        for row in grid:
+            line = []
+            for col_idx, cell in enumerate(row):
+                if cell is None:
+                    cell = ''
+                padding = col_widths[col_idx] - len(str(cell))
+                line.append(f" {cell}{' ' * padding} ")
+            markdown_lines.append('|' + '|'.join(line) + '|')
+
+        return '\n'.join(markdown_lines)
 
 
 class MarkdownOutput(BaseModel):
