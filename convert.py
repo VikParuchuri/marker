@@ -45,8 +45,10 @@ def process_single_pdf(args):
     if cli_options.get('skip_existing') and output_exists(out_folder, base_name):
         return
 
+    converter_cls = config_parser.get_converter_cls()
+
     try:
-        converter = PdfConverter(
+        converter = converter_cls(
             config=config_parser.generate_config_dict(),
             artifact_dict=model_refs,
             processor_list=config_parser.get_processors(),

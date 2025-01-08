@@ -5,6 +5,7 @@ from typing import Dict
 import click
 
 from marker.config.crawler import crawler
+from marker.converters.pdf import PdfConverter
 from marker.renderers.html import HTMLRenderer
 from marker.renderers.json import JSONRenderer
 from marker.renderers.markdown import MarkdownRenderer
@@ -39,6 +40,7 @@ class ConfigParser:
         # we put common options here
         fn = click.option("--google_api_key", type=str, default=None, help="Google API key for using LLMs.")(fn)
         fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
+        fn = click.option("--converter_cls", type=str, default=None, help="Converter class to use.  Defaults to PDF converter.")(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:
@@ -94,6 +96,17 @@ class ConfigParser:
                     raise
 
         return processors
+
+    def get_converter_cls(self):
+        converter_cls = self.cli_options.get("converter_cls", None)
+        if converter_cls is not None:
+            try:
+                return strings_to_classes([converter_cls])[0]
+            except Exception as e:
+                print(f"Error loading converter: {converter_cls} with error: {e}")
+                raise
+
+        return PdfConverter
 
     def get_output_folder(self, filepath: str):
         output_dir = self.cli_options.get("output_dir", settings.OUTPUT_DIR)

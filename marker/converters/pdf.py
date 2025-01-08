@@ -1,10 +1,12 @@
 import os
 
+from marker.processors import BaseProcessor
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
-from typing import Annotated, Any, Dict, List, Optional, Type
+from typing import Annotated, Any, Dict, List, Optional, Type, Tuple
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
@@ -53,6 +55,26 @@ class PdfConverter(BaseConverter):
         bool,
         "Enable higher quality processing with LLMs.",
     ] = False
+    default_processors: Tuple[BaseProcessor, ...] = (
+        BlockquoteProcessor,
+        CodeProcessor,
+        DocumentTOCProcessor,
+        EquationProcessor,
+        FootnoteProcessor,
+        IgnoreTextProcessor,
+        LineNumbersProcessor,
+        ListProcessor,
+        PageHeaderProcessor,
+        SectionHeaderProcessor,
+        TableProcessor,
+        LLMTableProcessor,
+        LLMFormProcessor,
+        TextProcessor,
+        LLMTextProcessor,
+        LLMComplexRegionProcessor,
+        LLMImageDescriptionProcessor,
+        DebugProcessor,
+    )
 
     def __init__(self, artifact_dict: Dict[str, Any], processor_list: Optional[List[str]] = None, renderer: str | None = None, config=None):
         super().__init__(config)
@@ -63,26 +85,7 @@ class PdfConverter(BaseConverter):
         if processor_list:
             processor_list = strings_to_classes(processor_list)
         else:
-            processor_list = [
-                BlockquoteProcessor,
-                CodeProcessor,
-                DocumentTOCProcessor,
-                EquationProcessor,
-                FootnoteProcessor,
-                IgnoreTextProcessor,
-                LineNumbersProcessor,
-                ListProcessor,
-                PageHeaderProcessor,
-                SectionHeaderProcessor,
-                TableProcessor,
-                LLMTableProcessor,
-                LLMFormProcessor,
-                TextProcessor,
-                LLMTextProcessor,
-                LLMComplexRegionProcessor,
-                LLMImageDescriptionProcessor,
-                DebugProcessor,
-            ]
+            processor_list = self.default_processors
 
         if renderer:
             renderer = strings_to_classes([renderer])[0]

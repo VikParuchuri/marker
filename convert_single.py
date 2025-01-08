@@ -25,7 +25,8 @@ def main(fpath: str, **kwargs):
     start = time.time()
     config_parser = ConfigParser(kwargs)
 
-    converter = PdfConverter(
+    converter_cls = config_parser.get_converter_cls()
+    converter = converter_cls(
         config=config_parser.generate_config_dict(),
         artifact_dict=models,
         processor_list=config_parser.get_processors(),

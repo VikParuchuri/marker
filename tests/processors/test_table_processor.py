@@ -1,5 +1,6 @@
 import pytest
 
+from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
 from marker.processors.table import TableProcessor
 from marker.schema.blocks import TableCell
@@ -16,3 +17,7 @@ def test_table_processor(pdf_document, detection_model, recognition_model, table
             assert children
             assert len(children) > 0
             assert isinstance(children[0], TableCell)
+
+    renderer = MarkdownRenderer()
+    table_output = renderer(pdf_document)
+    assert "Schedule" in table_output

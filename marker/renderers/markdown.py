@@ -108,7 +108,8 @@ class Markdownify(MarkdownConverter):
                 line.append(f" {cell}{' ' * padding} ")
             markdown_lines.append('|' + '|'.join(line) + '|')
 
-        return '\n'.join(markdown_lines)
+        table_md = '\n'.join(markdown_lines)
+        return "\n\n" + table_md + "\n\n"
 
 
 class MarkdownOutput(BaseModel):
