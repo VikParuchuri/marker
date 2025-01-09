@@ -1,5 +1,6 @@
 import atexit
 import ctypes
+import math
 import re
 from typing import Annotated, List, Optional, Set
 
@@ -7,6 +8,7 @@ import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
 from pdftext.extraction import dictionary_output
+from pdftext.schema import Bbox
 from PIL import Image
 
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
@@ -16,6 +18,7 @@ from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
 from marker.schema.text.span import Span
+from marker.util import matrix_intersection_area
 
 
 class PdfProvider(BaseProvider):
@@ -196,8 +199,35 @@ class PdfProvider(BaseProvider):
                         )
                     )
             if self.check_line_spans(lines):
+                self.merge_links(lines, page_id)
                 page_lines[page_id] = lines
         return page_lines
+
+    def merge_links(self, lines, page_id):
+        links = self.get_links(page_id)
+
+        spans = [span for line in lines for span in line.spans]
+        span_bboxes = [span.polygon.bbox for span in spans]
+        link_bboxes = [link['bbox'] for link in links]
+        intersection_matrix = matrix_intersection_area(span_bboxes, link_bboxes)
+        max_intersections = {}
+
+        for span_idx, span in enumerate(spans):
+            intersection_span = intersection_matrix[span_idx]
+            if intersection_span.sum() == 0:
+                continue
+
+            max_intersection = intersection_span.argmax()
+            if intersection_matrix[span_idx, max_intersection] > 0:
+                max_intersections[span_idx] = (
+                    intersection_matrix[span_idx, max_intersection],
+                    links[max_intersection]
+                )
+
+        for span_idx, span in enumerate(spans):
+            if span_idx in max_intersections:
+                link = max_intersections[span_idx][1]
+                span.url = link['url']
 
     def check_line_spans(self, page_lines: List[ProviderOutput]) -> bool:
         page_spans = [span for line in page_lines for span in line.spans]
@@ -313,3 +343,77 @@ class PdfProvider(BaseProvider):
             pass
 
         return font_name
+
+    def get_links(self, page_idx):
+        urls = []
+        page = self.doc[page_idx]
+        page_bbox: List[float] = page.get_bbox()
+        page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
+        page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
+        page_rotation = 0
+        try:
+            page_rotation = page.get_rotation()
+        except:
+            pass
+
+        annot_count = pdfium_c.FPDFPage_GetAnnotCount(page)
+        for i in range(annot_count):
+            url = {
+                'bbox': [],
+                'url': '',
+                'page': page_idx,
+            }
+            annot = pdfium_c.FPDFPage_GetAnnot(page, i)
+            if pdfium_c.FPDFAnnot_GetSubtype(annot) == pdfium_c.FPDF_ANNOT_LINK:
+                fs_rect = pdfium_c.FS_RECTF()
+                success = pdfium_c.FPDFAnnot_GetRect(annot, ctypes.byref(fs_rect))
+                if not success:
+                    continue
+
+                cx_start, cy_start, cx_end, cy_end = [fs_rect.left, fs_rect.top, fs_rect.right, fs_rect.bottom]
+
+                cx_start -= page_bbox[0]
+                cx_end -= page_bbox[0]
+                cy_start -= page_bbox[1]
+                cy_end -= page_bbox[1]
+
+                ty_start = page_height - cy_start
+                ty_end = page_height - cy_end
+
+                bbox = [cx_start, min(ty_start, ty_end), cx_end, max(ty_start, ty_end)]
+                url['bbox'] = Bbox(bbox).rotate(page_width, page_height, page_rotation).bbox
+
+                link_obj = pdfium_c.FPDFAnnot_GetLink(annot)
+
+                action = pdfium_c.FPDFLink_GetAction(link_obj)
+                a_type = pdfium_c.FPDFAction_GetType(action)
+
+                if a_type == pdfium_c.PDFACTION_UNSUPPORTED:
+                    continue
+
+                elif a_type == pdfium_c.PDFACTION_GOTO:
+                    # Goto a page
+                    dest = pdfium_c.FPDFAction_GetDest(self.doc, action)
+                    if dest:
+                        tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
+                        url['url'] = f"#page-{tgt_page}"
+
+                # elif a_type == pdfium_c.PDFACTION_LAUNCH:
+                #     # Typically opens a file/app
+                #     path_len = pdfium_c.FPDFAction_GetFilePath(action, None, 0)
+                #     if path_len > 0:
+                #         buf = ctypes.create_string_buffer(path_len)
+                #         pdfium_c.FPDFAction_GetFilePath(action, buf, path_len)
+                #         filepath = buf.raw[:path_len].decode('utf-8', errors='replace').rstrip('\x00')
+
+                elif a_type == pdfium_c.PDFACTION_URI:
+                    # External link
+                    needed_len = pdfium_c.FPDFAction_GetURIPath(self.doc, action, None, 0)
+                    if needed_len > 0:
+                        buf = ctypes.create_string_buffer(needed_len)
+                        pdfium_c.FPDFAction_GetURIPath(self.doc, action, buf, needed_len)
+                        uri = buf.raw[:needed_len].decode('utf-8', errors='replace').rstrip('\x00')
+                        url["url"] = uri
+
+                urls.append(url)
+        return urls

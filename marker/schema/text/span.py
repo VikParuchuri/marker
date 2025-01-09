@@ -22,6 +22,7 @@ class Span(Block):
     minimum_position: int
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
+    url: str = ''
 
     @property
     def bold(self):
@@ -59,9 +60,11 @@ class Span(Block):
         text = cleanup_text(text)
 
         if self.italic:
-            return f"<i>{text}</i>"
+            text = f"<i>{text}</i>"
         elif self.bold:
-            return f"<b>{text}</b>"
+            text = f"<b>{text}</b>"
         elif self.math:
-            return f"<math display='inline'>{text}</math>"
+            text = f"<math display='inline'>{text}</math>"
+        elif self.url:
+            text = f"<a href='{self.url}'>{text}</a>"
         return text
