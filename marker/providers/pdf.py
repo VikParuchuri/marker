@@ -204,7 +204,7 @@ class PdfProvider(BaseProvider):
                                 page_id=page_id,
                                 text_extraction_method="pdftext",
                                 url=span.get("url"),
-                                anchor=span.get("anchor"),
+                                anchors=span.get("anchors"),
                             )
                         )
                     polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
@@ -248,15 +248,15 @@ class PdfProvider(BaseProvider):
                 link = max_intersections[span_idx][1]
                 if link['dest_page'] is not None:
                     dest_page = link['dest_page']
-                    link['url'] = f"#page-{dest_page}"
                     self.refs.setdefault(dest_page, [])
-                    if link['dest_bbox']:
-                        dest_box = "-".join(map(str, link['dest_bbox']))                        
+                    link['url'] = f"#page-{dest_page}"
+                    if link['dest_pos']:
+                        dest_pos = link['dest_pos']
                     else:
-                        dest_box = "0.0-0.0-1.0-1.0"
-                    if dest_box not in self.refs[dest_page]:
-                        self.refs[dest_page].append(dest_box)
-                    link['url'] += f"-{self.refs[dest_page].index(dest_box)}"
+                        dest_pos = [0.0, 0.0]
+                    if dest_pos not in self.refs[dest_page]:
+                        self.refs[dest_page].append(dest_pos)
+                    link['url'] += f"-{self.refs[dest_page].index(dest_pos)}"
                 span_replace_map[span_idx] = self.break_spans(span, link)
             span_idx += 1
 
@@ -284,8 +284,8 @@ class PdfProvider(BaseProvider):
         spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans'] if span['text']]
 
         span_starts = np.array([span['bbox'][:2] for span in spans])
-        ref_bboxes = np.array([list(map(float, ref.split("-"))) for ref in refs])
-        ref_starts = np.array([bbox[:2] for bbox in ref_bboxes])
+        ref_pos = np.array([ref for ref in refs])
+        ref_starts = np.array([pos for pos in ref_pos])
 
         distances = np.linalg.norm(span_starts[:, np.newaxis, :] - ref_starts[np.newaxis, :, :], axis=2)
 
@@ -296,10 +296,10 @@ class PdfProvider(BaseProvider):
 
             span_indices = np.argsort(distances[:, ref_idx])
             for span_idx in span_indices:
-                if spans[span_idx].get('anchor') is None:
-                    spans[span_idx]['anchor'] = f"page-{page_id}-{ref_idx}"
-                    assigned_refs.add(ref_idx)
-                    break
+                spans[span_idx].setdefault('anchors', [])
+                spans[span_idx]['anchors'].append(f"page-{page_id}-{ref_idx}")
+                assigned_refs.add(ref_idx)
+                break
 
     def break_spans(self, orig_span, link):
         spans = []
@@ -485,8 +485,8 @@ class PdfProvider(BaseProvider):
         bbox = [cx_start, min(ty_start, ty_end), cx_end, max(ty_start, ty_end)]
         return Bbox(bbox).rotate(page_width, page_height, page_rotation).bbox
 
-    def xy_to_scaled_bbox(self, x, y, page_bbox, page_height, page_width, page_rotation, expand_by=1) -> List[float]:
-        return self.rect_to_scaled_bbox([x - expand_by, y - expand_by, x + expand_by, y + expand_by], page_bbox, page_height, page_width, page_rotation)
+    def xy_to_scaled_pos(self, x, y, page_bbox, page_height, page_width, page_rotation, expand_by=1) -> List[float]:
+        return self.rect_to_scaled_bbox([x - expand_by, y - expand_by, x + expand_by, y + expand_by], page_bbox, page_height, page_width, page_rotation)[:2]
 
     def get_links(self, page_idx):
         urls = []
@@ -506,7 +506,7 @@ class PdfProvider(BaseProvider):
                 'bbox': None,
                 'page': page_idx,
                 'dest_page': None,
-                'dest_bbox': None,
+                'dest_pos': None,
                 'url': None,
             }
             annot = pdfium_c.FPDFPage_GetAnnot(page, i)
@@ -528,7 +528,7 @@ class PdfProvider(BaseProvider):
                     link['dest_page'] = tgt_page
                     dest_position = self.get_dest_position(dest)
                     if dest_position:
-                        link['dest_bbox'] = self.xy_to_scaled_bbox(*dest_position, page_bbox, page_height, page_width, page_rotation)
+                        link['dest_pos'] = self.xy_to_scaled_pos(*dest_position, page_bbox, page_height, page_width, page_rotation)
 
                 else:
                     action = pdfium_c.FPDFLink_GetAction(link_obj)
@@ -545,7 +545,7 @@ class PdfProvider(BaseProvider):
                             link['dest_page'] = tgt_page
                             dest_position = self.get_dest_position(dest)
                             if dest_position:
-                                link['dest_bbox'] = self.xy_to_scaled_bbox(*dest_position, page_bbox, page_height, page_width, page_rotation)
+                                link['dest_pos'] = self.xy_to_scaled_pos(*dest_position, page_bbox, page_height, page_width, page_rotation)
 
                     elif a_type == pdfium_c.PDFACTION_URI:
                         # External link

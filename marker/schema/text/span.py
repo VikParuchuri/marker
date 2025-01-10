@@ -23,7 +23,7 @@ class Span(Block):
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
     url: Optional[str] = None
-    anchor: Optional[str] = None
+    anchors: Optional[List[str]] = None
 
     @property
     def bold(self):
@@ -66,10 +66,9 @@ class Span(Block):
             text = f"<b>{text}</b>"
         elif self.math:
             text = f"<math display='inline'>{text}</math>"
-        elif self.url and self.anchor:
-            text = f"<span id='{self.anchor}'><a href='{self.url}'>{text}</a></span>"
         elif self.url:
             text = f"<a href='{self.url}'>{text}</a>"
-        elif self.anchor:
-            text = f"<span id='{self.anchor}'>{text}</span>"
+
+        if self.anchors:
+            text = "".join(f"<span id='{anchor}'/>" for anchor in self.anchors) + text
         return text

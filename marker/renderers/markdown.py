@@ -67,7 +67,7 @@ class Markdownify(MarkdownConverter):
         return super().convert_a(el, self.escape(text), convert_as_inline)
 
     def convert_span(self, el, text, convert_as_inline):
-        return str(el)
+        return f'<span id="{el["id"]}"/>'
 
 
 class MarkdownOutput(BaseModel):
