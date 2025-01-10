@@ -56,12 +56,14 @@ class Markdownify(MarkdownConverter):
     def convert_table(self, el, text, convert_as_inline):
         total_rows = len(el.find_all('tr'))
         colspans = []
+        is_header_row = []
         for row in el.find_all('tr'):
             row_cols = 0
             for cell in row.find_all(['td', 'th']):
                 colspan = int(cell.get('colspan', 1))
                 row_cols += colspan
             colspans.append(row_cols)
+            is_header_row.append(len(row.find_all('th')) == row_cols)
         total_cols = max(colspans)
 
         grid = [[None for _ in range(total_cols)] for _ in range(total_rows)]
@@ -94,12 +96,13 @@ class Markdownify(MarkdownConverter):
                 if cell is not None:
                     col_widths[col_idx] = max(col_widths[col_idx], len(str(cell)))
 
-        # Generate header and separator
-        markdown_lines.append('|' + '|'.join(f" {' ' * width} " for width in col_widths) + '|')
-        markdown_lines.append('|' + '|'.join('-' * (width + 2) for width in col_widths) + '|')
+        add_header_line = lambda: markdown_lines.append('|' + '|'.join('-' * (width + 2) for width in col_widths) + '|')
 
         # Generate markdown rows
-        for row in grid:
+        for i, row in enumerate(grid):
+            if i == 1:
+                add_header_line()
+
             line = []
             for col_idx, cell in enumerate(row):
                 if cell is None:
@@ -107,6 +110,10 @@ class Markdownify(MarkdownConverter):
                 padding = col_widths[col_idx] - len(str(cell))
                 line.append(f" {cell}{' ' * padding} ")
             markdown_lines.append('|' + '|'.join(line) + '|')
+
+        # Handle one row tables
+        if total_rows == 1:
+            add_header_line()
 
         table_md = '\n'.join(markdown_lines)
         return "\n\n" + table_md + "\n\n"
