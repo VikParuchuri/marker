@@ -2,6 +2,8 @@ from marker.providers.pdf import PdfProvider
 import tempfile
 from typing import Dict, Type
 
+from PIL import Image, ImageDraw
+
 import datasets
 import pytest
 
@@ -116,3 +118,13 @@ def renderer(request, config):
             raise ValueError(f"Unknown output format: {output_format}")
     else:
         return MarkdownRenderer
+
+@pytest.fixture(scope="function")
+def temp_image():
+    img = Image.new("RGB", (512, 512), color="white")
+    draw = ImageDraw.Draw(img)
+    draw.text((10, 10), "Hello, World!", fill="black")
+    with tempfile.NamedTemporaryFile(suffix=".png") as f:
+        img.save(f.name)
+        f.flush()
+        yield f

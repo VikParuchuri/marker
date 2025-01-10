@@ -9,6 +9,7 @@ from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.table import TableProcessor
 from marker.providers.pdf import PdfProvider
+from marker.providers.registry import provider_from_filepath
 from marker.schema import BlockTypes
 
 
@@ -22,7 +23,8 @@ class TableConverter(PdfConverter):
     converter_block_types: List[BlockTypes] = (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents)
 
     def build_document(self, filepath: str):
-        pdf_provider = PdfProvider(filepath, self.config)
+        provider_cls = provider_from_filepath(filepath)
+        pdf_provider = provider_cls(filepath, self.config)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document_builder = DocumentBuilder(self.config)

@@ -1,6 +1,6 @@
 # Marker
 
-Marker converts PDFs to markdown, JSON, and HTML quickly and accurately.
+Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
 
 - Supports a wide range of documents
 - Supports all languages
@@ -63,11 +63,11 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
 - Marker will only convert block equations
-- Tables are not always formatted 100% correctly - multiline cells are sometimes split into multiple rows.
+- Tables are not always formatted 100% correctly
 - Forms are not converted optimally
 - Very complex layouts, with nested tables and forms, may not work
 
-Note: Passing the `--use_llm` flag will mostly solve all of these issues.
+Note: Passing the `--use_llm` flag will mostly solve these issues.
 
 # Installation
 
@@ -84,7 +84,7 @@ pip install marker-pdf
 First, some configuration:
 
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag on the CLI or via configuration to ensure your PDF runs through OCR.
+- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag on the CLI or via configuration to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and only strip out any existing OCR text.
 
 ## Interactive App
 
@@ -101,6 +101,8 @@ marker_gui
 marker_single /path/to/file.pdf
 ```
 
+You can pass in PDFs or images.
+
 Options:
 - `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
 - `--output_format [markdown|json|html]`: Specify the format for the output results.
@@ -115,6 +117,7 @@ Options:
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
 - `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "en,fr,de"` for English, French, and German.
 - `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
+- `--converter_cls`: One of `marker.converters.pdf.PdfConverter` (default) or `marker.converters.table.TableConverter`.  The `PdfConverter` will convert the whole PDF, the `TableConverter` will only extract and convert tables.
 
 The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you don't need OCR, marker can work with any language.
 
@@ -180,7 +183,7 @@ rendered = converter("FILEPATH")
 
 ### Extract blocks
 
-Each document consists of one or more pages.  Pages contain blocks, which can themselves contain other blocks.  It's possible to programatically manipulate these blocks.  
+Each document consists of one or more pages.  Pages contain blocks, which can themselves contain other blocks.  It's possible to programmatically manipulate these blocks.  
 
 Here's an example of extracting all forms from a document:
 
@@ -197,6 +200,24 @@ forms = document.contained_blocks((BlockTypes.Form,))
 ```
 
 Look at the processors for more examples of extracting and manipulating blocks.
+
+### Custom converters
+
+You can also use custom converters to define your own conversion pipelines.  For example, the `TableConverter` will only extract tables:
+
+```python
+from marker.converters.table import TableConverter
+from marker.models import create_model_dict
+from marker.output import text_from_rendered
+
+converter = TableConverter(
+    artifact_dict=create_model_dict(),
+)
+rendered = converter("FILEPATH")
+text, _, images = text_from_rendered(rendered)
+```
+
+This takes all the same configuration as the PdfConverter.
 
 # Output Formats
 

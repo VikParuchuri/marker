@@ -1,6 +1,7 @@
 import os
 
 from marker.processors import BaseProcessor
+from marker.providers.registry import provider_from_filepath
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
@@ -120,7 +121,8 @@ class PdfConverter(BaseConverter):
         return cls(**resolved_kwargs)
 
     def build_document(self, filepath: str):
-        pdf_provider = PdfProvider(filepath, self.config)
+        provider_cls = provider_from_filepath(filepath)
+        pdf_provider = provider_cls(filepath, self.config)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)

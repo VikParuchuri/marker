@@ -3,6 +3,7 @@ from typing import List, Optional, Dict
 from PIL import Image
 from pydantic import BaseModel
 
+from marker.schema.polygon import PolygonBox
 from marker.schema.text import Span
 from marker.schema.text.line import Line
 from marker.util import assign_config
@@ -29,7 +30,7 @@ class BaseProvider:
     def get_images(self, idxs: List[int], dpi: int) -> List[Image.Image]:
         pass
 
-    def get_page_bbox(self, idx: int) -> List[float]:
+    def get_page_bbox(self, idx: int) -> PolygonBox | None:
         pass
 
     def get_page_lines(self, idx: int) -> List[Line]:
