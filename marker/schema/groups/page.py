@@ -78,7 +78,7 @@ class PageGroup(Group):
         return block
 
     def assemble_html(self, child_blocks, parent_structure=None):
-        template = f"<span id='page-{self.page_id}'></span>"
+        template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
         return template

@@ -1,6 +1,6 @@
 import html
 import re
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -22,7 +22,8 @@ class Span(Block):
     minimum_position: int
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
-    url: str = ''
+    url: Optional[str] = None
+    anchor: Optional[str] = None
 
     @property
     def bold(self):
@@ -65,6 +66,10 @@ class Span(Block):
             text = f"<b>{text}</b>"
         elif self.math:
             text = f"<math display='inline'>{text}</math>"
+        elif self.url and self.anchor:
+            text = f"<span id='{self.anchor}'><a href='{self.url}'>{text}</a></span>"
         elif self.url:
             text = f"<a href='{self.url}'>{text}</a>"
+        elif self.anchor:
+            text = f"<span id='{self.anchor}'>{text}</span>"
         return text

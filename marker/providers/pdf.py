@@ -2,8 +2,9 @@ import atexit
 import ctypes
 import math
 import re
-from typing import Annotated, List, Optional, Set
+from typing import Annotated, List, Optional, Set, Tuple
 
+import numpy as np
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
@@ -67,12 +68,17 @@ class PdfProvider(BaseProvider):
         bool,
         "Whether to strip existing OCR text from the PDF.",
     ] = False
+    disable_links: Annotated[
+        bool,
+        "Whether to disable links.",
+    ] = False
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
         self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
+        self.refs = {}
 
         if self.page_range is None:
             self.page_range = range(len(self.doc))
@@ -151,7 +157,7 @@ class PdfProvider(BaseProvider):
         page_char_blocks = dictionary_output(
             self.filepath,
             page_range=self.page_range,
-            keep_chars=False,
+            keep_chars=True,
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf,
             quote_loosebox=False
@@ -160,6 +166,14 @@ class PdfProvider(BaseProvider):
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
+        for page in page_char_blocks:
+            if not self.disable_links:
+                self.merge_links(page)
+
+        for page in page_char_blocks:
+            if not self.disable_links:
+                self.merge_refs(page)
+
         for page in page_char_blocks:
             page_id = page["page"]
             lines: List[ProviderOutput] = []
@@ -188,7 +202,9 @@ class PdfProvider(BaseProvider):
                                 maximum_position=span["char_end_idx"],
                                 formats=list(font_formats),
                                 page_id=page_id,
-                                text_extraction_method="pdftext"
+                                text_extraction_method="pdftext",
+                                url=span.get("url"),
+                                anchor=span.get("anchor"),
                             )
                         )
                     polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
@@ -199,15 +215,17 @@ class PdfProvider(BaseProvider):
                         )
                     )
             if self.check_line_spans(lines):
-                self.merge_links(lines, page_id)
                 page_lines[page_id] = lines
+
         return page_lines
 
-    def merge_links(self, lines, page_id):
+    def merge_links(self, page):
+        page_id = page["page"]
+
         links = self.get_links(page_id)
 
-        spans = [span for line in lines for span in line.spans]
-        span_bboxes = [span.polygon.bbox for span in spans]
+        spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans'] if span['text']]
+        span_bboxes = [span['bbox'] for span in spans]
         link_bboxes = [link['bbox'] for link in links]
         intersection_matrix = matrix_intersection_area(span_bboxes, link_bboxes)
         max_intersections = {}
@@ -224,10 +242,98 @@ class PdfProvider(BaseProvider):
                     links[max_intersection]
                 )
 
+        span_replace_map = {}
         for span_idx, span in enumerate(spans):
             if span_idx in max_intersections:
                 link = max_intersections[span_idx][1]
-                span.url = link['url']
+                if link['dest_page'] is not None:
+                    dest_page = link['dest_page']
+                    link['url'] = f"#page-{dest_page}"
+                    self.refs.setdefault(dest_page, [])
+                    if link['dest_bbox']:
+                        dest_box = "-".join(map(str, link['dest_bbox']))                        
+                    else:
+                        dest_box = "0.0-0.0-1.0-1.0"
+                    if dest_box not in self.refs[dest_page]:
+                        self.refs[dest_page].append(dest_box)
+                    link['url'] += f"-{self.refs[dest_page].index(dest_box)}"
+                span_replace_map[span_idx] = self.break_spans(span, link)
+            span_idx += 1
+
+        span_idx = 0
+        for block in page["blocks"]:
+            for line in block["lines"]:
+                spans = []
+                for span in line["spans"]:
+                    if not span["text"]:
+                        continue
+                    if span_idx in span_replace_map:
+                        spans.extend(span_replace_map[span_idx])
+                    else:
+                        spans.append(span)
+                    span_idx += 1
+                line['spans'] = spans
+
+    def merge_refs(self, page):
+        page_id = page["page"]
+
+        refs = self.refs.get(page_id, [])
+        if not refs:
+            return
+
+        spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans'] if span['text']]
+
+        span_starts = np.array([span['bbox'][:2] for span in spans])
+        ref_bboxes = np.array([list(map(float, ref.split("-"))) for ref in refs])
+        ref_starts = np.array([bbox[:2] for bbox in ref_bboxes])
+
+        distances = np.linalg.norm(span_starts[:, np.newaxis, :] - ref_starts[np.newaxis, :, :], axis=2)
+
+        assigned_refs = set()
+        for ref_idx, ref_center in enumerate(ref_starts):
+            if ref_idx in assigned_refs:
+                continue
+
+            span_indices = np.argsort(distances[:, ref_idx])
+            for span_idx in span_indices:
+                if spans[span_idx].get('anchor') is None:
+                    spans[span_idx]['anchor'] = f"page-{page_id}-{ref_idx}"
+                    assigned_refs.add(ref_idx)
+                    break
+
+    def break_spans(self, orig_span, link):
+        spans = []
+        span = None
+        link_bbox = Bbox(link['bbox'])
+
+        for char in orig_span['chars']:
+            char_bbox = Bbox(char['bbox'])
+            char_in_link = bool(link_bbox.intersection_pct(char_bbox) > 0)
+
+            if not span or (char_in_link != span['char_in_link']):
+                span = {
+                    "bbox": char_bbox,
+                    "text": char["char"],
+                    "rotation": char["rotation"],
+                    "font": char["font"],
+                    "char_start_idx": char["char_idx"],
+                    "char_end_idx": char["char_idx"],
+                    "chars": [char],
+                    "url": link['url'] if char_in_link else '',
+                    "char_in_link": char_in_link
+                }
+                spans.append(span)
+            else:
+                span['text'] += char['char']
+                span['char_end_idx'] = char['char_idx']
+                span['bbox'] = span['bbox'].merge(char_bbox)
+                span['chars'].append(char)
+
+        for span in spans:
+            span['bbox'] = span['bbox'].bbox
+            del span['char_in_link']
+
+        return spans
 
     def check_line_spans(self, page_lines: List[ProviderOutput]) -> bool:
         page_spans = [span for line in page_lines for span in line.spans]
@@ -344,6 +450,44 @@ class PdfProvider(BaseProvider):
 
         return font_name
 
+    def get_dest_position(self, dest) -> Optional[Tuple[float, float]]:
+        has_x = ctypes.c_int()
+        has_y = ctypes.c_int()
+        has_zoom = ctypes.c_int()
+        x_coord = ctypes.c_float()
+        y_coord = ctypes.c_float()
+        zoom_level = ctypes.c_float()
+        success = pdfium_c.FPDFDest_GetLocationInPage(
+            dest,
+            ctypes.byref(has_x),
+            ctypes.byref(has_y),
+            ctypes.byref(has_zoom),
+            ctypes.byref(x_coord),
+            ctypes.byref(y_coord),
+            ctypes.byref(zoom_level)
+        )
+        if success:
+            if has_x.value and has_y.value:
+                return x_coord.value, y_coord.value
+        else:
+            return None
+
+    def rect_to_scaled_bbox(self, rect, page_bbox, page_height, page_width, page_rotation) -> List[float]:
+        cx_start, cy_start, cx_end, cy_end = rect
+        cx_start -= page_bbox[0]
+        cx_end -= page_bbox[0]
+        cy_start -= page_bbox[1]
+        cy_end -= page_bbox[1]
+
+        ty_start = page_height - cy_start
+        ty_end = page_height - cy_end
+
+        bbox = [cx_start, min(ty_start, ty_end), cx_end, max(ty_start, ty_end)]
+        return Bbox(bbox).rotate(page_width, page_height, page_rotation).bbox
+
+    def xy_to_scaled_bbox(self, x, y, page_bbox, page_height, page_width, page_rotation, expand_by=1) -> List[float]:
+        return self.rect_to_scaled_bbox([x - expand_by, y - expand_by, x + expand_by, y + expand_by], page_bbox, page_height, page_width, page_rotation)
+
     def get_links(self, page_idx):
         urls = []
         page = self.doc[page_idx]
@@ -358,10 +502,12 @@ class PdfProvider(BaseProvider):
 
         annot_count = pdfium_c.FPDFPage_GetAnnotCount(page)
         for i in range(annot_count):
-            url = {
-                'bbox': [],
-                'url': '',
+            link = {
+                'bbox': None,
                 'page': page_idx,
+                'dest_page': None,
+                'dest_bbox': None,
+                'url': None,
             }
             annot = pdfium_c.FPDFPage_GetAnnot(page, i)
             if pdfium_c.FPDFAnnot_GetSubtype(annot) == pdfium_c.FPDF_ANNOT_LINK:
@@ -369,51 +515,46 @@ class PdfProvider(BaseProvider):
                 success = pdfium_c.FPDFAnnot_GetRect(annot, ctypes.byref(fs_rect))
                 if not success:
                     continue
-
-                cx_start, cy_start, cx_end, cy_end = [fs_rect.left, fs_rect.top, fs_rect.right, fs_rect.bottom]
-
-                cx_start -= page_bbox[0]
-                cx_end -= page_bbox[0]
-                cy_start -= page_bbox[1]
-                cy_end -= page_bbox[1]
-
-                ty_start = page_height - cy_start
-                ty_end = page_height - cy_end
-
-                bbox = [cx_start, min(ty_start, ty_end), cx_end, max(ty_start, ty_end)]
-                url['bbox'] = Bbox(bbox).rotate(page_width, page_height, page_rotation).bbox
+                link['bbox'] = self.rect_to_scaled_bbox(
+                    [fs_rect.left, fs_rect.top, fs_rect.right, fs_rect.bottom],
+                    page_bbox, page_height, page_width, page_rotation
+                )
 
                 link_obj = pdfium_c.FPDFAnnot_GetLink(annot)
 
-                action = pdfium_c.FPDFLink_GetAction(link_obj)
-                a_type = pdfium_c.FPDFAction_GetType(action)
+                dest = pdfium_c.FPDFLink_GetDest(self.doc, link_obj)
+                if dest:
+                    tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
+                    link['dest_page'] = tgt_page
+                    dest_position = self.get_dest_position(dest)
+                    if dest_position:
+                        link['dest_bbox'] = self.xy_to_scaled_bbox(*dest_position, page_bbox, page_height, page_width, page_rotation)
 
-                if a_type == pdfium_c.PDFACTION_UNSUPPORTED:
-                    continue
+                else:
+                    action = pdfium_c.FPDFLink_GetAction(link_obj)
+                    a_type = pdfium_c.FPDFAction_GetType(action)
 
-                elif a_type == pdfium_c.PDFACTION_GOTO:
-                    # Goto a page
-                    dest = pdfium_c.FPDFAction_GetDest(self.doc, action)
-                    if dest:
-                        tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
-                        url['url'] = f"#page-{tgt_page}"
+                    if a_type == pdfium_c.PDFACTION_UNSUPPORTED:
+                        continue
 
-                # elif a_type == pdfium_c.PDFACTION_LAUNCH:
-                #     # Typically opens a file/app
-                #     path_len = pdfium_c.FPDFAction_GetFilePath(action, None, 0)
-                #     if path_len > 0:
-                #         buf = ctypes.create_string_buffer(path_len)
-                #         pdfium_c.FPDFAction_GetFilePath(action, buf, path_len)
-                #         filepath = buf.raw[:path_len].decode('utf-8', errors='replace').rstrip('\x00')
+                    elif a_type == pdfium_c.PDFACTION_GOTO:
+                        # Goto a page
+                        dest = pdfium_c.FPDFAction_GetDest(self.doc, action)
+                        if dest:
+                            tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
+                            link['dest_page'] = tgt_page
+                            dest_position = self.get_dest_position(dest)
+                            if dest_position:
+                                link['dest_bbox'] = self.xy_to_scaled_bbox(*dest_position, page_bbox, page_height, page_width, page_rotation)
 
-                elif a_type == pdfium_c.PDFACTION_URI:
-                    # External link
-                    needed_len = pdfium_c.FPDFAction_GetURIPath(self.doc, action, None, 0)
-                    if needed_len > 0:
-                        buf = ctypes.create_string_buffer(needed_len)
-                        pdfium_c.FPDFAction_GetURIPath(self.doc, action, buf, needed_len)
-                        uri = buf.raw[:needed_len].decode('utf-8', errors='replace').rstrip('\x00')
-                        url["url"] = uri
+                    elif a_type == pdfium_c.PDFACTION_URI:
+                        # External link
+                        needed_len = pdfium_c.FPDFAction_GetURIPath(self.doc, action, None, 0)
+                        if needed_len > 0:
+                            buf = ctypes.create_string_buffer(needed_len)
+                            pdfium_c.FPDFAction_GetURIPath(self.doc, action, buf, needed_len)
+                            uri = buf.raw[:needed_len].decode('utf-8', errors='replace').rstrip('\x00')
+                            link["url"] = uri
 
-                urls.append(url)
+                urls.append(link)
         return urls
