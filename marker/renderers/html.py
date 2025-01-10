@@ -35,17 +35,10 @@ class HTMLRenderer(BaseRenderer):
         bool,
         "Whether to paginate the output.",
     ] = False
-    image_extraction_mode: Annotated[
-        Literal["lowres", "highres"],
-        "The mode to use for extracting images.",
-    ] = "highres"
 
     def extract_image(self, document, image_id):
         image_block = document.get_block(image_id)
-        page = document.get_page(image_block.page_id)
-        page_img = page.lowres_image if self.image_extraction_mode == "lowres" else page.highres_image
-        image_box = image_block.polygon.rescale(page.polygon.size, page_img.size)
-        cropped = page_img.crop(image_box.bbox)
+        cropped = image_block.get_image(document, highres=self.image_extraction_mode == "highres")
         return cropped
 
     def extract_html(self, document, document_output, level=0):

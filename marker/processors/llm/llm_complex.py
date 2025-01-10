@@ -49,7 +49,7 @@ No corrections needed.
         text = block.raw_text(document)
 
         prompt = self.gemini_rewriting_prompt + '```text\n`' + text + '`\n```\n'
-        image = self.extract_image(page, block)
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],

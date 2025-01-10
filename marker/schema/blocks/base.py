@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence, Tuple
 
 from pydantic import BaseModel, ConfigDict, field_validator
+from PIL import Image
 
 from marker.schema import BlockTypes
 from marker.schema.polygon import PolygonBox
@@ -79,6 +80,8 @@ class Block(BaseModel):
     source: Literal['layout', 'heuristics', 'processor'] = 'layout'
     top_k: Optional[Dict[BlockTypes, float]] = None
     metadata: BlockMetadata | None = None
+    lowres_image: Image.Image | None = None
+    highres_image: Image.Image | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -94,6 +97,21 @@ class Block(BaseModel):
     def from_block(cls, block: Block) -> Block:
         block_attrs = block.model_dump(exclude=["id", "block_id", "block_type"])
         return cls(**block_attrs)
+
+    def get_image(self, document: Document, highres: bool = False, expansion: Tuple[float, float] | None = None) -> Image.Image | None:
+        image = self.highres_image if highres else self.lowres_image
+        if image is None:
+            page = document.get_page(self.page_id)
+            page_image = page.highres_image if highres else page.lowres_image
+
+            # Scale to the image size
+            bbox = self.polygon.rescale((page.polygon.width, page.polygon.height), page_image.size)
+            if expansion:
+                bbox = bbox.expand(*expansion)
+            bbox = bbox.bbox
+            image = page_image.crop(bbox)
+        return image
+
 
     def structure_blocks(self, document_page: Document | PageGroup) -> List[Block]:
         if self.structure is None:

@@ -61,7 +61,7 @@ No corrections needed.
         block_html = block.render(document).html
 
         prompt = self.gemini_rewriting_prompt + '```html\n`' + block_html + '`\n```\n'
-        image = self.extract_image(page, block)
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],

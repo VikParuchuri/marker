@@ -74,7 +74,7 @@ Output:
         extracted_lines = [line.formatted_text(document) for line in text_lines]
 
         prompt = self.gemini_rewriting_prompt + '```json\n`' + json.dumps({"extracted_lines": extracted_lines}, indent=2) + '`\n```\n'
-        image = self.extract_image(page, block)
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],

@@ -84,10 +84,5 @@ class BaseLLMProcessor(BaseProcessor):
 
         pbar.close()
 
-    def extract_image(self, page: PageGroup, image_block: Block):
-        page_img = page.lowres_image
-        image_box = image_block.polygon\
-            .rescale(page.polygon.size, page_img.size)\
-            .expand(self.image_expansion_ratio, self.image_expansion_ratio)
-        cropped = page_img.crop(image_box.bbox)
-        return cropped
+    def extract_image(self, document: Document, image_block: Block):
+        return image_block.get_image(document, highres=False, expansion=(self.image_expansion_ratio, self.image_expansion_ratio))

@@ -2,7 +2,7 @@ import base64
 import io
 import re
 from collections import Counter
-from typing import Annotated, Optional, Tuple
+from typing import Annotated, Optional, Tuple, Literal
 
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
@@ -18,6 +18,11 @@ class BaseRenderer:
     remove_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to ignore while rendering."] = (BlockTypes.PageHeader, BlockTypes.PageFooter)
     image_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to consider as images."] = (BlockTypes.Picture, BlockTypes.Figure)
     extract_images: Annotated[bool, "Extract images from the document."] = True
+    image_extraction_mode: Annotated[
+        Literal["lowres", "highres"],
+        "The mode to use for extracting images.",
+    ] = "highres"
+
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
@@ -26,13 +31,10 @@ class BaseRenderer:
         # Children are in reading order
         raise NotImplementedError
 
-    @staticmethod
-    def extract_image(document: Document, image_id, to_base64=False):
+    def extract_image(self, document: Document, image_id, to_base64=False):
         image_block = document.get_block(image_id)
-        page = document.get_page(image_block.page_id)
-        page_img = page.highres_image
-        image_box = image_block.polygon.rescale(page.polygon.size, page_img.size)
-        cropped = page_img.crop(image_box.bbox)
+        cropped = image_block.get_image(document, highres=self.image_extraction_mode == "highres")
+
         if to_base64:
             image_buffer = io.BytesIO()
             cropped.save(image_buffer, format=settings.OUTPUT_IMAGE_FORMAT)

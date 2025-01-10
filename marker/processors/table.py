@@ -62,15 +62,15 @@ class TableProcessor(BaseProcessor):
         table_data = []
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
-                image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.highres_image.size).expand(.01, .01)
-                image = page.highres_image.crop(image_poly.bbox).convert("RGB")
+                image = block.get_image(document, highres=True, expansion=(.01, .01))
+                image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.get_image(highres=True).size)
 
                 table_data.append({
                     "block_id": block.id,
                     "page_id": page.page_id,
                     "table_image": image,
                     "table_bbox": image_poly.bbox,
-                    "img_size": page.highres_image.size,
+                    "img_size": page.get_image(highres=True).size,
                     "ocr_block": page.text_extraction_method == "surya",
                 })
 
@@ -95,7 +95,7 @@ class TableProcessor(BaseProcessor):
                 cells: List[SuryaTableCell] = tables[table_idx].cells
                 for cell in cells:
                     # Rescale the cell polygon to the page size
-                    cell_polygon = PolygonBox(polygon=cell.polygon).rescale(page.highres_image.size, page.polygon.size)
+                    cell_polygon = PolygonBox(polygon=cell.polygon).rescale(page.get_image(highres=True).size, page.polygon.size)
                     cell_block = TableCell(
                         polygon=cell_polygon,
                         text=cell.text or "", # Cells can be blank (no text)

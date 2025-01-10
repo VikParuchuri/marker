@@ -45,7 +45,7 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
             return
 
         prompt = self.image_description_prompt + '```text\n`' + block.raw_text(document) + '`\n```\n'
-        image = self.extract_image(page, block)
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],

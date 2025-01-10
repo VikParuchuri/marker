@@ -80,6 +80,10 @@ class Markdownify(MarkdownConverter):
                 rowspan = int(cell.get('rowspan', 1))
                 colspan = int(cell.get('colspan', 1))
 
+                if col_idx >= total_cols:
+                    # Skip this cell if we're out of bounds
+                    continue
+
                 for r in range(rowspan):
                     for c in range(colspan):
                         if r == 0 and c == 0:

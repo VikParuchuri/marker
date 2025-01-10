@@ -71,7 +71,7 @@ class LayoutBuilder(BaseBuilder):
 
     def surya_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
         layout_results = self.layout_model(
-            [p.lowres_image for p in pages],
+            [p.get_image(highres=False) for p in pages],
             batch_size=int(self.get_batch_size())
         )
         return layout_results

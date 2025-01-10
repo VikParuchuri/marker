@@ -114,10 +114,10 @@ Here is the image of the layout block:
                         confidence = block.top_k.get(block.block_type)
                         # Case when the block is detected as a different type with low confidence
                         if confidence < self.confidence_threshold:
-                            futures.append(executor.submit(self.process_block_topk_relabeling, page, block))
+                            futures.append(executor.submit(self.process_block_topk_relabeling, document, page, block))
                         # Case when the block is detected as a picture or figure, but is actually complex
                         elif block.block_type in (BlockTypes.Picture, BlockTypes.Figure, BlockTypes.SectionHeader) and block.polygon.height > page.polygon.height * self.picture_height_threshold:
-                            futures.append(executor.submit(self.process_block_complex_relabeling, page, block))
+                            futures.append(executor.submit(self.process_block_complex_relabeling, document, page, block))
 
             for future in as_completed(futures):
                 future.result()  # Raise exceptions if any occurred
@@ -125,18 +125,18 @@ Here is the image of the layout block:
 
         pbar.close()
 
-    def process_block_topk_relabeling(self, page: PageGroup, block: Block):
+    def process_block_topk_relabeling(self, document: Document, page: PageGroup, block: Block):
         topk = {str(k): round(v, 3) for k, v in block.top_k.items()}
 
         prompt = self.topk_relabelling_prompt + '```json' + json.dumps(topk) + '```\n'
-        return self.process_block_relabeling(page, block, prompt)
+        return self.process_block_relabeling(document, page, block, prompt)
 
-    def process_block_complex_relabeling(self, page: PageGroup, block: Block):
+    def process_block_complex_relabeling(self, document: Document, page: PageGroup, block: Block):
         complex_prompt = self.complex_relabeling_prompt
-        return self.process_block_relabeling(page, block, complex_prompt)
+        return self.process_block_relabeling(document, page, block, complex_prompt)
 
-    def process_block_relabeling(self, page: PageGroup, block: Block, prompt: str):
-        image = self.extract_image(page, block)
+    def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],
@@ -162,10 +162,5 @@ Here is the image of the layout block:
             )
             page.replace_block(block, generated_block)
 
-    def extract_image(self, page: PageGroup, image_block: Block, expand: float = 0.01):
-        page_img = page.lowres_image
-        image_box = image_block.polygon\
-            .rescale(page.polygon.size, page_img.size)\
-            .expand(expand, expand)
-        cropped = page_img.crop(image_box.bbox)
-        return cropped
+    def extract_image(self, document: Document, image_block: Block, expand: float = 0.01):
+        return image_block.get_image(document, highres=False, expansion=(expand, expand))

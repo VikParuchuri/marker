@@ -50,7 +50,7 @@ Output:
         table_md = markdown2.markdown(block_html)
 
         prompt = self.gemini_rewriting_prompt + '```markdown\n`' + table_md + '`\n```\n'
-        image = self.extract_image(page, block)
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],

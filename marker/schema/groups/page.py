@@ -35,6 +35,9 @@ class PageGroup(Group):
         else:
             self.children.append(block)
 
+    def get_image(self, *args, highres: bool = False, **kwargs):
+        return self.highres_image if highres else self.lowres_image
+
     def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:
             ignored_block_types = []
