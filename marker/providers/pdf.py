@@ -282,6 +282,8 @@ class PdfProvider(BaseProvider):
             return
 
         spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans'] if span['text']]
+        if not spans:
+            return
 
         span_starts = np.array([span['bbox'][:2] for span in spans])
         ref_pos = np.array([ref for ref in refs])
