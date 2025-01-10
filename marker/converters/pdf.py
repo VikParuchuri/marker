@@ -1,6 +1,7 @@
 import os
 
 from marker.processors import BaseProcessor
+from marker.processors.llm.llm_table_merge import LLMTableMergeProcessor
 from marker.providers.registry import provider_from_filepath
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
@@ -68,6 +69,7 @@ class PdfConverter(BaseConverter):
         PageHeaderProcessor,
         SectionHeaderProcessor,
         TableProcessor,
+        LLMTableMergeProcessor,
         LLMTableProcessor,
         LLMFormProcessor,
         TextProcessor,

@@ -6,18 +6,20 @@ from marker.config.crawler import crawler
 
 
 class CustomClickPrinter(click.Command):
-    def get_help(self, ctx):
-        additional_help = (
-            "\n\nTip: Use 'config --help' to display all the attributes of the Builders, Processors, and Converters in Marker."
-        )
-        help_text = super().get_help(ctx)
-        help_text = help_text + additional_help
-        click.echo(help_text)
-
     def parse_args(self, ctx, args):
         display_help = 'config' in args and '--help' in args
         if display_help:
-            click.echo("Here is a list of all the Builders, Processors, Converters, Providers and Renderers in Marker along with their attributes:")
+            click.echo(
+                "Here is a list of all the Builders, Processors, Converters, Providers and Renderers in Marker along with their attributes:")
+
+        shared_attrs = {}
+
+        for base_type, base_type_dict in crawler.class_config_map.items():
+            for class_name, class_map in base_type_dict.items():
+                for attr in class_map['config'].keys():
+                    if attr not in shared_attrs:
+                        shared_attrs[attr] = []
+                    shared_attrs[attr].append(class_name)
 
         for base_type, base_type_dict in crawler.class_config_map.items():
             if display_help:
@@ -32,9 +34,15 @@ class CustomClickPrinter(click.Command):
                     if display_help:
                         click.echo(" " * 8 + f"{attr} ({formatted_type}):")
                         click.echo("\n".join([f'{" " * 12}' + desc for desc in metadata]))
+
                     if attr_type in [str, int, float, bool, Optional[int], Optional[float], Optional[str]]:
                         is_flag = attr_type in [bool, Optional[bool]] and not default
-                        options = ["--" + attr, "--" + class_name_attr, class_name_attr]
+
+                        # Only include the generic --attr option if it's unique
+                        options = ["--" + class_name_attr, class_name_attr]
+                        if len(shared_attrs[attr]) == 1:
+                            options.insert(0, "--" + attr)
+
                         ctx.command.params.append(
                             click.Option(
                                 options,

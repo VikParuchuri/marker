@@ -30,7 +30,7 @@ class LLMLayoutBuilder(LayoutBuilder):
     confidence_threshold: Annotated[
         float,
         "The confidence threshold to use for relabeling.",
-    ] = 0.75
+    ] = 0.7
     picture_height_threshold: Annotated[
         float,
         "The height threshold for pictures that may actually be complex regions.",

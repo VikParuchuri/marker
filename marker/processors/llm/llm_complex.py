@@ -79,4 +79,5 @@ No corrections needed.
             return
 
         # Convert LLM markdown to html
+        corrected_markdown = corrected_markdown.strip().lstrip("```markdown").rstrip("```").strip()
         block.html = markdown2.markdown(corrected_markdown)

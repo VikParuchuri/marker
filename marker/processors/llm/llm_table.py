@@ -15,7 +15,7 @@ class LLMTableProcessor(BaseLLMProcessor):
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",
-    ] = (BlockTypes.Table,)
+    ] = (BlockTypes.Table, BlockTypes.TableOfContents)
     gemini_rewriting_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
@@ -85,7 +85,8 @@ No corrections needed.
         if "no corrections" in corrected_html.lower():
             return
 
-        parsed_cells = self.parse_html_table(corrected_html, block)
+        corrected_html = corrected_html.strip().lstrip("```html").rstrip("```").strip()
+        parsed_cells = self.parse_html_table(corrected_html, block, page)
         if len(parsed_cells) <= 1:
             block.update_metadata(llm_error_count=1)
             return
@@ -97,9 +98,13 @@ No corrections needed.
             block.update_metadata(llm_error_count=1)
             return
 
-        block.cells = parsed_cells
+        block.structure = []
+        for cell in parsed_cells:
+            page.add_full_block(cell)
+            block.add_structure(cell)
 
-    def parse_html_table(self, html_text: str, block: Block) -> List[TableCell]:
+
+    def parse_html_table(self, html_text: str, block: Block, page: PageGroup) -> List[TableCell]:
         soup = BeautifulSoup(html_text, 'html.parser')
         table = soup.find('table')
 
@@ -152,7 +157,8 @@ No corrections needed.
                     rowspan=rowspan,
                     colspan=colspan,
                     is_header=cell.name == 'th',
-                    polygon=cell_polygon
+                    polygon=cell_polygon,
+                    page_id=page.page_id,
                 )
                 cells.append(cell_obj)
                 cur_col += colspan
