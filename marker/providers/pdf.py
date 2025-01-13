@@ -238,17 +238,24 @@ class PdfProvider(BaseProvider):
             max_intersection = intersection_link.argmax()
             span = spans[max_intersection]
 
-            if link['dest_page'] is not None:
-                dest_page = link['dest_page']
-                self.refs.setdefault(dest_page, [])
-                link['url'] = f"#page-{dest_page}"
-                if link['dest_pos']:
-                    dest_pos = link['dest_pos']
-                else:
-                    dest_pos = [0.0, 0.0]
-                if dest_pos not in self.refs[dest_page]:
-                    self.refs[dest_page].append(dest_pos)
-                link['url'] += f"-{self.refs[dest_page].index(dest_pos)}"
+            if link['dest_page'] is None:
+                continue
+
+            dest_page = link['dest_page']
+            self.refs.setdefault(dest_page, [])
+            link['url'] = f"#page-{dest_page}"
+            if link['dest_pos']:
+                dest_pos = link['dest_pos']
+            else:
+                # Don't link to self if there is no dest_pos
+                if dest_page == page_id:
+                    continue
+                dest_pos = [0.0, 0.0]
+
+            if dest_pos not in self.refs[dest_page]:
+                self.refs[dest_page].append(dest_pos)
+
+            link['url'] += f"-{self.refs[dest_page].index(dest_pos)}"
 
             span_link_map.setdefault(max_intersection, [])
             span_link_map[max_intersection].append(link)
@@ -272,27 +279,19 @@ class PdfProvider(BaseProvider):
         if not refs:
             return
 
-        spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans'] if span['text']]
+        spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans']]
         if not spans:
             return
 
         span_starts = np.array([span['bbox'][:2] for span in spans])
-        ref_pos = np.array([ref for ref in refs])
-        ref_starts = np.array([pos for pos in ref_pos])
+        ref_starts = np.array(refs)
 
         distances = np.linalg.norm(span_starts[:, np.newaxis, :] - ref_starts[np.newaxis, :, :], axis=2)
 
-        assigned_refs = set()
-        for ref_idx, ref_center in enumerate(ref_starts):
-            if ref_idx in assigned_refs:
-                continue
-
-            span_indices = np.argsort(distances[:, ref_idx])
-            for span_idx in span_indices:
-                spans[span_idx].setdefault('anchors', [])
-                spans[span_idx]['anchors'].append(f"page-{page_id}-{ref_idx}")
-                assigned_refs.add(ref_idx)
-                break
+        for ref_idx in range(len(ref_starts)):
+            span_idx = np.argmin(distances[:, ref_idx])
+            spans[span_idx].setdefault('anchors', [])
+            spans[span_idx]['anchors'].append(f"page-{page_id}-{ref_idx}")
 
     def break_spans(self, orig_span, links):
         spans = []
