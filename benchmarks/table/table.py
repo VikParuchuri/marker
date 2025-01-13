@@ -9,6 +9,7 @@ from tabulate import tabulate
 import json
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
+from pypdfium2._helpers.misc import PdfiumError
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for a simple op, which is not supported on MPS
 
@@ -35,12 +36,6 @@ def main(out_file, dataset, max):
     config_parser = ConfigParser({})
     start = time.time()
 
-    converter = TableConverter(
-        config=config_parser.generate_config_dict(),
-        artifact_dict=models,
-        processor_list=config_parser.get_processors(),
-        renderer='marker.renderers.html.HTMLRenderer'
-    )
 
     dataset = datasets.load_dataset(dataset, split='train')
     dataset = dataset.shuffle(seed=0)
@@ -51,35 +46,46 @@ def main(out_file, dataset, max):
 
     results = []
     for i in tqdm(range(iterations), desc='Converting Tables'):
-        row = dataset[i]
-        pdf_binary = base64.b64decode(row['pdf'])
-        gt_tables = row['tables']       #Already sorted by reading order, which is what marker returns
-        with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb+") as temp_pdf_file:
-            temp_pdf_file.write(pdf_binary)
-            temp_pdf_file.seek(0)
-            filename = temp_pdf_file.name
+        try:
+            row = dataset[i]
+            pdf_binary = base64.b64decode(row['pdf'])
+            gt_tables = row['tables']       #Already sorted by reading order, which is what marker returns
 
-            marker_table_html = converter(filename).html
+            converter = TableConverter(
+                config=config_parser.generate_config_dict(),
+                artifact_dict=models,
+                processor_list=config_parser.get_processors(),
+                renderer='marker.renderers.html.HTMLRenderer'
+            )
 
-        marker_table_soup = BeautifulSoup(marker_table_html, 'html.parser')
-        marker_detected_tables = marker_table_soup.find_all('table')
-        if len(marker_detected_tables)==0:
-            print(f'No tables detected, skipping...')
-        
-        for marker_table_soup, gt_table in zip(marker_detected_tables, gt_tables):
-            gt_table_html = gt_table['html']
+            with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb") as temp_pdf_file:
+                temp_pdf_file.write(pdf_binary)
+                temp_pdf_file.seek(0)
+                marker_table_html = converter(temp_pdf_file.name).html
+
+            marker_table_soup = BeautifulSoup(marker_table_html, 'html.parser')
+            marker_detected_tables = marker_table_soup.find_all('table')
+            if len(marker_detected_tables)==0:
+                print(f'No tables detected, skipping...')
             
-            #marker wraps the table in <tbody> which fintabnet data doesn't
-            marker_table_soup.find('tbody').unwrap()
-            #Fintabnet doesn't use th tags, need to be replaced for fair comparison
-            for th_tag in marker_table_soup.find_all('th'):
-                th_tag.name = 'td'
-            marker_table_html = str(marker_table_soup)
+            for marker_table_soup, gt_table in zip(marker_detected_tables, gt_tables):
+                gt_table_html = gt_table['html']
+                
+                #marker wraps the table in <tbody> which fintabnet data doesn't
+                marker_table_soup.find('tbody').unwrap()
+                #Fintabnet doesn't use th tags, need to be replaced for fair comparison
+                for th_tag in marker_table_soup.find_all('th'):
+                    th_tag.name = 'td'
+                marker_table_html = str(marker_table_soup)
 
-            results.append({
-                "marker_table": marker_table_html,
-                "gt_table": gt_table_html
-            })
+                results.append({
+                    "marker_table": marker_table_html,
+                    "gt_table": gt_table_html
+                })
+        except PdfiumError:
+            print('Broken PDF, Skipping...')
+            continue
+
     total_time = time.time() - start
 
     with ThreadPoolExecutor(max_workers=16) as executor:
