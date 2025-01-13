@@ -484,7 +484,7 @@ class PdfProvider(BaseProvider):
         ty_start = page_height - cy_start
         ty_end = page_height - cy_end
 
-        bbox = [cx_start, min(ty_start, ty_end), cx_end, max(ty_start, ty_end)]
+        bbox = [min(cx_start, cx_end), min(ty_start, ty_end), max(cx_start, cx_end), max(ty_start, ty_end)]
         return Bbox(bbox).rotate(page_width, page_height, page_rotation).bbox
 
     def xy_to_scaled_pos(self, x, y, page_bbox, page_height, page_width, page_rotation, expand_by=1) -> List[float]:
