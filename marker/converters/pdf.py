@@ -5,6 +5,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 import inspect
 from collections import defaultdict
 from typing import Annotated, Any, Dict, List, Optional, Type
+from functools import cache
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
@@ -116,11 +117,13 @@ class PdfConverter(BaseConverter):
 
         return cls(**resolved_kwargs)
 
+    @cache
     def build_document(self, filepath: str):
-        pdf_provider = PdfProvider(filepath, self.config)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
-        document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
+
+        with PdfProvider(filepath, self.config) as pdf_provider:
+            document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
         for processor_cls in self.processor_list:
