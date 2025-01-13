@@ -224,51 +224,42 @@ class PdfProvider(BaseProvider):
 
         links = self.get_links(page_id)
 
-        spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans'] if span['text']]
+        spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans']]
         span_bboxes = [span['bbox'] for span in spans]
         link_bboxes = [link['bbox'] for link in links]
-        intersection_matrix = matrix_intersection_area(span_bboxes, link_bboxes)
-        max_intersections = {}
+        intersection_matrix = matrix_intersection_area(link_bboxes, span_bboxes)
 
-        for span_idx, span in enumerate(spans):
-            intersection_span = intersection_matrix[span_idx]
-            if intersection_span.sum() == 0:
+        span_link_map = {}
+        for link_idx, link in enumerate(links):
+            intersection_link = intersection_matrix[link_idx]
+            if intersection_link.sum() == 0:
                 continue
 
-            max_intersection = intersection_span.argmax()
-            if intersection_matrix[span_idx, max_intersection] > 0:
-                max_intersections[span_idx] = (
-                    intersection_matrix[span_idx, max_intersection],
-                    links[max_intersection]
-                )
+            max_intersection = intersection_link.argmax()
+            span = spans[max_intersection]
 
-        span_replace_map = {}
-        for span_idx, span in enumerate(spans):
-            if span_idx in max_intersections:
-                link = max_intersections[span_idx][1]
-                if link['dest_page'] is not None:
-                    dest_page = link['dest_page']
-                    self.refs.setdefault(dest_page, [])
-                    link['url'] = f"#page-{dest_page}"
-                    if link['dest_pos']:
-                        dest_pos = link['dest_pos']
-                    else:
-                        dest_pos = [0.0, 0.0]
-                    if dest_pos not in self.refs[dest_page]:
-                        self.refs[dest_page].append(dest_pos)
-                    link['url'] += f"-{self.refs[dest_page].index(dest_pos)}"
-                span_replace_map[span_idx] = self.break_spans(span, link)
-            span_idx += 1
+            if link['dest_page'] is not None:
+                dest_page = link['dest_page']
+                self.refs.setdefault(dest_page, [])
+                link['url'] = f"#page-{dest_page}"
+                if link['dest_pos']:
+                    dest_pos = link['dest_pos']
+                else:
+                    dest_pos = [0.0, 0.0]
+                if dest_pos not in self.refs[dest_page]:
+                    self.refs[dest_page].append(dest_pos)
+                link['url'] += f"-{self.refs[dest_page].index(dest_pos)}"
+
+            span_link_map.setdefault(max_intersection, [])
+            span_link_map[max_intersection].append(link)
 
         span_idx = 0
         for block in page["blocks"]:
             for line in block["lines"]:
                 spans = []
                 for span in line["spans"]:
-                    if not span["text"]:
-                        continue
-                    if span_idx in span_replace_map:
-                        spans.extend(span_replace_map[span_idx])
+                    if span_idx in span_link_map:
+                        spans.extend(self.break_spans(span, span_link_map[span_idx]))
                     else:
                         spans.append(span)
                     span_idx += 1
@@ -303,16 +294,25 @@ class PdfProvider(BaseProvider):
                 assigned_refs.add(ref_idx)
                 break
 
-    def break_spans(self, orig_span, link):
+    def break_spans(self, orig_span, links):
         spans = []
         span = None
-        link_bbox = Bbox(link['bbox'])
+        link_bboxes = [Bbox(link['bbox']) for link in links]
 
         for char in orig_span['chars']:
             char_bbox = Bbox(char['bbox'])
-            char_in_link = bool(link_bbox.intersection_pct(char_bbox) > 0)
+            intersections = []
+            for i, link_bbox in enumerate(link_bboxes):
+                area = link_bbox.intersection_area(char_bbox)
+                if area > 0:
+                    intersections.append((area, links[i]))
 
-            if not span or (char_in_link != span['char_in_link']):
+            current_url = ''
+            if intersections:
+                intersections.sort(key=lambda x: x[0], reverse=True)
+                current_url = intersections[0][1]['url']
+
+            if not span or current_url != span['url']:
                 span = {
                     "bbox": char_bbox,
                     "text": char["char"],
@@ -321,8 +321,7 @@ class PdfProvider(BaseProvider):
                     "char_start_idx": char["char_idx"],
                     "char_end_idx": char["char_idx"],
                     "chars": [char],
-                    "url": link['url'] if char_in_link else '',
-                    "char_in_link": char_in_link
+                    "url": current_url
                 }
                 spans.append(span)
             else:
@@ -333,7 +332,6 @@ class PdfProvider(BaseProvider):
 
         for span in spans:
             span['bbox'] = span['bbox'].bbox
-            del span['char_in_link']
 
         return spans
 
