@@ -86,15 +86,14 @@ def main(out_file, dataset, max):
             print('Broken PDF, Skipping...')
             continue
 
-    total_time = time.time() - start
+    print(f"Total time: {time.time() - start}")
 
     with ThreadPoolExecutor(max_workers=16) as executor:
         results = list(tqdm(executor.map(update_teds_score, results), desc='Computing alignment scores', total=len(results)))
     avg_score = sum([r["score"] for r in results]) / len(results)
 
-    print(f"Total time: {time.time() - start}")
-    headers = ["Avg score", "Time per table", "Total tables"]
-    data = [f"{avg_score:.3f}", f"{total_time / len(results):.3f}", len(results)]
+    headers = ["Avg score", "Total tables"]
+    data = [f"{avg_score:.3f}", len(results)]
     table = tabulate([data], headers=headers, tablefmt="github")
     print(table)
     print("Avg score computed by comparing marker predicted HTML with original HTML")
