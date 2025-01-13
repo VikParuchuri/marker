@@ -1,8 +1,7 @@
 '''
-TEDS Code Adapter from https://github.com/ibm-aur-nlp/EDD
+TEDS Code Adapted from https://github.com/ibm-aur-nlp/EDD
 '''
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 from tqdm import tqdm
@@ -99,6 +98,7 @@ def similarity_eval_html(pred, true, structure_only=False):
     ''' Computes TEDS score between the prediction and the ground truth of a
         given samples
     '''
+    pred, true = html.fromstring(pred), html.fromstring(true)
     if pred.xpath('body/table') and true.xpath('body/table'):
         pred = pred.xpath('body/table')[0]
         true = true.xpath('body/table')[0]
@@ -112,22 +112,3 @@ def similarity_eval_html(pred, true, structure_only=False):
     else:
         return 0.0
 
-def TEDS(prediction, ground_truth):
-    prediction, ground_truth = wrap_table_html(prediction), wrap_table_html(ground_truth)
-    if prediction:
-        return similarity_eval_html(
-            html.fromstring(prediction),
-            html.fromstring(ground_truth)
-        )
-    else:
-        return 0.
-
-def batched_TEDS(gts: List[str], preds: List[str], n_jobs:int=16):
-    with ThreadPoolExecutor(max_workers=n_jobs) as pool:
-        futures = [pool.submit(TEDS, pred, gt) for pred, gt in zip(preds, gts)]
-
-    teds_scores = []
-    for future in futures:
-        teds_scores.append(future.result())
-
-    return teds_scores
