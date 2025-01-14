@@ -24,14 +24,24 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
         float,
         "The maximum percentage down the page the second table can start to be considered for merging."
     ] = 0.2
+    vertical_table_height_threshold: Annotated[
+        float,
+        "The height tolerance for 2 adjacent tables to be merged into one."
+    ] = 0.25
+    vertical_table_distance_threshold: Annotated[
+        int,
+        "The maximum distance between table edges for adjacency."
+    ] = 20
     gemini_table_merge_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt."
     ] = """You're a text correction expert specializing in accurately reproducing tables from PDFs.
-You'll receive two images of tables from successive pages of a PDF.  Table 1 is from the first page, and Table 2 is from the second page.  Both tables may actually be part of the same larger table. Your job is to decide if Table 2 should be merged with Table 1, and how they should be joined.  The should only be merged if they're both part of the same larger table.
+You'll receive two images of tables from successive pages of a PDF.  Table 1 is from the first page, and Table 2 is from the second page.  Both tables may actually be part of the same larger table. Your job is to decide if Table 2 should be merged with Table 1, and how they should be joined.  The should only be merged if they're both part of the same larger table, and Table 2 cannot be interpreted without merging.
 
-You'll specify your judgement in json format - first whether Table 2 should be merged with Table 1, then the direction of the merge, either bottom or right.  Table 2 should be merged at the bottom of Table 1 if they have similar headers, and the rows have similar values.  Table2  should be merged to the right of Table 1 if each row in Table 2 matches a row in Table 1.
+You'll specify your judgement in json format - first whether Table 2 should be merged with Table 1, then the direction of the merge, either bottom or right.  Table 2 should be merged at the bottom of Table 1 if Table 2 has no headers, and the rows have similar values, meaning that Table 2 continues Table 1. Table2  should be merged to the right of Table 1 if each row in Table 2 matches a row in Table 1, meaning that Table 2 contains additional columns from Table 1.
+
+In general, you should only merge Table 1 and Table 2 if Table 2 cannot effectively be interpreted without merging.
 **Instructions:**
 1. Carefully examine the provided table images.  Table 1 is the first image, and Table 2 is the second image.
 2. Examine the provided html representations of Table 1 and Table 2.
@@ -98,8 +108,10 @@ Table 2
         table_runs = []
         table_run = []
         prev_block = None
+        prev_page_block_count = None
         for page in document.pages:
-            for block in page.contained_blocks(document, self.block_types):
+            page_blocks = page.contained_blocks(document, self.block_types)
+            for block in page_blocks:
                 if prev_block is None:
                     subsequent_page_table = False
                     same_page_vertical_table = False
@@ -108,13 +120,13 @@ Table 2
                         prev_block.page_id == block.page_id - 1, # Subsequent pages
                         max(prev_block.polygon.height / page.polygon.height,
                             block.polygon.height / page.polygon.height) > self.table_height_threshold, # Take up most of the page height
-                        block.polygon.y_start / page.polygon.height < self.table_start_threshold
+                            (len(page_blocks) == 1 or prev_page_block_count == 1) # Only table on the page
                         ])
 
                     same_page_vertical_table = all([
                         prev_block.page_id == block.page_id, # On the same page
-                        .75 < prev_block.polygon.height / block.polygon.height < 1.25, # Similar height
-                        abs(block.polygon.x_start - prev_block.polygon.x_end) < 20, # Close together
+                        (1 - self.vertical_table_height_threshold) < prev_block.polygon.height / block.polygon.height < (1 + self.vertical_table_height_threshold), # Similar height
+                        abs(block.polygon.x_start - prev_block.polygon.x_end) < self.vertical_table_distance_threshold, # Close together in x
                     ])
 
                 if prev_block is not None and \
@@ -127,6 +139,7 @@ Table 2
                         table_runs.append(table_run)
                     table_run = []
                 prev_block = block
+            prev_page_block_count = len(page_blocks)
 
         if table_run:
             table_runs.append(table_run)
@@ -142,6 +155,10 @@ Table 2
         pbar.close()
 
     def process_rewriting(self, document: Document, blocks: List[Block]):
+        if len(blocks) < 2:
+            # Can't merge single tables
+            return
+
         start_block = blocks[0]
         for i in range(1, len(blocks)):
             curr_block = blocks[i]
@@ -199,7 +216,7 @@ Table 2
             # The original table is okay
             if "true" not in merge:
                 start_block = curr_block
-                return
+                continue
 
             # Merge the cells and images of the tables
             direction = response["direction"]
