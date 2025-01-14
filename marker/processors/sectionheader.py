@@ -41,9 +41,12 @@ class SectionHeaderProcessor(BaseProcessor):
     height_tolerance = .99
 
     def __call__(self, document: Document):
-        line_heights: Dict[int, List[float]] = {}
+        line_heights: Dict[int, float] = {}
         for page in document.pages:
-            for block in page.contained_blocks(document, self.block_types):
+            # Iterate children to grab all section headers
+            for block in page.children:
+                if block.block_type not in self.block_types:
+                    continue
                 if block.structure is not None:
                     line_heights[block.id] = block.line_height(document)
                 else:
@@ -54,11 +57,11 @@ class SectionHeaderProcessor(BaseProcessor):
         heading_ranges = self.bucket_headings(flat_line_heights)
 
         for page in document.pages:
+            # Iterate children to grab all section headers
             for block in page.children:
                 if block.block_type not in self.block_types:
                     continue
-
-                block_height = line_heights[block.id]
+                block_height = line_heights.get(block.id, 0)
                 if block_height > 0:
                     for idx, (min_height, max_height) in enumerate(heading_ranges):
                         if block_height >= min_height * self.height_tolerance:
