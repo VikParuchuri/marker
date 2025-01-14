@@ -100,7 +100,7 @@ class TableProcessor(BaseProcessor):
                     cell_polygon = PolygonBox(polygon=cell.polygon).rescale(page.get_image(highres=True).size, page.polygon.size)
                     cell_block = TableCell(
                         polygon=cell_polygon,
-                        text="\n".join([self.normalize_spaces(fix_text(t["text"])) for t in cell.text_lines]) if cell.text_lines else "", # Cells can be blank (no text)
+                        text=self.finalize_cell_text(cell),
                         rowspan=cell.rowspan,
                         colspan=cell.colspan,
                         row_id=cell.row_id,
@@ -111,6 +111,12 @@ class TableProcessor(BaseProcessor):
                     page.add_full_block(cell_block)
                     block.add_structure(cell_block)
                 table_idx += 1
+
+    def finalize_cell_text(self, cell: SuryaTableCell):
+        text = "\n".join([t["text"].strip() for t in cell.text_lines]) if cell.text_lines else ""
+        text = re.sub(r"(\s\.){3,}", "...", text)  # Replace . . .
+        text = re.sub(r"\.{3,}", "...", text)  # Replace ..., like in table of contents
+        return self.normalize_spaces(fix_text(text))
 
     @staticmethod
     def normalize_spaces(text):
@@ -162,7 +168,7 @@ class TableProcessor(BaseProcessor):
                                     colspan=cell.colspan,
                                     row_id=cell.row_id + shift_up + i,
                                     col_id=cell.col_id,
-                                    is_header=cell.is_header,
+                                    is_header=cell.is_header and i == 0, # Only first line is header
                                     within_row_id=cell.within_row_id,
                                     cell_id=cell_id
                                 )
@@ -192,20 +198,12 @@ class TableProcessor(BaseProcessor):
                 if intersections.sum() == 0:
                     continue
 
-                table_text_line["text"] = fix_text(table_text_line["text"])
                 max_intersection = intersections.argmax()
-                if not table_cells[max_intersection].text_lines:
-                    table_cells[max_intersection].text_lines = []
-
                 cell_text[max_intersection].append(table_text_line)
 
             for k in cell_text:
                 # TODO: see if the text needs to be sorted (based on rotation)
                 text = cell_text[k]
-                for item in text:
-                    item["text"] = re.sub(r"(\s\.){3,}", "...", item["text"]) # Replace . . .
-                    item["text"] = re.sub(r"\.{3,}", "...", item["text"]) # Replace ..., like in table of contents
-
                 assert all("text" in t for t in text), "All text lines must have text"
                 assert all("bbox" in t for t in text), "All text lines must have a bbox"
                 table_cells[k].text_lines = text
