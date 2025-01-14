@@ -78,7 +78,6 @@ class PdfProvider(BaseProvider):
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
         self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
-        self.refs = {}
 
         if self.page_range is None:
             self.page_range = range(len(self.doc))
@@ -168,11 +167,15 @@ class PdfProvider(BaseProvider):
         LineClass: Line = get_block_class(BlockTypes.Line)
 
         if not self.disable_links:
-            for page in page_char_blocks:
-                self.merge_links(page)
+            refs = {}
 
+            # we first go through the entire document and merge links and collect refs
             for page in page_char_blocks:
-                self.merge_refs(page)
+                self.merge_links(page, refs)
+
+            # we can now merge the collected refs for each page
+            for page in page_char_blocks:
+                self.merge_refs(page, refs)
 
         for page in page_char_blocks:
             page_id = page["page"]
@@ -219,7 +222,7 @@ class PdfProvider(BaseProvider):
 
         return page_lines
 
-    def merge_links(self, page):
+    def merge_links(self, page, refs):
         """
         Merges links with spans. Some spans can also have multiple links associated with them.
         We break up the spans and reconstruct them taking the links into account.
@@ -246,7 +249,7 @@ class PdfProvider(BaseProvider):
                 continue
 
             dest_page = link['dest_page']
-            self.refs.setdefault(dest_page, [])
+            refs.setdefault(dest_page, [])
             link['url'] = f"#page-{dest_page}"
             if link['dest_pos']:
                 dest_pos = link['dest_pos']
@@ -254,12 +257,13 @@ class PdfProvider(BaseProvider):
                 # Don't link to self if there is no dest_pos
                 if dest_page == page_id:
                     continue
+                # if we don't have a dest pos, we just link to the top of the page
                 dest_pos = [0.0, 0.0]
 
-            if dest_pos not in self.refs[dest_page]:
-                self.refs[dest_page].append(dest_pos)
+            if dest_pos not in refs[dest_page]:
+                refs[dest_page].append(dest_pos)
 
-            link['url'] += f"-{self.refs[dest_page].index(dest_pos)}"
+            link['url'] += f"-{refs[dest_page].index(dest_pos)}"
 
             span_link_map.setdefault(max_intersection, [])
             span_link_map[max_intersection].append(link)
@@ -276,15 +280,15 @@ class PdfProvider(BaseProvider):
                     span_idx += 1
                 line['spans'] = spans
 
-    def merge_refs(self, page):
+    def merge_refs(self, page, refs):
         """
         We associate each reference to the nearest span.
         """
 
         page_id = page["page"]
 
-        refs = self.refs.get(page_id, [])
-        if not refs:
+        page_refs = refs.get(page_id, [])
+        if not page_refs:
             return
 
         spans = [span for block in page['blocks'] for line in block['lines'] for span in line['spans']]
@@ -292,7 +296,7 @@ class PdfProvider(BaseProvider):
             return
 
         span_starts = np.array([span['bbox'][:2] for span in spans])
-        ref_starts = np.array(refs)
+        ref_starts = np.array(page_refs)
 
         distances = np.linalg.norm(span_starts[:, np.newaxis, :] - ref_starts[np.newaxis, :, :], axis=2)
 
