@@ -166,12 +166,12 @@ class PdfProvider(BaseProvider):
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
-        for page in page_char_blocks:
-            if not self.disable_links:
+
+        if not self.disable_links:
+            for page in page_char_blocks:
                 self.merge_links(page)
 
-        for page in page_char_blocks:
-            if not self.disable_links:
+            for page in page_char_blocks:
                 self.merge_refs(page)
 
         for page in page_char_blocks:
