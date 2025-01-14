@@ -100,10 +100,25 @@ Table 2
         prev_block = None
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
+                if prev_block is None:
+                    subsequent_page_table = False
+                    same_page_vertical_table = False
+                else:
+                    subsequent_page_table = all([
+                        prev_block.page_id == block.page_id - 1, # Subsequent pages
+                        max(prev_block.polygon.height / page.polygon.height,
+                            block.polygon.height / page.polygon.height) > self.table_height_threshold, # Take up most of the page height
+                        block.polygon.y_start / page.polygon.height < self.table_start_threshold
+                        ])
+
+                    same_page_vertical_table = all([
+                        prev_block.page_id == block.page_id, # On the same page
+                        .75 < prev_block.polygon.height / block.polygon.height < 1.25, # Similar height
+                        abs(block.polygon.x_start - prev_block.polygon.x_end) < 20, # Close together
+                    ])
+
                 if prev_block is not None and \
-                    prev_block.page_id == block.page_id - 1 and \
-                    max(prev_block.polygon.height / page.polygon.height, block.polygon.height / page.polygon.height) > self.table_height_threshold and\
-                    block.polygon.y_start / page.polygon.height < self.table_start_threshold:
+                        (subsequent_page_table or same_page_vertical_table):
                     if prev_block not in table_run:
                         table_run.append(prev_block)
                     table_run.append(block)

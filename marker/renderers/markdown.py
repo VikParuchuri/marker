@@ -57,7 +57,6 @@ class Markdownify(MarkdownConverter):
     def convert_table(self, el, text, convert_as_inline):
         total_rows = len(el.find_all('tr'))
         colspans = []
-        is_header_row = []
         rowspan_cols = defaultdict(int)
         for i, row in enumerate(el.find_all('tr')):
             row_cols = rowspan_cols[i]
@@ -67,7 +66,6 @@ class Markdownify(MarkdownConverter):
                 for r in range(int(cell.get('rowspan', 1)) - 1):
                     rowspan_cols[i + r] += colspan # Add the colspan to the next rows, so they get the correct number of columns
             colspans.append(row_cols)
-            is_header_row.append(len(row.find_all('th')) == row_cols)
         total_cols = max(colspans)
 
         grid = [[None for _ in range(total_cols)] for _ in range(total_rows)]
@@ -112,9 +110,12 @@ class Markdownify(MarkdownConverter):
         add_header_line = lambda: markdown_lines.append('|' + '|'.join('-' * (width + 2) for width in col_widths) + '|')
 
         # Generate markdown rows
+        added_header = False
         for i, row in enumerate(grid):
-            if i == 1:
-                add_header_line()
+            is_empty_line = all(not cell for cell in row)
+            if is_empty_line and not added_header:
+                # Skip leading blank lines
+                continue
 
             line = []
             for col_idx, cell in enumerate(row):
@@ -123,6 +124,11 @@ class Markdownify(MarkdownConverter):
                 padding = col_widths[col_idx] - len(str(cell))
                 line.append(f" {cell}{' ' * padding} ")
             markdown_lines.append('|' + '|'.join(line) + '|')
+
+            if not added_header:
+                # Skip empty lines when adding the header row
+                add_header_line()
+                added_header = True
 
         # Handle one row tables
         if total_rows == 1:
