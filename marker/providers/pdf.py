@@ -220,6 +220,10 @@ class PdfProvider(BaseProvider):
         return page_lines
 
     def merge_links(self, page):
+        """
+        Merges links with spans. Some spans can also have multiple links associated with them.
+        We break up the spans and reconstruct them taking the links into account.
+        """
         page_id = page["page"]
 
         links = self.get_links(page_id)
@@ -266,13 +270,17 @@ class PdfProvider(BaseProvider):
                 spans = []
                 for span in line["spans"]:
                     if span_idx in span_link_map:
-                        spans.extend(self.break_spans(span, span_link_map[span_idx]))
+                        spans.extend(self._reconstruct_spans(span, span_link_map[span_idx]))
                     else:
                         spans.append(span)
                     span_idx += 1
                 line['spans'] = spans
 
     def merge_refs(self, page):
+        """
+        We associate each reference to the nearest span.
+        """
+
         page_id = page["page"]
 
         refs = self.refs.get(page_id, [])
@@ -293,7 +301,10 @@ class PdfProvider(BaseProvider):
             spans[span_idx].setdefault('anchors', [])
             spans[span_idx]['anchors'].append(f"page-{page_id}-{ref_idx}")
 
-    def break_spans(self, orig_span, links):
+    def _reconstruct_spans(self, orig_span: dict, links: List[dict]):
+        """
+        Reconstructs the spans by breaking them up into smaller spans based on the links.
+        """
         spans = []
         span = None
         link_bboxes = [Bbox(link['bbox']) for link in links]
@@ -369,7 +380,7 @@ class PdfProvider(BaseProvider):
             font_map = {}
             for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
                 font = pdfium_c.FPDFTextObj_GetFont(text_obj)
-                font_name = self.get_fontname(font)
+                font_name = self._get_fontname(font)
 
                 # we also skip pages without embedded fonts and fonts without names
                 non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
@@ -431,7 +442,8 @@ class PdfProvider(BaseProvider):
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
 
-    def get_fontname(self, font) -> str:
+    @staticmethod
+    def _get_fontname(font) -> str:
         font_name = ""
         buffer_size = 256
 
@@ -449,7 +461,8 @@ class PdfProvider(BaseProvider):
 
         return font_name
 
-    def get_dest_position(self, dest) -> Optional[Tuple[float, float]]:
+    @staticmethod
+    def _get_dest_position(dest) -> Optional[Tuple[float, float]]:
         has_x = ctypes.c_int()
         has_y = ctypes.c_int()
         has_zoom = ctypes.c_int()
@@ -471,7 +484,11 @@ class PdfProvider(BaseProvider):
         else:
             return None
 
-    def rect_to_scaled_bbox(self, rect, page_bbox, page_height, page_width, page_rotation) -> List[float]:
+    @staticmethod
+    def _rect_to_scaled_bbox(rect, page_bbox, page_rotation) -> List[float]:
+        page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
+        page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
+
         cx_start, cy_start, cx_end, cy_end = rect
         cx_start -= page_bbox[0]
         cx_end -= page_bbox[0]
@@ -484,15 +501,14 @@ class PdfProvider(BaseProvider):
         bbox = [min(cx_start, cx_end), min(ty_start, ty_end), max(cx_start, cx_end), max(ty_start, ty_end)]
         return Bbox(bbox).rotate(page_width, page_height, page_rotation).bbox
 
-    def xy_to_scaled_pos(self, x, y, page_bbox, page_height, page_width, page_rotation, expand_by=1) -> List[float]:
-        return self.rect_to_scaled_bbox([x - expand_by, y - expand_by, x + expand_by, y + expand_by], page_bbox, page_height, page_width, page_rotation)[:2]
+    @staticmethod
+    def _xy_to_scaled_pos(x, y, page_bbox, page_rotation, expand_by=1) -> List[float]:
+        return PdfProvider._rect_to_scaled_bbox([x - expand_by, y - expand_by, x + expand_by, y + expand_by], page_bbox, page_rotation)[:2]
 
     def get_links(self, page_idx):
         urls = []
         page = self.doc[page_idx]
         page_bbox: List[float] = page.get_bbox()
-        page_width = math.ceil(abs(page_bbox[2] - page_bbox[0]))
-        page_height = math.ceil(abs(page_bbox[1] - page_bbox[3]))
         page_rotation = 0
         try:
             page_rotation = page.get_rotation()
@@ -509,51 +525,54 @@ class PdfProvider(BaseProvider):
                 'url': None,
             }
             annot = pdfium_c.FPDFPage_GetAnnot(page, i)
-            if pdfium_c.FPDFAnnot_GetSubtype(annot) == pdfium_c.FPDF_ANNOT_LINK:
-                fs_rect = pdfium_c.FS_RECTF()
-                success = pdfium_c.FPDFAnnot_GetRect(annot, ctypes.byref(fs_rect))
-                if not success:
+            if pdfium_c.FPDFAnnot_GetSubtype(annot) != pdfium_c.FPDF_ANNOT_LINK:
+                continue
+
+            fs_rect = pdfium_c.FS_RECTF()
+            success = pdfium_c.FPDFAnnot_GetRect(annot, ctypes.byref(fs_rect))
+            if not success:
+                continue
+
+            link['bbox'] = self._rect_to_scaled_bbox(
+                [fs_rect.left, fs_rect.top, fs_rect.right, fs_rect.bottom],
+                page_bbox, page_rotation
+            )
+
+            link_obj = pdfium_c.FPDFAnnot_GetLink(annot)
+
+            dest = pdfium_c.FPDFLink_GetDest(self.doc, link_obj)
+            if dest:
+                tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
+                link['dest_page'] = tgt_page
+                dest_position = self._get_dest_position(dest)
+                if dest_position:
+                    link['dest_pos'] = self._xy_to_scaled_pos(*dest_position, page_bbox, page_rotation)
+
+            else:
+                action = pdfium_c.FPDFLink_GetAction(link_obj)
+                a_type = pdfium_c.FPDFAction_GetType(action)
+
+                if a_type == pdfium_c.PDFACTION_UNSUPPORTED:
                     continue
-                link['bbox'] = self.rect_to_scaled_bbox(
-                    [fs_rect.left, fs_rect.top, fs_rect.right, fs_rect.bottom],
-                    page_bbox, page_height, page_width, page_rotation
-                )
 
-                link_obj = pdfium_c.FPDFAnnot_GetLink(annot)
+                elif a_type == pdfium_c.PDFACTION_GOTO:
+                    # Goto a page
+                    dest = pdfium_c.FPDFAction_GetDest(self.doc, action)
+                    if dest:
+                        tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
+                        link['dest_page'] = tgt_page
+                        dest_position = self._get_dest_position(dest)
+                        if dest_position:
+                            link['dest_pos'] = self._xy_to_scaled_pos(*dest_position, page_bbox, page_rotation)
 
-                dest = pdfium_c.FPDFLink_GetDest(self.doc, link_obj)
-                if dest:
-                    tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
-                    link['dest_page'] = tgt_page
-                    dest_position = self.get_dest_position(dest)
-                    if dest_position:
-                        link['dest_pos'] = self.xy_to_scaled_pos(*dest_position, page_bbox, page_height, page_width, page_rotation)
+                elif a_type == pdfium_c.PDFACTION_URI:
+                    # External link
+                    needed_len = pdfium_c.FPDFAction_GetURIPath(self.doc, action, None, 0)
+                    if needed_len > 0:
+                        buf = ctypes.create_string_buffer(needed_len)
+                        pdfium_c.FPDFAction_GetURIPath(self.doc, action, buf, needed_len)
+                        uri = buf.raw[:needed_len].decode('utf-8', errors='replace').rstrip('\x00')
+                        link["url"] = uri
 
-                else:
-                    action = pdfium_c.FPDFLink_GetAction(link_obj)
-                    a_type = pdfium_c.FPDFAction_GetType(action)
-
-                    if a_type == pdfium_c.PDFACTION_UNSUPPORTED:
-                        continue
-
-                    elif a_type == pdfium_c.PDFACTION_GOTO:
-                        # Goto a page
-                        dest = pdfium_c.FPDFAction_GetDest(self.doc, action)
-                        if dest:
-                            tgt_page = pdfium_c.FPDFDest_GetDestPageIndex(self.doc, dest)
-                            link['dest_page'] = tgt_page
-                            dest_position = self.get_dest_position(dest)
-                            if dest_position:
-                                link['dest_pos'] = self.xy_to_scaled_pos(*dest_position, page_bbox, page_height, page_width, page_rotation)
-
-                    elif a_type == pdfium_c.PDFACTION_URI:
-                        # External link
-                        needed_len = pdfium_c.FPDFAction_GetURIPath(self.doc, action, None, 0)
-                        if needed_len > 0:
-                            buf = ctypes.create_string_buffer(needed_len)
-                            pdfium_c.FPDFAction_GetURIPath(self.doc, action, buf, needed_len)
-                            uri = buf.raw[:needed_len].decode('utf-8', errors='replace').rstrip('\x00')
-                            link["url"] = uri
-
-                urls.append(link)
+            urls.append(link)
         return urls
