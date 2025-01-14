@@ -152,7 +152,7 @@ class PdfProvider(BaseProvider):
         page_char_blocks = dictionary_output(
             self.filepath,
             page_range=self.page_range,
-            keep_chars=True,
+            keep_chars=False,
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf,
             quote_loosebox=False,
