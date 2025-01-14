@@ -13,7 +13,7 @@ def test_pdf_links(pdf_document: Document, pdf_converter: PdfConverter, temp_pdf
     first_page = pdf_document.pages[0]
 
     for section_header_span in first_page.contained_blocks(pdf_document, (BlockTypes.Span,)):
-        if section_header_span.text == " II.":
+        if "II." in section_header_span.text:
             assert section_header_span.url == "#page-1-0"
             break
     else:
