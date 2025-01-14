@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from copy import deepcopy
 from typing import Annotated, List
 
 from ftfy import fix_text
@@ -86,6 +87,7 @@ class TableProcessor(BaseProcessor):
             batch_size=self.get_table_rec_batch_size()
         )
         self.assign_text_to_cells(tables, table_data)
+        self.split_combined_rows(tables) # Split up rows that were combined
 
         # Assign table cells to the table
         table_idx = 0
@@ -98,7 +100,7 @@ class TableProcessor(BaseProcessor):
                     cell_polygon = PolygonBox(polygon=cell.polygon).rescale(page.get_image(highres=True).size, page.polygon.size)
                     cell_block = TableCell(
                         polygon=cell_polygon,
-                        text=cell.text or "", # Cells can be blank (no text)
+                        text="\n".join([self.normalize_spaces(fix_text(t["text"])) for t in cell.text_lines]) if cell.text_lines else "", # Cells can be blank (no text)
                         rowspan=cell.rowspan,
                         colspan=cell.colspan,
                         row_id=cell.row_id,
@@ -109,6 +111,71 @@ class TableProcessor(BaseProcessor):
                     page.add_full_block(cell_block)
                     block.add_structure(cell_block)
                 table_idx += 1
+
+    @staticmethod
+    def normalize_spaces(text):
+        space_chars = [
+            '\u2003',  # em space
+            '\u2002',  # en space
+            '\u00A0',  # non-breaking space
+            '\u200B',  # zero-width space
+            '\u3000',  # ideographic space
+        ]
+        for space in space_chars:
+            text = text.replace(space, ' ')
+        return text
+
+    def split_combined_rows(self, tables: List[TableResult]):
+        for table in tables:
+            unique_rows = sorted(list(set([c.row_id for c in table.cells])))
+            new_cells = []
+            shift_up = 0
+            max_cell_id = max([c.cell_id for c in table.cells])
+            new_cell_count = 0
+            for row in unique_rows:
+                # Cells in this row
+                # Deepcopy is because we do an in-place mutation later, and that can cause rows to shift to match rows in unique_rows
+                # making them be processed twice
+                row_cells = deepcopy([c for c in table.cells if c.row_id == row and c.cell_id])
+                rowspans = [c.rowspan for c in row_cells]
+                line_lens = [len(c.text_lines) if isinstance(c.text_lines, list) else 1 for c in row_cells]
+
+                # Other cells that span into this row
+                rowspan_cells = [c for c in table.cells if c.row_id != row and c.row_id + c.rowspan > row > c.row_id]
+                should_split = all([
+                    len(row_cells) > 0,
+                    len(rowspan_cells) == 0,
+                    all([r == 1 for r in rowspans]),
+                    all([l > 1 for l in line_lens]),
+                    all([l == line_lens[0] for l in line_lens])
+                ])
+                if should_split:
+                    for i in range(0, line_lens[0]):
+                        for cell in row_cells:
+                            line = cell.text_lines[i]
+                            cell_id = max_cell_id + new_cell_count
+                            new_cells.append(
+                                SuryaTableCell(
+                                    polygon=line["bbox"],
+                                    text_lines=[line],
+                                    rowspan=1,
+                                    colspan=cell.colspan,
+                                    row_id=cell.row_id + shift_up + i,
+                                    col_id=cell.col_id,
+                                    is_header=cell.is_header,
+                                    within_row_id=cell.within_row_id,
+                                    cell_id=cell_id
+                                )
+                            )
+                            new_cell_count += 1
+
+                    # For each new row we add, shift up subsequent rows
+                    shift_up += line_lens[0] - 1
+                else:
+                    for cell in row_cells:
+                        cell.row_id += shift_up
+                        new_cells.append(cell)
+            table.cells = new_cells
 
     def assign_text_to_cells(self, tables: List[TableResult], table_data: list):
         for table_result, table_page_data in zip(tables, table_data):
@@ -127,18 +194,21 @@ class TableProcessor(BaseProcessor):
 
                 table_text_line["text"] = fix_text(table_text_line["text"])
                 max_intersection = intersections.argmax()
-                if not table_cells[max_intersection].text:
-                    table_cells[max_intersection].text = []
+                if not table_cells[max_intersection].text_lines:
+                    table_cells[max_intersection].text_lines = []
 
                 cell_text[max_intersection].append(table_text_line)
 
             for k in cell_text:
                 # TODO: see if the text needs to be sorted (based on rotation)
-                text = "\n".join([ct["text"] for ct in cell_text[k]])
-                # Replace . . . etc with ...
-                text = re.sub(r"(\s\.){3,}", "...", text) # Replace . . .
-                text = re.sub(r"\.{3,}", "...", text) # Replace ..., like in table of contents
-                table_cells[k].text = text
+                text = cell_text[k]
+                for item in text:
+                    item["text"] = re.sub(r"(\s\.){3,}", "...", item["text"]) # Replace . . .
+                    item["text"] = re.sub(r"\.{3,}", "...", item["text"]) # Replace ..., like in table of contents
+
+                assert all("text" in t for t in text), "All text lines must have text"
+                assert all("bbox" in t for t in text), "All text lines must have a bbox"
+                table_cells[k].text_lines = text
 
     def assign_pdftext_lines(self, extract_blocks: list, filepath: str):
         table_inputs = []
@@ -165,7 +235,7 @@ class TableProcessor(BaseProcessor):
             table_idx = 0
             for block in extract_blocks:
                 if block["page_id"] == pnum:
-                    block["table_text_lines"]: List[TableCell] = page_tables[table_idx]
+                    block["table_text_lines"] = page_tables[table_idx]
                     table_idx += 1
             assert table_idx == len(page_tables), "Number of tables and table inputs must match"
 

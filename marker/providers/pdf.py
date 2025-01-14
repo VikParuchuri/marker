@@ -143,6 +143,19 @@ class PdfProvider(BaseProvider):
             formats.add("italic")
         return formats
 
+    @staticmethod
+    def normalize_spaces(text):
+        space_chars = [
+            '\u2003',  # em space
+            '\u2002',  # en space
+            '\u00A0',  # non-breaking space
+            '\u200B',  # zero-width space
+            '\u3000',  # ideographic space
+        ]
+        for space in space_chars:
+            text = text.replace(space, ' ')
+        return text
+
     def pdftext_extraction(self) -> ProviderPageLines:
         page_lines: ProviderPageLines = {}
         page_char_blocks = dictionary_output(
@@ -177,7 +190,7 @@ class PdfProvider(BaseProvider):
                         spans.append(
                             SpanClass(
                                 polygon=polygon,
-                                text=fix_text(span["text"]),
+                                text=self.normalize_spaces(fix_text(span["text"])),
                                 font=font_name,
                                 font_weight=font_weight,
                                 font_size=font_size,
