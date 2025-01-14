@@ -2,7 +2,7 @@ from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
 from surya.layout import LayoutPredictor
-from surya.layout.schema import LayoutResult
+from surya.layout.schema import LayoutResult, LayoutBox
 from surya.ocr_error import OCRErrorPredictor
 from surya.ocr_error.schema import OCRErrorDetectionResult
 
@@ -50,6 +50,10 @@ class LayoutBuilder(BaseBuilder):
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
     ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
+    force_layout_block: Annotated[
+        str,
+        "Skip layout and force every page to be treated as a specific block type.",
+    ] = None
 
     def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         self.layout_model = layout_model
@@ -58,7 +62,11 @@ class LayoutBuilder(BaseBuilder):
         super().__init__(config)
 
     def __call__(self, document: Document, provider: PdfProvider):
-        layout_results = self.surya_layout(document.pages)
+        if self.force_layout_block is not None:
+            # Assign the full content of every page to a single layout type
+            layout_results = self.forced_layout(document.pages)
+        else:
+            layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
         self.merge_blocks(document.pages, provider.page_lines)
 
@@ -68,6 +76,26 @@ class LayoutBuilder(BaseBuilder):
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 6
         return 6
+
+    def forced_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
+        layout_results = []
+        for page in pages:
+            layout_results.append(
+                LayoutResult(
+                    image_bbox=page.polygon.bbox,
+                    bboxes=[
+                        LayoutBox(
+                            label=self.force_layout_block,
+                            position=0,
+                            top_k={self.force_layout_block: 1},
+                            polygon=page.polygon.polygon,
+                        ),
+                    ],
+                    sliced=False
+                )
+            )
+        return layout_results
+
 
     def surya_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
         layout_results = self.layout_model(

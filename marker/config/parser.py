@@ -11,6 +11,7 @@ from marker.renderers.json import JSONRenderer
 from marker.renderers.markdown import MarkdownRenderer
 from marker.settings import settings
 from marker.util import classes_to_strings, parse_range_str, strings_to_classes
+from marker.schema import BlockTypes
 
 
 class ConfigParser:
@@ -41,6 +42,9 @@ class ConfigParser:
         fn = click.option("--google_api_key", type=str, default=None, help="Google API key for using LLMs.")(fn)
         fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
         fn = click.option("--converter_cls", type=str, default=None, help="Converter class to use.  Defaults to PDF converter.")(fn)
+
+        # enum options
+        fn = click.option("--force_layout_block", type=click.Choice(choices=[t.name for t in BlockTypes]), default=None,)(fn)
         return fn
 
     def generate_config_dict(self) -> Dict[str, any]:

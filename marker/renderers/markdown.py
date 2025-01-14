@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 from typing import Annotated, Tuple
 
 import regex
@@ -57,11 +58,14 @@ class Markdownify(MarkdownConverter):
         total_rows = len(el.find_all('tr'))
         colspans = []
         is_header_row = []
-        for row in el.find_all('tr'):
-            row_cols = 0
+        rowspan_cols = defaultdict(int)
+        for i, row in enumerate(el.find_all('tr')):
+            row_cols = rowspan_cols[i]
             for cell in row.find_all(['td', 'th']):
                 colspan = int(cell.get('colspan', 1))
                 row_cols += colspan
+                for r in range(int(cell.get('rowspan', 1)) - 1):
+                    rowspan_cols[i + r] += colspan # Add the colspan to the next rows, so they get the correct number of columns
             colspans.append(row_cols)
             is_header_row.append(len(row.find_all('th')) == row_cols)
         total_cols = max(colspans)
@@ -86,10 +90,15 @@ class Markdownify(MarkdownConverter):
 
                 for r in range(rowspan):
                     for c in range(colspan):
-                        if r == 0 and c == 0:
-                            grid[row_idx][col_idx] = value
-                        else:
-                            grid[row_idx + r][col_idx + c] = ''
+                        try:
+                            if r == 0 and c == 0:
+                                grid[row_idx][col_idx] = value
+                            else:
+                                grid[row_idx + r][col_idx + c] = ''
+                        except IndexError:
+                            # Sometimes the colspan/rowspan predictions can overflow
+                            print(f"Overflow in columns: {col_idx + c} >= {total_cols}")
+                            continue
 
                 col_idx += colspan
 
