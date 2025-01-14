@@ -220,7 +220,7 @@ class Block(BaseModel):
             section_hierarchy=section_hierarchy
         )
 
-    def line_height(self, document: Document):
+    def line_height(self, document: Document) -> float:
         lines = self.contained_blocks(document, (BlockTypes.Line,))
         if len(lines) == 0:
             return 0
