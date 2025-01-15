@@ -117,9 +117,17 @@ No corrections needed.
         # Initialize grid
         rows = table.find_all('tr')
         cells = []
-        max_cols = max(len(row.find_all(['td', 'th'])) for row in rows)
-        if max_cols == 0:
-            return []
+
+        # Find maximum number of columns in colspan-aware way
+        max_cols = 0
+        for row in rows:
+            row_tds = row.find_all(['td', 'th'])
+            curr_cols = 0
+            for cell in row_tds:
+                colspan = int(cell.get('colspan', 1))
+                curr_cols += colspan
+            if curr_cols > max_cols:
+                max_cols = curr_cols
 
         grid = [[True] * max_cols for _ in range(len(rows))]
 

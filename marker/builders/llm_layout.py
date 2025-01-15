@@ -1,6 +1,5 @@
-import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Annotated, Optional
+from typing import Annotated
 
 from google.ai.generativelanguage_v1beta.types import content
 from surya.layout import LayoutPredictor
@@ -30,7 +29,7 @@ class LLMLayoutBuilder(LayoutBuilder):
     confidence_threshold: Annotated[
         float,
         "The confidence threshold to use for relabeling.",
-    ] = 0.75
+    ] = 0.8
     picture_height_threshold: Annotated[
         float,
         "The height threshold for pictures that may actually be complex regions.",
@@ -55,12 +54,12 @@ class LLMLayoutBuilder(LayoutBuilder):
         str,
         "The prompt to use for relabelling blocks.",
         "Default is a string containing the Gemini relabelling prompt."
-    ] = """You are a layout expert specializing in document analysis.
+    ] = """You're a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
 You will be provided with an image of a layout block and the top k predictions from the current model, along with the per-label confidence scores.
 Your job is to analyze the image and choose the single most appropriate label from the provided top k predictions.
 Do not invent any new labels. 
-Carefully examine the image and consider the provided predictions.  Take the model confidence scores into account.  If the existing label is the most appropriate, you should not change it.
+Carefully examine the image and consider the provided predictions.  Take the model confidence scores into account.  The confidence is reported on a 0-1 scale, with 1 being 100% confident.  If the existing label is the most appropriate, you should not change it.
 **Instructions**
 1. Analyze the image and consider the provided top k predictions.
 2. Write a short description of the image, and which of the potential labels you believe is the most accurate representation of the layout block.
@@ -78,7 +77,7 @@ Here are the top k predictions from the model:
         str,
         "The prompt to use for complex relabelling blocks.",
         "Default is a string containing the complex relabelling prompt."
-    ] = """You are a layout expert specializing in document analysis.
+    ] = """You're a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
 You will be provided with an image of a layout block and some potential labels that might be appropriate.
 Your job is to analyze the image and choose the single most appropriate label from the provided labels.
@@ -134,14 +133,13 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
         potential_labels = ""
         for block_type in topk_types:
             label_cls = get_block_class(block_type)
-            potential_labels += f"- `{block_type}` - {label_cls.block_description}\n"
+            potential_labels += f"- `{block_type}` - {label_cls.model_fields['block_description'].default}\n"
 
         topk = ""
         for k,v in block.top_k.items():
             topk += f"- `{k}` - Confidence {round(v, 3)}\n"
 
         prompt = self.topk_relabelling_prompt.replace("{potential_labels}", potential_labels).replace("{top_k}", topk)
-        print(prompt)
 
         return self.process_block_relabeling(document, page, block, prompt)
 
@@ -149,10 +147,9 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
         potential_labels = ""
         for block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.ComplexRegion, BlockTypes.Table, BlockTypes.Form]:
             label_cls = get_block_class(block_type)
-            potential_labels += f"- `{block_type}` - {label_cls.block_description}\n"
+            potential_labels += f"- `{block_type}` - {label_cls.model_fields['block_description'].default}\n"
 
         complex_prompt = self.complex_relabeling_prompt.replace("{potential_labels}", potential_labels)
-        print(complex_prompt)
         return self.process_block_relabeling(document, page, block, complex_prompt)
 
     def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
@@ -172,6 +169,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
         )
 
         response = self.model.generate_response(prompt, image, block, response_schema)
+        print(response)
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]
