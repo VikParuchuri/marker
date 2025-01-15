@@ -9,7 +9,6 @@ import click
 
 from marker.config.parser import ConfigParser
 from marker.config.printer import CustomClickPrinter
-from marker.converters.pdf import PdfConverter
 from marker.logger import configure_logging
 from marker.models import create_model_dict
 from marker.output import save_output

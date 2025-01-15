@@ -32,6 +32,10 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
         int,
         "The maximum distance between table edges for adjacency."
     ] = 20
+    column_gap_threshold: Annotated[
+        int,
+        "The maximum gap between columns to merge tables"
+    ] = 50
     gemini_table_merge_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
@@ -133,10 +137,8 @@ Table 2
         for page in document.pages:
             page_blocks = page.contained_blocks(document, self.block_types)
             for block in page_blocks:
-                if prev_block is None:
-                    subsequent_page_table = False
-                    same_page_vertical_table = False
-                else:
+                merge_condition = False
+                if prev_block is not None:
                     prev_cells = prev_block.contained_blocks(document, (BlockTypes.TableCell,))
                     curr_cells = block.contained_blocks(document, (BlockTypes.TableCell,))
                     row_match = abs(self.get_row_count(prev_cells) - self.get_row_count(curr_cells)) < 5, # Similar number of rows
@@ -154,11 +156,20 @@ Table 2
                         prev_block.page_id == block.page_id, # On the same page
                         (1 - self.vertical_table_height_threshold) < prev_block.polygon.height / block.polygon.height < (1 + self.vertical_table_height_threshold), # Similar height
                         abs(block.polygon.x_start - prev_block.polygon.x_end) < self.vertical_table_distance_threshold, # Close together in x
+                        abs(block.polygon.y_start - prev_block.polygon.y_start) < self.vertical_table_distance_threshold, # Close together in y
                         row_match
                     ])
 
-                if prev_block is not None and \
-                        (subsequent_page_table or same_page_vertical_table):
+                    same_page_new_column = all([
+                        prev_block.page_id == block.page_id, # On the same page
+                        abs(block.polygon.x_start - prev_block.polygon.x_end) < self.column_gap_threshold,
+                        block.y_start < prev_block.y_end,
+                        block.polygon.width * (1 - self.vertical_table_height_threshold) < prev_block.polygon.width  < block.polygon.width * (1 + self.vertical_table_height_threshold), # Similar width
+                        col_match
+                    ])
+                    merge_condition = any([subsequent_page_table, same_page_vertical_table, same_page_new_column])
+
+                if prev_block is not None and merge_condition:
                     if prev_block not in table_run:
                         table_run.append(prev_block)
                     table_run.append(block)

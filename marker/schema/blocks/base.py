@@ -71,6 +71,7 @@ class BlockId(BaseModel):
 
 class Block(BaseModel):
     polygon: PolygonBox
+    block_description: str
     block_type: Optional[BlockTypes] = None
     block_id: Optional[int] = None
     page_id: Optional[int] = None

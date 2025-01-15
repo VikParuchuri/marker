@@ -14,6 +14,7 @@ def cleanup_text(full_text):
 
 class Span(Block):
     block_type: BlockTypes = BlockTypes.Span
+    block_description: str = "A span of text inside a line."
 
     text: str
     font: str

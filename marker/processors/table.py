@@ -105,7 +105,7 @@ class TableProcessor(BaseProcessor):
                         colspan=cell.colspan,
                         row_id=cell.row_id,
                         col_id=cell.col_id,
-                        is_header=cell.is_header,
+                        is_header=bool(cell.is_header),
                         page_id=page.page_id,
                     )
                     page.add_full_block(cell_block)
@@ -133,6 +133,9 @@ class TableProcessor(BaseProcessor):
 
     def split_combined_rows(self, tables: List[TableResult]):
         for table in tables:
+            if len(table.cells) == 0:
+                # Skip empty tables
+                continue
             unique_rows = sorted(list(set([c.row_id for c in table.cells])))
             new_cells = []
             shift_up = 0

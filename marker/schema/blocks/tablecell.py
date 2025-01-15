@@ -10,6 +10,7 @@ class TableCell(Block):
     col_id: int
     is_header: bool
     text: str = ""
+    block_description: str = "A cell in a table."
 
     def assemble_html(self, document, child_blocks, parent_structure=None):
         tag = "th" if self.is_header else "td"

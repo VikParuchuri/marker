@@ -22,6 +22,7 @@ class PageGroup(Group):
     layout_sliced: bool = False  # Whether the layout model had to slice the image (order may be wrong)
     excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
     maximum_assignment_distance: float = 20  # pixels
+    block_description: str = "A single page in the document."
 
     def incr_block_id(self):
         if self.block_id is None:

@@ -30,7 +30,7 @@ class LLMLayoutBuilder(LayoutBuilder):
     confidence_threshold: Annotated[
         float,
         "The confidence threshold to use for relabeling.",
-    ] = 0.7
+    ] = 0.75
     picture_height_threshold: Annotated[
         float,
         "The height threshold for pictures that may actually be complex regions.",
@@ -57,14 +57,22 @@ class LLMLayoutBuilder(LayoutBuilder):
         "Default is a string containing the Gemini relabelling prompt."
     ] = """You are a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
-You will be provided with an image of a layout block and the top k predictions from the current model, along with their confidence scores.
+You will be provided with an image of a layout block and the top k predictions from the current model, along with the per-label confidence scores.
 Your job is to analyze the image and choose the single most appropriate label from the provided top k predictions.
 Do not invent any new labels. 
-Carefully examine the image and consider the provided predictions. 
-Choose the label you believe is the most accurate representation of the layout block.
+Carefully examine the image and consider the provided predictions.  Take the model confidence scores into account.  If the existing label is the most appropriate, you should not change it.
+**Instructions**
+1. Analyze the image and consider the provided top k predictions.
+2. Write a short description of the image, and which of the potential labels you believe is the most accurate representation of the layout block.
+3. Choose the single most appropriate label from the provided top k predictions.
 
-Here are the top k predictions from the model followed by the image:
+Here are descriptions of the layout blocks you can choose from:
 
+{potential_labels}
+
+Here are the top k predictions from the model:
+
+{top_k}
 """
     complex_relabeling_prompt: Annotated[
         str,
@@ -72,23 +80,19 @@ Here are the top k predictions from the model followed by the image:
         "Default is a string containing the complex relabelling prompt."
     ] = """You are a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
-You will be provided with an image of a layout block and some potential labels.
+You will be provided with an image of a layout block and some potential labels that might be appropriate.
 Your job is to analyze the image and choose the single most appropriate label from the provided labels.
 Do not invent any new labels. 
-Carefully examine the image and consider the provided predictions. 
-Choose the label you believe is the most accurate representation of the layout block.
+**Instructions**
+1. Analyze the image and consider the potential labels.
+2. Write a short description of the image, and which of the potential labels you believe is the most accurate representation of the layout block.
+3. Choose the single most appropriate label from the provided labels.
 
 Potential labels:
 
-- Picture
-- Table
-- Form
-- Figure - A graph or diagram with text.
-- ComplexRegion - a complex region containing multiple text and other elements.
+{potential_labels}
 
 Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form`.
-
-Here is the image of the layout block:
 """
 
     def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
@@ -126,13 +130,29 @@ Here is the image of the layout block:
         pbar.close()
 
     def process_block_topk_relabeling(self, document: Document, page: PageGroup, block: Block):
-        topk = {str(k): round(v, 3) for k, v in block.top_k.items()}
+        topk_types = list(block.top_k.keys())
+        potential_labels = ""
+        for block_type in topk_types:
+            label_cls = get_block_class(block_type)
+            potential_labels += f"- `{block_type}` - {label_cls.block_description}\n"
 
-        prompt = self.topk_relabelling_prompt + '```json' + json.dumps(topk) + '```\n'
+        topk = ""
+        for k,v in block.top_k.items():
+            topk += f"- `{k}` - Confidence {round(v, 3)}\n"
+
+        prompt = self.topk_relabelling_prompt.replace("{potential_labels}", potential_labels).replace("{top_k}", topk)
+        print(prompt)
+
         return self.process_block_relabeling(document, page, block, prompt)
 
     def process_block_complex_relabeling(self, document: Document, page: PageGroup, block: Block):
-        complex_prompt = self.complex_relabeling_prompt
+        potential_labels = ""
+        for block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.ComplexRegion, BlockTypes.Table, BlockTypes.Form]:
+            label_cls = get_block_class(block_type)
+            potential_labels += f"- `{block_type}` - {label_cls.block_description}\n"
+
+        complex_prompt = self.complex_relabeling_prompt.replace("{potential_labels}", potential_labels)
+        print(complex_prompt)
         return self.process_block_relabeling(document, page, block, complex_prompt)
 
     def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
@@ -140,8 +160,11 @@ Here is the image of the layout block:
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],
-            required=["label"],
+            required=["image_description", "label"],
             properties={
+                "image_description": content.Schema(
+                    type=content.Type.STRING,
+                ),
                 "label": content.Schema(
                     type=content.Type.STRING,
                 ),

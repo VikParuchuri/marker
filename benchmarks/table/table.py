@@ -1,4 +1,10 @@
 import os
+from typing import List
+
+import numpy as np
+
+from marker.renderers.json import JSONOutput, JSONBlockOutput
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for a simple op, which is not supported on MPS
 
 import base64
@@ -10,8 +16,9 @@ import click
 from tabulate import tabulate
 import json
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from pypdfium2._helpers.misc import PdfiumError
+from marker.util import matrix_intersection_area
 
 from marker.config.parser import ConfigParser
 from marker.converters.table import TableConverter
@@ -27,13 +34,24 @@ def update_teds_score(result):
     return result
 
 
+def extract_tables(children: List[JSONBlockOutput]):
+    tables = []
+    for child in children:
+        if child.block_type == 'Table':
+            tables.append(child)
+        elif child.children:
+            tables.extend(extract_tables(child.children))
+    return tables
+
+
 @click.command(help="Benchmark Table to HTML Conversion")
 @click.argument("out_file", type=str)
 @click.option("--dataset", type=str, default="datalab-to/fintabnet-test", help="Dataset to use")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of PDFs to process")
-def main(out_file: str, dataset: str, max_rows: int):
+@click.option("--max_workers", type=int, default=16, help="Maximum number of workers to use")
+def main(out_file: str, dataset: str, max_rows: int, max_workers: int):
     models = create_model_dict()
-    config_parser = ConfigParser({'output_format': 'html'})
+    config_parser = ConfigParser({'output_format': 'json'})
     start = time.time()
 
 
@@ -45,6 +63,7 @@ def main(out_file: str, dataset: str, max_rows: int):
         iterations = min(max_rows, len(dataset))
 
     results = []
+    total_unaligned = 0
     for i in tqdm(range(iterations), desc='Converting Tables'):
         try:
             row = dataset[i]
@@ -61,19 +80,74 @@ def main(out_file: str, dataset: str, max_rows: int):
             with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb") as temp_pdf_file:
                 temp_pdf_file.write(pdf_binary)
                 temp_pdf_file.seek(0)
-                marker_table_html = converter(temp_pdf_file.name).html
+                tqdm.disable = True
+                marker_json = converter(temp_pdf_file.name).children
+                tqdm.disable = False
 
-            marker_table_soup = BeautifulSoup(marker_table_html, 'html.parser')
-            marker_detected_tables = marker_table_soup.find_all('table')
-            if len(marker_detected_tables)==0:
+            if len(marker_json) == 0 or len(gt_tables) == 0:
                 print(f'No tables detected, skipping...')
+                total_unaligned += len(gt_tables)
+                continue
+
+            marker_tables = extract_tables(marker_json)
+            marker_table_boxes = [table.bbox for table in marker_tables]
+            page_bbox = marker_json[0].bbox
+
+            # Normalize the bboxes
+            for bbox in marker_table_boxes:
+                bbox[0] = bbox[0] / page_bbox[2]
+                bbox[1] = bbox[1] / page_bbox[3]
+                bbox[2] = bbox[2] / page_bbox[2]
+                bbox[3] = bbox[3] / page_bbox[3]
+
+            gt_boxes = [table['normalized_bbox'] for table in gt_tables]
+            gt_areas = [(bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) for bbox in gt_boxes]
+            marker_areas = [(bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) for bbox in marker_table_boxes]
+            table_alignments = matrix_intersection_area(gt_boxes, marker_table_boxes)
+
+            aligned_tables = []
+            used_tables = set()
+            unaligned_tables = set()
+            for table_idx, alignment in enumerate(table_alignments):
+                try:
+                    max_area = np.max(alignment)
+                    aligned_idx = np.argmax(alignment)
+                except ValueError:
+                    # No alignment found
+                    unaligned_tables.add(table_idx)
+                    continue
+
+                if aligned_idx in used_tables:
+                    # Marker table already aligned with another gt table
+                    unaligned_tables.add(table_idx)
+                    continue
+
+                # Gt table doesn't align well with any marker table
+                gt_table_pct = gt_areas[table_idx] / max_area
+                if not .75 < gt_table_pct < 1.25:
+                    unaligned_tables.add(table_idx)
+                    continue
+
+                # Marker table doesn't align with gt table
+                marker_table_pct = marker_areas[aligned_idx] / max_area
+                if not .75 < marker_table_pct < 1.25:
+                    unaligned_tables.add(table_idx)
+                    continue
+
+                aligned_tables.append(
+                    (marker_tables[aligned_idx], gt_tables[table_idx])
+                )
+                used_tables.add(aligned_idx)
+
+            total_unaligned += len(unaligned_tables)
             
-            for marker_table_soup, gt_table in zip(marker_detected_tables, gt_tables):
+            for marker_table, gt_table in aligned_tables:
                 gt_table_html = gt_table['html']
-                
+
                 #marker wraps the table in <tbody> which fintabnet data doesn't
-                marker_table_soup.find('tbody').unwrap()
                 #Fintabnet doesn't use th tags, need to be replaced for fair comparison
+                marker_table_soup = BeautifulSoup(marker_table.html, 'html.parser')
+                marker_table_soup.find('tbody').unwrap()
                 for th_tag in marker_table_soup.find_all('th'):
                     th_tag.name = 'td'
                 marker_table_html = str(marker_table_soup)
@@ -86,10 +160,15 @@ def main(out_file: str, dataset: str, max_rows: int):
             print('Broken PDF, Skipping...')
             continue
 
-    print(f"Total time: {time.time() - start}")
+    print(f"Total time: {time.time() - start}.")
+    print(f"Could not align {total_unaligned} tables from fintabnet.")
 
-    with ThreadPoolExecutor(max_workers=16) as executor:
-        results = list(tqdm(executor.map(update_teds_score, results), desc='Computing alignment scores', total=len(results)))
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        results = list(
+            tqdm(
+                executor.map(update_teds_score, results), desc='Computing alignment scores', total=len(results)
+            )
+        )
     avg_score = sum([r["score"] for r in results]) / len(results)
 
     headers = ["Avg score", "Total tables"]

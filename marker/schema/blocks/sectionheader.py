@@ -7,6 +7,7 @@ from marker.schema.blocks import Block
 class SectionHeader(Block):
     block_type: BlockTypes = BlockTypes.SectionHeader
     heading_level: Optional[int] = None
+    block_description: str = "The header of a section of text or other blocks."
 
     def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:

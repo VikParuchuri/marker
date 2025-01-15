@@ -7,6 +7,7 @@ from marker.schema.blocks import Block
 class Equation(Block):
     block_type: BlockTypes = BlockTypes.Equation
     latex: str | None = None
+    block_description: str = "A block math equation."
 
     def assemble_html(self, document, child_blocks, parent_structure=None):
         if self.latex:

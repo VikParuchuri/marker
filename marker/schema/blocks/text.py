@@ -7,6 +7,7 @@ class Text(Block):
     has_continuation: bool = False
     blockquote: bool = False
     blockquote_level: int = 0
+    block_description: str = "A paragraph or line of text."
 
     def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
