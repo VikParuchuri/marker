@@ -163,7 +163,7 @@ Table 2
                     same_page_new_column = all([
                         prev_block.page_id == block.page_id, # On the same page
                         abs(block.polygon.x_start - prev_block.polygon.x_end) < self.column_gap_threshold,
-                        block.y_start < prev_block.y_end,
+                        block.polygon.y_start < prev_block.polygon.y_end,
                         block.polygon.width * (1 - self.vertical_table_height_threshold) < prev_block.polygon.width  < block.polygon.width * (1 + self.vertical_table_height_threshold), # Similar width
                         col_match
                     ])

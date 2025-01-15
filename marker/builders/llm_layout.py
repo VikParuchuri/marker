@@ -169,7 +169,6 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
         )
 
         response = self.model.generate_response(prompt, image, block, response_schema)
-        print(response)
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]

@@ -49,9 +49,10 @@ def extract_tables(children: List[JSONBlockOutput]):
 @click.option("--dataset", type=str, default="datalab-to/fintabnet-test", help="Dataset to use")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of PDFs to process")
 @click.option("--max_workers", type=int, default=16, help="Maximum number of workers to use")
-def main(out_file: str, dataset: str, max_rows: int, max_workers: int):
+@click.option("--use_llm", is_flag=True, help="Use LLM for improving table recognition.")
+def main(out_file: str, dataset: str, max_rows: int, max_workers: int, use_llm: bool):
     models = create_model_dict()
-    config_parser = ConfigParser({'output_format': 'json'})
+    config_parser = ConfigParser({'output_format': 'json', "use_llm": use_llm})
     start = time.time()
 
 
