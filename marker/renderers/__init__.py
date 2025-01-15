@@ -47,7 +47,11 @@ class BaseRenderer:
             return html
 
         def replace_whitespace(match):
-            return match.group(1)
+            whitespace = match.group(1)
+            if len(whitespace) == 0:
+                return ""
+            else:
+                return " "
 
         pattern = fr'</{tag}>(\s*)<{tag}>'
 
@@ -56,9 +60,6 @@ class BaseRenderer:
             if new_merged == html:
                 break
             html = new_merged
-
-        # Replace consecutive whitespace
-        html = re.sub(r'\s+', ' ', html)
 
         return html
 

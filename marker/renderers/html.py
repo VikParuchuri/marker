@@ -78,12 +78,10 @@ class HTMLRenderer(BaseRenderer):
                 images.update(sub_images)
                 ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))
 
+        output = str(soup)
         if level == 0:
-            output = soup.prettify()
             output = self.merge_consecutive_tags(output, 'b')
             output = self.merge_consecutive_tags(output, 'i')
-        else:
-            output = str(soup)
 
         return output, images
 

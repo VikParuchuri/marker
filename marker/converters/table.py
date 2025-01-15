@@ -25,7 +25,6 @@ class TableConverter(PdfConverter):
 
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
-        pdf_provider = provider_cls(filepath, self.config)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document_builder = DocumentBuilder(self.config)
