@@ -1,5 +1,7 @@
-import base64
 import os
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for a simple op, which is not supported on MPS
+
+import base64
 import time
 import datasets
 from tqdm import tqdm
@@ -10,8 +12,6 @@ import json
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 from pypdfium2._helpers.misc import PdfiumError
-
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for a simple op, which is not supported on MPS
 
 from marker.config.parser import ConfigParser
 from marker.converters.table import TableConverter
@@ -30,10 +30,10 @@ def update_teds_score(result):
 @click.command(help="Benchmark Table to HTML Conversion")
 @click.argument("out_file", type=str)
 @click.option("--dataset", type=str, default="datalab-to/fintabnet-test", help="Dataset to use")
-@click.option("--max", type=int, default=None, help="Maximum number of PDFs to process")
-def main(out_file, dataset, max):
+@click.option("--max_rows", type=int, default=None, help="Maximum number of PDFs to process")
+def main(out_file: str, dataset: str, max_rows: int):
     models = create_model_dict()
-    config_parser = ConfigParser({})
+    config_parser = ConfigParser({'output_format': 'html'})
     start = time.time()
 
 
@@ -41,8 +41,8 @@ def main(out_file, dataset, max):
     dataset = dataset.shuffle(seed=0)
 
     iterations = len(dataset)
-    if max is not None:
-        iterations = min(max, len(dataset))
+    if max_rows is not None:
+        iterations = min(max_rows, len(dataset))
 
     results = []
     for i in tqdm(range(iterations), desc='Converting Tables'):
@@ -55,7 +55,7 @@ def main(out_file, dataset, max):
                 config=config_parser.generate_config_dict(),
                 artifact_dict=models,
                 processor_list=config_parser.get_processors(),
-                renderer='marker.renderers.html.HTMLRenderer'
+                renderer=config_parser.get_renderer()
             )
 
             with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb") as temp_pdf_file:

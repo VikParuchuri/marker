@@ -1,16 +1,12 @@
-'''
+""""
 TEDS Code Adapted from https://github.com/ibm-aur-nlp/EDD
-'''
+"""
 
-from typing import List
-
-from tqdm import tqdm
 import distance
 from apted import APTED, Config
 from apted.helpers import Tree
 from lxml import html
 from collections import deque
-import numpy as np
 
 def wrap_table_html(table_html:str)->str:
     return f'<html><body>{table_html}</body></html>'
@@ -21,7 +17,9 @@ class TableTree(Tree):
         self.colspan = colspan
         self.rowspan = rowspan
         self.content = content
-        self.children = list(children)
+
+        # Sets self.name and self.children
+        super().__init__(tag, *children)
 
     def bracket(self):
         """Show tree using brackets notation"""
@@ -37,17 +35,12 @@ class TableTree(Tree):
 class CustomConfig(Config):
     @staticmethod
     def maximum(*sequences):
-        """Get maximum possible value
-        """
         return max(map(len, sequences))
 
     def normalized_distance(self, *sequences):
-        """Get distance from 0 to 1
-        """
         return float(distance.levenshtein(*sequences)) / self.maximum(*sequences)
 
     def rename(self, node1, node2):
-        """Compares attributes of trees"""
         if (node1.tag != node2.tag) or (node1.colspan != node2.colspan) or (node1.rowspan != node2.rowspan):
             return 1.
         if node1.tag == 'td':
@@ -56,8 +49,9 @@ class CustomConfig(Config):
         return 0.
 
 def tokenize(node):
-    ''' Tokenizes table cells
-    '''
+    """
+    Tokenizes table cells
+    """
     global __tokens__
     __tokens__.append('<%s>' % node.tag)
     if node.text is not None:
@@ -70,8 +64,9 @@ def tokenize(node):
             __tokens__ += list(node.tail)
 
 def tree_convert_html(node, convert_cell=False, parent=None):
-    ''' Converts HTML tree to the format required by apted
-    '''
+    """
+    Converts HTML tree to the format required by apted
+    """
     global __tokens__
     if node.tag == 'td':
         if convert_cell:
@@ -95,9 +90,9 @@ def tree_convert_html(node, convert_cell=False, parent=None):
         return new_node
 
 def similarity_eval_html(pred, true, structure_only=False):
-    ''' Computes TEDS score between the prediction and the ground truth of a
-        given samples
-    '''
+    """
+    Computes TEDS score between the prediction and the ground truth of a given samples
+    """
     pred, true = html.fromstring(pred), html.fromstring(true)
     if pred.xpath('body/table') and true.xpath('body/table'):
         pred = pred.xpath('body/table')[0]

@@ -421,7 +421,7 @@ python benchmarks/overall.py data/pdfs data/references report.json
 The processed FinTabNet dataset is hosted [here](https://huggingface.co/datasets/datalab-to/fintabnet-test) and is automatically downloaded. Run the benchmark with:
 
 ```shell
-python benchmarks/table/table.py table_report.json --max 1000
+python benchmarks/table/table.py table_report.json --max_rows 1000
 ```
 
 # Thanks
