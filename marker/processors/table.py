@@ -114,8 +114,8 @@ class TableProcessor(BaseProcessor):
 
     def finalize_cell_text(self, cell: SuryaTableCell):
         text = "\n".join([t["text"].strip() for t in cell.text_lines]) if cell.text_lines else ""
-        text = re.sub(r"(\s\.){3,}", "...", text)  # Replace . . .
-        text = re.sub(r"\.{3,}", "...", text)  # Replace ..., like in table of contents
+        text = re.sub(r"(\s\.){2,}", "", text)  # Replace . . .
+        text = re.sub(r"\.{2,}", "", text)  # Replace ..., like in table of contents
         return self.normalize_spaces(fix_text(text))
 
     @staticmethod

@@ -394,11 +394,14 @@ Marker takes about 6GB of VRAM on average per task, so you can convert 8 documen
 ![Benchmark results](data/images/per_doc.png)
 
 ## Table Conversion
-Marker can extract tables from your PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a [tree edit distance] based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves an average score of `0.65` via this approach.
+Marker can extract tables from PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a tree edit distance based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves these scores:
 
 |   Avg score |   Total tables |
 |-------------|----------------|
 |        0.65 |           1149 |
+
+
+We filter out tables that we cannot align with the ground truth, since fintabnet and our layout model have slightly different detection methods (this results in some tables being split/merged).
 
 ## Running your own benchmarks
 

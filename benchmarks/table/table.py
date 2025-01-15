@@ -152,6 +152,7 @@ def main(out_file: str, dataset: str, max_rows: int, max_workers: int, use_llm: 
                 for th_tag in marker_table_soup.find_all('th'):
                     th_tag.name = 'td'
                 marker_table_html = str(marker_table_soup)
+                marker_table_html = marker_table_html.replace("\n", " ") # Fintabnet uses spaces instead of newlines
 
                 results.append({
                     "marker_table": marker_table_html,
