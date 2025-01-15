@@ -64,6 +64,10 @@ class PdfProvider(BaseProvider):
         bool,
         "Whether to strip existing OCR text from the PDF.",
     ] = False
+    disable_links: Annotated[
+        bool,
+        "Whether to disable links.",
+    ] = False
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
@@ -157,12 +161,14 @@ class PdfProvider(BaseProvider):
             keep_chars=False,
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf,
-            quote_loosebox=False
+            quote_loosebox=False,
+            disable_links=self.disable_links
         )
         self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_char_blocks)}
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
+
         for page in page_char_blocks:
             page_id = page["page"]
             lines: List[ProviderOutput] = []
@@ -191,7 +197,9 @@ class PdfProvider(BaseProvider):
                                 maximum_position=span["char_end_idx"],
                                 formats=list(font_formats),
                                 page_id=page_id,
-                                text_extraction_method="pdftext"
+                                text_extraction_method="pdftext",
+                                url=span.get("url"),
+                                anchors=span.get("anchors"),
                             )
                         )
                     polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
@@ -203,6 +211,7 @@ class PdfProvider(BaseProvider):
                     )
             if self.check_line_spans(lines):
                 page_lines[page_id] = lines
+
         return page_lines
 
     def check_line_spans(self, page_lines: List[ProviderOutput]) -> bool:
@@ -240,7 +249,7 @@ class PdfProvider(BaseProvider):
             font_map = {}
             for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
                 font = pdfium_c.FPDFTextObj_GetFont(text_obj)
-                font_name = self.get_fontname(font)
+                font_name = self._get_fontname(font)
 
                 # we also skip pages without embedded fonts and fonts without names
                 non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
@@ -302,7 +311,8 @@ class PdfProvider(BaseProvider):
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
 
-    def get_fontname(self, font) -> str:
+    @staticmethod
+    def _get_fontname(font) -> str:
         font_name = ""
         buffer_size = 256
 

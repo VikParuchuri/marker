@@ -61,6 +61,14 @@ class Markdownify(MarkdownConverter):
         text = text.replace("|", " ").replace("\n", " ")
         return super().convert_th(el, text, convert_as_inline)
 
+    def convert_a(self, el, text, convert_as_inline):
+        text = self.escape(text)
+        text = re.sub(r"([\[\]])", r"\\\1", text)
+        return super().convert_a(el, self.escape(text), convert_as_inline)
+
+    def convert_span(self, el, text, convert_as_inline):
+        return f'<span id="{el["id"]}"/>'
+
 
 class MarkdownOutput(BaseModel):
     markdown: str

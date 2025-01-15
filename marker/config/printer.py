@@ -44,7 +44,6 @@ class CustomClickPrinter(click.Command):
                                 options,
                                 type=attr_type,
                                 help=" ".join(metadata),
-                                default=default,
                                 is_flag=is_flag,
                             )
                         )
