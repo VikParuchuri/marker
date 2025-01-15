@@ -86,6 +86,9 @@ class PdfProvider(BaseProvider):
 
         atexit.register(self.cleanup_pdf_doc)
 
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.cleanup_pdf_doc()
+
     def __len__(self) -> int:
         return len(self.doc)
 

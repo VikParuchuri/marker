@@ -57,6 +57,9 @@ class BaseRenderer:
                 break
             html = new_merged
 
+        # Replace consecutive whitespace
+        html = re.sub(r'\s+', ' ', html)
+
         return html
 
     def generate_page_stats(self, document: Document, document_output):

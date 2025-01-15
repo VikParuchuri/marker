@@ -35,3 +35,9 @@ class BaseProvider:
 
     def get_page_lines(self, idx: int) -> List[Line]:
         pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        raise NotImplementedError

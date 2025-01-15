@@ -30,7 +30,8 @@ class TableConverter(PdfConverter):
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document_builder = DocumentBuilder(self.config)
         document_builder.disable_ocr = True
-        document = document_builder(pdf_provider, layout_builder, ocr_builder)
+        with provider_cls(filepath, self.config) as provider:
+            document = document_builder(provider, layout_builder, ocr_builder)
 
         for page in document.pages:
             page.structure = [p for p in page.structure if p.block_type in self.converter_block_types]
