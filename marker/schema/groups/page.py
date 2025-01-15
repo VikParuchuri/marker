@@ -19,9 +19,9 @@ class PageGroup(Group):
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
     children: List[Union[Any, Block]] | None = None
-    layout_sliced: bool = False # Whether the layout model had to slice the image (order may be wrong)
+    layout_sliced: bool = False  # Whether the layout model had to slice the image (order may be wrong)
     excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
-    maximum_assignment_distance: float = 20 # pixels
+    maximum_assignment_distance: float = 20  # pixels
 
     def incr_block_id(self):
         if self.block_id is None:
@@ -41,7 +41,7 @@ class PageGroup(Group):
     def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:
             ignored_block_types = []
-        
+
         structure_idx = 0
         if block is not None:
             structure_idx = self.structure.index(block.id) + 1
@@ -122,7 +122,6 @@ class PageGroup(Group):
         for child in self.children:
             child.replace_block(block, new_block)
 
-
     def identify_missing_blocks(
             self,
             provider_line_idxs: List[int],
@@ -137,7 +136,7 @@ class PageGroup(Group):
 
             # if the unassociated line is a new line with minimal area, we can skip it
             if provider_outputs[line_idx].line.polygon.area <= 1 and \
-                provider_outputs[line_idx].raw_text == "\n":
+                    provider_outputs[line_idx].raw_text == "\n":
                 continue
 
             if new_block is None:
@@ -184,7 +183,6 @@ class PageGroup(Group):
             else:
                 self.structure.append(block.id)
 
-
     def add_initial_blocks(
             self,
             block_lines: Dict[BlockId, LINE_MAPPING_TYPE],
@@ -204,7 +202,6 @@ class PageGroup(Group):
                 for span in spans:
                     self.add_full_block(span)
                     line.add_structure(span)
-
 
     def merge_blocks(
         self,
@@ -257,5 +254,3 @@ class PageGroup(Group):
             if block.metadata is not None:
                 self.metadata = self.metadata.merge(block.metadata)
         return self.metadata
-
-

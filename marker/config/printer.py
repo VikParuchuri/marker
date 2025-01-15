@@ -71,7 +71,6 @@ class CustomClickPrinter(click.Command):
                                 ["--" + class_name_attr, class_name_attr],
                                 type=attr_type,
                                 help=" ".join(metadata),
-                                default=default,
                                 is_flag=is_flag,
                             )
                         )
