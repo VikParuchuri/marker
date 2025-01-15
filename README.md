@@ -370,7 +370,7 @@ There are some settings that you may find useful if things aren't working the wa
 Pass the `debug` option to activate debug mode.  This will save images of each page with detected layout and text, as well as output a json file with additional bounding box information.
 
 # Benchmarks
-
+## Overall PDF Conversion
 Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
 
 **Speed**
@@ -393,6 +393,13 @@ Marker takes about 6GB of VRAM on average per task, so you can convert 8 documen
 
 ![Benchmark results](data/images/per_doc.png)
 
+## Table Conversion
+Marker can extract tables from your PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a [tree edit distance] based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves an average score of `0.65` via this approach.
+
+|   Avg score |   Total tables |
+|-------------|----------------|
+|        0.65 |           1149 |
+
 ## Running your own benchmarks
 
 You can benchmark the performance of marker on your machine. Install marker manually with:
@@ -402,10 +409,19 @@ git clone https://github.com/VikParuchuri/marker.git
 poetry install
 ```
 
+### Overall PDF Conversion
+
 Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run the overall benchmark like this:
 
 ```shell
 python benchmarks/overall.py data/pdfs data/references report.json
+```
+
+### Table Conversion
+The processed FinTabNet dataset is hosted [here](https://huggingface.co/datasets/datalab-to/fintabnet-test) and is automatically downloaded. Run the benchmark with:
+
+```shell
+python benchmarks/table/table.py table_report.json --max 1000
 ```
 
 # Thanks
