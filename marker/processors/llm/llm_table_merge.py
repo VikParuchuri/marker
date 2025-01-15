@@ -37,11 +37,14 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt."
     ] = """You're a text correction expert specializing in accurately reproducing tables from PDFs.
-You'll receive two images of tables from successive pages of a PDF.  Table 1 is from the first page, and Table 2 is from the second page.  Both tables may actually be part of the same larger table. Your job is to decide if Table 2 should be merged with Table 1, and how they should be joined.  The should only be merged if they're both part of the same larger table, and Table 2 cannot be interpreted without merging.
+You'll receive two images of tables from successive pages of a PDF.  Table 1 is from the first page, and Table 2 is from the second page.  Both tables may actually be part of the same larger table. Your job is to decide if Table 2 should be merged with Table 1, and how they should be joined.  The should only be merged if they're part of the same larger table, and Table 2 cannot be interpreted without merging.
 
-You'll specify your judgement in json format - first whether Table 2 should be merged with Table 1, then the direction of the merge, either bottom or right.  Table 2 should be merged at the bottom of Table 1 if Table 2 has no headers, and the rows have similar values, meaning that Table 2 continues Table 1. Table2  should be merged to the right of Table 1 if each row in Table 2 matches a row in Table 1, meaning that Table 2 contains additional columns from Table 1.
+You'll specify your judgement in json format - first whether Table 2 should be merged with Table 1, then the direction of the merge, either `bottom` or `right`.  A bottom merge means that the rows of Table 2 are joined to the rows of Table 1. A right merge means that the columns of Table 2 are joined to the columns of Table 1.  (bottom merge is equal to np.vstack, right merge is equal to np.hstack)
 
-In general, you should only merge Table 1 and Table 2 if Table 2 cannot effectively be interpreted without merging.
+Table 2 should be merged at the bottom of Table 1 if Table 2 has no headers, and the rows have similar values, meaning that Table 2 continues Table 1. Table 2 should be merged to the right of Table 1 if each row in Table 2 matches a row in Table 1, meaning that Table 2 contains additional columns that augment Table 1.
+
+Only merge Table 1 and Table 2 if Table 2 cannot be interpreted without merging.
+
 **Instructions:**
 1. Carefully examine the provided table images.  Table 1 is the first image, and Table 2 is the second image.
 2. Examine the provided html representations of Table 1 and Table 2.
@@ -71,12 +74,6 @@ Table 2
 ```html
 <table>
     <tr>
-        <th>Name</th>
-        <th>Age</th>
-        <th>City</th>
-        <th>State</th>
-    </tr>
-    <tr>
         <td>Jane</td>
         <td>30</td>
         <td>Los Angeles</td>
@@ -86,9 +83,9 @@ Table 2
 Output:
 ```json
 {
-    "table1_description": "The first table has 4 headers, and 1 row.  The headers are Name, Age, City, and State.",
-    "table2_description": "The second table has 4 headers, and 1 row.  The headers are Name, Age, City, and State.",
-    "explanation": "The tables should be merged, as they have the same headers.  The second table should be merged to the bottom of the first table.",
+    "table1_description": "Table 1 has 4 headers, and 1 row.  The headers are Name, Age, City, and State.",
+    "table2_description": "Table 2 has no headers, but the values appear to represent a person's name, age, city, and state.",
+    "explanation": "The values in Table 2 match the headers in Table 1, and Table 2 has no headers. Table 2 should be merged to the bottom of Table 1.",
     "merge": "true",
     "direction": "bottom"
 }
@@ -103,6 +100,30 @@ Table 2
 ```
 """
 
+    @staticmethod
+    def get_row_count(cells: List[TableCell]):
+        max_rows = None
+        for col_id in set([cell.col_id for cell in cells]):
+            col_cells = [cell for cell in cells if cell.col_id == col_id]
+            rows = 0
+            for cell in col_cells:
+                rows += cell.rowspan
+            if max_rows is None or rows > max_rows:
+                max_rows = rows
+        return max_rows
+
+    @staticmethod
+    def get_column_count(cells: List[TableCell]):
+        max_cols = None
+        for row_id in set([cell.row_id for cell in cells]):
+            row_cells = [cell for cell in cells if cell.row_id == row_id]
+            cols = 0
+            for cell in row_cells:
+                cols += cell.colspan
+            if max_cols is None or cols > max_cols:
+                max_cols = cols
+        return max_cols
+
     def rewrite_blocks(self, document: Document):
         pbar = tqdm(desc=f"{self.__class__.__name__} running")
         table_runs = []
@@ -116,17 +137,24 @@ Table 2
                     subsequent_page_table = False
                     same_page_vertical_table = False
                 else:
+                    prev_cells = prev_block.contained_blocks(document, (BlockTypes.TableCell,))
+                    curr_cells = block.contained_blocks(document, (BlockTypes.TableCell,))
+                    row_match = abs(self.get_row_count(prev_cells) - self.get_row_count(curr_cells)) < 5, # Similar number of rows
+                    col_match = abs(self.get_column_count(prev_cells) - self.get_column_count(curr_cells)) < 2
+
                     subsequent_page_table = all([
                         prev_block.page_id == block.page_id - 1, # Subsequent pages
                         max(prev_block.polygon.height / page.polygon.height,
                             block.polygon.height / page.polygon.height) > self.table_height_threshold, # Take up most of the page height
-                            (len(page_blocks) == 1 or prev_page_block_count == 1) # Only table on the page
+                            (len(page_blocks) == 1 or prev_page_block_count == 1), # Only table on the page
+                            (row_match or col_match)
                         ])
 
                     same_page_vertical_table = all([
                         prev_block.page_id == block.page_id, # On the same page
                         (1 - self.vertical_table_height_threshold) < prev_block.polygon.height / block.polygon.height < (1 + self.vertical_table_height_threshold), # Similar height
                         abs(block.polygon.x_start - prev_block.polygon.x_end) < self.vertical_table_distance_threshold, # Close together in x
+                        row_match
                     ])
 
                 if prev_block is not None and \
@@ -166,7 +194,7 @@ Table 2
             children_curr = curr_block.contained_blocks(document, (BlockTypes.TableCell,))
             if not children or not children_curr:
                 # Happens if table/form processors didn't run
-                continue
+                break
 
             start_image = start_block.get_image(document, highres=False)
             curr_image = curr_block.get_image(document, highres=False)
@@ -209,7 +237,7 @@ Table 2
 
             if not response or ("direction" not in response or "merge" not in response):
                 curr_block.update_metadata(llm_error_count=1)
-                return
+                break
 
             merge = response["merge"]
 
@@ -220,19 +248,39 @@ Table 2
 
             # Merge the cells and images of the tables
             direction = response["direction"]
+            if not self.validate_merge(children, children_curr, direction):
+                start_block = curr_block
+                continue
+
             merged_image = self.join_images(start_image, curr_image, direction)
             merged_cells = self.join_cells(children, children_curr, direction)
             curr_block.structure = []
             start_block.structure = [b.id for b in merged_cells]
             start_block.lowres_image = merged_image
 
-    @staticmethod
-    def join_cells(cells1: List[TableCell], cells2: List[TableCell], direction: Literal['right', 'bottom'] = 'right') -> List[TableCell]:
+    def validate_merge(self, cells1: List[TableCell], cells2: List[TableCell], direction: Literal['right', 'bottom'] = 'right'):
+        if direction == "right":
+            # Check if the number of rows is the same
+            cells1_row_count = self.get_row_count(cells1)
+            cells2_row_count = self.get_row_count(cells2)
+            return abs(cells1_row_count - cells2_row_count) < 5
+        elif direction == "bottom":
+            # Check if the number of columns is the same
+            cells1_col_count = self.get_column_count(cells1)
+            cells2_col_count = self.get_column_count(cells2)
+            return abs(cells1_col_count - cells2_col_count) < 2
+
+
+    def join_cells(self, cells1: List[TableCell], cells2: List[TableCell], direction: Literal['right', 'bottom'] = 'right') -> List[TableCell]:
         if direction == 'right':
+            # Shift columns right
+            col_count = self.get_column_count(cells1)
+            for cell in cells2:
+                cell.col_id += col_count
             new_cells = cells1 + cells2
         else:
             # Shift rows up
-            row_count = len(cells1)
+            row_count = self.get_row_count(cells1)
             for cell in cells2:
                 cell.row_id += row_count
             new_cells = cells1 + cells2

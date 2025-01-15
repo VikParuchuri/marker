@@ -8,6 +8,7 @@ import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
 from pdftext.extraction import dictionary_output
 from PIL import Image
+from pypdfium2 import PdfiumError
 
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
 from marker.providers.utils import alphanum_ratio
@@ -230,7 +231,11 @@ class PdfProvider(BaseProvider):
     def check_page(self, page_id: int) -> bool:
         page = self.doc.get_page(page_id)
         page_bbox = PolygonBox.from_bbox(page.get_bbox())
-        page_objs = list(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_TEXT, pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+        try:
+            page_objs = list(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_TEXT, pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+        except PdfiumError:
+            # Happens when pdfium fails to get the number of page objects
+            return False
 
         # if we do not see any text objects in the pdf, we can skip this page
         if not any([obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT for obj in page_objs]):

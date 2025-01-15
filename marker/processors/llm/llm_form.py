@@ -15,7 +15,7 @@ class LLMFormProcessor(BaseLLMProcessor):
     gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and an html representation of the form in the image.
 Your task is to correct any errors in the htmlrepresentation, and format it properly.
-Values and labels should appear in html tables, with the labels on the left side, and values on the right.  The headers should be "Labels" and "Values".  Other text in the form can appear between the tables.  Only use the tags `table, p, span, i, b, th, td, tr, and div`.
+Values and labels should appear in html tables, with the labels on the left side, and values on the right.  The headers should be "Labels" and "Values".  Other text in the form can appear between the tables.  Only use the tags `table, p, span, i, b, th, td, tr, and div`.  Do not omit any text from the form - make sure everything is included in the html representation.  It should be as faithful to the original form as possible.
 **Instructions:**
 1. Carefully examine the provided form block image.
 2. Analyze the html representation of the form.

@@ -16,8 +16,8 @@ from marker.schema import BlockTypes
 class TableConverter(PdfConverter):
     default_processors: Tuple[BaseProcessor, ...] = (
         TableProcessor,
-        LLMTableMergeProcessor,
         LLMTableProcessor,
+        LLMTableMergeProcessor,
         LLMFormProcessor,
         LLMComplexRegionProcessor,
     )

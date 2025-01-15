@@ -14,7 +14,7 @@ class LLMComplexRegionProcessor(BaseLLMProcessor):
     block_types = (BlockTypes.ComplexRegion,)
     gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and the text that can be extracted from the image.
-Your task is to correct any errors in the text, and format it properly.
+Your task is to correct any errors in the text, and format it properly.  Do not omit any text from the block - make sure everything is included in the markdown representation.  The markdown representation should be as faithful to the original text as possible.
 
 Formatting should be in markdown, with the following rules:
 - * for italics, ** for bold, and ` for inline code.

@@ -103,6 +103,12 @@ No corrections needed.
             page.add_full_block(cell)
             block.add_structure(cell)
 
+    @staticmethod
+    def get_cell_text(element, keep_tags=('br',)):
+        for tag in element.find_all(True):
+            if tag.name not in keep_tags:
+                tag.unwrap()
+        return element.decode_contents().replace("<br>", "\n")
 
     def parse_html_table(self, html_text: str, block: Block, page: PageGroup) -> List[TableCell]:
         soup = BeautifulSoup(html_text, 'html.parser')
@@ -128,7 +134,7 @@ No corrections needed.
                     print("Table parsing warning: too many columns found")
                     break
 
-                cell_text = cell.text.strip()
+                cell_text = self.get_cell_text(cell).strip()
                 rowspan = min(int(cell.get('rowspan', 1)), len(rows) - i)
                 colspan = min(int(cell.get('colspan', 1)), max_cols - cur_col)
                 cell_rows = list(range(i, i + rowspan))

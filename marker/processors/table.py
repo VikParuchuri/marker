@@ -142,7 +142,7 @@ class TableProcessor(BaseProcessor):
                 # Cells in this row
                 # Deepcopy is because we do an in-place mutation later, and that can cause rows to shift to match rows in unique_rows
                 # making them be processed twice
-                row_cells = deepcopy([c for c in table.cells if c.row_id == row and c.cell_id])
+                row_cells = deepcopy([c for c in table.cells if c.row_id == row])
                 rowspans = [c.rowspan for c in row_cells]
                 line_lens = [len(c.text_lines) if isinstance(c.text_lines, list) else 1 for c in row_cells]
 
@@ -181,7 +181,10 @@ class TableProcessor(BaseProcessor):
                     for cell in row_cells:
                         cell.row_id += shift_up
                         new_cells.append(cell)
-            table.cells = new_cells
+
+            # Only update the cells if we added new cells
+            if len(new_cells) > len(table.cells):
+                table.cells = new_cells
 
     def assign_text_to_cells(self, tables: List[TableResult], table_data: list):
         for table_result, table_page_data in zip(tables, table_data):
