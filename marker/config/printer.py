@@ -3,7 +3,6 @@ from typing import Optional
 import click
 
 from marker.config.crawler import crawler
-from marker.schema import BlockTypes
 
 
 class CustomClickPrinter(click.Command):

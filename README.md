@@ -201,9 +201,13 @@ forms = document.contained_blocks((BlockTypes.Form,))
 
 Look at the processors for more examples of extracting and manipulating blocks.
 
-### Custom converters
+## Other converters
 
-You can also use custom converters to define your own conversion pipelines.  For example, the `TableConverter` will only extract tables:
+You can also use other converters that define different conversion pipelines:
+
+### Extract tables
+
+The `TableConverter` will only convert and extract tables:
 
 ```python
 from marker.converters.table import TableConverter
@@ -217,7 +221,7 @@ rendered = converter("FILEPATH")
 text, _, images = text_from_rendered(rendered)
 ```
 
-This takes all the same configuration as the PdfConverter.
+This takes all the same configuration as the PdfConverter.  You can specify the configuration `force_layout_block=Table` to avoid layout detection and instead assume every page is a table.
 
 # Output Formats
 
@@ -396,10 +400,12 @@ Marker takes about 6GB of VRAM on average per task, so you can convert 8 documen
 ## Table Conversion
 Marker can extract tables from PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a tree edit distance based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves these scores:
 
-|   Avg score |   Total tables |
-|-------------|----------------|
-|        0.65 |           1149 |
+| Avg score | Total tables | use_llm |
+|-----------|--------------|---------|
+| 0.824     | 54           | False   |
+| 0.873     | 54           | True    |
 
+The `--use_llm` flag can significantly improve table recognition performance, as you can see.
 
 We filter out tables that we cannot align with the ground truth, since fintabnet and our layout model have slightly different detection methods (this results in some tables being split/merged).
 

@@ -50,9 +50,10 @@ def extract_tables(children: List[JSONBlockOutput]):
 @click.option("--max_rows", type=int, default=None, help="Maximum number of PDFs to process")
 @click.option("--max_workers", type=int, default=16, help="Maximum number of workers to use")
 @click.option("--use_llm", is_flag=True, help="Use LLM for improving table recognition.")
-def main(out_file: str, dataset: str, max_rows: int, max_workers: int, use_llm: bool):
+@click.option("--table_rec_batch_size", type=int, default=None, help="Batch size for table recognition.")
+def main(out_file: str, dataset: str, max_rows: int, max_workers: int, use_llm: bool, table_rec_batch_size: int | None):
     models = create_model_dict()
-    config_parser = ConfigParser({'output_format': 'json', "use_llm": use_llm})
+    config_parser = ConfigParser({'output_format': 'json', "use_llm": use_llm, "table_rec_batch_size": table_rec_batch_size})
     start = time.time()
 
 

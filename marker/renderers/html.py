@@ -1,3 +1,5 @@
+import textwrap
+
 from PIL import Image
 from typing import Annotated, Literal, Tuple
 
@@ -82,12 +84,25 @@ class HTMLRenderer(BaseRenderer):
         if level == 0:
             output = self.merge_consecutive_tags(output, 'b')
             output = self.merge_consecutive_tags(output, 'i')
+            output = textwrap.dedent(f"""
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <meta charset="utf-8" />
+                </head>
+                <body>
+                    {output}
+                </body>
+            </html>
+""")
 
         return output, images
 
     def __call__(self, document) -> HTMLOutput:
         document_output = document.render()
         full_html, images = self.extract_html(document, document_output)
+        soup = BeautifulSoup(full_html, 'html.parser')
+        full_html = soup.prettify() # Add indentation to the HTML
         return HTMLOutput(
             html=full_html,
             images=images,

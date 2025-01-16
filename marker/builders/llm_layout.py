@@ -28,11 +28,11 @@ class LLMLayoutBuilder(LayoutBuilder):
     ] = settings.GOOGLE_API_KEY
     confidence_threshold: Annotated[
         float,
-        "The confidence threshold to use for relabeling.",
-    ] = 0.8
+        "The confidence threshold to use for relabeling (anything below is relabeled).",
+    ] = 0.7
     picture_height_threshold: Annotated[
         float,
-        "The height threshold for pictures that may actually be complex regions.",
+        "The height threshold for pictures that may actually be complex regions. (anything above this ratio against the page is relabeled)",
     ] = 0.8
     model_name: Annotated[
         str,
