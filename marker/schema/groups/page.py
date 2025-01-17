@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from PIL import Image
 
+from pdftext.schema import Reference
 from marker.providers import ProviderOutput
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId, Text
@@ -22,6 +23,7 @@ class PageGroup(Group):
     layout_sliced: bool = False  # Whether the layout model had to slice the image (order may be wrong)
     excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
     maximum_assignment_distance: float = 20  # pixels
+    refs: List[Reference] | None = None
 
     def incr_block_id(self):
         if self.block_id is None:
