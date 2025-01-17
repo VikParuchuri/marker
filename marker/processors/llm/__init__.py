@@ -40,11 +40,6 @@ class BaseLLMProcessor(BaseProcessor):
         float,
         "The ratio to expand the image by when cropping.",
     ] = 0.01
-    gemini_rewriting_prompt: Annotated[
-        str,
-        "The prompt to use for rewriting text.",
-        "Default is a string containing the Gemini rewriting prompt."
-    ] = ''
     use_llm: Annotated[
         bool,
         "Whether to use the LLM model.",

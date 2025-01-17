@@ -36,6 +36,9 @@ Apples, Bananas, Oranges
 Output:
 In this figure, a bar chart titled "Fruit Preference Survey" is showing the number of people who prefer different types of fruits.  The x-axis shows the types of fruits, and the y-axis shows the number of people.  The bar chart shows that most people prefer apples, followed by bananas and oranges.  20 people prefer apples, 15 people prefer bananas, and 10 people prefer oranges.
 **Input:**
+```text
+{raw_text}
+```
 """
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
@@ -44,7 +47,7 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
             # Since this processor replaces images with descriptions
             return
 
-        prompt = self.image_description_prompt + '```text\n`' + block.raw_text(document) + '`\n```\n'
+        prompt = self.image_description_prompt.replace("{raw_text}", block.raw_text(document))
         image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,

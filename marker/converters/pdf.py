@@ -1,4 +1,7 @@
 import os
+
+from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
@@ -33,7 +36,7 @@ from marker.processors.page_header import PageHeaderProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
 from marker.processors.table import TableProcessor
 from marker.processors.text import TextProcessor
-from marker.providers.pdf import PdfProvider
+from marker.processors.llm.llm_equation import LLMEquationProcessor
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -75,6 +78,8 @@ class PdfConverter(BaseConverter):
         LLMTextProcessor,
         LLMComplexRegionProcessor,
         LLMImageDescriptionProcessor,
+        LLMEquationProcessor,
+        LLMHandwritingProcessor,
         DebugProcessor,
     )
 

@@ -16,18 +16,25 @@ class LLMTableProcessor(BaseLLMProcessor):
         Tuple[BlockTypes],
         "The block types to process.",
     ] = (BlockTypes.Table, BlockTypes.TableOfContents)
-    gemini_rewriting_prompt: Annotated[
+    table_rewriting_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt."
     ] = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and an html representation of the table in the image.
 Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table as possible.
+
+Some guidelines:
+- Make sure to reproduce the original values as faithfully as possible.
+- If you see any math in a table cell, fence it with the <math display="inline"> tag.  Block math should be fenced with <math display="block">.
+- Replace any images with a description, like "Image: [description]".
+- Only use the tags th, td, tr, span, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.
+
 **Instructions:**
 1. Carefully examine the provided text block image.
 2. Analyze the html representation of the table.
 3. If the html representation is largely correct, then write "No corrections needed."
-4. If the html representation contains errors, generate the corrected html representation.  Only use the tags th, td, tr, and table.  Only use the attributes colspan and rowspan if necessary.
+4. If the html representation contains errors, generate the corrected html representation.  
 5. Output only either the corrected html representation or "No corrections needed."
 **Example:**
 Input:
@@ -50,6 +57,9 @@ Output:
 No corrections needed.
 ```
 **Input:**
+```html
+{block_html}
+```
 """
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
@@ -59,8 +69,8 @@ No corrections needed.
             return
 
         block_html = block.render(document).html
+        prompt = self.table_rewriting_prompt.replace("{block_html}", block_html)
 
-        prompt = self.gemini_rewriting_prompt + '```html\n`' + block_html + '`\n```\n'
         image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,

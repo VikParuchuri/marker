@@ -5,16 +5,25 @@ from marker.processors.llm import BaseLLMProcessor
 from google.ai.generativelanguage_v1beta.types import content
 
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
+from marker.schema.blocks import Equation
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 
+from typing import Annotated
 
-class LLMComplexRegionProcessor(BaseLLMProcessor):
-    block_types = (BlockTypes.ComplexRegion,)
-    complex_region_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
-You will receive an image of a text block and the text that can be extracted from the image.
-Your task is to generate markdown to properly represent the content of the image.  Do not omit any text present in the image - make sure everything is included in the markdown representation.  The markdown representation should be as faithful to the original image as possible.
+
+class LLMHandwritingProcessor(BaseLLMProcessor):
+    block_types = (BlockTypes.Equation,)
+    min_handwriting_height: Annotated[
+        float,
+        "The minimum ratio between handwriting height and page height to consider for processing.",
+     ] = 0.1
+    handwriting_generation_prompt: Annotated[
+        str,
+        "The prompt to use for OCRing handwriting.",
+        "Default is a string containing the Gemini prompt."
+    ] = """You are an expert editor specializing in accurately reproducing text from images.
+You will receive an image of a text block, along with the text that can be extracted. Your task is to generate markdown to properly represent the content of the image.  Do not omit any text present in the image - make sure everything is included in the markdown representation.  The markdown representation should be as faithful to the original image as possible.
 
 Formatting should be in markdown, with the following rules:
 - * for italics, ** for bold, and ` for inline code.
@@ -30,20 +39,15 @@ Formatting should be in markdown, with the following rules:
 **Instructions:**
 1. Carefully examine the provided block image.
 2. Analyze the existing text representation.
-3. Generate the markdown representation of the content in the image.
+3. Output the markdown representing the content of the image.
 **Example:**
 Input:
 ```text
-Table 1: Car Sales
+This i sm handwritting.
 ```
 Output:
 ```markdown
-## Table 1: Car Sales
-
-| Car | Sales |
-| --- | --- |
-| Honda | 100 |
-| Toyota | 200 |
+This is some *handwriting*.
 ```
 **Input:**
 ```text
@@ -51,16 +55,17 @@ Output:
 ```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
+    def process_rewriting(self, document: Document, page: PageGroup, block: Equation):
         text = block.raw_text(document)
-        prompt = self.complex_region_prompt.replace("{extracted_text}", text)
+        prompt = self.handwriting_generation_prompt.replace("{handwriting_text}", text)
+
         image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],
-            required=["corrected_markdown"],
+            required=["markdown"],
             properties={
-                "corrected_markdown": content.Schema(
+                "markdown": content.Schema(
                     type=content.Type.STRING
                 )
             },
@@ -68,21 +73,14 @@ Output:
 
         response = self.model.generate_response(prompt, image, block, response_schema)
 
-        if not response or "corrected_markdown" not in response:
+        if not response or "markdown" not in response:
             block.update_metadata(llm_error_count=1)
             return
 
-        corrected_markdown = response["corrected_markdown"]
-
-        # The original table is okay
-        if "no corrections" in corrected_markdown.lower():
-            return
-
-        # Potentially a partial response
-        if len(corrected_markdown) < len(text) * .5:
+        markdown = response["markdown"]
+        if len(markdown) < len(text) * .5:
             block.update_metadata(llm_error_count=1)
             return
 
-        # Convert LLM markdown to html
-        corrected_markdown = corrected_markdown.strip().lstrip("```markdown").rstrip("```").strip()
-        block.html = markdown2.markdown(corrected_markdown)
+        markdown = markdown.strip().lstrip("```markdown").rstrip("```").strip()
+        block.html = markdown2.markdown(markdown)

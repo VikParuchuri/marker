@@ -36,7 +36,7 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
         int,
         "The maximum gap between columns to merge tables"
     ] = 50
-    gemini_table_merge_prompt: Annotated[
+    table_merge_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt."
@@ -212,7 +212,7 @@ Table 2
             start_html = start_block.render(document).html
             curr_html = curr_block.render(document).html
 
-            prompt = self.gemini_table_merge_prompt.replace("{{table1}}", start_html).replace("{{table2}}", curr_html)
+            prompt = self.table_merge_prompt.replace("{{table1}}", start_html).replace("{{table2}}", curr_html)
 
             response_schema = content.Schema(
                 type=content.Type.OBJECT,
