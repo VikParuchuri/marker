@@ -4,8 +4,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
-from typing import Annotated, Any, Dict, List, Optional, Type
 from functools import cache
+from typing import Annotated, Any, Dict, List, Optional, Type
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
@@ -28,6 +28,7 @@ from marker.processors.llm.llm_image_description import LLMImageDescriptionProce
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.page_header import PageHeaderProcessor
+from marker.processors.reference import ReferenceProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
 from marker.processors.table import TableProcessor
 from marker.processors.text import TextProcessor
@@ -82,6 +83,7 @@ class PdfConverter(BaseConverter):
                 LLMTextProcessor,
                 LLMComplexRegionProcessor,
                 LLMImageDescriptionProcessor,
+                ReferenceProcessor,
                 DebugProcessor,
             ]
 

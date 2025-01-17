@@ -15,7 +15,6 @@ from marker.util import assign_config
 
 
 class BaseRenderer:
-    remove_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to ignore while rendering."] = (BlockTypes.PageHeader, BlockTypes.PageFooter)
     image_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to consider as images."] = (BlockTypes.Picture, BlockTypes.Figure)
     extract_images: Annotated[bool, "Extract images from the document."] = True
 

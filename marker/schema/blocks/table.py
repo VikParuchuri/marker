@@ -12,8 +12,8 @@ class Table(Block):
     cells: List[SpanTableCell] | None = None
 
     def assemble_html(self, child_blocks, parent_structure=None):
+        child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
+        template = super().assemble_html(child_ref_blocks, parent_structure)
         if self.cells:
-            return str(html_format(self.cells))
-        else:
-            template = super().assemble_html(child_blocks, parent_structure)
-            return f"<p>{template}</p>"
+            return template + str(html_format(self.cells))
+        return f"<p>{template}</p>"

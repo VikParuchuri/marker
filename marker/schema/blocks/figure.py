@@ -7,7 +7,8 @@ class Figure(Block):
     description: str | None = None
 
     def assemble_html(self, child_blocks, parent_structure):
+        child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
+        html = super().assemble_html(child_ref_blocks, parent_structure)
         if self.description:
-            return f"<p role='img' data-original-image-id='{self.id}'>Image {self.id} description: {self.description}</p>"
-        else:
-            return ""
+            html += f"<p role='img' data-original-image-id='{self.id}'>Image {self.id} description: {self.description}</p>"
+        return html
