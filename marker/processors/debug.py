@@ -68,7 +68,7 @@ class DebugProcessor(BaseProcessor):
 
     def draw_pdf_debug_images(self, document: Document):
         for page in document.pages:
-            png_image = page.highres_image.copy()
+            png_image = page.get_image(highres=True).copy()
 
             line_bboxes = []
             span_bboxes = []
@@ -90,7 +90,7 @@ class DebugProcessor(BaseProcessor):
 
     def draw_layout_debug_images(self, document: Document, pdf_mode=False):
         for page in document.pages:
-            img_size = page.highres_image.size
+            img_size = page.get_image(highres=True).size
             png_image = Image.new("RGB", img_size, color="white")
 
             line_bboxes = []

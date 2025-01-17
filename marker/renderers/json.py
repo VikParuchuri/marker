@@ -14,6 +14,7 @@ class JSONBlockOutput(BaseModel):
     block_type: str
     html: str
     polygon: List[List[float]]
+    bbox: List[float]
     children: List['JSONBlockOutput'] | None = None
     section_hierarchy: Dict[int, str] | None = None
     images: dict | None = None
@@ -52,6 +53,7 @@ class JSONRenderer(BaseRenderer):
             return JSONBlockOutput(
                 html=html,
                 polygon=block_output.polygon.polygon,
+                bbox=block_output.polygon.bbox,
                 id=str(block_output.id),
                 block_type=str(block_output.id.block_type),
                 images=images,
@@ -66,6 +68,7 @@ class JSONRenderer(BaseRenderer):
             return JSONBlockOutput(
                 html=block_output.html,
                 polygon=block_output.polygon.polygon,
+                bbox=block_output.polygon.bbox,
                 id=str(block_output.id),
                 block_type=str(block_output.id.block_type),
                 children=children,

@@ -12,9 +12,9 @@ from marker.schema.groups.page import PageGroup
 
 class LLMComplexRegionProcessor(BaseLLMProcessor):
     block_types = (BlockTypes.ComplexRegion,)
-    gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
+    complex_region_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and the text that can be extracted from the image.
-Your task is to correct any errors in the text, and format it properly.
+Your task is to generate markdown to properly represent the content of the image.  Do not omit any text present in the image - make sure everything is included in the markdown representation.  The markdown representation should be as faithful to the original image as possible.
 
 Formatting should be in markdown, with the following rules:
 - * for italics, ** for bold, and ` for inline code.
@@ -29,27 +29,32 @@ Formatting should be in markdown, with the following rules:
 
 **Instructions:**
 1. Carefully examine the provided block image.
-2. Analyze the text representation
-3. If the text representation is largely correct, then write "No corrections needed."
-4. If the text representation contains errors, generate the corrected markdown representation.
-5. Output only either the corrected markdown representation or "No corrections needed."
+2. Analyze the existing text representation.
+3. Generate the markdown representation of the content in the image.
 **Example:**
 Input:
 ```text
-This is an example text block.
+Table 1: Car Sales
 ```
 Output:
 ```markdown
-No corrections needed.
+## Table 1: Car Sales
+
+| Car | Sales |
+| --- | --- |
+| Honda | 100 |
+| Toyota | 200 |
 ```
 **Input:**
+```text
+{extracted_text}
+```
 """
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
         text = block.raw_text(document)
-
-        prompt = self.gemini_rewriting_prompt + '```text\n`' + text + '`\n```\n'
-        image = self.extract_image(page, block)
+        prompt = self.complex_region_prompt.replace("{extracted_text}", text)
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],
@@ -79,4 +84,5 @@ No corrections needed.
             return
 
         # Convert LLM markdown to html
+        corrected_markdown = corrected_markdown.strip().lstrip("```markdown").rstrip("```").strip()
         block.html = markdown2.markdown(corrected_markdown)

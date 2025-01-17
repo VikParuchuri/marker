@@ -1,4 +1,4 @@
-from surya.schema import LayoutResult
+from surya.layout.schema import LayoutResult
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder

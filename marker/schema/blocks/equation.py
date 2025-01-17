@@ -7,8 +7,9 @@ from marker.schema.blocks import Block
 class Equation(Block):
     block_type: BlockTypes = BlockTypes.Equation
     latex: str | None = None
+    block_description: str = "A block math equation."
 
-    def assemble_html(self, child_blocks, parent_structure=None):
+    def assemble_html(self, document, child_blocks, parent_structure=None):
         if self.latex:
             html_out = f"<p block-type='{self.block_type}'>"
 
@@ -31,7 +32,7 @@ class Equation(Block):
             html_out += "</p>"
             return html_out
         else:
-            template = super().assemble_html(child_blocks, parent_structure)
+            template = super().assemble_html(document, child_blocks, parent_structure)
             return f"<p block-type='{self.block_type}'>{template}</p>"
 
     @staticmethod
