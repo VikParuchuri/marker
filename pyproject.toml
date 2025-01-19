@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "marker-pdf"
-version = "1.2.4"
+version = "1.2.5"
 description = "Convert PDF to markdown with high speed and accuracy."
 authors = ["Vik Paruchuri <github@vikas.sh>"]
 readme = "README.md"
@@ -11,13 +11,7 @@ packages = [
     {include = "marker"}
 ]
 include = [
-    "convert.py",
-    "convert_single.py",
-    "chunk_convert.sh",
-    "chunk_convert.py",
-    "marker_app.py",
-    "run_marker_app.py",
-    "marker_server.py",
+    "marker/scripts/*.sh"
 ]
 
 [tool.poetry.dependencies]
@@ -53,11 +47,11 @@ pytest = "^8.3.3"
 pytest-mock = "^3.14.0"
 
 [tool.poetry.scripts]
-marker = "convert:main"
-marker_single = "convert_single:main"
-marker_chunk_convert = "chunk_convert:main"
-marker_gui = "run_marker_app:run"
-marker_server = "marker_server:main"
+marker = "marker.scripts.convert:convert_cli"
+marker_single = "marker.scripts.convert_single:convert_single_cli"
+marker_chunk_convert = "marker.scripts.chunk_convert:chunk_convert_cli"
+marker_gui = "marker.scripts.run_streamlit_app:streamlit_app_cli"
+marker_server = "marker.scripts.server:server_cli"
 
 [build-system]
 requires = ["poetry-core"]
