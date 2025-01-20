@@ -90,7 +90,8 @@ async def _convert_pdf(params: CommonParams):
         config_parser = ConfigParser(options)
         config_dict = config_parser.generate_config_dict()
         config_dict["pdftext_workers"] = 1
-        converter = PdfConverter(
+        converter_cls = PdfConverter
+        converter = converter_cls(
             config=config_dict,
             artifact_dict=app_data["models"],
             processor_list=config_parser.get_processors(),

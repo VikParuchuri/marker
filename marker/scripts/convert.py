@@ -1,5 +1,7 @@
 import os
 
+from marker.converters.pdf import PdfConverter
+
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
@@ -44,7 +46,7 @@ def process_single_pdf(args):
     if cli_options.get('skip_existing') and output_exists(out_folder, base_name):
         return
 
-    converter_cls = config_parser.get_converter_cls()
+    converter_cls = PdfConverter
 
     try:
         converter = converter_cls(
