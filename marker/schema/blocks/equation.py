@@ -10,7 +10,9 @@ class Equation(Block):
 
     def assemble_html(self, child_blocks, parent_structure=None):
         if self.latex:
-            html_out = f"<p block-type='{self.block_type}'>"
+            child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
+            html_out = super().assemble_html(child_ref_blocks, parent_structure)
+            html_out += f"<p block-type='{self.block_type}'>"
 
             try:
                 latex = self.parse_latex(html.escape(self.latex))
@@ -43,9 +45,9 @@ class Equation(Block):
             ("$$", "block"),
             ("$", "inline")
         ]
-        
-        text = text.replace("\n", "<br>") # we can't handle \n's inside <p> properly if we don't do this
-       
+
+        text = text.replace("\n", "<br>")  # we can't handle \n's inside <p> properly if we don't do this
+
         i = 0
         stack = []
         result = []
@@ -72,7 +74,7 @@ class Equation(Block):
             else:  # No delimiter match
                 buffer += text[i]
                 i += 1
-                
+
         if buffer:
             result.append({"class": "text", "content": buffer})
         return result

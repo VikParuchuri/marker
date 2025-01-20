@@ -27,6 +27,7 @@ class BlockTypes(str, Enum):
     TableOfContents = auto()
     Document = auto()
     ComplexRegion = auto()
+    Reference = auto()
 
     def __str__(self):
         return self.name

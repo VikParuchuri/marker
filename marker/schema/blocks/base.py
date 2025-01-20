@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from marker.schema.document import Document
     from marker.schema.groups.page import PageGroup
 
+
 class BlockMetadata(BaseModel):
     llm_request_count: int = 0
     llm_error_count: int = 0
@@ -76,6 +77,7 @@ class Block(BaseModel):
     text_extraction_method: Optional[Literal['pdftext', 'surya', 'gemini']] = None
     structure: List[BlockId] | None = None  # The top-level page structure, which is the block ids in order
     ignore_for_output: bool = False  # Whether this block should be ignored in output
+    replace_output_newlines: bool = False  # Whether to replace newlines with spaces in output
     source: Literal['layout', 'heuristics', 'processor'] = 'layout'
     top_k: Optional[Dict[BlockTypes, float]] = None
     metadata: BlockMetadata | None = None
@@ -168,6 +170,10 @@ class Block(BaseModel):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"
+
+        if self.replace_output_newlines:
+            template = "<p>" + template.replace("\n", " ") + "</p>"
+
         return template
 
     def assign_section_hierarchy(self, section_hierarchy):
