@@ -14,6 +14,7 @@ def cleanup_text(full_text):
 
 class Span(Block):
     block_type: BlockTypes = BlockTypes.Span
+    block_description: str = "A span of text inside a line."
 
     text: str
     font: str
@@ -37,7 +38,7 @@ class Span(Block):
     def math(self):
         return 'math' in self.formats
 
-    def assemble_html(self, child_blocks, parent_structure):
+    def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
 

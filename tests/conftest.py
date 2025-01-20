@@ -2,6 +2,8 @@ from marker.providers.pdf import PdfProvider
 import tempfile
 from typing import Dict, Type
 
+from PIL import Image, ImageDraw
+
 import datasets
 import pytest
 
@@ -9,9 +11,7 @@ from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.converters.pdf import PdfConverter
-from marker.models import setup_detection_model, setup_layout_model, \
-    setup_recognition_model, setup_table_rec_model, \
-    setup_texify_model, setup_ocr_error_model
+from marker.models import create_model_dict
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.renderers.markdown import MarkdownRenderer
@@ -19,46 +19,42 @@ from marker.renderers.json import JSONRenderer
 from marker.schema.registry import register_block_class
 from marker.util import classes_to_strings
 
-
 @pytest.fixture(scope="session")
-def layout_model():
-    layout_m = setup_layout_model()
-    yield layout_m
-    del layout_m
-
-
-@pytest.fixture(scope="session")
-def detection_model():
-    detection_m = setup_detection_model()
-    yield detection_m
-    del detection_m
+def model_dict():
+    model_dict = create_model_dict()
+    yield model_dict
+    del model_dict
 
 
 @pytest.fixture(scope="session")
-def texify_model():
-    texify_m = setup_texify_model()
-    yield texify_m
-    del texify_m
+def layout_model(model_dict):
+    yield model_dict["layout_model"]
 
 
 @pytest.fixture(scope="session")
-def recognition_model():
-    ocr_m = setup_recognition_model()
-    yield ocr_m
-    del ocr_m
+def detection_model(model_dict):
+    yield model_dict["detection_model"]
 
 
 @pytest.fixture(scope="session")
-def table_rec_model():
-    table_rec_m = setup_table_rec_model()
-    yield table_rec_m
-    del table_rec_m
+def texify_model(model_dict):
+    yield model_dict["texify_model"]
+
 
 @pytest.fixture(scope="session")
-def ocr_error_model():
-    ocr_error_m = setup_ocr_error_model()
-    yield ocr_error_m
-    del ocr_error_m
+def recognition_model(model_dict):
+    yield model_dict["recognition_model"]
+
+
+@pytest.fixture(scope="session")
+def table_rec_model(model_dict):
+    yield model_dict["table_rec_model"]
+
+
+@pytest.fixture(scope="session")
+def ocr_error_model(model_dict):
+    yield model_dict["ocr_error_model"]
+
 
 @pytest.fixture(scope="function")
 def config(request):
@@ -101,15 +97,7 @@ def pdf_document(request, config, pdf_provider, layout_model, ocr_error_model, r
 
 
 @pytest.fixture(scope="function")
-def pdf_converter(request, config, layout_model, texify_model, recognition_model, table_rec_model, detection_model, ocr_error_model, renderer):
-    model_dict = {
-        "layout_model": layout_model,
-        "texify_model": texify_model,
-        "recognition_model": recognition_model,
-        "table_rec_model": table_rec_model,
-        "detection_model": detection_model,
-        "ocr_error_model": ocr_error_model
-    }
+def pdf_converter(request, config, model_dict, renderer):
     yield PdfConverter(
         artifact_dict=model_dict,
         processor_list=None,
@@ -130,3 +118,13 @@ def renderer(request, config):
             raise ValueError(f"Unknown output format: {output_format}")
     else:
         return MarkdownRenderer
+
+@pytest.fixture(scope="function")
+def temp_image():
+    img = Image.new("RGB", (512, 512), color="white")
+    draw = ImageDraw.Draw(img)
+    draw.text((10, 10), "Hello, World!", fill="black")
+    with tempfile.NamedTemporaryFile(suffix=".png") as f:
+        img.save(f.name)
+        f.flush()
+        yield f

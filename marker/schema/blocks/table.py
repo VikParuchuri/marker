@@ -1,19 +1,7 @@
-from typing import List
-
-from tabled.formats import html_format
-from tabled.schema import SpanTableCell
-
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
+from marker.schema.blocks.basetable import BaseTable
 
 
-class Table(Block):
+class Table(BaseTable):
     block_type: BlockTypes = BlockTypes.Table
-    cells: List[SpanTableCell] | None = None
-
-    def assemble_html(self, child_blocks, parent_structure=None):
-        child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
-        template = super().assemble_html(child_ref_blocks, parent_structure)
-        if self.cells:
-            return template + str(html_format(self.cells))
-        return f"<p>{template}</p>"
+    block_description: str = "A table of data, like a results table.  It will be in a tabular format."

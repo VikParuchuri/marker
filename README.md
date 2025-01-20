@@ -1,13 +1,11 @@
 # Marker
 
-Marker converts PDFs to markdown, JSON, and HTML quickly and accurately.
+Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
 
-- Supports a wide range of documents
-- Supports all languages
+- Supports a range of documents in all languages
 - Removes headers/footers/other artifacts
-- Formats tables, forms, and code blocks
+- Formats tables, forms, equations, links, and code blocks
 - Extracts and saves images along with the markdown
-- Converts equations to latex
 - Easily extensible with your own formatting and logic
 - Optionally boost accuracy with an LLM
 - Works on GPU, CPU, or MPS
@@ -63,11 +61,11 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
 - Marker will only convert block equations
-- Tables are not always formatted 100% correctly - multiline cells are sometimes split into multiple rows.
+- Tables are not always formatted 100% correctly
 - Forms are not converted optimally
 - Very complex layouts, with nested tables and forms, may not work
 
-Note: Passing the `--use_llm` flag will mostly solve all of these issues.
+Note: Passing the `--use_llm` flag will mostly solve these issues.
 
 # Installation
 
@@ -84,7 +82,7 @@ pip install marker-pdf
 First, some configuration:
 
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag on the CLI or via configuration to ensure your PDF runs through OCR.
+- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag on the CLI or via configuration to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and only strip out any existing OCR text.
 
 ## Interactive App
 
@@ -101,9 +99,12 @@ marker_gui
 marker_single /path/to/file.pdf
 ```
 
+You can pass in PDFs or images.
+
 Options:
 - `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
 - `--output_format [markdown|json|html]`: Specify the format for the output results.
+- `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n` 
 - `--use_llm`: Uses an LLM to improve accuracy.  You must set your Gemini API key using the `GOOGLE_API_KEY` env var.
 - `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
@@ -114,6 +115,7 @@ Options:
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
 - `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "en,fr,de"` for English, French, and German.
 - `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
+- `--converter_cls`: One of `marker.converters.pdf.PdfConverter` (default) or `marker.converters.table.TableConverter`.  The `PdfConverter` will convert the whole PDF, the `TableConverter` will only extract and convert tables.
 
 The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/languages.py).  If you don't need OCR, marker can work with any language.
 
@@ -179,7 +181,7 @@ rendered = converter("FILEPATH")
 
 ### Extract blocks
 
-Each document consists of one or more pages.  Pages contain blocks, which can themselves contain other blocks.  It's possible to programatically manipulate these blocks.  
+Each document consists of one or more pages.  Pages contain blocks, which can themselves contain other blocks.  It's possible to programmatically manipulate these blocks.  
 
 Here's an example of extracting all forms from a document:
 
@@ -196,6 +198,28 @@ forms = document.contained_blocks((BlockTypes.Form,))
 ```
 
 Look at the processors for more examples of extracting and manipulating blocks.
+
+## Other converters
+
+You can also use other converters that define different conversion pipelines:
+
+### Extract tables
+
+The `TableConverter` will only convert and extract tables:
+
+```python
+from marker.converters.table import TableConverter
+from marker.models import create_model_dict
+from marker.output import text_from_rendered
+
+converter = TableConverter(
+    artifact_dict=create_model_dict(),
+)
+rendered = converter("FILEPATH")
+text, _, images = text_from_rendered(rendered)
+```
+
+This takes all the same configuration as the PdfConverter.  You can specify the configuration `force_layout_block=Table` to avoid layout detection and instead assume every page is a table.
 
 # Output Formats
 
@@ -348,7 +372,7 @@ There are some settings that you may find useful if things aren't working the wa
 Pass the `debug` option to activate debug mode.  This will save images of each page with detected layout and text, as well as output a json file with additional bounding box information.
 
 # Benchmarks
-
+## Overall PDF Conversion
 Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
 
 **Speed**
@@ -371,6 +395,18 @@ Marker takes about 6GB of VRAM on average per task, so you can convert 8 documen
 
 ![Benchmark results](data/images/per_doc.png)
 
+## Table Conversion
+Marker can extract tables from PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a tree edit distance based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves these scores:
+
+| Avg score | Total tables | use_llm |
+|-----------|--------------|---------|
+| 0.824     | 54           | False   |
+| 0.873     | 54           | True    |
+
+The `--use_llm` flag can significantly improve table recognition performance, as you can see.
+
+We filter out tables that we cannot align with the ground truth, since fintabnet and our layout model have slightly different detection methods (this results in some tables being split/merged).
+
 ## Running your own benchmarks
 
 You can benchmark the performance of marker on your machine. Install marker manually with:
@@ -380,10 +416,19 @@ git clone https://github.com/VikParuchuri/marker.git
 poetry install
 ```
 
+### Overall PDF Conversion
+
 Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run the overall benchmark like this:
 
 ```shell
 python benchmarks/overall.py data/pdfs data/references report.json
+```
+
+### Table Conversion
+The processed FinTabNet dataset is hosted [here](https://huggingface.co/datasets/datalab-to/fintabnet-test) and is automatically downloaded. Run the benchmark with:
+
+```shell
+python benchmarks/table/table.py table_report.json --max_rows 1000
 ```
 
 # Thanks

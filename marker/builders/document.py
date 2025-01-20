@@ -22,11 +22,16 @@ class DocumentBuilder(BaseBuilder):
         int,
         "DPI setting for high-resolution page images used for OCR.",
     ] = 192
+    disable_ocr: Annotated[
+        bool,
+        "Disable OCR processing.",
+    ] = False
 
     def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, ocr_builder: OcrBuilder):
         document = self.build_document(provider)
         layout_builder(document, provider)
-        ocr_builder(document, provider)
+        if not self.disable_ocr:
+            ocr_builder(document, provider)
         return document
 
     def build_document(self, provider: PdfProvider):

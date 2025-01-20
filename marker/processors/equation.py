@@ -4,6 +4,7 @@ from texify.inference import batch_inference
 from texify.model.model import GenerateVisionEncoderDecoderModel
 from tqdm import tqdm
 
+from marker.models import TexifyPredictor
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
@@ -32,7 +33,7 @@ class EquationProcessor(BaseProcessor):
         "The number of tokens to buffer above max for the Texify model.",
     ] = 256
 
-    def __init__(self, texify_model: GenerateVisionEncoderDecoderModel, config=None):
+    def __init__(self, texify_model: TexifyPredictor, config=None):
         super().__init__(config)
 
         self.texify_model = texify_model
@@ -42,8 +43,7 @@ class EquationProcessor(BaseProcessor):
 
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
-                image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.lowres_image.size)
-                image = page.lowres_image.crop(image_poly.bbox).convert("RGB")
+                image = block.get_image(document, highres=False).convert("RGB")
                 raw_text = block.raw_text(document)
                 token_count = self.get_total_texify_tokens(raw_text)
 
@@ -92,10 +92,8 @@ class EquationProcessor(BaseProcessor):
 
             batch_images = [eq["image"] for eq in batch_equations]
 
-            model_output = batch_inference(
+            model_output = self.texify_model(
                 batch_images,
-                self.texify_model,
-                self.texify_model.processor,
                 max_tokens=max_length
             )
 

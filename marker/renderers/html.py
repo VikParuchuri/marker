@@ -1,3 +1,5 @@
+import textwrap
+
 from PIL import Image
 from typing import Annotated, Literal, Tuple
 
@@ -35,17 +37,10 @@ class HTMLRenderer(BaseRenderer):
         bool,
         "Whether to paginate the output.",
     ] = False
-    image_extraction_mode: Annotated[
-        Literal["lowres", "highres"],
-        "The mode to use for extracting images.",
-    ] = "highres"
 
     def extract_image(self, document, image_id):
         image_block = document.get_block(image_id)
-        page = document.get_page(image_block.page_id)
-        page_img = page.lowres_image if self.image_extraction_mode == "lowres" else page.highres_image
-        image_box = image_block.polygon.rescale(page.polygon.size, page_img.size)
-        cropped = page_img.crop(image_box.bbox)
+        cropped = image_block.get_image(document, highres=self.image_extraction_mode == "highres")
         return cropped
 
     def extract_html(self, document, document_output, level=0):
@@ -87,12 +82,25 @@ class HTMLRenderer(BaseRenderer):
         if level == 0:
             output = self.merge_consecutive_tags(output, 'b')
             output = self.merge_consecutive_tags(output, 'i')
+            output = textwrap.dedent(f"""
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <meta charset="utf-8" />
+                </head>
+                <body>
+                    {output}
+                </body>
+            </html>
+""")
 
         return output, images
 
     def __call__(self, document) -> HTMLOutput:
         document_output = document.render()
         full_html, images = self.extract_html(document, document_output)
+        soup = BeautifulSoup(full_html, 'html.parser')
+        full_html = soup.prettify() # Add indentation to the HTML
         return HTMLOutput(
             html=full_html,
             images=images,

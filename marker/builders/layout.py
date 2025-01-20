@@ -1,11 +1,10 @@
 from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
-from surya.layout import batch_layout_detection
-from surya.model.layout.encoderdecoder import SuryaLayoutModel
-from surya.model.ocr_error.model import DistilBertForSequenceClassification
-from surya.ocr_error import batch_ocr_error_detection
-from surya.schema import LayoutResult, OCRErrorDetectionResult
+from surya.layout import LayoutPredictor
+from surya.layout.schema import LayoutResult, LayoutBox
+from surya.ocr_error import OCRErrorPredictor
+from surya.ocr_error.schema import OCRErrorDetectionResult
 
 from marker.builders import BaseBuilder
 from marker.providers import ProviderOutput, ProviderPageLines
@@ -51,15 +50,23 @@ class LayoutBuilder(BaseBuilder):
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
     ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
+    force_layout_block: Annotated[
+        str,
+        "Skip layout and force every page to be treated as a specific block type.",
+    ] = None
 
-    def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):
+    def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         self.layout_model = layout_model
         self.ocr_error_model = ocr_error_model
 
         super().__init__(config)
 
     def __call__(self, document: Document, provider: PdfProvider):
-        layout_results = self.surya_layout(document.pages)
+        if self.force_layout_block is not None:
+            # Assign the full content of every page to a single layout type
+            layout_results = self.forced_layout(document.pages)
+        else:
+            layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
         self.merge_blocks(document.pages, provider.page_lines)
 
@@ -70,12 +77,29 @@ class LayoutBuilder(BaseBuilder):
             return 6
         return 6
 
+    def forced_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
+        layout_results = []
+        for page in pages:
+            layout_results.append(
+                LayoutResult(
+                    image_bbox=page.polygon.bbox,
+                    bboxes=[
+                        LayoutBox(
+                            label=self.force_layout_block,
+                            position=0,
+                            top_k={self.force_layout_block: 1},
+                            polygon=page.polygon.polygon,
+                        ),
+                    ],
+                    sliced=False
+                )
+            )
+        return layout_results
+
+
     def surya_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
-        processor = self.layout_model.processor
-        layout_results = batch_layout_detection(
-            [p.lowres_image for p in pages],
-            self.layout_model,
-            processor,
+        layout_results = self.layout_model(
+            [p.get_image(highres=False) for p in pages],
             batch_size=int(self.get_batch_size())
         )
         return layout_results
@@ -97,10 +121,8 @@ class LayoutBuilder(BaseBuilder):
 
             page_texts.append(page_text)
 
-        ocr_error_detection_results = batch_ocr_error_detection(
+        ocr_error_detection_results = self.ocr_error_model(
             page_texts,
-            self.ocr_error_model,
-            self.ocr_error_model.tokenizer,
             batch_size=int(self.get_batch_size())  # TODO Better Multiplier
         )
         return ocr_error_detection_results

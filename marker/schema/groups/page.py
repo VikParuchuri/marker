@@ -23,6 +23,7 @@ class PageGroup(Group):
     layout_sliced: bool = False  # Whether the layout model had to slice the image (order may be wrong)
     excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
     maximum_assignment_distance: float = 20  # pixels
+    block_description: str = "A single page in the document."
     refs: List[Reference] | None = None
 
     def incr_block_id(self):
@@ -36,6 +37,9 @@ class PageGroup(Group):
             self.children = [block]
         else:
             self.children.append(block)
+
+    def get_image(self, *args, highres: bool = False, **kwargs):
+        return self.highres_image if highres else self.lowres_image
 
     def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:
@@ -79,7 +83,7 @@ class PageGroup(Group):
         assert block.block_id == block_id.block_id
         return block
 
-    def assemble_html(self, child_blocks, parent_structure=None):
+    def assemble_html(self, document, child_blocks, parent_structure=None):
         template = ""
         for c in child_blocks:
             template += f"<content-ref src='{c.id}'></content-ref>"

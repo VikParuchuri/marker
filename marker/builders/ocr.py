@@ -1,9 +1,8 @@
 from typing import Annotated, List, Optional
 
 from ftfy import fix_text
-from surya.model.detection.model import EfficientViTForSemanticSegmentation
-from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
-from surya.ocr import run_ocr
+from surya.detection import DetectionPredictor
+from surya.recognition import RecognitionPredictor
 
 from marker.builders import BaseBuilder
 from marker.providers import ProviderOutput, ProviderPageLines
@@ -37,7 +36,7 @@ class OcrBuilder(BaseBuilder):
         "Default is None."
     ] = None
 
-    def __init__(self, detection_model: EfficientViTForSemanticSegmentation, recognition_model: OCREncoderDecoderModel, config=None):
+    def __init__(self, detection_model: DetectionPredictor, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
 
         self.detection_model = detection_model
@@ -65,16 +64,13 @@ class OcrBuilder(BaseBuilder):
 
     def ocr_extraction(self, document: Document, provider: PdfProvider) -> ProviderPageLines:
         page_list = [page for page in document.pages if page.text_extraction_method == "surya"]
-        recognition_results = run_ocr(
-            images=[page.lowres_image for page in page_list],
+        recognition_results = self.recognition_model(
+            images=[page.get_image(highres=False) for page in page_list],
             langs=[self.languages] * len(page_list),
-            det_model=self.detection_model,
-            det_processor=self.detection_model.processor,
-            rec_model=self.recognition_model,
-            rec_processor=self.recognition_model.processor,
+            det_predictor=self.detection_model,
             detection_batch_size=int(self.get_detection_batch_size()),
             recognition_batch_size=int(self.get_recognition_batch_size()),
-            highres_images=[page.highres_image for page in page_list]
+            highres_images=[page.get_image(highres=True) for page in page_list]
         )
 
         page_lines = {}

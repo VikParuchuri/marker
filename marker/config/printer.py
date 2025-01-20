@@ -6,19 +6,47 @@ from marker.config.crawler import crawler
 
 
 class CustomClickPrinter(click.Command):
-    def get_help(self, ctx):
-        additional_help = (
-            "\n\nTip: Use 'config --help' to display all the attributes of the Builders, Processors, and Converters in Marker."
-        )
-        help_text = super().get_help(ctx)
-        help_text = help_text + additional_help
-        click.echo(help_text)
-
     def parse_args(self, ctx, args):
+
         display_help = 'config' in args and '--help' in args
         if display_help:
-            click.echo("Here is a list of all the Builders, Processors, Converters, Providers and Renderers in Marker along with their attributes:")
+            click.echo(
+                "Here is a list of all the Builders, Processors, Converters, Providers and Renderers in Marker along with their attributes:")
 
+        # Keep track of shared attributes and their types
+        shared_attrs = {}
+
+        # First pass: identify shared attributes and verify compatibility
+        for base_type, base_type_dict in crawler.class_config_map.items():
+            for class_name, class_map in base_type_dict.items():
+                for attr, (attr_type, formatted_type, default, metadata) in class_map['config'].items():
+                    if attr not in shared_attrs:
+                        shared_attrs[attr] = {
+                            'classes': [],
+                            'type': attr_type,
+                            'is_flag': attr_type in [bool, Optional[bool]] and not default,
+                            'metadata': metadata,
+                            'default': default
+                        }
+                    shared_attrs[attr]['classes'].append(class_name)
+
+        # These are the types of attrs that can be set from the command line
+        attr_types = [str, int, float, bool, Optional[int], Optional[float], Optional[str]]
+
+        # Add shared attribute options first
+        for attr, info in shared_attrs.items():
+            if info['type'] in attr_types:
+                ctx.command.params.append(
+                    click.Option(
+                        ["--" + attr],
+                        type=info['type'],
+                        help=" ".join(info['metadata']) + f" (Applies to: {', '.join(info['classes'])})",
+                        default=info['default'],
+                        is_flag=info['is_flag'],
+                    )
+                )
+
+        # Second pass: create class-specific options
         for base_type, base_type_dict in crawler.class_config_map.items():
             if display_help:
                 click.echo(f"{base_type}s:")
@@ -32,16 +60,14 @@ class CustomClickPrinter(click.Command):
                     if display_help:
                         click.echo(" " * 8 + f"{attr} ({formatted_type}):")
                         click.echo("\n".join([f'{" " * 12}' + desc for desc in metadata]))
-                    if attr_type in [str, int, float, bool, Optional[int], Optional[float], Optional[str]]:
+
+                    if attr_type in attr_types:
                         is_flag = attr_type in [bool, Optional[bool]] and not default
-                        if crawler.attr_counts.get(attr) > 1:
-                            options = ["--" + class_name_attr]
-                        else:
-                            options = ["--" + attr, "--" + class_name_attr]
-                        options.append(class_name_attr)
+
+                        # Only add class-specific options
                         ctx.command.params.append(
                             click.Option(
-                                options,
+                                ["--" + class_name_attr, class_name_attr],
                                 type=attr_type,
                                 help=" ".join(metadata),
                                 is_flag=is_flag,

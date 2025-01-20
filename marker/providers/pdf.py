@@ -9,6 +9,7 @@ from ftfy import fix_text
 from pdftext.extraction import dictionary_output
 from pdftext.schema import Reference
 from PIL import Image
+from pypdfium2 import PdfiumError
 
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
 from marker.providers.utils import alphanum_ratio
@@ -91,9 +92,6 @@ class PdfProvider(BaseProvider):
 
         atexit.register(self.cleanup_pdf_doc)
 
-    def __enter__(self):
-        return self
-
     def __exit__(self, exc_type, exc_value, traceback):
         self.cleanup_pdf_doc()
 
@@ -155,6 +153,19 @@ class PdfProvider(BaseProvider):
             formats.add("italic")
         return formats
 
+    @staticmethod
+    def normalize_spaces(text):
+        space_chars = [
+            '\u2003',  # em space
+            '\u2002',  # en space
+            '\u00A0',  # non-breaking space
+            '\u200B',  # zero-width space
+            '\u3000',  # ideographic space
+        ]
+        for space in space_chars:
+            text = text.replace(space, ' ')
+        return text
+
     def pdftext_extraction(self) -> ProviderPageLines:
         page_lines: ProviderPageLines = {}
         page_char_blocks = dictionary_output(
@@ -191,7 +202,7 @@ class PdfProvider(BaseProvider):
                         spans.append(
                             SpanClass(
                                 polygon=polygon,
-                                text=fix_text(span["text"]),
+                                text=self.normalize_spaces(fix_text(span["text"])),
                                 font=font_name,
                                 font_weight=font_weight,
                                 font_size=font_size,
@@ -234,7 +245,11 @@ class PdfProvider(BaseProvider):
     def check_page(self, page_id: int) -> bool:
         page = self.doc.get_page(page_id)
         page_bbox = PolygonBox.from_bbox(page.get_bbox())
-        page_objs = list(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_TEXT, pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+        try:
+            page_objs = list(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_TEXT, pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+        except PdfiumError:
+            # Happens when pdfium fails to get the number of page objects
+            return False
 
         # if we do not see any text objects in the pdf, we can skip this page
         if not any([obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT for obj in page_objs]):
@@ -313,7 +328,7 @@ class PdfProvider(BaseProvider):
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
 
-    def get_page_refs(self, idx: int):
+    def get_page_refs(self, idx: int) -> List[Reference]:
         return self.page_refs[idx]
 
     @staticmethod

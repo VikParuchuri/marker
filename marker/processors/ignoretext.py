@@ -17,8 +17,7 @@ class IgnoreTextProcessor(BaseProcessor):
     These blocks often represent repetitive or non-essential elements, such as headers, footers, or page numbers.
     """
     block_types = (
-        BlockTypes.Text, BlockTypes.PageHeader,
-        BlockTypes.PageFooter, BlockTypes.SectionHeader,
+        BlockTypes.Text, BlockTypes.SectionHeader,
         BlockTypes.TextInlineMath
     )
     common_element_threshold: Annotated[
@@ -47,7 +46,6 @@ class IgnoreTextProcessor(BaseProcessor):
         last_blocks = []
         for page in document.pages:
             initial_block = None
-            block = None
             last_block = None
             for block in page.contained_blocks(document, self.block_types):
                 if block.structure is not None:
