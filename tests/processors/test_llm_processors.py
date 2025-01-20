@@ -35,13 +35,11 @@ def test_llm_form_processor_no_cells(pdf_document):
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_form_processor(pdf_document, detection_model, table_rec_model, recognition_model, mocker):
-    corrected_markdown = "*This is corrected markdown.*\n" * 100
-
     corrected_html = "<em>This is corrected markdown.</em>\n" * 100
     corrected_html = "<p>" + corrected_html.strip() + "</p>\n"
 
     mock_cls = Mock()
-    mock_cls.return_value.generate_response.return_value = {"corrected_markdown": corrected_markdown}
+    mock_cls.return_value.generate_response.return_value = {"corrected_html": corrected_html}
     mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
 
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)
@@ -51,7 +49,7 @@ def test_llm_form_processor(pdf_document, detection_model, table_rec_model, reco
     processor(pdf_document)
 
     forms = pdf_document.contained_blocks((BlockTypes.Form,))
-    assert forms[0].html == corrected_html
+    assert forms[0].html == corrected_html.strip()
 
 
 
@@ -92,7 +90,8 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
     processor(pdf_document)
 
     tables = pdf_document.contained_blocks((BlockTypes.Table,))
-    assert tables[0].cells[0].text == "Column 1"
+    table_cells = tables[0].contained_blocks(pdf_document, (BlockTypes.TableCell,))
+    assert table_cells[0].text == "Column 1"
 
 
 @pytest.mark.filename("adversarial.pdf")

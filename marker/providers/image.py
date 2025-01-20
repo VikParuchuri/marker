@@ -4,6 +4,7 @@ from PIL import Image
 from marker.providers import ProviderPageLines, BaseProvider
 from marker.schema.polygon import PolygonBox
 from marker.schema.text import Line
+from pdftext.schema import Reference
 
 
 class ImageProvider(BaseProvider):
@@ -46,3 +47,6 @@ class ImageProvider(BaseProvider):
 
     def get_page_lines(self, idx: int) -> List[Line]:
         return self.page_lines[idx]
+
+    def get_page_refs(self, idx: int) -> List[Reference]:
+        return []

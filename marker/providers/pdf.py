@@ -328,7 +328,7 @@ class PdfProvider(BaseProvider):
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
 
-    def get_page_refs(self, idx: int):
+    def get_page_refs(self, idx: int) -> List[Reference]:
         return self.page_refs[idx]
 
     @staticmethod

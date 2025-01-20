@@ -3,6 +3,8 @@ from typing import List, Optional, Dict
 from PIL import Image
 from pydantic import BaseModel
 
+from pdftext.schema import Reference
+
 from marker.schema.polygon import PolygonBox
 from marker.schema.text import Span
 from marker.schema.text.line import Line
@@ -34,6 +36,9 @@ class BaseProvider:
         pass
 
     def get_page_lines(self, idx: int) -> List[Line]:
+        pass
+
+    def get_page_refs(self, idx: int) -> List[Reference]:
         pass
 
     def __enter__(self):

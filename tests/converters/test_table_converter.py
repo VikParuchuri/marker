@@ -14,7 +14,6 @@ def _table_converter(config, model_dict, renderer, temp_pdf):
     markdown_output: MarkdownOutput = converter(temp_pdf.name)
     markdown = markdown_output.markdown
 
-    breakpoint()
     assert len(markdown) > 0
     assert "cyclic" in markdown
 

@@ -2,12 +2,10 @@
 
 Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
 
-- Supports a wide range of documents
-- Supports all languages
+- Supports a range of documents in all languages
 - Removes headers/footers/other artifacts
-- Formats tables, forms, and code blocks
+- Formats tables, forms, equations, links, and code blocks
 - Extracts and saves images along with the markdown
-- Converts equations to latex
 - Easily extensible with your own formatting and logic
 - Optionally boost accuracy with an LLM
 - Works on GPU, CPU, or MPS

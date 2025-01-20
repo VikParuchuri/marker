@@ -191,7 +191,8 @@ class Block(BaseModel):
             template += f"<content-ref src='{c.id}'></content-ref>"
 
         if self.replace_output_newlines:
-            template = "<p>" + template.replace("\n", " ") + "</p>"
+            template = template.replace("\n", " ")
+            template = "<p>" + template + "</p>"
 
         return template
 

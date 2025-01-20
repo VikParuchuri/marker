@@ -20,4 +20,4 @@ def test_table_processor(pdf_document, detection_model, recognition_model, table
 
     renderer = MarkdownRenderer()
     table_output = renderer(pdf_document)
-    assert "Schedule" in table_output
+    assert "Schedule" in table_output.markdown
