@@ -5,7 +5,8 @@ from marker.schema.blocks import Block
 class Reference(Block):
     block_type: BlockTypes = BlockTypes.Reference
     ref: str
+    block_description: str = "A reference to this block from another block."
 
-    def assemble_html(self, child_blocks, parent_structure=None):
-        template = super().assemble_html(child_blocks, parent_structure)
+    def assemble_html(self, document, child_blocks, parent_structure=None):
+        template = super().assemble_html(document, child_blocks, parent_structure)
         return f"<span id='{self.ref}'>{template}</span>"

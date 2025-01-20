@@ -25,8 +25,8 @@ class BaseTable(Block):
 
     def assemble_html(self, document, child_blocks: List[BlockOutput], parent_structure=None):
         # Filter out the table cells, so they don't render twice
-        selected_blocks = [b for b in child_blocks if b.id.block_type != BlockTypes.TableCell]
-        template = super().assemble_html(document, selected_blocks, parent_structure)
+        child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
+        template = super().assemble_html(document, child_ref_blocks, parent_structure)
 
         if self.html:
             # LLM processor

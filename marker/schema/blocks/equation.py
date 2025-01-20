@@ -12,7 +12,7 @@ class Equation(Block):
     def assemble_html(self, document, child_blocks, parent_structure=None):
         if self.latex:
             child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
-            html_out = super().assemble_html(child_ref_blocks, parent_structure)
+            html_out = super().assemble_html(document, child_ref_blocks, parent_structure)
             html_out += f"<p block-type='{self.block_type}'>"
 
             try:

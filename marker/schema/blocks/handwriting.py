@@ -12,7 +12,4 @@ class Handwriting(Block):
         if self.html:
             return self.html
         else:
-            template = super().assemble_html(document, child_blocks, parent_structure)
-            template = template.replace("\n", " ")
-            return f"<p>{template}</p>"
-
+            return super().assemble_html(document, child_blocks, parent_structure)
