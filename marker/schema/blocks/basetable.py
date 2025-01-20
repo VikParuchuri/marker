@@ -24,13 +24,16 @@ class BaseTable(Block):
 
 
     def assemble_html(self, document, child_blocks: List[BlockOutput], parent_structure=None):
+        # Filter out the table cells, so they don't render twice
+        selected_blocks = [b for b in child_blocks if b.id.block_type != BlockTypes.TableCell]
+        template = super().assemble_html(document, selected_blocks, parent_structure)
+
         if self.html:
             # LLM processor
-            return self.html
+            return template + self.html
         elif len(child_blocks) > 0 and child_blocks[0].id.block_type == BlockTypes.TableCell:
             # Table processor
-            return self.format_cells(document, child_blocks)
+            return template + self.format_cells(document, child_blocks)
         else:
             # Default text lines and spans
-            template = super().assemble_html(document, child_blocks, parent_structure)
             return f"<p>{template}</p>"

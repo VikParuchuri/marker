@@ -25,7 +25,6 @@ class Span(Block):
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
     has_superscript: bool = False
     url: Optional[str] = None
-    anchors: Optional[List[str]] = None
 
     @property
     def bold(self):
@@ -75,6 +74,4 @@ class Span(Block):
         elif self.math:
             text = f"<math display='inline'>{text}</math>"
 
-        if self.anchors:
-            text = "".join(f"<span id='{anchor}'/>" for anchor in self.anchors) + text
         return text

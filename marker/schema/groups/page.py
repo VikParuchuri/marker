@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from PIL import Image
 
+from pdftext.schema import Reference
 from marker.providers import ProviderOutput
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId, Text
@@ -23,6 +24,7 @@ class PageGroup(Group):
     excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
     maximum_assignment_distance: float = 20  # pixels
     block_description: str = "A single page in the document."
+    refs: List[Reference] | None = None
 
     def incr_block_id(self):
         if self.block_id is None:

@@ -1,13 +1,10 @@
 import os
-
-from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
-from typing import Annotated, Any, Dict, List, Optional, Type, Tuple
 from functools import cache
+from typing import Annotated, Any, Dict, List, Optional, Type, Tuple
 
 from marker.processors import BaseProcessor
 from marker.processors.llm.llm_table_merge import LLMTableMergeProcessor
@@ -33,6 +30,7 @@ from marker.processors.llm.llm_image_description import LLMImageDescriptionProce
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.page_header import PageHeaderProcessor
+from marker.processors.reference import ReferenceProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
 from marker.processors.table import TableProcessor
 from marker.processors.text import TextProcessor
@@ -42,6 +40,7 @@ from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.registry import register_block_class
 from marker.util import strings_to_classes
+from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -80,6 +79,7 @@ class PdfConverter(BaseConverter):
         LLMImageDescriptionProcessor,
         LLMEquationProcessor,
         LLMHandwritingProcessor,
+        ReferenceProcessor,
         DebugProcessor,
     )
 

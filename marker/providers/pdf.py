@@ -1,12 +1,13 @@
 import atexit
 import ctypes
 import re
-from typing import Annotated, List, Optional, Set
+from typing import Annotated, Dict, List, Optional, Set
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
 from pdftext.extraction import dictionary_output
+from pdftext.schema import Reference
 from PIL import Image
 from pypdfium2 import PdfiumError
 
@@ -75,6 +76,7 @@ class PdfProvider(BaseProvider):
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
         self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
+        self.page_refs: Dict[int, List[Reference]] = {i: [] for i in range(len(self.doc))}
 
         if self.page_range is None:
             self.page_range = range(len(self.doc))
@@ -210,7 +212,6 @@ class PdfProvider(BaseProvider):
                                 page_id=page_id,
                                 text_extraction_method="pdftext",
                                 url=span.get("url"),
-                                anchors=span.get("anchors"),
                             )
                         )
                     polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
@@ -222,6 +223,7 @@ class PdfProvider(BaseProvider):
                     )
             if self.check_line_spans(lines):
                 page_lines[page_id] = lines
+            self.page_refs[page_id] = page["refs"]
 
         return page_lines
 
@@ -325,6 +327,9 @@ class PdfProvider(BaseProvider):
 
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
+
+    def get_page_refs(self, idx: int):
+        return self.page_refs[idx]
 
     @staticmethod
     def _get_fontname(font) -> str:

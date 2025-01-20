@@ -60,14 +60,12 @@ class HTMLRenderer(BaseRenderer):
                     ref_block_id: BlockId = item.id
                     break
 
-            if ref_block_id.block_type in self.remove_blocks:
-                ref.replace_with('')
-            elif ref_block_id.block_type in self.image_blocks:
+            if ref_block_id.block_type in self.image_blocks:
                 if self.extract_images:
                     image = self.extract_image(document, ref_block_id)
                     image_name = f"{ref_block_id.to_path()}.{settings.OUTPUT_IMAGE_FORMAT.lower()}"
                     images[image_name] = image
-                    ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
+                    ref.replace_with(BeautifulSoup(f"<p>{content}<img src='{image_name}'></p>", 'html.parser'))
                 else:
                     # This will be the image description if using llm mode, or empty if not
                     ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))
