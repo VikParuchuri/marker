@@ -64,13 +64,15 @@ class OcrBuilder(BaseBuilder):
 
     def ocr_extraction(self, document: Document, provider: PdfProvider) -> ProviderPageLines:
         page_list = [page for page in document.pages if page.text_extraction_method == "surya"]
+
+        # Remove tables because we re-OCR them later with the table processor
         recognition_results = self.recognition_model(
-            images=[page.get_image(highres=False) for page in page_list],
+            images=[page.get_image(highres=False, remove_tables=True) for page in page_list],
             langs=[self.languages] * len(page_list),
             det_predictor=self.detection_model,
             detection_batch_size=int(self.get_detection_batch_size()),
             recognition_batch_size=int(self.get_recognition_batch_size()),
-            highres_images=[page.get_image(highres=True) for page in page_list]
+            highres_images=[page.get_image(highres=True, remove_tables=True) for page in page_list]
         )
 
         page_lines = {}
