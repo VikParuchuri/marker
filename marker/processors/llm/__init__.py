@@ -68,6 +68,11 @@ class BaseLLMProcessor(BaseProcessor):
         raise NotImplementedError()
 
     def rewrite_blocks(self, document: Document):
+        # Don't show progress if there are no blocks to process
+        total_blocks = sum(len(page.contained_blocks(document, self.block_types)) for page in document.pages)
+        if total_blocks == 0:
+            return
+
         pbar = tqdm(desc=f"{self.__class__.__name__} running")
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             for future in as_completed([

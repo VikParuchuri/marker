@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from pdftext.schema import Reference
 from marker.providers import ProviderOutput
@@ -38,8 +38,21 @@ class PageGroup(Group):
         else:
             self.children.append(block)
 
-    def get_image(self, *args, highres: bool = False, **kwargs):
-        return self.highres_image if highres else self.lowres_image
+    def get_image(self, *args, highres: bool = False, remove_tables: bool = False, **kwargs):
+        image = self.highres_image if highres else self.lowres_image
+
+        # Avoid double OCR for tables
+        if remove_tables:
+            image = image.copy()
+            draw = ImageDraw.Draw(image)
+            table_blocks = [block for block in self.children if block.block_type in (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents)]
+            for table_block in table_blocks:
+                poly = table_block.polygon.rescale(self.polygon.size, image.size).polygon
+                poly = [(int(p[0]), int(p[1])) for p in poly]
+                draw.polygon(poly, fill='white')
+
+        return image
+
 
     def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:

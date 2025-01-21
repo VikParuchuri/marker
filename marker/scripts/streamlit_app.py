@@ -1,6 +1,7 @@
 import os
 
 from marker.settings import settings
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["IN_STREAMLIT"] = "true"
@@ -28,7 +29,8 @@ def load_models():
 def convert_pdf(fname: str, config_parser: ConfigParser) -> (str, Dict[str, Any], dict):
     config_dict = config_parser.generate_config_dict()
     config_dict["pdftext_workers"] = 1
-    converter = PdfConverter(
+    converter_cls = PdfConverter
+    converter = converter_cls(
         config=config_dict,
         artifact_dict=model_dict,
         processor_list=config_parser.get_processors(),
@@ -65,21 +67,27 @@ def markdown_insert_images(markdown, images):
 
 @st.cache_data()
 def get_page_image(pdf_file, page_num, dpi=96):
-    doc = open_pdf(pdf_file)
-    renderer = doc.render(
-        pypdfium2.PdfBitmap.to_pil,
-        page_indices=[page_num],
-        scale=dpi / 72,
-    )
-    png = list(renderer)[0]
-    png_image = png.convert("RGB")
+    if "pdf" in pdf_file.type:
+        doc = open_pdf(pdf_file)
+        renderer = doc.render(
+            pypdfium2.PdfBitmap.to_pil,
+            page_indices=[page_num],
+            scale=dpi / 72,
+        )
+        png = list(renderer)[0]
+        png_image = png.convert("RGB")
+    else:
+        png_image = Image.open(in_file).convert("RGB")
     return png_image
 
 
 @st.cache_data()
-def page_count(pdf_file):
-    doc = open_pdf(pdf_file)
-    return len(doc) - 1
+def page_count(pdf_file: UploadedFile):
+    if "pdf" in pdf_file.type:
+        doc = open_pdf(pdf_file)
+        return len(doc) - 1
+    else:
+        return 1
 
 
 st.set_page_config(layout="wide")
@@ -91,12 +99,12 @@ model_dict = load_models()
 st.markdown("""
 # Marker Demo
 
-This app will let you try marker, a PDF -> Markdown converter. It works with any languages, and extracts images, tables, equations, etc.
+This app will let you try marker, a PDF or image -> Markdown, HTML, JSON converter. It works with any language, and extracts images, tables, equations, etc.
 
 Find the project [here](https://github.com/VikParuchuri/marker).
 """)
 
-in_file = st.sidebar.file_uploader("PDF file:", type=["pdf"])
+in_file: UploadedFile = st.sidebar.file_uploader("PDF or image file:", type=["pdf", "png", "jpg", "jpeg", "gif"])
 
 if in_file is None:
     st.stop()
@@ -108,7 +116,7 @@ with col1:
     page_number = st.number_input(f"Page number out of {page_count}:", min_value=0, value=0, max_value=page_count)
     pil_image = get_page_image(in_file, page_number)
 
-    st.image(pil_image, caption="PDF file (preview)", use_container_width=True)
+    st.image(pil_image, caption="File preview", use_container_width=True)
 
 page_range = st.sidebar.text_input("Page range to parse, comma separated like 0,5-10,20", value=f"{page_number}-{page_number}")
 output_format = st.sidebar.selectbox("Output format", ["markdown", "json", "html"], index=0)

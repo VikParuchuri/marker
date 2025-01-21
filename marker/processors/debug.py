@@ -140,7 +140,7 @@ class DebugProcessor(BaseProcessor):
         debug_file = os.path.join(self.debug_folder, f"blocks.json")
         debug_data = []
         for page in document.pages:
-            page_data = page.model_dump(exclude=["lowres_image", "highres_image"])
+            page_data = page.model_dump(exclude={"lowres_image": True, "highres_image": True, "children": {"__all__": {"lowres_image": True, "highres_image": True}}})
             debug_data.append(page_data)
 
         with open(debug_file, "w+") as f:

@@ -5,7 +5,7 @@ from marker.processors.llm import BaseLLMProcessor
 from google.ai.generativelanguage_v1beta.types import content
 
 from marker.schema import BlockTypes
-from marker.schema.blocks import Equation
+from marker.schema.blocks import Handwriting, Text
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 
@@ -13,17 +13,13 @@ from typing import Annotated
 
 
 class LLMHandwritingProcessor(BaseLLMProcessor):
-    block_types = (BlockTypes.Equation,)
-    min_handwriting_height: Annotated[
-        float,
-        "The minimum ratio between handwriting height and page height to consider for processing.",
-     ] = 0.1
+    block_types = (BlockTypes.Handwriting, BlockTypes.Text)
     handwriting_generation_prompt: Annotated[
         str,
         "The prompt to use for OCRing handwriting.",
         "Default is a string containing the Gemini prompt."
     ] = """You are an expert editor specializing in accurately reproducing text from images.
-You will receive an image of a text block, along with the text that can be extracted. Your task is to generate markdown to properly represent the content of the image.  Do not omit any text present in the image - make sure everything is included in the markdown representation.  The markdown representation should be as faithful to the original image as possible.
+You will receive an image of a text block. Your task is to generate markdown to properly represent the content of the image.  Do not omit any text present in the image - make sure everything is included in the markdown representation.  The markdown representation should be as faithful to the original image as possible.
 
 Formatting should be in markdown, with the following rules:
 - * for italics, ** for bold, and ` for inline code.
@@ -38,26 +34,19 @@ Formatting should be in markdown, with the following rules:
 
 **Instructions:**
 1. Carefully examine the provided block image.
-2. Analyze the existing text representation.
-3. Output the markdown representing the content of the image.
-**Example:**
-Input:
-```text
-This i sm handwritting.
-```
-Output:
-```markdown
-This is some *handwriting*.
-```
-**Input:**
-```text
-{extracted_text}
-```
+2. Output the markdown representing the content of the image.
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Equation):
-        text = block.raw_text(document)
-        prompt = self.handwriting_generation_prompt.replace("{handwriting_text}", text)
+    def process_rewriting(self, document: Document, page: PageGroup, block: Handwriting | Text):
+        raw_text = block.raw_text(document)
+
+        # Don't process text blocks that contain lines already
+        if block.block_type == BlockTypes.Text:
+            lines = block.contained_blocks(document, (BlockTypes.Line,))
+            if len(lines) > 0 or len(raw_text.strip()) > 0:
+                return
+
+        prompt = self.handwriting_generation_prompt
 
         image = self.extract_image(document, block)
         response_schema = content.Schema(
@@ -78,7 +67,7 @@ This is some *handwriting*.
             return
 
         markdown = response["markdown"]
-        if len(markdown) < len(text) * .5:
+        if len(markdown) < len(raw_text) * .5:
             block.update_metadata(llm_error_count=1)
             return
 
