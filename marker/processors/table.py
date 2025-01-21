@@ -43,6 +43,10 @@ class TableProcessor(BaseProcessor):
         "The batch size to use for the table recognition model.",
         "Default is None, which will use the default batch size for the model."
     ] = None
+    contained_block_types: Annotated[
+        List[BlockTypes],
+        "Block types to remove if they're contained inside the tables."
+    ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
 
     def __init__(
         self,
@@ -111,6 +115,16 @@ class TableProcessor(BaseProcessor):
                     page.add_full_block(cell_block)
                     block.add_structure(cell_block)
                 table_idx += 1
+
+        # Clean out other blocks inside the table
+        # This can happen with stray text blocks inside the table post-merging
+        for page in document.pages:
+            child_contained_blocks = page.contained_blocks(document, self.contained_block_types)
+            for block in page.contained_blocks(document, self.block_types):
+                intersections = matrix_intersection_area([c.polygon.bbox for c in child_contained_blocks], [block.polygon.bbox])
+                for child, intersection in zip(child_contained_blocks, intersections):
+                    if intersection > 0.95 and child.id in page.structure:
+                        page.structure.remove(child.id)
 
     def finalize_cell_text(self, cell: SuryaTableCell):
         text = "\n".join([t["text"].strip() for t in cell.text_lines]) if cell.text_lines else ""
