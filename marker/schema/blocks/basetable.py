@@ -10,7 +10,7 @@ class BaseTable(Block):
     html: str | None = None
 
     def format_cells(self, document, child_blocks):
-        child_cells: List[TableCell] = [document.get_block(c.id) for c in child_blocks]
+        child_cells: List[TableCell] = [document.get_block(c.id) for c in child_blocks if c.id.block_type == BlockTypes.TableCell]
         unique_rows = sorted(list(set([c.row_id for c in child_cells])))
         html_repr = "<table><tbody>"
         for row_id in unique_rows:
@@ -28,10 +28,11 @@ class BaseTable(Block):
         child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
         template = super().assemble_html(document, child_ref_blocks, parent_structure)
 
+        child_block_types = set([c.id.block_type for c in child_blocks])
         if self.html:
             # LLM processor
             return template + self.html
-        elif len(child_blocks) > 0 and child_blocks[0].id.block_type == BlockTypes.TableCell:
+        elif len(child_blocks) > 0 and BlockTypes.TableCell in child_block_types:
             # Table processor
             return template + self.format_cells(document, child_blocks)
         else:

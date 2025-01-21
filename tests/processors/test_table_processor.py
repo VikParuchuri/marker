@@ -1,4 +1,5 @@
 import pytest
+from marker.renderers.json import JSONRenderer
 
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
@@ -17,6 +18,8 @@ def test_table_processor(pdf_document, detection_model, recognition_model, table
             assert children
             assert len(children) > 0
             assert isinstance(children[0], TableCell)
+
+    assert len(pdf_document.contained_blocks((BlockTypes.Table,))) == 2
 
     renderer = MarkdownRenderer()
     table_output = renderer(pdf_document)

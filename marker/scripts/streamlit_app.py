@@ -28,7 +28,8 @@ def load_models():
 def convert_pdf(fname: str, config_parser: ConfigParser) -> (str, Dict[str, Any], dict):
     config_dict = config_parser.generate_config_dict()
     config_dict["pdftext_workers"] = 1
-    converter = PdfConverter(
+    converter_cls = PdfConverter
+    converter = converter_cls(
         config=config_dict,
         artifact_dict=model_dict,
         processor_list=config_parser.get_processors(),
