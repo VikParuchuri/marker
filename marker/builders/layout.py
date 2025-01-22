@@ -42,10 +42,6 @@ class LayoutBuilder(BaseBuilder):
         "The minimum ratio of pages that must pass the layout coverage check",
         "to avoid OCR.",
     ] = .8
-    error_model_segment_length: Annotated[
-        int,
-        "The maximum number of characters to send to the OCR error model.",
-    ] = 512
     excluded_for_coverage: Annotated[
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
@@ -104,26 +100,17 @@ class LayoutBuilder(BaseBuilder):
         )
         return layout_results
 
-    def surya_ocr_error_detection(self, pages: List[PageGroup], provider_page_lines: ProviderPageLines) -> OCRErrorDetectionResult:
+    def surya_ocr_error_detection(self, pages:List[PageGroup], provider_page_lines: ProviderPageLines) -> OCRErrorDetectionResult:
         page_texts = []
         for document_page in pages:
             page_text = ''
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            for line in provider_lines:
-                page_text += ' '.join([s.text for s in line.spans])
-
-            # Sample text from the middle
-            if len(page_text) > 0:
-                page_text_middle = len(page_text) // 2
-                page_text_start = max(0, page_text_middle - self.error_model_segment_length // 2)
-                page_text_end = page_text_start + self.error_model_segment_length
-                page_text = page_text[page_text_start:page_text_end]
-
+            page_text = '\n'.join(' '.join(s.text for s in line.spans) for line in provider_lines)
             page_texts.append(page_text)
 
         ocr_error_detection_results = self.ocr_error_model(
             page_texts,
-            batch_size=int(self.get_batch_size())  # TODO Better Multiplier
+            batch_size=int(self.get_batch_size())       #TODO Better Multiplier
         )
         return ocr_error_detection_results
 
