@@ -55,7 +55,7 @@ You'll specify your judgement in json format - first whether Table 2 should be m
 
 Table 2 should be merged at the bottom of Table 1 if Table 2 has no headers, and the rows have similar values, meaning that Table 2 continues Table 1. Table 2 should be merged to the right of Table 1 if each row in Table 2 matches a row in Table 1, meaning that Table 2 contains additional columns that augment Table 1.
 
-Only merge Table 1 and Table 2 if Table 2 cannot be interpreted without merging.
+Only merge Table 1 and Table 2 if Table 2 cannot be interpreted without merging.  Only merge Table 1 and Table 2 if you can read both images properly.
 
 **Instructions:**
 1. Carefully examine the provided table images.  Table 1 is the first image, and Table 2 is the second image.

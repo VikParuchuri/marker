@@ -400,8 +400,8 @@ Marker can extract tables from PDFs using `marker.converters.table.TableConverte
 
 | Avg score | Total tables | use_llm |
 |-----------|--------------|---------|
-| 0.824     | 54           | False   |
-| 0.873     | 54           | True    |
+| 0.82      | 54           | False   |
+| 0.887     | 54           | True    |
 
 The `--use_llm` flag can significantly improve table recognition performance, as you can see.
 

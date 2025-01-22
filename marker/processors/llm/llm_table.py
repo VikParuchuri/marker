@@ -37,7 +37,7 @@ Some guidelines:
 **Instructions:**
 1. Carefully examine the provided text block image.
 2. Analyze the html representation of the table.
-3. If the html representation is largely correct, then write "No corrections needed."
+3. If the html representation is largely correct, or you cannot read the image properly, then write "No corrections needed."
 4. If the html representation contains errors, generate the corrected html representation.  
 5. Output only either the corrected html representation or "No corrections needed."
 **Example:**
