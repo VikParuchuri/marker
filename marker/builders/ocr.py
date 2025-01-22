@@ -35,6 +35,10 @@ class OcrBuilder(BaseBuilder):
         "A list of languages to use for OCR.",
         "Default is None."
     ] = None
+    enable_table_ocr: Annotated[
+        bool,
+        "Whether to skip OCR on tables.  The TableProcessor will re-OCR them.  Only enable if the TableProcessor is not running.",
+    ] = False
 
     def __init__(self, detection_model: DetectionPredictor, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
@@ -67,12 +71,12 @@ class OcrBuilder(BaseBuilder):
 
         # Remove tables because we re-OCR them later with the table processor
         recognition_results = self.recognition_model(
-            images=[page.get_image(highres=False, remove_tables=True) for page in page_list],
+            images=[page.get_image(highres=False, remove_tables=not self.enable_table_ocr) for page in page_list],
             langs=[self.languages] * len(page_list),
             det_predictor=self.detection_model,
             detection_batch_size=int(self.get_detection_batch_size()),
             recognition_batch_size=int(self.get_recognition_batch_size()),
-            highres_images=[page.get_image(highres=True, remove_tables=True) for page in page_list]
+            highres_images=[page.get_image(highres=True, remove_tables=not self.enable_table_ocr) for page in page_list]
         )
 
         page_lines = {}

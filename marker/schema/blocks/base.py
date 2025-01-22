@@ -167,9 +167,10 @@ class Block(BaseModel):
     def raw_text(self, document: Document) -> str:
         from marker.schema.text.line import Line
         from marker.schema.text.span import Span
+        from marker.schema.blocks.tablecell import TableCell
 
         if self.structure is None:
-            if isinstance(self, Span):
+            if isinstance(self, (Span, TableCell)):
                 return self.text
             else:
                 return ""
