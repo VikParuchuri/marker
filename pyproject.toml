@@ -38,6 +38,7 @@ filetype = "^1.2.0"
 scikit-learn = "^1.6.1"
 mammoth = "^1.9.0"
 weasyprint = "^63.1"
+openpyxl = "^3.1.5"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

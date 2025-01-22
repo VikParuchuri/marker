@@ -14,34 +14,40 @@ logging.getLogger('fontTools.subset').setLevel(logging.ERROR)
 logging.getLogger('fontTools.ttLib.ttFont').setLevel(logging.ERROR)
 
 css = '''
-    @page {
-        size: A4;
-        margin: 2cm;
-        @bottom-center {
-            content: counter(page);
-        }
-    }
-    
-    /* Force images to fit within page bounds */
-    img {
-        max-width: 100% !important;
-        max-height: 25cm !important;  /* A4 height minus margins */
-        object-fit: contain;
-        margin: 1em auto;
-    }
-    
-    /* Handle images that are inside centered paragraphs */
-    .center img {
-        margin-left: auto;
-        margin-right: auto;
-    }
-    
-    /* Prevent content overflow */
-    div, p, table {
-        max-width: 100%;
-        box-sizing: border-box;
-        overflow-wrap: break-word;
-    }
+@page {
+    size: A4;
+    margin: 2cm;
+}
+
+img {
+    max-width: 100%;
+    max-height: 25cm;
+    object-fit: contain;
+    margin: 12pt auto;
+}
+
+div, p {
+    max-width: 100%;
+    word-break: break-word;
+    font-size: 10pt;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    break-inside: auto;
+    font-size: 10pt;
+}
+
+tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+td {
+    border: 0.75pt solid #000;
+    padding: 6pt;
+}
 '''
 
 
@@ -84,10 +90,7 @@ class DocumentProvider(PdfProvider):
 
         def convert_image(match):
             try:
-                full_data_uri = match.group(0)
-                base64_str = full_data_uri.split('base64,')[1]
-
-                img_data = base64.b64decode(base64_str)
+                img_data = base64.b64decode(match.group(2))
 
                 with BytesIO(img_data) as bio:
                     with Image.open(bio) as img:
@@ -98,6 +101,6 @@ class DocumentProvider(PdfProvider):
 
             except Exception as e:
                 print(e)
-                return ""  # we ditch broken images
+                return ""  # we ditch broken images as that breaks the PDF creation down the line
 
         return re.sub(pattern, convert_image, html_content)
