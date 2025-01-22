@@ -1,10 +1,9 @@
 import os
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+os.environ["IN_STREAMLIT"] = "true"
 
 from marker.settings import settings
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
-os.environ["IN_STREAMLIT"] = "true"
 
 import base64
 import io
