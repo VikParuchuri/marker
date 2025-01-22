@@ -2923,16 +2923,17 @@ testing = ["docopt", "pytest"]
 
 [[package]]
 name = "pdftext"
-version = "0.4.1"
+version = "0.5.0"
 description = "Extract structured text from pdfs quickly"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pdftext-0.4.1-py3-none-any.whl", hash = "sha256:c25514f7a9ded34f68c8d28511fd78d7586a43d0cf5ef7d6bc33c476fa55fd1f"},
-    {file = "pdftext-0.4.1.tar.gz", hash = "sha256:ae06f3c0844e7cc631af86b844f4af06b72da2b67d7450441ead258a64e98660"},
+    {file = "pdftext-0.5.0-py3-none-any.whl", hash = "sha256:e14179c5039c711dc5c490ecb1bc15c92ab920e5f7715034b7ae5a387b3b2787"},
+    {file = "pdftext-0.5.0.tar.gz", hash = "sha256:f6487d170abc97867d7539774fecdb0a17599965ba88287b3b89731f5cd7d612"},
 ]
 
 [package.dependencies]
+click = ">=8.1.8,<9.0.0"
 pydantic = ">=2.7.1,<3.0.0"
 pydantic-settings = ">=2.2.1,<3.0.0"
 pypdfium2 = "4.30.0"
@@ -4638,26 +4639,24 @@ snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[
 
 [[package]]
 name = "surya-ocr"
-version = "0.8.3"
+version = "0.9.0"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "surya_ocr-0.8.3-py3-none-any.whl", hash = "sha256:b2a0e07de8741d2f1b68a1b9f33b6864779648619607ee09dcbeabc31ee79289"},
-    {file = "surya_ocr-0.8.3.tar.gz", hash = "sha256:13d9ab7d5d971f16e37bffe48767b80df6999cccd3c7eb7c154f33f440ac02e3"},
+    {file = "surya_ocr-0.9.0-py3-none-any.whl", hash = "sha256:1180f504ff9aea3a9992b3ae64eb638d72ed69237baa0550ccb0f62766d3f4e6"},
+    {file = "surya_ocr-0.9.0.tar.gz", hash = "sha256:cd70b55b4d320443ff1b974899e8495279881c4fa7406cc7f243d49b6c73b87d"},
 ]
 
 [package.dependencies]
+click = ">=8.1.8,<9.0.0"
 filetype = ">=1.2.0,<2.0.0"
-ftfy = ">=6.1.3,<7.0.0"
 opencv-python = ">=4.9.0.80,<5.0.0.0"
-pdftext = ">=0.4.1,<0.5.0"
 pillow = ">=10.2.0,<11.0.0"
 pydantic = ">=2.5.3,<3.0.0"
 pydantic-settings = ">=2.1.0,<3.0.0"
 pypdfium2 = "4.30.0"
 python-dotenv = ">=1.0.0,<2.0.0"
-tabulate = ">=0.9.0,<0.10.0"
 torch = ">=2.4.1,<3.0.0"
 transformers = ">=4.41.0,<5.0.0"
 
@@ -5488,4 +5487,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "58505c3f91b4bc225c36c0901cd4d6162e2892b47850dd8e11c4c12568ab19d3"
+content-hash = "f8d6cc52210b2d55a576c13c73deafebd70392f1d48d73a905867e082301ae40"
