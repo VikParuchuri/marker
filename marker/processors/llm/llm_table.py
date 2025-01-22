@@ -16,6 +16,10 @@ class LLMTableProcessor(BaseLLMProcessor):
         Tuple[BlockTypes],
         "The block types to process.",
     ] = (BlockTypes.Table, BlockTypes.TableOfContents)
+    max_row_count: Annotated[
+        int,
+        "If the table has more rows than this, don't run LLM processor. (LLMs can be inaccurate with a lot of rows)",
+    ] = 75
     table_rewriting_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
@@ -66,6 +70,11 @@ No corrections needed.
         children = block.contained_blocks(document, (BlockTypes.TableCell,))
         if not children:
             # Happens if table/form processors didn't run
+            return
+
+        # LLMs don't handle tables with a lot of rows very well
+        row_count = len(set([cell.row_id for cell in children]))
+        if row_count > self.max_row_count:
             return
 
         block_html = block.render(document).html

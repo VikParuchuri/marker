@@ -32,6 +32,14 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
         int,
         "The maximum distance between table edges for adjacency."
     ] = 20
+    horizontal_table_width_threshold: Annotated[
+        float,
+        "The width tolerance for 2 adjacent tables to be merged into one."
+    ] = 0.25
+    horizontal_table_distance_threshold: Annotated[
+        int,
+        "The maximum distance between table edges for adjacency."
+    ] = 20
     column_gap_threshold: Annotated[
         int,
         "The maximum gap between columns to merge tables"
@@ -160,6 +168,14 @@ Table 2
                         row_match
                     ])
 
+                    same_page_horizontal_table = all([
+                        prev_block.page_id == block.page_id, # On the same page
+                        (1 - self.horizontal_table_width_threshold) < prev_block.polygon.width / block.polygon.width < (1 + self.horizontal_table_width_threshold), # Similar width
+                        abs(block.polygon.y_start - prev_block.polygon.y_end) < self.horizontal_table_distance_threshold, # Close together in y
+                        abs(block.polygon.x_start - prev_block.polygon.x_start) < self.horizontal_table_distance_threshold, # Close together in x
+                        col_match
+                    ])
+
                     same_page_new_column = all([
                         prev_block.page_id == block.page_id, # On the same page
                         abs(block.polygon.x_start - prev_block.polygon.x_end) < self.column_gap_threshold,
@@ -167,7 +183,7 @@ Table 2
                         block.polygon.width * (1 - self.vertical_table_height_threshold) < prev_block.polygon.width  < block.polygon.width * (1 + self.vertical_table_height_threshold), # Similar width
                         col_match
                     ])
-                    merge_condition = any([subsequent_page_table, same_page_vertical_table, same_page_new_column])
+                    merge_condition = any([subsequent_page_table, same_page_vertical_table, same_page_new_column, same_page_horizontal_table])
 
                 if prev_block is not None and merge_condition:
                     if prev_block not in table_run:
