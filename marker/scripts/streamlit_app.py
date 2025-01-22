@@ -68,15 +68,12 @@ def markdown_insert_images(markdown, images):
 def get_page_image(pdf_file, page_num, dpi=96):
     if "pdf" in pdf_file.type:
         doc = open_pdf(pdf_file)
-        renderer = doc.render(
-            pypdfium2.PdfBitmap.to_pil,
-            page_indices=[page_num],
+        page = doc[page_num]
+        png_image = page.render(
             scale=dpi / 72,
-        )
-        png = list(renderer)[0]
-        png_image = png.convert("RGB")
+        ).to_pil().convert("RGB")
     else:
-        png_image = Image.open(in_file).convert("RGB")
+        png_image = Image.open(pdf_file).convert("RGB")
     return png_image
 
 
