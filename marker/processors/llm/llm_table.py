@@ -16,9 +16,9 @@ class LLMTableProcessor(BaseLLMProcessor):
         Tuple[BlockTypes],
         "The block types to process.",
     ] = (BlockTypes.Table, BlockTypes.TableOfContents)
-    max_row_count: Annotated[
+    max_rows_per_batch: Annotated[
         int,
-        "If the table has more rows than this, don't run LLM processor. (LLMs can be inaccurate with a lot of rows)",
+        "If the table has more rows than this, chunk the table. (LLMs can be inaccurate with a lot of rows)",
     ] = 75
     table_rewriting_prompt: Annotated[
         str,
@@ -74,7 +74,9 @@ No corrections needed.
 
         # LLMs don't handle tables with a lot of rows very well
         row_count = len(set([cell.row_id for cell in children]))
-        if row_count > self.max_row_count:
+
+        # TODO: eventually chunk the table and inference each chunk
+        if row_count > self.max_rows_per_batch:
             return
 
         block_html = block.render(document).html
