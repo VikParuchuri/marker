@@ -61,7 +61,7 @@ class PowerPointProvider(PdfProvider):
     def __del__(self):
         if os.path.exists(self.temp_pdf_path):
             print(f"Deleting temporary PDF file: {self.temp_pdf_path}")
-            # os.remove(self.temp_pdf_path)
+            os.remove(self.temp_pdf_path)
 
     def convert_pptx_to_pdf(self, filepath):
         pptx = Presentation(filepath)
@@ -103,9 +103,6 @@ class PowerPointProvider(PdfProvider):
         html = '\n'.join(html_parts)
 
         # We convert the HTML into a PDF
-        open(self.temp_pdf_path + '.html', "w").write(html)
-        print(self.temp_pdf_path + '.html')
-
         HTML(string=html).write_pdf(
             self.temp_pdf_path,
             stylesheets=[CSS(string=css)]
