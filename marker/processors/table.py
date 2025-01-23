@@ -2,6 +2,8 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from typing import Annotated, List
+from collections import Counter
+from PIL import ImageDraw
 
 from ftfy import fix_text
 from surya.detection import DetectionPredictor
@@ -67,7 +69,7 @@ class TableProcessor(BaseProcessor):
         table_data = []
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
-                image = block.get_image(document, highres=True, expansion=(.01, .01))
+                image = block.get_image(document, highres=True)
                 image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.get_image(highres=True).size)
 
                 table_data.append({
@@ -165,22 +167,35 @@ class TableProcessor(BaseProcessor):
 
                 # Other cells that span into this row
                 rowspan_cells = [c for c in table.cells if c.row_id != row and c.row_id + c.rowspan > row > c.row_id]
-                should_split = all([
-                    len(row_cells) > 0,
+                should_split_entire_row = all([
+                    len(row_cells) > 1,
                     len(rowspan_cells) == 0,
                     all([r == 1 for r in rowspans]),
                     all([l > 1 for l in line_lens]),
                     all([l == line_lens[0] for l in line_lens])
                 ])
+                line_lens_counter = Counter(line_lens)
+                counter_keys = sorted(list(line_lens_counter.keys()))
+                should_split_partial_row = all([
+                    len(row_cells) > 3, # Only split if there are more than 3 cells
+                    len(rowspan_cells) == 0,
+                    all([r == 1 for r in rowspans]),
+                    len(line_lens_counter) == 2 and counter_keys[0] <= 1 and counter_keys[1] > 1 and line_lens_counter[counter_keys[0]] == 1, # Allow a single column with a single line - keys are the line lens, values are the counts
+                ])
+                should_split = should_split_entire_row or should_split_partial_row
                 if should_split:
-                    for i in range(0, line_lens[0]):
+                    for i in range(0, max(line_lens)):
                         for cell in row_cells:
-                            line = cell.text_lines[i]
+                            # Calculate height based on number of splits
+                            split_height = cell.bbox[3] - cell.bbox[1]
+                            current_bbox = [cell.bbox[0], cell.bbox[1] + i * split_height, cell.bbox[2], cell.bbox[1] + (i + 1) * split_height]
+
+                            line = [cell.text_lines[i]] if cell.text_lines and i < len(cell.text_lines) else None
                             cell_id = max_cell_id + new_cell_count
                             new_cells.append(
                                 SuryaTableCell(
-                                    polygon=line["bbox"],
-                                    text_lines=[line],
+                                    polygon=current_bbox,
+                                    text_lines=line,
                                     rowspan=1,
                                     colspan=cell.colspan,
                                     row_id=cell.row_id + shift_up + i,

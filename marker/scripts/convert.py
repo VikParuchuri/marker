@@ -100,7 +100,7 @@ def convert_cli(in_folder: str, **kwargs):
     else:
         model_dict = create_model_dict()
         for k, v in model_dict.items():
-            v.share_memory()
+            v.model.share_memory()
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {kwargs['chunk_idx'] + 1}/{kwargs['num_chunks']} with {total_processes} processes and saving to {kwargs['output_dir']}")
     task_args = [(f, kwargs) for f in files_to_convert]

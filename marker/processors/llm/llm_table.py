@@ -16,9 +16,9 @@ class LLMTableProcessor(BaseLLMProcessor):
         Tuple[BlockTypes],
         "The block types to process.",
     ] = (BlockTypes.Table, BlockTypes.TableOfContents)
-    max_row_count: Annotated[
+    max_rows_per_batch: Annotated[
         int,
-        "If the table has more rows than this, don't run LLM processor. (LLMs can be inaccurate with a lot of rows)",
+        "If the table has more rows than this, chunk the table. (LLMs can be inaccurate with a lot of rows)",
     ] = 75
     table_rewriting_prompt: Annotated[
         str,
@@ -37,7 +37,7 @@ Some guidelines:
 **Instructions:**
 1. Carefully examine the provided text block image.
 2. Analyze the html representation of the table.
-3. If the html representation is largely correct, then write "No corrections needed."
+3. If the html representation is largely correct, or you cannot read the image properly, then write "No corrections needed."
 4. If the html representation contains errors, generate the corrected html representation.  
 5. Output only either the corrected html representation or "No corrections needed."
 **Example:**
@@ -74,7 +74,9 @@ No corrections needed.
 
         # LLMs don't handle tables with a lot of rows very well
         row_count = len(set([cell.row_id for cell in children]))
-        if row_count > self.max_row_count:
+
+        # TODO: eventually chunk the table and inference each chunk
+        if row_count > self.max_rows_per_batch:
             return
 
         block_html = block.render(document).html

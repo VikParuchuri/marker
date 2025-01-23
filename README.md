@@ -219,7 +219,12 @@ rendered = converter("FILEPATH")
 text, _, images = text_from_rendered(rendered)
 ```
 
-This takes all the same configuration as the PdfConverter.  You can specify the configuration `force_layout_block=Table` to avoid layout detection and instead assume every page is a table.
+This takes all the same configuration as the PdfConverter.  You can specify the configuration `--force_layout_block=Table` to avoid layout detection and instead assume every page is a table.
+
+You can also run this via the CLI with 
+```shell
+python convert_single.py FILENAME --use_llm --force_layout_block Table --converter_cls marker.converters.table.TableConverter
+```
 
 # Output Formats
 
@@ -400,8 +405,8 @@ Marker can extract tables from PDFs using `marker.converters.table.TableConverte
 
 | Avg score | Total tables | use_llm |
 |-----------|--------------|---------|
-| 0.824     | 54           | False   |
-| 0.873     | 54           | True    |
+| 0.822     | 54           | False   |
+| 0.887     | 54           | True    |
 
 The `--use_llm` flag can significantly improve table recognition performance, as you can see.
 
