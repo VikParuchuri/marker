@@ -104,6 +104,12 @@ class TableProcessor(BaseProcessor):
                 for cell in cells:
                     # Rescale the cell polygon to the page size
                     cell_polygon = PolygonBox(polygon=cell.polygon).rescale(page.get_image(highres=True).size, page.polygon.size)
+
+                    # Rescale cell polygon to be relative to the page instead of the table
+                    for corner in cell_polygon.polygon:
+                        corner[0] += block.polygon.bbox[0]
+                        corner[1] += block.polygon.bbox[1]
+
                     cell_block = TableCell(
                         polygon=cell_polygon,
                         text=self.finalize_cell_text(cell),

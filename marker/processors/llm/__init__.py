@@ -86,4 +86,4 @@ class BaseLLMProcessor(BaseProcessor):
         pbar.close()
 
     def extract_image(self, document: Document, image_block: Block):
-        return image_block.get_image(document, highres=False, expansion=(self.image_expansion_ratio, self.image_expansion_ratio))
+        return image_block.get_image(document, highres=True, expansion=(self.image_expansion_ratio, self.image_expansion_ratio))
