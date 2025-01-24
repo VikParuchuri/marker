@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Annotated, Tuple
 
 import regex
+from bs4 import NavigableString
 from markdownify import MarkdownConverter
 from pydantic import BaseModel
 
@@ -17,7 +18,23 @@ def cleanup_text(full_text):
     return full_text.strip()
 
 def get_text_with_br(element):
-    return ''.join(str(content) if content.name == 'br' else content.strip() for content in element.contents)
+    text = []
+    for content in element.descendants:
+        if isinstance(content, NavigableString):
+            stripped = content.strip()
+            if stripped:
+                text.append(stripped)
+        elif content.name == 'br':
+            text.append('<br>')
+    full_text = ""
+    for i, t in enumerate(text):
+        if t == '<br>':
+            full_text += t
+        elif i > 0 and text[i - 1] != '<br>':
+            full_text += " " + t
+        else:
+            full_text += t
+    return full_text
 
 
 class Markdownify(MarkdownConverter):
