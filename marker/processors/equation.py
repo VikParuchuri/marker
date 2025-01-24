@@ -65,7 +65,27 @@ class EquationProcessor(BaseProcessor):
                 continue
 
             block = document.get_block(equation_d["block_id"])
-            block.latex = prediction
+            block.html = self.parse_latex_to_html(prediction)
+
+    def parse_latex_to_html(self, latex: str):
+        html_out = ""
+        try:
+            latex = self.parse_latex(latex)
+        except ValueError as e:
+            # If we have mismatched delimiters, we'll treat it as a single block
+            # Strip the $'s from the latex
+            latex = [
+                {"class": "block", "content": latex.replace("$", "")}
+            ]
+
+        for el in latex:
+            if el["class"] == "block":
+                html_out += f'<math display="block">{el["content"]}</math>'
+            elif el["class"] == "inline":
+                html_out += f'<math display="inline">{el["content"]}</math>'
+            else:
+                html_out += f" {el['content']} "
+        return html_out.strip()
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:
@@ -110,3 +130,47 @@ class EquationProcessor(BaseProcessor):
         tokenizer = self.texify_model.processor.tokenizer
         tokens = tokenizer(text)
         return len(tokens["input_ids"])
+
+
+    @staticmethod
+    def parse_latex(text: str):
+        if text.count("$") % 2 != 0:
+            raise ValueError("Mismatched delimiters in LaTeX")
+
+        DELIMITERS = [
+            ("$$", "block"),
+            ("$", "inline")
+        ]
+
+        text = text.replace("\n", "<br>")  # we can't handle \n's inside <p> properly if we don't do this
+
+        i = 0
+        stack = []
+        result = []
+        buffer = ""
+
+        while i < len(text):
+            for delim, class_name in DELIMITERS:
+                if text[i:].startswith(delim):
+                    if stack and stack[-1] == delim:  # Closing
+                        stack.pop()
+                        result.append({"class": class_name, "content": buffer})
+                        buffer = ""
+                        i += len(delim)
+                        break
+                    elif not stack:  # Opening
+                        if buffer:
+                            result.append({"class": "text", "content": buffer})
+                        stack.append(delim)
+                        buffer = ""
+                        i += len(delim)
+                        break
+                    else:
+                        raise ValueError(f"Nested {class_name} delimiters not supported")
+            else:  # No delimiter match
+                buffer += text[i]
+                i += 1
+
+        if buffer:
+            result.append({"class": "text", "content": buffer})
+        return result
