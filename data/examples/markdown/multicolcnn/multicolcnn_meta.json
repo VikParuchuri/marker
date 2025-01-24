@@ -712,7 +712,7 @@
       "block_metadata": {
         "llm_request_count": 9,
         "llm_error_count": 1,
-        "llm_tokens_used": 8870
+        "llm_tokens_used": 8867
       }
     },
     {
@@ -763,7 +763,7 @@
       "block_metadata": {
         "llm_request_count": 3,
         "llm_error_count": 0,
-        "llm_tokens_used": 3037
+        "llm_tokens_used": 3041
       }
     },
     {

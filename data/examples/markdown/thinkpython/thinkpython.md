@@ -220,257 +220,258 @@ If you include at least part of the sentence the error appears in, that makes it
 
 # **Contents**
 
-|    | Preface                               |                                         |     |  |
-|----|---------------------------------------|-----------------------------------------|-----|--|
-| 1  |                                       | The way of the program                  | 1   |  |
-|    | 1.1                                   | The Python programming language         | 1   |  |
-|    | 1.2                                   | What is a program?                      | 3   |  |
-|    | 1.3                                   | What is debugging?                      | 3   |  |
-|    | 1.4                                   | Formal and natural languages            | 5   |  |
-|    | 1.5                                   | The first program                       | 6   |  |
-|    | 1.6                                   | Debugging                               | 7   |  |
-|    | 1.7                                   | Glossary                                | 7   |  |
-|    | 1.8                                   | Exercises                               | 9   |  |
-| 2  | Variables, expressions and statements |                                         |     |  |
-|    | 2.1                                   | Values and types                        | 11  |  |
-|    | 2.2                                   | Variables                               | 12  |  |
-|    | 2.3                                   | Variable names and keywords             | 12  |  |
-|    | 2.4                                   | Operators and operands                  | 13  |  |
-|    | 2.5                                   | Expressions and statements              | 14  |  |
-|    | 2.6                                   | Interactive mode and script mode        | 14  |  |
-|    | 2.7                                   | Order of operations                     | 15  |  |
-|    | 2.8                                   | String operations                       | 15  |  |
-|    | 2.9                                   | Comments                                | 16  |  |
-|    | 2.10                                  | Debugging                               | 16  |  |
-|    | 2.11                                  | Glossary                                | 17  |  |
-|    | 2.12                                  | Exercises                               | 18  |  |
-| 3  | Functions                             |                                         | 19  |  |
-|    | 3.1                                   | Function calls                          | 19  |  |
-|    | 3.2                                   | Type conversion functions               | 19  |  |
-|    | 3.3                                   | Math functions                          | 20  |  |
-|    | 3.4                                   | Composition                             | 21  |  |
-|    | 3.5                                   | Adding new functions                    | 21  |  |
-|    | 3.6                                   | Definitions and uses                    | 22  |  |
-|    | 3.7                                   | Flow of execution                       | 23  |  |
-|    | 3.8                                   | Parameters and arguments                | 23  |  |
-|    | 3.9                                   | Variables and parameters are local      | 24  |  |
-|    | 3.10                                  | Stack diagrams                          | 25  |  |
-|    | 3.11                                  | Fruitful functions and void functions   | 26  |  |
-|    | 3.12                                  | Why functions?                          | 26  |  |
-|    | 3.13                                  | Importing with from                     | 27  |  |
-|    | 3.14                                  | Debugging                               | 27  |  |
-|    | 3.15                                  | Glossary                                | 28  |  |
-|    | 3.16                                  | Exercises                               | 29  |  |
-| 4  | Case study: interface design          |                                         | 31  |  |
-|    | 4.1                                   | TurtleWorld                             | 31  |  |
-|    | 4.2                                   | Simple repetition                       | 32  |  |
-|    | 4.3                                   | Exercises                               | 33  |  |
-|    | 4.4                                   | Encapsulation                           | 34  |  |
-|    | 4.5                                   | Generalization                          | 34  |  |
-|    | 4.6                                   | Interface design                        | 35  |  |
-|    | 4.7                                   | Refactoring                             | 36  |  |
-|    | 4.8                                   | A development plan                      | 37  |  |
-|    | 4.9                                   | docstring                               | 37  |  |
-|    | 4.10                                  | Debugging                               | 38  |  |
-|    | 4.11                                  | Glossary                                | 38  |  |
-|    | 4.12                                  | Exercises                               | 39  |  |
-| 5  |                                       | Conditionals and recursion              | 41  |  |
-|    | 5.1                                   | Modulus operator                        | 41  |  |
-|    | 5.2                                   | Boolean expressions                     | 41  |  |
-|    | 5.3                                   | Logical operators                       | 42  |  |
-|    | 5.4                                   | Conditional execution                   | 42  |  |
-|    | 5.5                                   | Alternative execution                   | 43  |  |
-|    | 5.6                                   | Chained conditionals                    | 43  |  |
-|    | 5.7                                   | Nested conditionals                     | 43  |  |
-|    | 5.8                                   | Recursion                               | 44  |  |
-|    | 5.9                                   | Stack diagrams for recursive functions  | 45  |  |
-|    | 5.10                                  | Infinite recursion                      | 46  |  |
-|    | 5.11                                  | Keyboard input                          | 46  |  |
-|    | 5.12                                  | Debugging                               | 47  |  |
-|    | 5.13                                  | Glossary                                | 48  |  |
-|    | 5.14                                  | Exercises                               | 49  |  |
-| 6  |                                       | Fruitful functions                      | 51  |  |
-|    | 6.1                                   | Return values                           | 51  |  |
-|    | 6.2                                   | Incremental development                 | 52  |  |
-|    | 6.3                                   | Composition                             | 54  |  |
-|    | 6.4                                   | Boolean functions                       | 54  |  |
-|    | 6.5                                   | More recursion                          | 55  |  |
-|    | 6.6                                   | Leap of faith                           | 57  |  |
-|    | 6.7                                   | One more example                        | 57  |  |
-|    | 6.8                                   | Checking types                          | 58  |  |
-|    | 6.9                                   | Debugging                               | 59  |  |
-|    | 6.10                                  | Glossary                                | 60  |  |
-| 7  | Iteration                             |                                         | 6   |  |
-|    | 7.1                                   | Multiple assignment                     | 6   |  |
-|    | 7.2                                   | Updating variables                      | 6   |  |
-|    | 7.3                                   | The while statement                     | 6   |  |
-|    | 7.4                                   | break                                   | 6   |  |
-|    | 7.5                                   | Square roots                            | 6   |  |
-|    | 7.6                                   | Algorithms                              | 6   |  |
-|    | 7.7                                   | Debugging                               | 6   |  |
-|    | 7.8                                   | Glossary                                | 6   |  |
-|    | 7.9                                   | Exercises                               | 6   |  |
-| 8  | Strings                               |                                         | 7   |  |
-|    | 8.1                                   | A string is a sequence                  | 7   |  |
-|    | 8.2                                   | len                                     | 7   |  |
-|    | 8.3                                   | Traversal with a for loop               | 7   |  |
-|    | 8.4                                   | String slices                           | 7   |  |
-|    | 8.5                                   | Strings are immutable                   | 7   |  |
-|    | 8.6                                   | Searching                               | 7   |  |
-|    | 8.7                                   | Looping and counting                    | 7   |  |
-|    | 8.8                                   | String methods                          | 7   |  |
-|    | 8.9                                   | The in operator                         | 7   |  |
-|    | 8.10                                  | String comparison                       | 7   |  |
-|    | 8.11                                  | Debugging                               | 7   |  |
-|    | 8.12                                  | Glossary                                | 7   |  |
-|    | 8.13                                  | Exercises                               | 7   |  |
-| 9  | Case study: word play                 |                                         | 8   |  |
-|    | 9.1                                   | Reading word lists                      | 8   |  |
-|    | 9.2                                   | Exercises                               | 8   |  |
-|    | 9.3                                   | Search                                  | 8   |  |
-|    | 9.4                                   | Looping with indices                    | 8   |  |
-|    | 9.5                                   | Debugging                               | 8   |  |
-|    | 9.6                                   | Glossary                                | 8   |  |
-|    | 9.7                                   | Exercises                               | 8   |  |
-|    | 10 Lists                              |                                         | 87  |  |
-|    | 10.1                                  | A list is a sequence                    | 87  |  |
-|    | 10.2                                  | Lists are mutable                       | 87  |  |
-|    | 10.3                                  | Traversing a list                       | 89  |  |
-|    | 10.4                                  | List operations                         | 89  |  |
-|    | 10.5                                  | List slices                             | 89  |  |
-|    | 10.6                                  | List methods                            | 90  |  |
-|    | 10.7                                  | Map, filter and reduce                  | 91  |  |
-|    | 10.8                                  | Deleting elements                       | 92  |  |
-|    | 10.9                                  | Lists and strings                       | 93  |  |
-|    | 10.10                                 | Objects and values                      | 93  |  |
-|    | 10.11                                 | Aliasing                                | 94  |  |
-|    | 10.12                                 | List arguments                          | 95  |  |
-|    | 10.13                                 | Debugging                               | 96  |  |
-|    | 10.14                                 | Glossary                                | 97  |  |
-|    | 10.15                                 | Exercises                               | 98  |  |
-|    |                                       |                                         |     |  |
-|    |                                       | 11 Dictionaries                         | 101 |  |
-|    | 11.1                                  | Dictionary as a set of counters         | 102 |  |
-|    | 11.2                                  | Looping and dictionaries                | 103 |  |
-|    | 11.3                                  | Reverse lookup                          | 104 |  |
-|    | 11.4                                  | Dictionaries and lists                  | 105 |  |
-|    | 11.5                                  | Memos                                   | 106 |  |
-|    | 11.6                                  | Global variables                        | 108 |  |
-|    | 11.7                                  | Long integers                           | 109 |  |
-|    | 11.8                                  | Debugging                               | 109 |  |
-|    | 11.9                                  | Glossary                                | 110 |  |
-|    | 11.10                                 | Exercises                               | 111 |  |
-|    | 12 Tuples                             |                                         | 113 |  |
-|    | 12.1                                  | Tuples are immutable                    | 113 |  |
-|    | 12.2                                  | Tuple assignment                        | 114 |  |
-|    | 12.3                                  | Tuples as return values                 | 115 |  |
-|    | 12.4                                  | Variable-length argument tuples         | 115 |  |
-|    | 12.5                                  | Lists and tuples                        | 116 |  |
-|    | 12.6                                  | Dictionaries and tuples                 | 117 |  |
-|    | 12.7                                  | Comparing tuples                        | 118 |  |
-|    | 12.8                                  | Sequences of sequences                  | 119 |  |
-|    | 12.9                                  | Debugging                               | 120 |  |
-|    | 12.10                                 | Glossary                                | 121 |  |
-|    | 12.11                                 | Exercises                               | 121 |  |
-|    |                                       | 13 Case study: data structure selection | 123 |  |
-|    | 13.1                                  | Word frequency analysis                 | 123 |  |
-|    | 13.2                                  | Random numbers                          | 124 |  |
-|    | 13.3                                  | Word histogram                          | 125 |  |
-|    | 13.4                                  | Most common words                       | 126 |  |
-|    | 13.5                                  | Optional parameters                     | 126 |  |
-|    | 13.6                                  | Dictionary subtraction                  | 127 |  |
-|    | 13.7                                  | Random words                            | 127 |  |
-|    | 13.8                                  | Markov analysis                         | 128 |  |
-|    | 13.9                                  | Data structures                         | 129 |  |
-|    | 13.10                                 | Debugging                               | 131 |  |
-|    | 13.11                                 | Glossary                                | 132 |  |
-|    | 13.12                                 | Exercises                               | 132 |  |
-|    |                                       |                                         |     |  |
-|    | 14 Files                              |                                         | 133 |  |
-|    | 14.1                                  | Persistence                             | 133 |  |
-|    | 14.2                                  | Reading and writing                     | 133 |  |
-|    | 14.3                                  | Format operator                         | 134 |  |
-|    | 14.4                                  | Filenames and paths                     | 135 |  |
-|    |                                       |                                         |     |  |
-|    | 14.5                                  | Catching exceptions                     | 136 |  |
-|    | 14.6                                  | Databases                               | 137 |  |
-|    | 14.7                                  | Pickling                                | 137 |  |
-|    | 14.8                                  | Pipes                                   | 138 |  |
-|    | 14.9                                  | Writing modules                         | 139 |  |
-|    | 14.10                                 | Debugging                               | 140 |  |
-|    | 14.11                                 | Glossary                                | 141 |  |
-|    | 14.12                                 | Exercises                               | 141 |  |
-| 15 | Classes and objects                   |                                         |     |  |
-|    | 15.1                                  | User-defined types                      | 143 |  |
-|    | 15.2                                  | Attributes                              | 144 |  |
-|    | 15.3                                  | Rectangles                              | 145 |  |
-|    | 15.4                                  | Instances as return values              | 146 |  |
-|    | 15.5                                  | Objects are mutable                     | 146 |  |
-|    | 15.6                                  | Copying                                 | 147 |  |
-|    | 15.7                                  | Debugging                               | 148 |  |
-|    | 15.8                                  | Glossary                                | 149 |  |
-|    | 15.9                                  | Exercises                               | 149 |  |
-| 16 | Classes and functions                 |                                         |     |  |
-|    | 16.1                                  | Time                                    | 151 |  |
-|    | 16.2                                  | Pure functions                          | 151 |  |
-|    | 16.3                                  | Modifiers                               | 153 |  |
-|    | 16.4                                  | Prototyping versus planning             | 154 |  |
-|    | 16.5                                  | Debugging                               | 155 |  |
-|    | 16.6                                  | Glossary                                | 155 |  |
-|    | 16.7                                  | Exercises                               | 156 |  |
-|    |                                       | 17 Classes and methods                  | 157 |  |
-|    | 17.1                                  | Object-oriented features                | 157 |  |
-|    | 17.2                                  | Printing objects                        | 158 |  |
-|    | 17.3                                  | Another example                         | 159 |  |
-|    | 17.4                                  | A more complicated example              | 160 |  |
-|    | 17.5                                  | The init method                         | 160 |  |
-|    | 17.6                                  | The __str__ method                      | 161 |  |
-|    | 17.7                                  | Operator overloading                    | 161 |  |
-|    | 17.8                                  | Type-based dispatch                     | 162 |  |
-|    | 17.9                                  | Polymorphism                            | 163 |  |
-|    | 17.10                                 | Debugging                               | 164 |  |
-|    | 17.11                                 | Interface and implementation            | 164 |  |
-|    | 17.12                                 | Glossary                                | 165 |  |
-|    | 17.13                                 | Exercises                               | 165 |  |
-|    |                                       | 18 Inheritance                          | 167 |  |
-|    | 18.1                                  | Card objects                            | 167 |  |
-|    | 18.2                                  | Class attributes                        | 168 |  |
-|    | 18.3                                  | Comparing cards                         | 169 |  |
-|    | 18.4                                  | Decks                                   | 170 |  |
-|    | 18.5                                  | Printing the deck                       | 171 |  |
-|    | 18.6                                  | Add, remove, shuffle and sort           | 171 |  |
-|    | 18.7                                  | Inheritance                             | 172 |  |
-|    | 18.8                                  | Class diagrams                          | 173 |  |
-|    | 18.9                                  | Debugging                               | 174 |  |
-|    | 18.10                                 | Data encapsulation                      | 175 |  |
-|    | 18.11                                 | Glossary                                | 176 |  |
-|    |                                       | 19 Case study: Tkinter                  | 179 |  |
-|    | 19.1                                  | GUI                                     | 179 |  |
-|    | 19.2                                  | Buttons and callbacks                   | 180 |  |
-|    | 19.3                                  | Canvas widgets                          | 181 |  |
-|    | 19.4                                  | Coordinate sequences                    | 182 |  |
-|    | 19.5                                  | More widgets                            | 182 |  |
-|    | 19.6                                  | Packing widgets                         | 183 |  |
-|    | 19.7                                  | Menus and Callables                     | 185 |  |
-|    | 19.8                                  | Binding                                 | 186 |  |
-|    | 19.9                                  | Debugging                               | 188 |  |
-|    | 19.10                                 | Glossary                                | 189 |  |
-|    | 19.11                                 | Exercises                               | 190 |  |
-| A  | Debugging                             |                                         | 193 |  |
-|    | A.1                                   | Syntax errors                           | 193 |  |
-|    | A.2                                   | Runtime errors                          | 195 |  |
-|    | A.3                                   | Semantic errors                         | 198 |  |
-| B  | Analysis of Algorithms                |                                         | 201 |  |
-|    | B.1                                   | Order of growth                         | 202 |  |
-|    | B.2                                   | Analysis of basic Python operations     | 204 |  |
-|    | B.3                                   | Analysis of search algorithms           | 205 |  |
-|    | B.4                                   | Hashtables                              | 206 |  |
-| C  | Lumpy                                 |                                         | 211 |  |
-|    | C.1                                   | State diagram                           | 211 |  |
-|    | C.2                                   | Stack diagram                           | 212 |  |
-|    | C.3                                   | Object diagrams                         | 213 |  |
-|    | C.4                                   | Function and class objects              | 215 |  |
-|    | C.5                                   | Class Diagrams                          | 216 |  |
+|   | Preface                               |                                         |     |  |
+|---|---------------------------------------|-----------------------------------------|-----|--|
+| 1 |                                       | The way of the program                  | 1   |  |
+|   | 1.1                                   | The Python programming language         | 1   |  |
+|   | 1.2                                   | What is a program?                      | 3   |  |
+|   | 1.3                                   | What is debugging?                      | 3   |  |
+|   | 1.4                                   | Formal and natural languages            | 5   |  |
+|   | 1.5                                   | The first program                       | 6   |  |
+|   | 1.6                                   | Debugging                               | 7   |  |
+|   | 1.7                                   | Glossary                                | 7   |  |
+|   | 1.8                                   | Exercises                               | 9   |  |
+| 2 | Variables, expressions and statements |                                         |     |  |
+|   | 2.1                                   | Values and types                        | 11  |  |
+|   | 2.2                                   | Variables                               | 12  |  |
+|   | 2.3                                   | Variable names and keywords             | 12  |  |
+|   | 2.4                                   | Operators and operands                  | 13  |  |
+|   | 2.5                                   | Expressions and statements              | 14  |  |
+|   | 2.6                                   | Interactive mode and script mode        | 14  |  |
+|   | 2.7                                   | Order of operations                     | 15  |  |
+|   | 2.8                                   | String operations                       | 15  |  |
+|   | 2.9                                   | Comments                                | 16  |  |
+|   | 2.10                                  | Debugging                               | 16  |  |
+|   | 2.11                                  | Glossary                                | 17  |  |
+|   | 2.12                                  | Exercises                               | 18  |  |
+| 3 | Functions                             |                                         | 19  |  |
+|   | 3.1                                   | Function calls                          | 19  |  |
+|   | 3.2                                   | Type conversion functions               | 19  |  |
+|   | 3.3                                   | Math functions                          | 20  |  |
+|   | 3.4                                   | Composition                             | 21  |  |
+|   | 3.5                                   | Adding new functions                    | 21  |  |
+|   | 3.6                                   | Definitions and uses                    | 22  |  |
+|   | 3.7                                   | Flow of execution                       | 23  |  |
+|   | 3.8                                   | Parameters and arguments                | 23  |  |
+|   | 3.9                                   | Variables and parameters are local      | 24  |  |
+|   | 3.10                                  | Stack diagrams                          | 25  |  |
+|   | 3.11                                  | Fruitful functions and void functions   | 26  |  |
+|   | 3.12                                  | Why functions?                          | 26  |  |
+|   | 3.13                                  | Importing with from                     | 27  |  |
+|   | 3.14                                  | Debugging                               | 27  |  |
+|   | 3.15                                  | Glossary                                | 28  |  |
+|   | 3.16                                  | Exercises                               | 29  |  |
+| 4 | Case study: interface design          |                                         | 31  |  |
+|   | 4.1                                   | TurtleWorld                             | 31  |  |
+|   | 4.2                                   | Simple repetition                       | 32  |  |
+|   | 4.3                                   | Exercises                               | 33  |  |
+|   | 4.4                                   | Encapsulation                           | 34  |  |
+|   | 4.5                                   | Generalization                          | 34  |  |
+|   | 4.6                                   | Interface design                        | 35  |  |
+|   | 4.7                                   | Refactoring                             | 36  |  |
+|   | 4.8                                   | A development plan                      | 37  |  |
+|   | 4.9                                   | docstring                               | 37  |  |
+|   | 4.10                                  | Debugging                               | 38  |  |
+|   | 4.11                                  | Glossary                                | 38  |  |
+|   | 4.12                                  | Exercises                               | 39  |  |
+| 5 |                                       | Conditionals and recursion              | 41  |  |
+|   | 5.1                                   | Modulus operator                        | 41  |  |
+|   | 5.2                                   | Boolean expressions                     | 41  |  |
+|   | 5.3                                   | Logical operators                       | 42  |  |
+|   | 5.4                                   | Conditional execution                   | 42  |  |
+|   | 5.5                                   | Alternative execution                   | 43  |  |
+|   | 5.6                                   | Chained conditionals                    | 43  |  |
+|   | 5.7                                   | Nested conditionals                     | 43  |  |
+|   | 5.8                                   | Recursion                               | 44  |  |
+|   | 5.9                                   | Stack diagrams for recursive functions  | 45  |  |
+|   | 5.10                                  | Infinite recursion                      | 46  |  |
+|   | 5.11                                  | Keyboard input                          | 46  |  |
+|   | 5.12                                  | Debugging                               | 47  |  |
+|   | 5.13                                  | Glossary                                | 48  |  |
+|   | 5.14                                  | Exercises                               | 49  |  |
+| 6 |                                       | Fruitful functions                      | 51  |  |
+|   | 6.1                                   | Return values                           | 51  |  |
+|   | 6.2                                   | Incremental development                 | 52  |  |
+|   | 6.3                                   | Composition                             | 54  |  |
+|   | 6.4                                   | Boolean functions                       | 54  |  |
+|   | 6.5                                   | More recursion                          | 55  |  |
+|   | 6.6                                   | Leap of faith                           | 57  |  |
+|   | 6.7                                   | One more example                        | 57  |  |
+|   | 6.8                                   | Checking types                          | 58  |  |
+|   | 6.9                                   | Debugging                               | 59  |  |
+|   | 6.10                                  | Glossary                                | 60  |  |
+| 7 | Iteration                             |                                         | 6   |  |
+|   | 7.1                                   | Multiple assignment                     | 6   |  |
+|   | 7.2                                   | Updating variables                      | 6   |  |
+|   | 7.3                                   | The while statement                     | 6   |  |
+|   | 7.4                                   | break                                   | 6   |  |
+|   | 7.5                                   | Square roots                            | 6   |  |
+|   | 7.6                                   | Algorithms                              | 6   |  |
+|   | 7.7                                   | Debugging                               | 6   |  |
+|   | 7.8                                   | Glossary                                | 6   |  |
+|   | 7.9                                   | Exercises                               | 6   |  |
+| 8 | Strings                               |                                         | 7   |  |
+|   | 8.1                                   | A string is a sequence                  | 7   |  |
+|   | 8.2                                   | len                                     | 7   |  |
+|   | 8.3                                   | Traversal with a for loop               | 7   |  |
+|   | 8.4                                   | String slices                           | 7   |  |
+|   | 8.5                                   | Strings are immutable                   | 7   |  |
+|   | 8.6                                   | Searching                               | 7   |  |
+|   | 8.7                                   | Looping and counting                    | 7   |  |
+|   | 8.8                                   | String methods                          | 7   |  |
+|   | 8.9                                   | The in operator                         | 7   |  |
+|   | 8.10                                  | String comparison                       | 7   |  |
+|   | 8.11                                  | Debugging                               | 7   |  |
+|   | 8.12                                  | Glossary                                | 7   |  |
+|   | 8.13                                  | Exercises                               | 7   |  |
+| 9 | Case study: word play                 |                                         |     |  |
+|   | 9.1                                   | Reading word lists                      | 8   |  |
+|   | 9.2                                   | Exercises                               | 8   |  |
+|   | 9.3                                   | Search                                  | 8   |  |
+|   | 9.4                                   | Looping with indices                    | 8   |  |
+|   | 9.5                                   | Debugging                               | 8   |  |
+|   | 9.6                                   | Glossary                                | 8   |  |
+|   | 9.7                                   | Exercises                               | 8   |  |
+|   | 10 Lists                              |                                         | 87  |  |
+|   | 10.1                                  | A list is a sequence                    | 87  |  |
+|   | 10.2                                  | Lists are mutable                       | 87  |  |
+|   | 10.3                                  | Traversing a list                       | 89  |  |
+|   | 10.4                                  | List operations                         | 89  |  |
+|   | 10.5                                  | List slices                             | 89  |  |
+|   | 10.6                                  | List methods                            | 90  |  |
+|   | 10.7                                  | Map, filter and reduce                  | 91  |  |
+|   | 10.8                                  | Deleting elements                       | 92  |  |
+|   | 10.9                                  | Lists and strings                       | 93  |  |
+|   | 10.10                                 | Objects and values                      | 93  |  |
+|   | 10.11                                 | Aliasing                                | 94  |  |
+|   | 10.12                                 | List arguments                          | 95  |  |
+|   | 10.13                                 | Debugging                               | 96  |  |
+|   | 10.14                                 | Glossary                                | 97  |  |
+|   | 10.15                                 | Exercises                               | 98  |  |
+|   |                                       |                                         |     |  |
+|   |                                       | 11 Dictionaries                         | 101 |  |
+|   | 11.1                                  | Dictionary as a set of counters         | 102 |  |
+|   | 11.2                                  | Looping and dictionaries                | 103 |  |
+|   | 11.3                                  | Reverse lookup                          | 104 |  |
+|   | 11.4                                  | Dictionaries and lists                  | 105 |  |
+|   | 11.5                                  | Memos                                   | 106 |  |
+|   | 11.6                                  | Global variables                        | 108 |  |
+|   | 11.7                                  | Long integers                           | 109 |  |
+|   | 11.8                                  | Debugging                               | 109 |  |
+|   | 11.9                                  | Glossary                                | 110 |  |
+|   | 11.10                                 | Exercises                               | 111 |  |
+|   | 12 Tuples                             |                                         | 113 |  |
+|   | 12.1                                  | Tuples are immutable                    | 113 |  |
+|   | 12.2                                  | Tuple assignment                        | 114 |  |
+|   | 12.3                                  | Tuples as return values                 | 115 |  |
+|   | 12.4                                  | Variable-length argument tuples         | 115 |  |
+|   | 12.5                                  | Lists and tuples                        | 116 |  |
+|   | 12.6                                  | Dictionaries and tuples                 | 117 |  |
+|   | 12.7                                  | Comparing tuples                        | 118 |  |
+|   | 12.8                                  | Sequences of sequences                  | 119 |  |
+|   | 12.9                                  | Debugging                               | 120 |  |
+|   | 12.10                                 | Glossary                                | 121 |  |
+|   | 12.11                                 | Exercises                               | 121 |  |
+|   |                                       | 13 Case study: data structure selection | 123 |  |
+|   | 13.1                                  | Word frequency analysis                 | 123 |  |
+|   | 13.2                                  | Random numbers                          | 124 |  |
+|   | 13.3                                  | Word histogram                          | 125 |  |
+|   | 13.4                                  | Most common words                       | 126 |  |
+|   | 13.5                                  | Optional parameters                     | 126 |  |
+|   | 13.6                                  | Dictionary subtraction                  | 127 |  |
+|   | 13.7                                  | Random words                            | 127 |  |
+|   | 13.8                                  | Markov analysis                         | 128 |  |
+|   | 13.9                                  | Data structures                         | 129 |  |
+|   | 13.10                                 | Debugging                               | 131 |  |
+|   | 13.11                                 | Glossary                                | 132 |  |
+|   | 13.12                                 | Exercises                               | 132 |  |
+|   |                                       |                                         |     |  |
+|   | 14 Files                              |                                         | 133 |  |
+|   | 14.1                                  | Persistence                             | 133 |  |
+|   | 14.2                                  | Reading and writing                     | 133 |  |
+|   | 14.3                                  | Format operator                         | 134 |  |
+|   | 14.4                                  | Filenames and paths                     | 135 |  |
+|   |                                       |                                         |     |  |
+|   | 14.5                                  | Catching exceptions                     | 136 |  |
+|   | 14.6                                  | Databases                               | 137 |  |
+|   | 14.7                                  | Pickling                                | 137 |  |
+|   | 14.8                                  | Pipes                                   | 138 |  |
+|   | 14.9                                  | Writing modules                         | 139 |  |
+|   | 14.10                                 | Debugging                               | 140 |  |
+|   | 14.11                                 | Glossary                                | 141 |  |
+|   | 14.12                                 | Exercises                               | 141 |  |
+|   |                                       |                                         |     |  |
+|   |                                       | 15 Classes and objects                  | 143 |  |
+|   | 15.1                                  | User-defined types                      | 143 |  |
+|   | 15.2                                  | Attributes                              | 144 |  |
+|   | 15.3                                  | Rectangles                              | 145 |  |
+|   | 15.4                                  | Instances as return values              | 146 |  |
+|   | 15.5                                  | Objects are mutable                     | 146 |  |
+|   | 15.6                                  | Copying                                 | 147 |  |
+|   | 15.7                                  | Debugging                               | 148 |  |
+|   | 15.8                                  | Glossary                                | 149 |  |
+|   | 15.9                                  | Exercises                               | 149 |  |
+|   |                                       | 16 Classes and functions                | 151 |  |
+|   | 16.1                                  | Time                                    | 151 |  |
+|   | 16.2                                  | Pure functions                          | 151 |  |
+|   | 16.3                                  | Modifiers                               | 153 |  |
+|   | 16.4                                  | Prototyping versus planning             | 154 |  |
+|   | 16.5                                  | Debugging                               | 155 |  |
+|   | 16.6                                  | Glossary                                | 155 |  |
+|   | 16.7                                  | Exercises                               | 156 |  |
+|   |                                       | 17 Classes and methods                  | 157 |  |
+|   | 17.1                                  | Object-oriented features                | 157 |  |
+|   | 17.2                                  | Printing objects                        | 158 |  |
+|   | 17.3                                  | Another example                         | 159 |  |
+|   | 17.4                                  | A more complicated example              | 160 |  |
+|   | 17.5                                  | The init method                         | 160 |  |
+|   | 17.6                                  | The __str__ method                      | 161 |  |
+|   | 17.7                                  | Operator overloading                    | 161 |  |
+|   | 17.8                                  | Type-based dispatch                     | 162 |  |
+|   | 17.9                                  | Polymorphism                            | 163 |  |
+|   | 17.10                                 | Debugging                               | 164 |  |
+|   | 17.11                                 | Interface and implementation            | 164 |  |
+|   | 17.12                                 | Glossary                                | 165 |  |
+|   | 17.13                                 | Exercises                               | 165 |  |
+|   |                                       | 18 Inheritance                          | 167 |  |
+|   | 18.1                                  | Card objects                            | 167 |  |
+|   | 18.2                                  | Class attributes                        | 168 |  |
+|   | 18.3                                  | Comparing cards                         | 169 |  |
+|   | 18.4                                  | Decks                                   | 170 |  |
+|   | 18.5                                  | Printing the deck                       | 171 |  |
+|   | 18.6                                  | Add, remove, shuffle and sort           | 171 |  |
+|   | 18.7                                  | Inheritance                             | 172 |  |
+|   | 18.8                                  | Class diagrams                          | 173 |  |
+|   | 18.9                                  | Debugging                               | 174 |  |
+|   | 18.10                                 | Data encapsulation                      | 175 |  |
+|   | 18.11                                 | Glossary                                | 176 |  |
+|   |                                       | 19 Case study: Tkinter                  | 179 |  |
+|   | 19.1                                  | GUI                                     | 179 |  |
+|   | 19.2                                  | Buttons and callbacks                   | 180 |  |
+|   | 19.3                                  | Canvas widgets                          | 181 |  |
+|   | 19.4                                  | Coordinate sequences                    | 182 |  |
+|   | 19.5                                  | More widgets                            | 182 |  |
+|   | 19.6                                  | Packing widgets                         | 183 |  |
+|   | 19.7                                  | Menus and Callables                     | 185 |  |
+|   | 19.8                                  | Binding                                 | 186 |  |
+|   | 19.9                                  | Debugging                               | 188 |  |
+|   | 19.10                                 | Glossary                                | 189 |  |
+|   | 19.11                                 | Exercises                               | 190 |  |
+| A | Debugging                             |                                         | 193 |  |
+|   | A.1                                   | Syntax errors                           | 193 |  |
+|   | A.2                                   | Runtime errors                          | 195 |  |
+|   | A.3                                   | Semantic errors                         | 198 |  |
+| B |                                       | Analysis of Algorithms                  | 201 |  |
+|   | B.1                                   | Order of growth                         | 202 |  |
+|   | B.2                                   | Analysis of basic Python operations     | 204 |  |
+|   | B.3                                   | Analysis of search algorithms           | 205 |  |
+|   | B.4                                   | Hashtables                              | 206 |  |
+| C | Lumpy                                 |                                         | 211 |  |
+|   | C.1                                   | State diagram                           | 211 |  |
+|   | C.2                                   | Stack diagram                           | 212 |  |
+|   | C.3                                   | Object diagrams                         | 213 |  |
+|   | C.4                                   | Function and class objects              | 215 |  |
+|   | C.5                                   | Class Diagrams                          | 216 |  |
 
 ## <span id="page-22-0"/>**Chapter 1**
 
@@ -8193,12 +8194,12 @@ Suppose you have analyzed two algorithms and expressed their run times in terms 
 
 The following table shows the run time of these algorithms for different problem sizes:
 
-| Inputsize | Run time ofAlgorithm A | Run time ofAlgorithm B |
-|-----------|------------------------|------------------------|
-| 10        | 1 001                  | 111                    |
-| 100       | 10 001                 | 10 101                 |
-| 1 000     | 100 001                | 1 001 001              |
-| 10 000    | 1 000 001              | > 1010                 |
+| Input<br/>size | Run time of<br/>Algorithm A | Run time of<br/>Algorithm B |
+|----------------|-----------------------------|-----------------------------|
+| 10             | 1 001                       | 111                         |
+| 100            | 10 001                      | 10 101                      |
+| 1 000          | 100 001                     | 1 001 001                   |
+| 10 000         | 1 000 001                   | > 1010                      |
 
 At *n* = 10, Algorithm A looks pretty bad; it takes almost 10 times longer than Algorithm B. But for *n* = 100 they are about the same, and for larger values A is much better.
 
@@ -8218,15 +8219,15 @@ All functions with the leading term *n*2 belong to *O*(*n*2) ; they are **quadra
 
 The following table shows some of the orders of growth that appear most commonly in algorithmic analysis, in increasing order of badness.
 
-| Order ofgrowth | Name                    |
-|----------------|-------------------------|
-| O(1)           | constant                |
-| O(logbn)       | logarithmic (for any b) |
-| O(n)           | linear                  |
-| O(nlogbn)      | "en log en"             |
-| O(n2)          | quadratic               |
-| O(n3)          | cubic                   |
-| O(cn)          | exponential (for any c) |
+| Order of<br/>growth | Name                    |
+|---------------------|-------------------------|
+| O(1)                | constant                |
+| O(logbn)            | logarithmic (for any b) |
+| O(n)                | linear                  |
+| O(nlogbn)           | "en log en"             |
+| O(n2)               | quadratic               |
+| O(n3)               | cubic                   |
+| O(cn)               | exponential (for any c) |
 
 For the logarithmic terms, the base of the logarithm doesn't matter; changing bases is the equivalent of multiplying by a constant, which doesn't change the order of growth. Similarly, all exponential functions belong to the same order of growth regardless of the base of the exponent. Exponential functions grow very quickly, so exponential algorithms are only useful for small problems.
 

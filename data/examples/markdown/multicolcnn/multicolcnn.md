@@ -123,9 +123,9 @@ Without perspective maps, we generate label density maps for this dataset in the
 
 When perspective maps are used, however, we follow the procedure as described in [\[27\]](#page-8-7), which involves estimating a "crowd density distribution kernel" as the sum of two 2D Gaussians: a symmetric Gaussian for the head and an ellipsoid Gaussian for the body. These are scaled by the perspective map M provided, where M(x) gives the number of pixels that represents a meter at pixel x [\[27\]](#page-8-7). Note that the meaning of this perspective map is distinct from the meaning of the perspective map provided for the UCSD dataset. Using this information, the density contribution from a person with head pixel x is given by the following sum of normalized Gaussians:
 
-$$D_{\bf x} = \frac{1}{||Z||} \left( \mathcal{N}_h(\bf x, \sigma_h) + \mathcal{N}_b(\bf x_b, \Sigma_b) \right) \tag{5}$$
+$$D_{\bf x}=\frac{1}{||Z||}\left(\mathcal{N}_{h}(\bf x,\sigma_{h}) + \mathcal{N}_{b}(\bf x_{b},\Sigma_{b})\right)\tag{5}$$
 
-where $x_b$ is the center of the body, which is 0.875 meters down from the head on average, and can be determined from the perspective map $M$ and the head center x [27]. We sum these Gaussians for each person to pro-
+where $x_b$ is the center of the body, which is 0.875 meters down from the head on average, and can be determined from the perspective map $M$ and the head center x [27]. We sum these Gaussians for each person to produce
 
 | Method       | MAE    |
 |--------------|--------|
@@ -156,12 +156,12 @@ Our network performs very well on the TRANCOS dataset. Indeed, as confirmed by t
 
 Results are shown in Table [3](#page-6-0) and Figure [3.](#page-6-1) We see that the "original" split as defined by the creators of the dataset in [\[5\]](#page-8-17) and used in [\[28\]](#page-9-0) gives us somewhat worse results for counting on this dataset. Results were consistent over multiple trainings. Again, including the perspective map does not seem to increase performance on this dataset. Despite this, we see in Table [3](#page-6-0) and Figure [3](#page-6-1) that the results are comparable to the state of the art. In fact, for two of the splits, our proposed network beats the state of the art. For the upscale split, the AMDCN is the state of the art by a large relative margin. This is compelling because it shows that accurate perspective-free counting can be achieved without
 
-| Method                            | GAME(L=0) | GAME(L=1)  | GAME(L=2)  | GAME(L=3)  |
-|-----------------------------------|-----------|------------|------------|------------|
-| AMDCN[18]                         | 9.7710.99 | 13.1613.75 | 15.0016.69 | 15.8719.32 |
-| [15] + SIFTfrom [14]              | 13.76     | 16.72      | 20.72      | 24.36      |
-| [13] + RGBNorm + Filtersfrom [14] | 17.68     | 19.97      | 23.54      | 25.84      |
-| HOG-2from [14]                    | 13.29     | 18.05      | 23.65      | 28.41      |
+| Method                                      | GAME<br/>(L=0) | GAME<br/>(L=1)  | GAME<br/>(L=2)  | GAME<br/>(L=3)  |
+|---------------------------------------------|----------------|-----------------|-----------------|-----------------|
+| AMDCN<br/>[18]                              | 9.77<br/>10.99 | 13.16<br/>13.75 | 15.00<br/>16.69 | 15.87<br/>19.32 |
+| [15] + SIFT<br/>from [14]                   | 13.76          | 16.72           | 20.72           | 24.36           |
+| [13] + RGB<br/>Norm + Filters<br/>from [14] | 17.68          | 19.97           | 23.54           | 25.84           |
+| HOG-2<br/>from [14]                         | 13.29          | 18.05           | 23.65           | 28.41           |
 
 <span id="page-5-2"/>Table 2. Mean absolute error of various methods on TRANCOS traffic
 

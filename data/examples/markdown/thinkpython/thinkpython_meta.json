@@ -7217,7 +7217,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 1405
+        "llm_tokens_used": 1443
       }
     },
     {
@@ -7248,7 +7248,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 4001
+        "llm_tokens_used": 4055
       }
     },
     {
@@ -7279,7 +7279,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 4270
+        "llm_tokens_used": 4306
       }
     },
     {
@@ -7288,7 +7288,7 @@
       "block_counts": [
         [
           "TableCell",
-          253
+          252
         ],
         [
           "Span",
@@ -7310,7 +7310,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 4984
+        "llm_tokens_used": 5033
       }
     },
     {
@@ -7341,7 +7341,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 5501
+        "llm_tokens_used": 5542
       }
     },
     {
@@ -7372,7 +7372,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 6203
+        "llm_tokens_used": 6236
       }
     },
     {
@@ -7381,7 +7381,7 @@
       "block_counts": [
         [
           "TableCell",
-          220
+          228
         ],
         [
           "Span",
@@ -7403,7 +7403,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 6545
+        "llm_tokens_used": 6567
       }
     },
     {
@@ -7434,7 +7434,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 7048
+        "llm_tokens_used": 7100
       }
     },
     {
@@ -7465,7 +7465,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 7544
+        "llm_tokens_used": 7609
       }
     },
     {
@@ -8112,7 +8112,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 1620
+        "llm_tokens_used": 1631
       }
     },
     {
@@ -8331,7 +8331,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 1622
+        "llm_tokens_used": 1639
       }
     },
     {
@@ -8640,7 +8640,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 736
+        "llm_tokens_used": 755
       }
     },
     {
@@ -9218,7 +9218,7 @@
       "block_metadata": {
         "llm_request_count": 3,
         "llm_error_count": 0,
-        "llm_tokens_used": 2314
+        "llm_tokens_used": 2311
       }
     },
     {
@@ -9594,7 +9594,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 724
+        "llm_tokens_used": 725
       }
     },
     {
@@ -10075,7 +10075,7 @@
       "block_metadata": {
         "llm_request_count": 3,
         "llm_error_count": 0,
-        "llm_tokens_used": 2458
+        "llm_tokens_used": 2456
       }
     },
     {
@@ -10965,7 +10965,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 710
+        "llm_tokens_used": 716
       }
     },
     {
@@ -11250,7 +11250,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 1353
+        "llm_tokens_used": 1352
       }
     },
     {
@@ -12134,7 +12134,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 721
+        "llm_tokens_used": 745
       }
     },
     {
@@ -12321,7 +12321,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 1474
+        "llm_tokens_used": 1479
       }
     },
     {
@@ -12368,7 +12368,7 @@
       "block_metadata": {
         "llm_request_count": 3,
         "llm_error_count": 0,
-        "llm_tokens_used": 2437
+        "llm_tokens_used": 2455
       }
     },
     {
@@ -12462,7 +12462,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 1683
+        "llm_tokens_used": 1689
       }
     },
     {
@@ -13239,7 +13239,7 @@
       "block_metadata": {
         "llm_request_count": 2,
         "llm_error_count": 0,
-        "llm_tokens_used": 1642
+        "llm_tokens_used": 1625
       }
     },
     {
@@ -14298,7 +14298,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 724
+        "llm_tokens_used": 714
       }
     },
     {
@@ -14345,7 +14345,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 725
+        "llm_tokens_used": 686
       }
     },
     {
@@ -15934,7 +15934,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 882
+        "llm_tokens_used": 883
       }
     },
     {
@@ -15981,7 +15981,7 @@
       "block_metadata": {
         "llm_request_count": 4,
         "llm_error_count": 0,
-        "llm_tokens_used": 3927
+        "llm_tokens_used": 3941
       }
     },
     {
@@ -16332,7 +16332,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 719
+        "llm_tokens_used": 722
       }
     },
     {
@@ -16481,7 +16481,7 @@
       "block_metadata": {
         "llm_request_count": 1,
         "llm_error_count": 0,
-        "llm_tokens_used": 686
+        "llm_tokens_used": 682
       }
     },
     {
