@@ -65,7 +65,7 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
         <td>Column 4</td>
     </tr>
     <tr>
-        <td>Value 1</td>
+        <td>Value 1 <math>x</math></td>
         <td>Value 2</td>
         <td>Value 3</td>
         <td>Value 4</td>
@@ -92,6 +92,9 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
     tables = pdf_document.contained_blocks((BlockTypes.Table,))
     table_cells = tables[0].contained_blocks(pdf_document, (BlockTypes.TableCell,))
     assert table_cells[0].text == "Column 1"
+
+    markdown = MarkdownRenderer()(pdf_document).markdown
+    assert "Value 1 $x$" in markdown
 
 
 @pytest.mark.filename("adversarial.pdf")
