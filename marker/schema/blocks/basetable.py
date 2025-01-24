@@ -9,8 +9,11 @@ class BaseTable(Block):
     block_type: BlockTypes | None = None
     html: str | None = None
 
-    def format_cells(self, document, child_blocks):
-        child_cells: List[TableCell] = [document.get_block(c.id) for c in child_blocks if c.id.block_type == BlockTypes.TableCell]
+    @staticmethod
+    def format_cells(document, child_blocks, child_cells: List[TableCell] | None = None):
+        if child_cells is None:
+            child_cells: List[TableCell] = [document.get_block(c.id) for c in child_blocks if c.id.block_type == BlockTypes.TableCell]
+
         unique_rows = sorted(list(set([c.row_id for c in child_cells])))
         html_repr = "<table><tbody>"
         for row_id in unique_rows:
@@ -21,7 +24,6 @@ class BaseTable(Block):
             html_repr += "</tr>"
         html_repr += "</tbody></table>"
         return html_repr
-
 
     def assemble_html(self, document, child_blocks: List[BlockOutput], parent_structure=None):
         # Filter out the table cells, so they don't render twice

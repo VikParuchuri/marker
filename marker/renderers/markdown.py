@@ -16,6 +16,9 @@ def cleanup_text(full_text):
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
     return full_text.strip()
 
+def get_text_with_br(element):
+    return ''.join(str(content) if content.name == 'br' else content.strip() for content in element.contents)
+
 
 class Markdownify(MarkdownConverter):
     def __init__(self, paginate_output, page_separator, inline_math_delimiters, block_math_delimiters, **kwargs):
@@ -78,7 +81,7 @@ class Markdownify(MarkdownConverter):
                     col_idx += 1
 
                 # Fill in grid
-                value = cell.get_text(strip=True).replace("\n", " ").replace("|", " ")
+                value = get_text_with_br(cell).replace("\n", " ").replace("|", " ")
                 rowspan = int(cell.get('rowspan', 1))
                 colspan = int(cell.get('colspan', 1))
 

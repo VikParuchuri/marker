@@ -2,10 +2,11 @@ from typing import Annotated, List, Tuple
 
 from bs4 import BeautifulSoup
 from google.ai.generativelanguage_v1beta.types import content
+from PIL import Image
 
 from marker.processors.llm import BaseLLMProcessor
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block, TableCell
+from marker.schema.blocks import Block, TableCell, Table
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
@@ -19,7 +20,15 @@ class LLMTableProcessor(BaseLLMProcessor):
     max_rows_per_batch: Annotated[
         int,
         "If the table has more rows than this, chunk the table. (LLMs can be inaccurate with a lot of rows)",
-    ] = 75
+    ] = 60
+    max_table_rows: Annotated[
+        int,
+        "The maximum number of rows in a table to process with the LLM processor.  Beyond this will be skipped.",
+    ] = 175
+    table_image_expansion_ratio: Annotated[
+        float,
+        "The ratio to expand the image by when cropping.",
+    ] = 0
     table_rewriting_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
@@ -66,23 +75,64 @@ No corrections needed.
 ```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        children = block.contained_blocks(document, (BlockTypes.TableCell,))
+    def process_rewriting(self, document: Document, page: PageGroup, block: Table):
+        children: List[TableCell] = block.contained_blocks(document, (BlockTypes.TableCell,))
         if not children:
             # Happens if table/form processors didn't run
             return
 
         # LLMs don't handle tables with a lot of rows very well
-        row_count = len(set([cell.row_id for cell in children]))
+        unique_rows = set([cell.row_id for cell in children])
+        row_count = len(unique_rows)
+        row_idxs = sorted(list(unique_rows))
 
-        # TODO: eventually chunk the table and inference each chunk
-        if row_count > self.max_rows_per_batch:
+        if row_count > self.max_table_rows:
             return
 
-        block_html = block.render(document).html
+        # Inference by chunk to handle long tables better
+        parsed_cells = []
+        row_shift = 0
+        block_image = self.extract_image(document, block)
+        block_rescaled_bbox = block.polygon.rescale(page.polygon.size, page.get_image(highres=True).size).bbox
+        for i in range(0, row_count, self.max_rows_per_batch):
+            batch_row_idxs = row_idxs[i:i + self.max_rows_per_batch]
+            batch_cells = [cell for cell in children if cell.row_id in batch_row_idxs]
+            batch_cell_bboxes = [cell.polygon.rescale(page.polygon.size, page.get_image(highres=True).size).bbox for cell in batch_cells]
+            # bbox relative to the block
+            batch_bbox = [
+                min([bbox[0] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[0],
+                min([bbox[1] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[1],
+                max([bbox[2] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[0],
+                max([bbox[3] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[1]
+            ]
+            if i == 0:
+                # Ensure first image starts from the beginning
+                batch_bbox[0] = 0
+                batch_bbox[1] = 0
+            elif i > row_count - self.max_rows_per_batch + 1:
+                # Ensure final image grabs the entire height and width
+                batch_bbox[2] = block_image.size[0]
+                batch_bbox[3] = block_image.size[1]
+
+            batch_image = block_image.crop(batch_bbox)
+            block_html = block.format_cells(document, [], batch_cells)
+            batch_parsed_cells = self.rewrite_single_chunk(page, block, block_html, batch_cells, batch_image)
+            if batch_parsed_cells is None:
+                return # Error occurred or no corrections needed
+
+            for cell in batch_parsed_cells:
+                cell.row_id += row_shift
+                parsed_cells.append(cell)
+            row_shift += max([cell.row_id for cell in batch_parsed_cells])
+
+        block.structure = []
+        for cell in parsed_cells:
+            page.add_full_block(cell)
+            block.add_structure(cell)
+
+    def rewrite_single_chunk(self, page: PageGroup, block: Block, block_html: str, children: List[TableCell], image: Image.Image):
         prompt = self.table_rewriting_prompt.replace("{block_html}", block_html)
 
-        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],
@@ -119,10 +169,7 @@ No corrections needed.
             block.update_metadata(llm_error_count=1)
             return
 
-        block.structure = []
-        for cell in parsed_cells:
-            page.add_full_block(cell)
-            block.add_structure(cell)
+        return parsed_cells
 
     @staticmethod
     def get_cell_text(element, keep_tags=('br',)):
@@ -186,7 +233,7 @@ No corrections needed.
                 cell_polygon = PolygonBox.from_bbox(cell_bbox)
 
                 cell_obj = TableCell(
-                    text=cell_text,
+                    text_lines=[cell_text],
                     row_id=i,
                     col_id=cur_col,
                     rowspan=rowspan,
