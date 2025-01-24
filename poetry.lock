@@ -3383,13 +3383,13 @@ files = [
 
 [[package]]
 name = "pydantic"
-version = "2.10.5"
+version = "2.10.6"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pydantic-2.10.5-py3-none-any.whl", hash = "sha256:4dd4e322dbe55472cb7ca7e73f4b63574eecccf2835ffa2af9021ce113c83c53"},
-    {file = "pydantic-2.10.5.tar.gz", hash = "sha256:278b38dbbaec562011d659ee05f63346951b3a248a6f3642e1bc68894ea2b4ff"},
+    {file = "pydantic-2.10.6-py3-none-any.whl", hash = "sha256:427d664bf0b8a2b34ff5dd0f5a18df00591adcee7198fbd71981054cef37b584"},
+    {file = "pydantic-2.10.6.tar.gz", hash = "sha256:ca5daa827cce33de7a42be142548b0096bf05a7e7b365aebfa5f8eeec7128236"},
 ]
 
 [package.dependencies]
@@ -4641,13 +4641,13 @@ snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[
 
 [[package]]
 name = "surya-ocr"
-version = "0.9.1"
+version = "0.9.2"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "surya_ocr-0.9.1-py3-none-any.whl", hash = "sha256:837c43382208ff8cbe10976cb80c0e63039b86db5a7244f15dcc23467530908f"},
-    {file = "surya_ocr-0.9.1.tar.gz", hash = "sha256:0a3d084455d880151b43884fd7a4d2942d7a88741fd7c21f88e49f4f4af9f9e1"},
+    {file = "surya_ocr-0.9.2-py3-none-any.whl", hash = "sha256:95866f38a05d97c7faad7d82fb7d95f96df6cf9471617b7a6fa01ba5b1367622"},
+    {file = "surya_ocr-0.9.2.tar.gz", hash = "sha256:ae57c7de6b4507ef4db30c18cee387d2d6e69d15e6708789b0ce2a4412713984"},
 ]
 
 [package.dependencies]
@@ -5489,4 +5489,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "958f917c22da2ff290f6196257c3867f878c2848925b382ad4990f7fb7e6a40c"
+content-hash = "f38cc17855cc95babd721161782ec64728a1061602236fe2845519d027966482"
