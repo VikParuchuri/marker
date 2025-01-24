@@ -233,7 +233,7 @@ No corrections needed.
                 cell_polygon = PolygonBox.from_bbox(cell_bbox)
 
                 cell_obj = TableCell(
-                    text=cell_text,
+                    text_lines=[cell_text],
                     row_id=i,
                     col_id=cur_col,
                     rowspan=rowspan,

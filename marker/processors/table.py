@@ -112,7 +112,7 @@ class TableProcessor(BaseProcessor):
 
                     cell_block = TableCell(
                         polygon=cell_polygon,
-                        text=self.finalize_cell_text(cell),
+                        text_lines=self.finalize_cell_text(cell),
                         rowspan=cell.rowspan,
                         colspan=cell.colspan,
                         row_id=cell.row_id,
@@ -135,10 +135,16 @@ class TableProcessor(BaseProcessor):
                         page.structure.remove(child.id)
 
     def finalize_cell_text(self, cell: SuryaTableCell):
-        text = "\n".join([t["text"].strip() for t in cell.text_lines]) if cell.text_lines else ""
-        text = re.sub(r"(\s\.){2,}", "", text)  # Replace . . .
-        text = re.sub(r"\.{2,}", "", text)  # Replace ..., like in table of contents
-        return self.normalize_spaces(fix_text(text))
+        fixed_text = []
+        text_lines = cell.text_lines if cell.text_lines else []
+        for line in text_lines:
+            text = line["text"].strip()
+            if not text or text == ".":
+                continue
+            text = re.sub(r"(\s\.){2,}", "", text)  # Replace . . .
+            text = re.sub(r"\.{2,}", "", text)  # Replace ..., like in table of contents
+            fixed_text.append(self.normalize_spaces(fix_text(text)))
+        return fixed_text
 
     @staticmethod
     def normalize_spaces(text):
