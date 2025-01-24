@@ -1,5 +1,6 @@
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+from typing import Annotated, Optional
 
 from tqdm import tqdm
 
@@ -14,37 +15,35 @@ from marker.settings import settings
 class BaseLLMProcessor(BaseProcessor):
     """
     A processor for using LLMs to convert blocks.
-    Attributes:
-        google_api_key (str):
-            The Google API key to use for the Gemini model.
-            Default is None.
-        model_name (str):
-            The name of the Gemini model to use.
-            Default is "gemini-1.5-flash".
-        max_retries (int):
-            The maximum number of retries to use for the Gemini model.
-            Default is 3.
-        max_concurrency (int):
-            The maximum number of concurrent requests to make to the Gemini model.
-            Default is 3.
-        timeout (int):
-            The timeout for requests to the Gemini model.
-        gemini_rewriting_prompt (str):
-            The prompt to use for rewriting text.
-            Default is a string containing the Gemini rewriting prompt.
-        use_llm (bool):
-            Whether to use the LLM model.
-            Default is False.
     """
-
-    google_api_key: Optional[str] = settings.GOOGLE_API_KEY
-    model_name: str = "gemini-1.5-flash"
-    use_llm: bool = False
-    max_retries: int = 3
-    max_concurrency: int = 3
-    timeout: int = 60
-    image_expansion_ratio: float = 0.01
-    gemini_rewriting_prompt = None
+    google_api_key: Annotated[
+        str,
+        "The Google API key to use for the Gemini model.",
+    ] = settings.GOOGLE_API_KEY
+    model_name: Annotated[
+        str,
+        "The name of the Gemini model to use.",
+    ] = "gemini-1.5-flash"
+    max_retries: Annotated[
+        int,
+        "The maximum number of retries to use for the Gemini model.",
+    ] = 3
+    max_concurrency: Annotated[
+        int,
+        "The maximum number of concurrent requests to make to the Gemini model.",
+    ] = 3
+    timeout: Annotated[
+        int,
+        "The timeout for requests to the Gemini model.",
+    ] = 60
+    image_expansion_ratio: Annotated[
+        float,
+        "The ratio to expand the image by when cropping.",
+    ] = 0.01
+    use_llm: Annotated[
+        bool,
+        "Whether to use the LLM model.",
+    ] = False
     block_types = None
 
     def __init__(self, config=None):
@@ -69,6 +68,11 @@ class BaseLLMProcessor(BaseProcessor):
         raise NotImplementedError()
 
     def rewrite_blocks(self, document: Document):
+        # Don't show progress if there are no blocks to process
+        total_blocks = sum(len(page.contained_blocks(document, self.block_types)) for page in document.pages)
+        if total_blocks == 0:
+            return
+
         pbar = tqdm(desc=f"{self.__class__.__name__} running")
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             for future in as_completed([
@@ -81,10 +85,5 @@ class BaseLLMProcessor(BaseProcessor):
 
         pbar.close()
 
-    def extract_image(self, page: PageGroup, image_block: Block):
-        page_img = page.lowres_image
-        image_box = image_block.polygon\
-            .rescale(page.polygon.size, page_img.size)\
-            .expand(self.image_expansion_ratio, self.image_expansion_ratio)
-        cropped = page_img.crop(image_box.bbox)
-        return cropped
+    def extract_image(self, document: Document, image_block: Block):
+        return image_block.get_image(document, highres=True, expansion=(self.image_expansion_ratio, self.image_expansion_ratio))

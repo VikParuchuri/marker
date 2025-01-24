@@ -1,7 +1,5 @@
 import os
 
-from marker.converters.pdf import PdfConverter
-
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
@@ -46,7 +44,7 @@ def process_single_pdf(args):
     if cli_options.get('skip_existing') and output_exists(out_folder, base_name):
         return
 
-    converter_cls = PdfConverter
+    converter_cls = config_parser.get_converter_cls()
 
     try:
         converter = converter_cls(
@@ -102,7 +100,7 @@ def convert_cli(in_folder: str, **kwargs):
     else:
         model_dict = create_model_dict()
         for k, v in model_dict.items():
-            v.share_memory()
+            v.model.share_memory()
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {kwargs['chunk_idx'] + 1}/{kwargs['num_chunks']} with {total_processes} processes and saving to {kwargs['output_dir']}")
     task_args = [(f, kwargs) for f in files_to_convert]

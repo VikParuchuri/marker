@@ -7,12 +7,20 @@ class Text(Block):
     has_continuation: bool = False
     blockquote: bool = False
     blockquote_level: int = 0
+    html: str | None = None
+    block_description: str = "A paragraph or line of text."
 
-    def assemble_html(self, child_blocks, parent_structure):
+    def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
 
-        template = super().assemble_html(child_blocks, parent_structure)
+        # This happens when we used an llm processor
+        if self.html:
+            child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
+            html = super().assemble_html(document, child_ref_blocks, parent_structure)
+            return html + self.html
+
+        template = super().assemble_html(document, child_blocks, parent_structure)
         template = template.replace("\n", " ")
 
         el_attr = f" block-type='{self.block_type}'"

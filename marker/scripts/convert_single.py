@@ -1,7 +1,5 @@
 import os
 
-from marker.converters.pdf import PdfConverter
-
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for a simple op, which is not supported on MPS
@@ -26,7 +24,7 @@ def convert_single_cli(fpath: str, **kwargs):
     start = time.time()
     config_parser = ConfigParser(kwargs)
 
-    converter_cls = PdfConverter
+    converter_cls = config_parser.get_converter_cls()
     converter = converter_cls(
         config=config_parser.generate_config_dict(),
         artifact_dict=models,

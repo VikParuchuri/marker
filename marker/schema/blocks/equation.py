@@ -7,10 +7,13 @@ from marker.schema.blocks import Block
 class Equation(Block):
     block_type: BlockTypes = BlockTypes.Equation
     latex: str | None = None
+    block_description: str = "A block math equation."
 
-    def assemble_html(self, child_blocks, parent_structure=None):
+    def assemble_html(self, document, child_blocks, parent_structure=None):
         if self.latex:
-            html_out = f"<p block-type='{self.block_type}'>"
+            child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
+            html_out = super().assemble_html(document, child_ref_blocks, parent_structure)
+            html_out += f"<p block-type='{self.block_type}'>"
 
             try:
                 latex = self.parse_latex(html.escape(self.latex))
@@ -31,7 +34,7 @@ class Equation(Block):
             html_out += "</p>"
             return html_out
         else:
-            template = super().assemble_html(child_blocks, parent_structure)
+            template = super().assemble_html(document, child_blocks, parent_structure)
             return f"<p block-type='{self.block_type}'>{template}</p>"
 
     @staticmethod
@@ -43,9 +46,9 @@ class Equation(Block):
             ("$$", "block"),
             ("$", "inline")
         ]
-        
-        text = text.replace("\n", "<br>") # we can't handle \n's inside <p> properly if we don't do this
-       
+
+        text = text.replace("\n", "<br>")  # we can't handle \n's inside <p> properly if we don't do this
+
         i = 0
         stack = []
         result = []
@@ -72,7 +75,7 @@ class Equation(Block):
             else:  # No delimiter match
                 buffer += text[i]
                 i += 1
-                
+
         if buffer:
             result.append({"class": "text", "content": buffer})
         return result

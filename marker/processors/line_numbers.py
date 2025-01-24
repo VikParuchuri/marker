@@ -1,13 +1,29 @@
+from typing import Annotated
+
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
 
 
 class LineNumbersProcessor(BaseProcessor):
+    """
+    A processor for ignoring line numbers.
+    """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    strip_numbers_threshold: int = .6
-    min_lines_in_block: int = 4
-    min_line_length: int = 10
+    strip_numbers_threshold: Annotated[
+        float,
+        "The fraction of lines or tokens in a block that must be numeric to consider them as line numbers.",
+    ] = 0.6
+    min_lines_in_block: Annotated[
+        int,
+        "The minimum number of lines required in a block for it to be considered during processing.",
+        "Ensures that small blocks are ignored as they are unlikely to contain meaningful line numbers.",
+    ] = 4
+    min_line_length: Annotated[
+        int,
+        "The minimum length of a line (in characters) to consider it significant when checking for",
+        "numeric prefixes or suffixes. Prevents false positives for short lines.",
+    ] = 10
 
     def __init__(self, config):
         super().__init__(config)
@@ -27,10 +43,9 @@ class LineNumbersProcessor(BaseProcessor):
                 tokens_are_numbers = [token.isdigit() for token in tokens]
                 if all([
                     sum(tokens_are_numbers) / len(tokens) > self.strip_numbers_threshold,
-                    block.polygon.height > block.polygon.width # Ensure block is taller than it is wide, like vertical page numbers
+                    block.polygon.height > block.polygon.width  # Ensure block is taller than it is wide, like vertical page numbers
                 ]):
                     block.ignore_for_output = True
-
 
     def ignore_line_starts_ends(self, document: Document):
         for page in document.pages:
@@ -57,7 +72,7 @@ class LineNumbersProcessor(BaseProcessor):
                         len(raw_text) - len(spans[0].text.strip()) > self.min_line_length
                     ])
 
-                    ends= all([
+                    ends = all([
                         spans[-1].text.strip().isdigit(),
                         len(raw_text) - len(spans[-1].text.strip()) > self.min_line_length
                     ])
@@ -76,4 +91,3 @@ class LineNumbersProcessor(BaseProcessor):
                         if ends:
                             span = page.get_block(line.structure[-1])
                             span.ignore_for_output = True
-

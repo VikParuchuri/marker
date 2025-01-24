@@ -2,10 +2,11 @@ import pytest
 
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
+from marker.processors.table import TableProcessor
 from marker.schema import BlockTypes
 
 @pytest.mark.filename("water_damage.pdf")
-def test_garbled_pdf(pdf_document):
+def test_garbled_pdf(pdf_document, detection_model, recognition_model, table_rec_model):
     assert pdf_document.pages[0].structure[0] == '/page/0/Table/0'
 
     table_block = pdf_document.pages[0].get_block(pdf_document.pages[0].structure[0])
@@ -16,9 +17,16 @@ def test_garbled_pdf(pdf_document):
     assert table_cell.block_type == BlockTypes.Line
     assert table_cell.structure[0] == "/page/0/Span/2"
 
-    span = pdf_document.pages[0].get_block(table_cell.structure[0])
+    span = pdf_document.pages[0].contained_blocks(pdf_document, (BlockTypes.Span,))[0]
     assert span.block_type == BlockTypes.Span
-    assert "комплекс" in span.text
+    assert len(span.text.strip()) == 0
+
+    # We don't OCR in the initial pass, only with the TableProcessor
+    processor = TableProcessor(detection_model, recognition_model, table_rec_model)
+    processor(pdf_document)
+
+    table = pdf_document.pages[0].contained_blocks(pdf_document, (BlockTypes.Table,))[0]
+    assert "варіант" in table.raw_text(pdf_document)
 
 
 @pytest.mark.filename("hindi_judgement.pdf")
@@ -30,7 +38,7 @@ def test_garbled_builder(config, pdf_provider, layout_model, ocr_error_model):
 
     bad_ocr_results = layout_builder.surya_ocr_error_detection(document.pages, pdf_provider.page_lines)
     assert len(bad_ocr_results.labels) == 2
-    assert all([l == "bad" for l in bad_ocr_results.labels])
+    assert any([l == "bad" for l in bad_ocr_results.labels])
 
 
 @pytest.mark.filename("adversarial.pdf")

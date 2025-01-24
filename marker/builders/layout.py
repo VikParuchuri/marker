@@ -1,15 +1,11 @@
-from typing import List
+from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
-from surya.layout import batch_layout_detection
-from surya.schema import LayoutResult
-from surya.model.layout.encoderdecoder import SuryaLayoutModel
+from surya.layout import LayoutPredictor
+from surya.layout.schema import LayoutResult, LayoutBox
+from surya.ocr_error import OCRErrorPredictor
+from surya.ocr_error.schema import OCRErrorDetectionResult
 
-from surya.ocr_error import batch_ocr_error_detection
-from surya.schema import OCRErrorDetectionResult
-from surya.model.ocr_error.model import DistilBertForSequenceClassification
-
-from marker.settings import settings
 from marker.builders import BaseBuilder
 from marker.providers import ProviderOutput, ProviderPageLines
 from marker.providers.pdf import PdfProvider
@@ -18,49 +14,55 @@ from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
+from marker.settings import settings
 from marker.util import matrix_intersection_area
 
 
 class LayoutBuilder(BaseBuilder):
     """
     A builder for performing layout detection on PDF pages and merging the results into the document.
-
-    Attributes:
-        batch_size (int):
-            The batch size to use for the layout model.
-            Default is None, which will use the default batch size for the model.
-
-        layout_coverage_min_lines (int):
-            The minimum number of PdfProvider lines that must be covered by the layout model
-            to consider the lines from the PdfProvider valid. Default is 1.
-
-        layout_coverage_threshold (float):
-            The minimum coverage ratio required for the layout model to consider
-            the lines from the PdfProvider valid. Default is 0.3.
-
-        document_ocr_threshold (float):
-            The minimum ratio of pages that must pass the layout coverage check
-            to avoid OCR. Default is 0.8.
-
-        error_model_segment_length (int):
-            The maximum number of characters to send to the OCR error model.
-            Default is 1024.
     """
-    batch_size = None
-    layout_coverage_min_lines = 1
-    layout_coverage_threshold = .1
-    document_ocr_threshold = .8
-    error_model_segment_length = 512
-    excluded_for_coverage = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
+    batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the layout model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    layout_coverage_min_lines: Annotated[
+        int,
+        "The minimum number of PdfProvider lines that must be covered by the layout model",
+        "to consider the lines from the PdfProvider valid.",
+    ] = 1
+    layout_coverage_threshold: Annotated[
+        float,
+        "The minimum coverage ratio required for the layout model to consider",
+        "the lines from the PdfProvider valid.",
+    ] = .1
+    document_ocr_threshold: Annotated[
+        float,
+        "The minimum ratio of pages that must pass the layout coverage check",
+        "to avoid OCR.",
+    ] = .8
+    excluded_for_coverage: Annotated[
+        Tuple[BlockTypes],
+        "A list of block types to exclude from the layout coverage check.",
+    ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
+    force_layout_block: Annotated[
+        str,
+        "Skip layout and force every page to be treated as a specific block type.",
+    ] = None
 
-    def __init__(self, layout_model: SuryaLayoutModel, ocr_error_model: DistilBertForSequenceClassification, config=None):
+    def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         self.layout_model = layout_model
         self.ocr_error_model = ocr_error_model
 
         super().__init__(config)
 
     def __call__(self, document: Document, provider: PdfProvider):
-        layout_results = self.surya_layout(document.pages)
+        if self.force_layout_block is not None:
+            # Assign the full content of every page to a single layout type
+            layout_results = self.forced_layout(document.pages)
+        else:
+            layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
         self.merge_blocks(document.pages, provider.page_lines)
 
@@ -71,12 +73,29 @@ class LayoutBuilder(BaseBuilder):
             return 6
         return 6
 
+    def forced_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
+        layout_results = []
+        for page in pages:
+            layout_results.append(
+                LayoutResult(
+                    image_bbox=page.polygon.bbox,
+                    bboxes=[
+                        LayoutBox(
+                            label=self.force_layout_block,
+                            position=0,
+                            top_k={self.force_layout_block: 1},
+                            polygon=page.polygon.polygon,
+                        ),
+                    ],
+                    sliced=False
+                )
+            )
+        return layout_results
+
+
     def surya_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:
-        processor = self.layout_model.processor
-        layout_results = batch_layout_detection(
-            [p.lowres_image for p in pages],
-            self.layout_model,
-            processor,
+        layout_results = self.layout_model(
+            [p.get_image(highres=False) for p in pages],
             batch_size=int(self.get_batch_size())
         )
         return layout_results
@@ -86,22 +105,11 @@ class LayoutBuilder(BaseBuilder):
         for document_page in pages:
             page_text = ''
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            for line in provider_lines:
-                page_text += ' '.join([s.text for s in line.spans])
-
-            # Sample text from the middle
-            if len(page_text) > 0:
-                page_text_middle = len(page_text) // 2
-                page_text_start = max(0, page_text_middle - self.error_model_segment_length // 2)
-                page_text_end = page_text_start + self.error_model_segment_length
-                page_text = page_text[page_text_start:page_text_end]
-
+            page_text = '\n'.join(' '.join(s.text for s in line.spans) for line in provider_lines)
             page_texts.append(page_text)
 
-        ocr_error_detection_results = batch_ocr_error_detection(
+        ocr_error_detection_results = self.ocr_error_model(
             page_texts,
-            self.ocr_error_model,
-            self.ocr_error_model.tokenizer,
             batch_size=int(self.get_batch_size())       #TODO Better Multiplier
         )
         return ocr_error_detection_results

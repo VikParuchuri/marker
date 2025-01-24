@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
 
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
@@ -9,6 +10,7 @@ from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.table import TableProcessor
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
+from marker.schema.blocks import ComplexRegion
 
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
@@ -33,13 +35,11 @@ def test_llm_form_processor_no_cells(pdf_document):
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_form_processor(pdf_document, detection_model, table_rec_model, recognition_model, mocker):
-    corrected_markdown = "*This is corrected markdown.*\n" * 100
-
     corrected_html = "<em>This is corrected markdown.</em>\n" * 100
     corrected_html = "<p>" + corrected_html.strip() + "</p>\n"
 
     mock_cls = Mock()
-    mock_cls.return_value.generate_response.return_value = {"corrected_markdown": corrected_markdown}
+    mock_cls.return_value.generate_response.return_value = {"corrected_html": corrected_html}
     mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
 
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)
@@ -49,7 +49,7 @@ def test_llm_form_processor(pdf_document, detection_model, table_rec_model, reco
     processor(pdf_document)
 
     forms = pdf_document.contained_blocks((BlockTypes.Form,))
-    assert forms[0].html == corrected_html
+    assert forms[0].html == corrected_html.strip()
 
 
 
@@ -90,7 +90,8 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
     processor(pdf_document)
 
     tables = pdf_document.contained_blocks((BlockTypes.Table,))
-    assert tables[0].cells[0].text == "Column 1"
+    table_cells = tables[0].contained_blocks(pdf_document, (BlockTypes.TableCell,))
+    assert table_cells[0].text == "Column 1"
 
 
 @pytest.mark.filename("adversarial.pdf")
@@ -139,3 +140,29 @@ def test_llm_caption_processor(pdf_document, mocker):
     md = renderer(pdf_document).markdown
 
     assert description in md
+
+
+@pytest.mark.filename("A17_FlightPlan.pdf")
+@pytest.mark.config({"page_range": [0]})
+def test_llm_complex_region_processor(pdf_document, mocker):
+    md = "This is some *markdown* for a complex region."
+    mock_cls = Mock()
+    mock_cls.return_value.generate_response.return_value = {"corrected_markdown": md * 25}
+    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
+
+    # Replace the block with a complex region
+    old_block = pdf_document.pages[0].children[0]
+    new_block = ComplexRegion(
+        **old_block.dict(exclude=["id", "block_id", "block_type"]),
+    )
+    pdf_document.pages[0].replace_block(old_block, new_block)
+
+    # Test processor
+    processor = LLMComplexRegionProcessor({"use_llm": True, "google_api_key": "test"})
+    processor(pdf_document)
+
+    # Ensure the rendering includes the description
+    renderer = MarkdownRenderer()
+    rendered_md = renderer(pdf_document).markdown
+
+    assert md in rendered_md

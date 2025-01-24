@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Annotated
 
 import requests
 from PIL import Image, ImageDraw, ImageFont
@@ -13,39 +14,36 @@ from marker.settings import settings
 class DebugProcessor(BaseProcessor):
     """
     A processor for debugging the document.
-
-    Attributes:
-        debug_data_folder (str):
-            The folder to dump debug data to.
-            Default is "debug_data".
-
-        debug_layout_images (bool):
-            Whether to dump layout debug images.
-            Default is False.
-
-        debug_pdf_images (bool):
-            Whether to dump PDF debug images.
-            Default is False.
-
-        debug_json (bool):
-            Whether to dump block debug data.
-            Default is False.
-
-        render_font (str):
-            The path to the font to use for rendering debug images.
-            Default is "GoNotoCurrent-Regular.ttf" in the FONT_DIR folder.
-
-        font_dl_path (str):
-            The path to download the font from.
-            Default is "https://github.com/satbyy/go-noto-universal/releases/download/v7.0".
     """
-    block_types = tuple()
-    debug_data_folder: str = "debug_data"
-    debug_layout_images: bool = False
-    debug_pdf_images: bool = False
-    debug_json: bool = False
-    render_font: str = os.path.join(settings.FONT_DIR, "GoNotoCurrent-Regular.ttf")
-    font_dl_path: str = "https://github.com/satbyy/go-noto-universal/releases/download/v7.0"
+    block_types: Annotated[
+        tuple,
+        "The block types to process.",
+        "Default is an empty tuple."
+    ] = tuple()
+    debug_data_folder: Annotated[
+        str,
+        "The folder to dump debug data to.",
+    ] = "debug_data"
+    debug_layout_images: Annotated[
+        bool,
+        "Whether to dump layout debug images.",
+    ] = False
+    debug_pdf_images: Annotated[
+        bool,
+        "Whether to dump PDF debug images.",
+    ] = False
+    debug_json: Annotated[
+        bool,
+        "Whether to dump block debug data.",
+    ] = False
+    render_font: Annotated[
+        str,
+        "The path to the font to use for rendering debug images.",
+    ] = os.path.join(settings.FONT_DIR, "GoNotoCurrent-Regular.ttf")
+    font_dl_path: Annotated[
+        str,
+        "The path to download the font from.",
+    ] = "https://github.com/satbyy/go-noto-universal/releases/download/v7.0"
 
     def __call__(self, document: Document):
         # Remove extension from doc name
@@ -70,7 +68,7 @@ class DebugProcessor(BaseProcessor):
 
     def draw_pdf_debug_images(self, document: Document):
         for page in document.pages:
-            png_image = page.highres_image.copy()
+            png_image = page.get_image(highres=True).copy()
 
             line_bboxes = []
             span_bboxes = []
@@ -90,10 +88,9 @@ class DebugProcessor(BaseProcessor):
             debug_file = os.path.join(self.debug_folder, f"pdf_page_{page.page_id}.png")
             png_image.save(debug_file)
 
-
     def draw_layout_debug_images(self, document: Document, pdf_mode=False):
         for page in document.pages:
-            img_size = page.highres_image.size
+            img_size = page.get_image(highres=True).size
             png_image = Image.new("RGB", img_size, color="white")
 
             line_bboxes = []
@@ -112,7 +109,6 @@ class DebugProcessor(BaseProcessor):
 
             debug_file = os.path.join(self.debug_folder, f"layout_page_{page.page_id}.png")
             png_image.save(debug_file)
-
 
     def render_layout_boxes(self, page, png_image):
         layout_bboxes = []
@@ -144,7 +140,7 @@ class DebugProcessor(BaseProcessor):
         debug_file = os.path.join(self.debug_folder, f"blocks.json")
         debug_data = []
         for page in document.pages:
-            page_data = page.model_dump(exclude=["lowres_image", "highres_image"])
+            page_data = page.model_dump(exclude={"lowres_image": True, "highres_image": True, "children": {"__all__": {"lowres_image": True, "highres_image": True}}})
             debug_data.append(page_data)
 
         with open(debug_file, "w+") as f:

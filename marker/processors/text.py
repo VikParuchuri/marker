@@ -1,5 +1,5 @@
 import math
-from typing import List
+from typing import Annotated, List
 
 import regex
 
@@ -12,15 +12,13 @@ from marker.schema.text.line import Line
 class TextProcessor(BaseProcessor):
     """
     A processor for merging text across pages and columns.
-
-    Attributes:
-        column_gap_ratio (float):
-            The minimum ratio of the page width to the column gap to consider a column break.
-            Default is 0.02.
     """
     block_types = (BlockTypes.Text, BlockTypes.TextInlineMath)
     ignored_block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)
-    column_gap_ratio = 0.02  # column gaps are atleast 2% of the current column width
+    column_gap_ratio: Annotated[
+        float,
+        "The minimum ratio of the page width to the column gap to consider a column break.",
+    ] = 0.02
 
     def __init__(self, config):
         super().__init__(config)
@@ -35,14 +33,14 @@ class TextProcessor(BaseProcessor):
                     continue
 
                 next_block = document.get_next_block(block, self.ignored_block_types)
-                if next_block is None: # we've reached the end of the document
+                if next_block is None:  # we've reached the end of the document
                     continue
                 if next_block.block_type not in self.block_types:
-                    continue # we found a non-text block
+                    continue  # we found a non-text block
                 if next_block.structure is None:
                     continue  # This is odd though, why do we have text blocks with no structure?
                 if next_block.ignore_for_output:
-                    continue # skip ignored blocks
+                    continue  # skip ignored blocks
 
                 column_gap = block.polygon.width * self.column_gap_ratio
 
@@ -53,7 +51,7 @@ class TextProcessor(BaseProcessor):
                 last_line_is_hyphentated = False
                 new_block_lines = []
 
-                if next_block.page_id == block.page_id: # block on the same page
+                if next_block.page_id == block.page_id:  # block on the same page
                     # we check for a column break
                     column_break = (
                         math.floor(next_block.polygon.y_start) <= math.ceil(block.polygon.y_start) and
@@ -63,11 +61,11 @@ class TextProcessor(BaseProcessor):
                     page_break = True
                     next_page = document.get_page(next_block.page_id)
                     next_block_in_first_quadrant = (next_block.polygon.x_start < next_page.polygon.width // 2) and \
-                                        (next_block.polygon.y_start < next_page.polygon.height // 2)
+                        (next_block.polygon.y_start < next_page.polygon.height // 2)
 
                 if not (column_break or page_break):
                     continue
-    
+
                 new_block_lines = next_block.structure_blocks(document)
 
                 # we check for next_block indentation
