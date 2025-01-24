@@ -98,7 +98,7 @@ class Markdownify(MarkdownConverter):
                     col_idx += 1
 
                 # Fill in grid
-                value = get_text_with_br(cell).replace("\n", " ").replace("|", " ")
+                value = get_text_with_br(cell).replace("\n", " ").replace("|", " ").strip()
                 rowspan = int(cell.get('rowspan', 1))
                 colspan = int(cell.get('colspan', 1))
 
