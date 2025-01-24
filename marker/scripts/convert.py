@@ -86,7 +86,7 @@ def convert_cli(in_folder: str, **kwargs):
         files_to_convert = files_to_convert[:kwargs["max_files"]]
 
     # Disable nested multiprocessing
-    kwargs["disable_multiprocessing"] = True
+    kwargs["pdftext_workers"] = 1
 
     total_processes = min(len(files_to_convert), kwargs["workers"])
 

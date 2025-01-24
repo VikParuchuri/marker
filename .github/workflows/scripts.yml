@@ -27,3 +27,5 @@ jobs:
         run: poetry run marker_single benchmark_data/pdfs/switch_trans.pdf --page_range 0
       - name: Test convert script
         run: poetry run marker benchmark_data/pdfs --max_files 1 --workers 1 --page_range 0
+      - name: Text convert script multiple workers
+        run: poetry run marker benchmark_data/pdfs --max_files 2 --workers 2 --page_range 0-5
