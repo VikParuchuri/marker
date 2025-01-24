@@ -41,7 +41,7 @@ class CustomClickPrinter(click.Command):
                         ["--" + attr],
                         type=info['type'],
                         help=" ".join(info['metadata']) + f" (Applies to: {', '.join(info['classes'])})",
-                        default=info['default'],
+                        default=None, # This is important, or it sets all the default keys again in config
                         is_flag=info['is_flag'],
                     )
                 )
@@ -71,6 +71,7 @@ class CustomClickPrinter(click.Command):
                                 type=attr_type,
                                 help=" ".join(metadata),
                                 is_flag=is_flag,
+                                default=None # This is important, or it sets all the default keys again in config
                             )
                         )
 
