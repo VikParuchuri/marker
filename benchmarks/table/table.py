@@ -175,6 +175,7 @@ def main(
                 for th_tag in marker_table_soup.find_all('th'):
                     th_tag.name = 'td'
                 marker_table_html = str(marker_table_soup)
+                marker_table_html = marker_table_html.replace("<br>", " ") # Fintabnet uses spaces instead of newlines
                 marker_table_html = marker_table_html.replace("\n", " ") # Fintabnet uses spaces instead of newlines
                 gemini_table_html = gemini_table.replace("\n", " ") # Fintabnet uses spaces instead of newlines
 
