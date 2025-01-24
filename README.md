@@ -3,9 +3,9 @@
 Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
 
 - Supports a range of documents in all languages
-- Removes headers/footers/other artifacts
-- Formats tables, forms, equations, links, and code blocks
+- Formats tables, forms, equations, links, references, and code blocks
 - Extracts and saves images along with the markdown
+- Removes headers/footers/other artifacts
 - Easily extensible with your own formatting and logic
 - Optionally boost accuracy with an LLM
 - Works on GPU, CPU, or MPS
@@ -16,7 +16,7 @@ Marker is a pipeline of deep learning models:
 
 - Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
 - Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
-- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify). [tabled](https://github.com/VikParuchuri/tabled))
+- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify), [surya](https://github.com/VikParuchuri/surya))
 - Optionally use an LLM to improve quality
 - Combine blocks and postprocess complete text
 
