@@ -168,11 +168,13 @@ class Markdownify(MarkdownConverter):
     def convert_a(self, el, text, convert_as_inline):
         text = self.escape(text)
         text = re.sub(r"([\[\]])", r"\\\1", text)
-        return super().convert_a(el, self.escape(text), convert_as_inline)
+        return super().convert_a(el, text, convert_as_inline)
 
     def convert_span(self, el, text, convert_as_inline):
-        return f'<span id="{el["id"]}"/>'
-
+        if el.get("id"):
+            return f'<span id="{el["id"]}">{text}</span>'
+        else:
+            return text
 
 class MarkdownOutput(BaseModel):
     markdown: str
