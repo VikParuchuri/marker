@@ -172,11 +172,11 @@ No corrections needed.
         return parsed_cells
 
     @staticmethod
-    def get_cell_text(element, keep_tags=('br',)):
+    def get_cell_text(element, keep_tags=('br','i', 'b', 'span', 'math')) -> str:
         for tag in element.find_all(True):
             if tag.name not in keep_tags:
                 tag.unwrap()
-        return element.decode_contents().replace("<br>", "\n")
+        return element.decode_contents()
 
     def parse_html_table(self, html_text: str, block: Block, page: PageGroup) -> List[TableCell]:
         soup = BeautifulSoup(html_text, 'html.parser')

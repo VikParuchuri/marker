@@ -45,7 +45,7 @@ def test_markdown_renderer_tables(pdf_document):
 
     cell = TableCell(
         polygon=table.polygon,
-        text_lines=["54<i>.45</i>67<br>89"],
+        text_lines=["54<i>.45</i>67<br>89<math>x</math>"],
         rowspan=1,
         colspan=1,
         row_id=0,
@@ -59,6 +59,6 @@ def test_markdown_renderer_tables(pdf_document):
 
     renderer = MarkdownRenderer()
     md = renderer(pdf_document).markdown
-    assert "54 .45 67<br>89" in md
+    assert "54 <i>.45</i> 67<br>89 $x$" in md
 
 

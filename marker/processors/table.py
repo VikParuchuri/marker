@@ -49,6 +49,10 @@ class TableProcessor(BaseProcessor):
         List[BlockTypes],
         "Block types to remove if they're contained inside the tables."
     ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+    ] = 4
 
     def __init__(
         self,
@@ -273,7 +277,7 @@ class TableProcessor(BaseProcessor):
                 "tables": tables,
                 "img_size": img_size
             })
-        cell_text = table_output(filepath, table_inputs, page_range=unique_pages)
+        cell_text = table_output(filepath, table_inputs, page_range=unique_pages, workers=self.pdftext_workers)
         assert len(cell_text) == len(unique_pages), "Number of pages and table inputs must match"
 
         for pidx, (page_tables, pnum) in enumerate(zip(cell_text, unique_pages)):

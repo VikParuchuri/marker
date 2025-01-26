@@ -17,15 +17,23 @@ def cleanup_text(full_text):
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
     return full_text.strip()
 
-def get_text_with_br(element):
+def get_formatted_table_text(element):
     text = []
-    for content in element.descendants:
+    for content in element.contents:
+        if content is None:
+            continue
+
         if isinstance(content, NavigableString):
             stripped = content.strip()
             if stripped:
                 text.append(stripped)
         elif content.name == 'br':
             text.append('<br>')
+        elif content.name == "math":
+            text.append("$" + content.text + "$")
+        else:
+            text.append(str(content))
+
     full_text = ""
     for i, t in enumerate(text):
         if t == '<br>':
@@ -98,7 +106,7 @@ class Markdownify(MarkdownConverter):
                     col_idx += 1
 
                 # Fill in grid
-                value = get_text_with_br(cell).replace("\n", " ").replace("|", " ")
+                value = get_formatted_table_text(cell).replace("\n", " ").replace("|", " ").strip()
                 rowspan = int(cell.get('rowspan', 1))
                 colspan = int(cell.get('colspan', 1))
 
@@ -160,11 +168,13 @@ class Markdownify(MarkdownConverter):
     def convert_a(self, el, text, convert_as_inline):
         text = self.escape(text)
         text = re.sub(r"([\[\]])", r"\\\1", text)
-        return super().convert_a(el, self.escape(text), convert_as_inline)
+        return super().convert_a(el, text, convert_as_inline)
 
     def convert_span(self, el, text, convert_as_inline):
-        return f'<span id="{el["id"]}"/>'
-
+        if el.get("id"):
+            return f'<span id="{el["id"]}">{text}</span>'
+        else:
+            return text
 
 class MarkdownOutput(BaseModel):
     markdown: str

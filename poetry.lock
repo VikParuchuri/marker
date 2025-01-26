@@ -4589,13 +4589,13 @@ tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
 name = "starlette"
-version = "0.45.2"
+version = "0.45.3"
 description = "The little ASGI library that shines."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "starlette-0.45.2-py3-none-any.whl", hash = "sha256:4daec3356fb0cb1e723a5235e5beaf375d2259af27532958e2d79df549dad9da"},
-    {file = "starlette-0.45.2.tar.gz", hash = "sha256:bba1831d15ae5212b22feab2f218bab6ed3cd0fc2dc1d4442443bb1ee52260e0"},
+    {file = "starlette-0.45.3-py3-none-any.whl", hash = "sha256:dfb6d332576f136ec740296c7e8bb8c8a7125044e7c6da30744718880cdd059d"},
+    {file = "starlette-0.45.3.tar.gz", hash = "sha256:2cbcba2a75806f8a41c722141486f37c28e30a0921c5f6fe4346cb0dcee1302f"},
 ]
 
 [package.dependencies]
@@ -4641,13 +4641,13 @@ snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[
 
 [[package]]
 name = "surya-ocr"
-version = "0.9.2"
+version = "0.9.3"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "surya_ocr-0.9.2-py3-none-any.whl", hash = "sha256:95866f38a05d97c7faad7d82fb7d95f96df6cf9471617b7a6fa01ba5b1367622"},
-    {file = "surya_ocr-0.9.2.tar.gz", hash = "sha256:ae57c7de6b4507ef4db30c18cee387d2d6e69d15e6708789b0ce2a4412713984"},
+    {file = "surya_ocr-0.9.3-py3-none-any.whl", hash = "sha256:6013131f3af004f93ab5422dfa8c49a83aa72beb2f8120fd59dca04803d98009"},
+    {file = "surya_ocr-0.9.3.tar.gz", hash = "sha256:a69347a3c85c04d48e3df62d11f045dc13e22ab8b3efebfdae1dd94f05a25b99"},
 ]
 
 [package.dependencies]
@@ -5489,4 +5489,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f38cc17855cc95babd721161782ec64728a1061602236fe2845519d027966482"
+content-hash = "6eb647ac20025351bfd8048a8407855c8f0a51760a2944f1da6c3685b9a8ada7"
