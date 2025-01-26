@@ -62,7 +62,7 @@ class CommonParams(BaseModel):
     ] = None
     languages: Annotated[
         Optional[str],
-        Field(description="Comma separated list of languages to use for OCR. Must be either the names or codes from from https://github.com/VikParuchuri/surya/blob/master/surya/languages.py.", example=None)
+        Field(description="Comma separated list of languages to use for OCR. Must be either the names or codes from from https://github.com/VikParuchuri/surya/blob/master/surya/recognition/languages.py.", example=None)
     ] = None
     force_ocr: Annotated[
         bool,
