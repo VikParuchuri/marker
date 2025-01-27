@@ -135,7 +135,9 @@ class TableProcessor(BaseProcessor):
             for block in page.contained_blocks(document, self.block_types):
                 intersections = matrix_intersection_area([c.polygon.bbox for c in child_contained_blocks], [block.polygon.bbox])
                 for child, intersection in zip(child_contained_blocks, intersections):
-                    if intersection > 0.95 and child.id in page.structure:
+                    # Adjust this to percentage of the child block that is enclosed by the table
+                    intersection_pct = intersection / max(child.polygon.area, 1)
+                    if intersection_pct > 0.95 and child.id in page.structure:
                         page.structure.remove(child.id)
 
     def finalize_cell_text(self, cell: SuryaTableCell):
@@ -284,7 +286,11 @@ class TableProcessor(BaseProcessor):
             table_idx = 0
             for block in extract_blocks:
                 if block["page_id"] == pnum:
-                    block["table_text_lines"] = page_tables[table_idx]
+                    table_text = page_tables[table_idx]
+                    if len(table_text) == 0:
+                        block["ocr_block"] = True # Re-OCR the block if pdftext didn't find any text
+                    else:
+                        block["table_text_lines"] = page_tables[table_idx]
                     table_idx += 1
             assert table_idx == len(page_tables), "Number of tables and table inputs must match"
 
