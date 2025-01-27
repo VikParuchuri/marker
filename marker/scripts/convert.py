@@ -1,7 +1,5 @@
 import os
 
-from marker.converters.pdf import PdfConverter
-
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a simple op, which is not supported on MPS
@@ -46,7 +44,7 @@ def process_single_pdf(args):
     if cli_options.get('skip_existing') and output_exists(out_folder, base_name):
         return
 
-    converter_cls = PdfConverter
+    converter_cls = config_parser.get_converter_cls()
 
     try:
         converter = converter_cls(
@@ -65,12 +63,12 @@ def process_single_pdf(args):
 
 @click.command(cls=CustomClickPrinter)
 @click.argument("in_folder", type=str)
-@ConfigParser.common_options
 @click.option("--chunk_idx", type=int, default=0, help="Chunk index to convert")
 @click.option("--num_chunks", type=int, default=1, help="Number of chunks being processed in parallel")
 @click.option("--max_files", type=int, default=None, help="Maximum number of pdfs to convert")
 @click.option("--workers", type=int, default=5, help="Number of worker processes to use.")
 @click.option("--skip_existing", is_flag=True, default=False, help="Skip existing converted files.")
+@ConfigParser.common_options
 def convert_cli(in_folder: str, **kwargs):
     in_folder = os.path.abspath(in_folder)
     files = [os.path.join(in_folder, f) for f in os.listdir(in_folder)]
@@ -102,7 +100,7 @@ def convert_cli(in_folder: str, **kwargs):
     else:
         model_dict = create_model_dict()
         for k, v in model_dict.items():
-            v.share_memory()
+            v.model.share_memory()
 
     print(f"Converting {len(files_to_convert)} pdfs in chunk {kwargs['chunk_idx'] + 1}/{kwargs['num_chunks']} with {total_processes} processes and saving to {kwargs['output_dir']}")
     task_args = [(f, kwargs) for f in files_to_convert]

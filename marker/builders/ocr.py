@@ -1,9 +1,8 @@
-from typing import List
+from typing import Annotated, List, Optional
 
 from ftfy import fix_text
-from surya.model.detection.model import EfficientViTForSemanticSegmentation
-from surya.model.recognition.encoderdecoder import OCREncoderDecoderModel
-from surya.ocr import run_ocr
+from surya.detection import DetectionPredictor
+from surya.recognition import RecognitionPredictor
 
 from marker.builders import BaseBuilder
 from marker.providers import ProviderOutput, ProviderPageLines
@@ -20,24 +19,28 @@ from marker.settings import settings
 class OcrBuilder(BaseBuilder):
     """
     A builder for performing OCR on PDF pages and merging the results into the document.
-
-    Attributes:
-        detection_batch_size (int):
-            The batch size to use for the detection model.
-            Default is None, which will use the default batch size for the model.
-
-        recognition_batch_size (int):
-            The batch size to use for the recognition model.
-            Default is None, which will use the default batch size for the model.
-
-        languages (List[str]):
-            A list of languages to use for OCR. Default is None.
     """
-    recognition_batch_size: int | None = None
-    detection_batch_size: int | None = None
-    languages: List[str] | None = None
+    recognition_batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the recognition model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    detection_batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the detection model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    languages: Annotated[
+        Optional[List[str]],
+        "A list of languages to use for OCR.",
+        "Default is None."
+    ] = None
+    enable_table_ocr: Annotated[
+        bool,
+        "Whether to skip OCR on tables.  The TableProcessor will re-OCR them.  Only enable if the TableProcessor is not running.",
+    ] = False
 
-    def __init__(self, detection_model: EfficientViTForSemanticSegmentation, recognition_model: OCREncoderDecoderModel, config=None):
+    def __init__(self, detection_model: DetectionPredictor, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
 
         self.detection_model = detection_model
@@ -65,16 +68,15 @@ class OcrBuilder(BaseBuilder):
 
     def ocr_extraction(self, document: Document, provider: PdfProvider) -> ProviderPageLines:
         page_list = [page for page in document.pages if page.text_extraction_method == "surya"]
-        recognition_results = run_ocr(
-            images=[page.lowres_image for page in page_list],
+
+        # Remove tables because we re-OCR them later with the table processor
+        recognition_results = self.recognition_model(
+            images=[page.get_image(highres=False, remove_tables=not self.enable_table_ocr) for page in page_list],
             langs=[self.languages] * len(page_list),
-            det_model=self.detection_model,
-            det_processor=self.detection_model.processor,
-            rec_model=self.recognition_model,
-            rec_processor=self.recognition_model.processor,
+            det_predictor=self.detection_model,
             detection_batch_size=int(self.get_detection_batch_size()),
             recognition_batch_size=int(self.get_recognition_batch_size()),
-            highres_images=[page.highres_image for page in page_list]
+            highres_images=[page.get_image(highres=True, remove_tables=not self.enable_table_ocr) for page in page_list]
         )
 
         page_lines = {}

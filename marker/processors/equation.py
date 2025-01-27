@@ -1,9 +1,10 @@
-from typing import List
+from typing import Annotated, List, Optional, Tuple
 
 from texify.inference import batch_inference
 from texify.model.model import GenerateVisionEncoderDecoderModel
 from tqdm import tqdm
 
+from marker.models import TexifyPredictor
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
@@ -13,26 +14,26 @@ from marker.settings import settings
 class EquationProcessor(BaseProcessor):
     """
     A processor for recognizing equations in the document.
-
-    Attributes:
-        model_max_length (int):
-            The maximum number of tokens to allow for the Texify model.
-            Default is 384.
-
-        batch_size (int):
-            The batch size to use for the Texify model.
-            Default is None, which will use the default batch size for the model.
-
-        token_buffer (int):
-            The number of tokens to buffer above max for the Texify model.
-            Default is 256.
     """
-    block_types = (BlockTypes.Equation, )
-    model_max_length = 384
-    texify_batch_size = None
-    token_buffer = 256
+    block_types: Annotated[
+        Tuple[BlockTypes],
+        "The block types to process.",
+    ] = (BlockTypes.Equation,)
+    model_max_length: Annotated[
+        int,
+        "The maximum number of tokens to allow for the Texify model.",
+    ] = 384
+    texify_batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the Texify model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    token_buffer: Annotated[
+        int,
+        "The number of tokens to buffer above max for the Texify model.",
+    ] = 256
 
-    def __init__(self, texify_model: GenerateVisionEncoderDecoderModel, config=None):
+    def __init__(self, texify_model: TexifyPredictor, config=None):
         super().__init__(config)
 
         self.texify_model = texify_model
@@ -42,8 +43,7 @@ class EquationProcessor(BaseProcessor):
 
         for page in document.pages:
             for block in page.contained_blocks(document, self.block_types):
-                image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.lowres_image.size)
-                image = page.lowres_image.crop(image_poly.bbox).convert("RGB")
+                image = block.get_image(document, highres=False).convert("RGB")
                 raw_text = block.raw_text(document)
                 token_count = self.get_total_texify_tokens(raw_text)
 
@@ -65,7 +65,27 @@ class EquationProcessor(BaseProcessor):
                 continue
 
             block = document.get_block(equation_d["block_id"])
-            block.latex = prediction
+            block.html = self.parse_latex_to_html(prediction)
+
+    def parse_latex_to_html(self, latex: str):
+        html_out = ""
+        try:
+            latex = self.parse_latex(latex)
+        except ValueError as e:
+            # If we have mismatched delimiters, we'll treat it as a single block
+            # Strip the $'s from the latex
+            latex = [
+                {"class": "block", "content": latex.replace("$", "")}
+            ]
+
+        for el in latex:
+            if el["class"] == "block":
+                html_out += f'<math display="block">{el["content"]}</math>'
+            elif el["class"] == "inline":
+                html_out += f'<math display="inline">{el["content"]}</math>'
+            else:
+                html_out += f" {el['content']} "
+        return html_out.strip()
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:
@@ -92,10 +112,8 @@ class EquationProcessor(BaseProcessor):
 
             batch_images = [eq["image"] for eq in batch_equations]
 
-            model_output = batch_inference(
+            model_output = self.texify_model(
                 batch_images,
-                self.texify_model,
-                self.texify_model.processor,
                 max_tokens=max_length
             )
 
@@ -112,3 +130,47 @@ class EquationProcessor(BaseProcessor):
         tokenizer = self.texify_model.processor.tokenizer
         tokens = tokenizer(text)
         return len(tokens["input_ids"])
+
+
+    @staticmethod
+    def parse_latex(text: str):
+        if text.count("$") % 2 != 0:
+            raise ValueError("Mismatched delimiters in LaTeX")
+
+        DELIMITERS = [
+            ("$$", "block"),
+            ("$", "inline")
+        ]
+
+        text = text.replace("\n", "<br>")  # we can't handle \n's inside <p> properly if we don't do this
+
+        i = 0
+        stack = []
+        result = []
+        buffer = ""
+
+        while i < len(text):
+            for delim, class_name in DELIMITERS:
+                if text[i:].startswith(delim):
+                    if stack and stack[-1] == delim:  # Closing
+                        stack.pop()
+                        result.append({"class": class_name, "content": buffer})
+                        buffer = ""
+                        i += len(delim)
+                        break
+                    elif not stack:  # Opening
+                        if buffer:
+                            result.append({"class": "text", "content": buffer})
+                        stack.append(delim)
+                        buffer = ""
+                        i += len(delim)
+                        break
+                    else:
+                        raise ValueError(f"Nested {class_name} delimiters not supported")
+            else:  # No delimiter match
+                buffer += text[i]
+                i += 1
+
+        if buffer:
+            result.append({"class": "text", "content": buffer})
+        return result

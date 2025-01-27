@@ -1,4 +1,5 @@
 import json
+import textwrap
 
 from marker.processors.llm import BaseLLMProcessor
 from bs4 import BeautifulSoup
@@ -12,11 +13,11 @@ from marker.schema.text.span import Span
 
 
 class LLMTextProcessor(BaseLLMProcessor):
-    block_types = (BlockTypes.TextInlineMath, BlockTypes.Handwriting)
-    gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
+    block_types = (BlockTypes.TextInlineMath,)
+    text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
-The number of output lines MUST match the number of input lines.
+The number of output lines MUST match the number of input lines.  Stay as faithful to the original text as possible.
 
 **Instructions:**
 
@@ -64,7 +65,9 @@ Output:
 ```
 
 **Input:**
-
+```json
+{extracted_lines}
+```
 """
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
@@ -73,8 +76,8 @@ Output:
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))
         extracted_lines = [line.formatted_text(document) for line in text_lines]
 
-        prompt = self.gemini_rewriting_prompt + '```json\n`' + json.dumps({"extracted_lines": extracted_lines}, indent=2) + '`\n```\n'
-        image = self.extract_image(page, block)
+        prompt = self.text_math_rewriting_prompt.replace("{extracted_lines}", json.dumps({"extracted_lines": extracted_lines}, indent=2))
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],

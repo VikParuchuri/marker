@@ -1,9 +1,9 @@
 import os
-
-from marker.settings import settings
-
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["IN_STREAMLIT"] = "true"
+
+from marker.settings import settings
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 import base64
 import io
@@ -89,21 +89,24 @@ def markdown_insert_images(markdown, images):
 
 @st.cache_data()
 def get_page_image(pdf_file, page_num, dpi=96):
-    doc = open_pdf(pdf_file)
-    renderer = doc.render(
-        pypdfium2.PdfBitmap.to_pil,
-        page_indices=[page_num],
-        scale=dpi / 72,
-    )
-    png = list(renderer)[0]
-    png_image = png.convert("RGB")
+    if "pdf" in pdf_file.type:
+        doc = open_pdf(pdf_file)
+        page = doc[page_num]
+        png_image = page.render(
+            scale=dpi / 72,
+        ).to_pil().convert("RGB")
+    else:
+        png_image = Image.open(pdf_file).convert("RGB")
     return png_image
 
 
 @st.cache_data()
-def page_count(pdf_file):
-    doc = open_pdf(pdf_file)
-    return len(doc) - 1
+def page_count(pdf_file: UploadedFile):
+    if "pdf" in pdf_file.type:
+        doc = open_pdf(pdf_file)
+        return len(doc) - 1
+    else:
+        return 1
 
 
 def pillow_image_to_base64_string(img: Image) -> str:
@@ -140,12 +143,12 @@ model_dict = load_models()
 st.markdown("""
 # Marker Demo
 
-This app will let you try marker, a PDF -> Markdown converter. It works with any languages, and extracts images, tables, equations, etc.
+This app will let you try marker, a PDF or image -> Markdown, HTML, JSON converter. It works with any language, and extracts images, tables, equations, etc.
 
 Find the project [here](https://github.com/VikParuchuri/marker).
 """)
 
-in_file = st.sidebar.file_uploader("PDF file:", type=["pdf"])
+in_file: UploadedFile = st.sidebar.file_uploader("PDF or image file:", type=["pdf", "png", "jpg", "jpeg", "gif"])
 
 if in_file is None:
     st.stop()

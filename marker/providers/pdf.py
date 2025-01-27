@@ -1,13 +1,15 @@
 import atexit
 import ctypes
 import re
-from typing import List, Set
+from typing import Annotated, Dict, List, Optional, Set
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
 from pdftext.extraction import dictionary_output
+from pdftext.schema import Reference
 from PIL import Image
+from pypdfium2 import PdfiumError
 
 from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
 from marker.providers.utils import alphanum_ratio
@@ -19,22 +21,62 @@ from marker.schema.text.span import Span
 
 
 class PdfProvider(BaseProvider):
-    page_range: List[int] | None = None
-    pdftext_workers: int = 4
-    flatten_pdf: bool = True
-    force_ocr: bool = False
-    ocr_invalid_chars: tuple = (chr(0xfffd), "�")
-    ocr_space_threshold: float = .7
-    ocr_newline_threshold: float = .6
-    ocr_alphanum_threshold: float = .3
-    image_threshold: float = .65
-    strip_existing_ocr: bool = False
+    """
+    A provider for PDF files.
+    """
+
+    page_range: Annotated[
+        Optional[List[int]],
+        "The range of pages to process.",
+        "Default is None, which will process all pages."
+    ] = None
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+    ] = 4
+    flatten_pdf: Annotated[
+        bool,
+        "Whether to flatten the PDF structure.",
+    ] = True
+    force_ocr: Annotated[
+        bool,
+        "Whether to force OCR on the whole document.",
+    ] = False
+    ocr_invalid_chars: Annotated[
+        tuple,
+        "The characters to consider invalid for OCR.",
+    ] = (chr(0xfffd), "�")
+    ocr_space_threshold: Annotated[
+        float,
+        "The minimum ratio of spaces to non-spaces to detect bad text.",
+    ] = .7
+    ocr_newline_threshold: Annotated[
+        float,
+        "The minimum ratio of newlines to non-newlines to detect bad text.",
+    ] = .6
+    ocr_alphanum_threshold: Annotated[
+        float,
+        "The minimum ratio of alphanumeric characters to non-alphanumeric characters to consider an alphanumeric character.",
+    ] = .3
+    image_threshold: Annotated[
+        float,
+        "The minimum coverage ratio of the image to the page to consider skipping the page.",
+    ] = .65
+    strip_existing_ocr: Annotated[
+        bool,
+        "Whether to strip existing OCR text from the PDF.",
+    ] = False
+    disable_links: Annotated[
+        bool,
+        "Whether to disable links.",
+    ] = False
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
 
         self.doc: pdfium.PdfDocument = pdfium.PdfDocument(self.filepath)
         self.page_lines: ProviderPageLines = {i: [] for i in range(len(self.doc))}
+        self.page_refs: Dict[int, List[Reference]] = {i: [] for i in range(len(self.doc))}
 
         if self.page_range is None:
             self.page_range = range(len(self.doc))
@@ -50,6 +92,9 @@ class PdfProvider(BaseProvider):
 
         atexit.register(self.cleanup_pdf_doc)
 
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.cleanup_pdf_doc()
+
     def __len__(self) -> int:
         return len(self.doc)
 
@@ -57,7 +102,7 @@ class PdfProvider(BaseProvider):
         if self.doc is not None:
             self.doc.close()
 
-    def font_flags_to_format(self, flags: int | None) -> Set[str]:
+    def font_flags_to_format(self, flags: Optional[int]) -> Set[str]:
         if flags is None:
             return {"plain"}
 
@@ -108,6 +153,19 @@ class PdfProvider(BaseProvider):
             formats.add("italic")
         return formats
 
+    @staticmethod
+    def normalize_spaces(text):
+        space_chars = [
+            '\u2003',  # em space
+            '\u2002',  # en space
+            '\u00A0',  # non-breaking space
+            '\u200B',  # zero-width space
+            '\u3000',  # ideographic space
+        ]
+        for space in space_chars:
+            text = text.replace(space, ' ')
+        return text
+
     def pdftext_extraction(self) -> ProviderPageLines:
         page_lines: ProviderPageLines = {}
         page_char_blocks = dictionary_output(
@@ -116,12 +174,14 @@ class PdfProvider(BaseProvider):
             keep_chars=False,
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf,
-            quote_loosebox=False
+            quote_loosebox=False,
+            disable_links=self.disable_links
         )
         self.page_bboxes = {i: [0, 0, page["width"], page["height"]] for i, page in zip(self.page_range, page_char_blocks)}
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
+
         for page in page_char_blocks:
             page_id = page["page"]
             lines: List[ProviderOutput] = []
@@ -142,7 +202,7 @@ class PdfProvider(BaseProvider):
                         spans.append(
                             SpanClass(
                                 polygon=polygon,
-                                text=fix_text(span["text"]),
+                                text=self.normalize_spaces(fix_text(span["text"])),
                                 font=font_name,
                                 font_weight=font_weight,
                                 font_size=font_size,
@@ -150,7 +210,8 @@ class PdfProvider(BaseProvider):
                                 maximum_position=span["char_end_idx"],
                                 formats=list(font_formats),
                                 page_id=page_id,
-                                text_extraction_method="pdftext"
+                                text_extraction_method="pdftext",
+                                url=span.get("url"),
                             )
                         )
                     polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
@@ -162,6 +223,8 @@ class PdfProvider(BaseProvider):
                     )
             if self.check_line_spans(lines):
                 page_lines[page_id] = lines
+            self.page_refs[page_id] = page["refs"]
+
         return page_lines
 
     def check_line_spans(self, page_lines: List[ProviderOutput]) -> bool:
@@ -182,41 +245,43 @@ class PdfProvider(BaseProvider):
     def check_page(self, page_id: int) -> bool:
         page = self.doc.get_page(page_id)
         page_bbox = PolygonBox.from_bbox(page.get_bbox())
-        page_objs = list(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_TEXT, pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+        try:
+            page_objs = list(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_TEXT, pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+        except PdfiumError:
+            # Happens when pdfium fails to get the number of page objects
+            return False
 
         # if we do not see any text objects in the pdf, we can skip this page
         if not any([obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT for obj in page_objs]):
             return False
 
-        if not self.strip_existing_ocr:
-            return True
+        if self.strip_existing_ocr:
+            # If any text objects on the page are in invisible render mode, skip this page
+            for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+                if pdfium_c.FPDFTextObj_GetTextRenderMode(text_obj) in [pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_UNKNOWN]:
+                    return False
 
-        # If any text objects on the page are in invisible render mode, skip this page
-        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
-            if pdfium_c.FPDFTextObj_GetTextRenderMode(text_obj) in [pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_UNKNOWN]:
+            non_embedded_fonts = []
+            empty_fonts = []
+            font_map = {}
+            for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
+                font = pdfium_c.FPDFTextObj_GetFont(text_obj)
+                font_name = self._get_fontname(font)
+
+                # we also skip pages without embedded fonts and fonts without names
+                non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
+                empty_fonts.append(not font_name or font_name == "GlyphLessFont")
+                if font_name not in font_map:
+                    font_map[font_name or 'Unknown'] = font
+
+            if all(non_embedded_fonts) or all(empty_fonts):
                 return False
 
-        non_embedded_fonts = []
-        empty_fonts = []
-        font_map = {}
-        for text_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT, page_objs):
-            font = pdfium_c.FPDFTextObj_GetFont(text_obj)
-            font_name = self.get_fontname(font)
-    
-            # we also skip pages without embedded fonts and fonts without names
-            non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
-            empty_fonts.append(not font_name or font_name == "GlyphLessFont")
-            if font_name not in font_map:
-                font_map[font_name or 'Unknown'] = font
-
-        if all(non_embedded_fonts) or all(empty_fonts):
-            return False
-
-        # if we see very large images covering most of the page, we can skip this page
-        for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
-            img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
-            if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
-                return False
+            # if we see very large images covering most of the page, we can skip this page
+            for img_obj in filter(lambda obj: obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE, page_objs):
+                img_bbox = PolygonBox.from_bbox(img_obj.get_pos())
+                if page_bbox.intersection_pct(img_bbox) >= self.image_threshold:
+                    return False
 
         return True
 
@@ -263,10 +328,14 @@ class PdfProvider(BaseProvider):
     def get_page_lines(self, idx: int) -> List[ProviderOutput]:
         return self.page_lines[idx]
 
-    def get_fontname(self, font) -> str:
+    def get_page_refs(self, idx: int) -> List[Reference]:
+        return self.page_refs[idx]
+
+    @staticmethod
+    def _get_fontname(font) -> str:
         font_name = ""
-        buffer_size = 256 
-        
+        buffer_size = 256
+
         try:
             font_name_buffer = ctypes.create_string_buffer(buffer_size)
             length = pdfium_c.FPDFFont_GetBaseFontName(font, font_name_buffer, buffer_size)

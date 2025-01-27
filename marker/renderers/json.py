@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Dict, List
+from typing import Annotated, Dict, List, Tuple
 
 from pydantic import BaseModel
 
@@ -16,7 +14,8 @@ class JSONBlockOutput(BaseModel):
     block_type: str
     html: str
     polygon: List[List[float]]
-    children: List[JSONBlockOutput] | None = None
+    bbox: List[float]
+    children: List['JSONBlockOutput'] | None = None
     section_hierarchy: Dict[int, str] | None = None
     images: dict | None = None
 
@@ -35,8 +34,17 @@ def reformat_section_hierarchy(section_hierarchy):
 
 
 class JSONRenderer(BaseRenderer):
-    image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
-    page_blocks: list = [BlockTypes.Page]
+    """
+    A renderer for JSON output.
+    """
+    image_blocks: Annotated[
+        Tuple[BlockTypes],
+        "The list of block types to consider as images.",
+    ] = (BlockTypes.Picture, BlockTypes.Figure)
+    page_blocks: Annotated[
+        Tuple[BlockTypes],
+        "The list of block types to consider as pages.",
+    ] = (BlockTypes.Page,)
 
     def extract_json(self, document: Document, block_output: BlockOutput):
         cls = get_block_class(block_output.id.block_type)
@@ -45,6 +53,7 @@ class JSONRenderer(BaseRenderer):
             return JSONBlockOutput(
                 html=html,
                 polygon=block_output.polygon.polygon,
+                bbox=block_output.polygon.bbox,
                 id=str(block_output.id),
                 block_type=str(block_output.id.block_type),
                 images=images,
@@ -59,6 +68,7 @@ class JSONRenderer(BaseRenderer):
             return JSONBlockOutput(
                 html=block_output.html,
                 polygon=block_output.polygon.polygon,
+                bbox=block_output.polygon.bbox,
                 id=str(block_output.id),
                 block_type=str(block_output.id.block_type),
                 children=children,

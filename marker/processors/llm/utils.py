@@ -1,5 +1,6 @@
 import json
 import time
+from typing import List
 
 import PIL
 import google.generativeai as genai
@@ -25,17 +26,19 @@ class GoogleModel:
     def generate_response(
             self,
             prompt: str,
-            image: PIL.Image.Image,
+            image: PIL.Image.Image | List[PIL.Image.Image],
             block: Block,
             response_schema: content.Schema,
             max_retries: int = 3,
             timeout: int = 60
     ):
+        if not isinstance(image, list):
+            image = [image]
         tries = 0
         while tries < max_retries:
             try:
                 responses = self.model.generate_content(
-                    [prompt, image],
+                    image + [prompt], # According to gemini docs, it performs better if the image is the first element
                     stream=False,
                     generation_config={
                         "temperature": 0,

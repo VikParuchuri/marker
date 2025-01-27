@@ -1,57 +1,89 @@
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false" # disables a tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
 from collections import defaultdict
-from typing import Any, Dict, List, Type
+from functools import cache
+from typing import Annotated, Any, Dict, List, Optional, Type, Tuple
 
+from marker.processors import BaseProcessor
+from marker.processors.llm.llm_table_merge import LLMTableMergeProcessor
+from marker.providers.registry import provider_from_filepath
 from marker.builders.document import DocumentBuilder
-from marker.builders.llm_layout import LLMLayoutBuilder
 from marker.builders.layout import LayoutBuilder
+from marker.builders.llm_layout import LLMLayoutBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
 from marker.converters import BaseConverter
-from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
 from marker.processors.blockquote import BlockquoteProcessor
 from marker.processors.code import CodeProcessor
 from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
 from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
-from marker.processors.llm.llm_form import LLMFormProcessor
-from marker.processors.llm.llm_table import LLMTableProcessor
-from marker.processors.llm.llm_text import LLMTextProcessor
-from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
 from marker.processors.list import ListProcessor
+from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
+from marker.processors.llm.llm_form import LLMFormProcessor
+from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
+from marker.processors.llm.llm_table import LLMTableProcessor
+from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.page_header import PageHeaderProcessor
+from marker.processors.reference import ReferenceProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
 from marker.processors.table import TableProcessor
 from marker.processors.text import TextProcessor
-from marker.providers.pdf import PdfProvider
+from marker.processors.llm.llm_equation import LLMEquationProcessor
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.registry import register_block_class
 from marker.util import strings_to_classes
+from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
 
 
 class PdfConverter(BaseConverter):
     """
     A converter for processing and rendering PDF files into Markdown, JSON, HTML and other formats.
-
-    Attributes:
-        override_map (Dict[BlockTypes, Type[Block]]):
-            A mapping to override the default block classes for specific block types. 
-            The keys are `BlockTypes` enum values, representing the types of blocks, 
-            and the values are corresponding `Block` class implementations to use 
-            instead of the defaults.
     """
-    override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
-    use_llm: bool = False
+    override_map: Annotated[
+        Dict[BlockTypes, Type[Block]],
+        "A mapping to override the default block classes for specific block types.",
+        "The keys are `BlockTypes` enum values, representing the types of blocks,",
+        "and the values are corresponding `Block` class implementations to use",
+        "instead of the defaults."
+    ] = defaultdict()
+    use_llm: Annotated[
+        bool,
+        "Enable higher quality processing with LLMs.",
+    ] = False
+    default_processors: Tuple[BaseProcessor, ...] = (
+        BlockquoteProcessor,
+        CodeProcessor,
+        DocumentTOCProcessor,
+        EquationProcessor,
+        FootnoteProcessor,
+        IgnoreTextProcessor,
+        LineNumbersProcessor,
+        ListProcessor,
+        PageHeaderProcessor,
+        SectionHeaderProcessor,
+        TableProcessor,
+        LLMTableProcessor,
+        LLMTableMergeProcessor,
+        LLMFormProcessor,
+        TextProcessor,
+        LLMTextProcessor,
+        LLMComplexRegionProcessor,
+        LLMImageDescriptionProcessor,
+        LLMEquationProcessor,
+        LLMHandwritingProcessor,
+        ReferenceProcessor,
+        DebugProcessor,
+    )
 
-    def __init__(self, artifact_dict: Dict[str, Any], processor_list: List[str] | None = None, renderer: str | None = None, config=None):
+    def __init__(self, artifact_dict: Dict[str, Any], processor_list: Optional[List[str]] = None, renderer: str | None = None, config=None):
         super().__init__(config)
 
         for block_type, override_block_type in self.override_map.items():
@@ -60,26 +92,7 @@ class PdfConverter(BaseConverter):
         if processor_list:
             processor_list = strings_to_classes(processor_list)
         else:
-            processor_list = [
-                BlockquoteProcessor,
-                CodeProcessor,
-                DocumentTOCProcessor,
-                EquationProcessor,
-                FootnoteProcessor,
-                IgnoreTextProcessor,
-                LineNumbersProcessor,
-                ListProcessor,
-                PageHeaderProcessor,
-                SectionHeaderProcessor,
-                TableProcessor,
-                LLMTableProcessor,
-                LLMFormProcessor,
-                TextProcessor,
-                LLMTextProcessor,
-                LLMComplexRegionProcessor,
-                LLMImageDescriptionProcessor,
-                DebugProcessor,
-            ]
+            processor_list = self.default_processors
 
         if renderer:
             renderer = strings_to_classes([renderer])[0]
@@ -113,11 +126,13 @@ class PdfConverter(BaseConverter):
 
         return cls(**resolved_kwargs)
 
+    @cache
     def build_document(self, filepath: str):
-        pdf_provider = PdfProvider(filepath, self.config)
+        provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
-        document = DocumentBuilder(self.config)(pdf_provider, layout_builder, ocr_builder)
+        with provider_cls(filepath, self.config) as provider:
+            document = DocumentBuilder(self.config)(provider, layout_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
         for processor_cls in self.processor_list:

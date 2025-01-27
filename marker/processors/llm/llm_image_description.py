@@ -7,11 +7,20 @@ from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 
+from typing import Annotated
+
 
 class LLMImageDescriptionProcessor(BaseLLMProcessor):
     block_types = (BlockTypes.Picture, BlockTypes.Figure,)
-    extract_images: bool = True
-    image_description_prompt = """You are a document analysis expert who specializes in creating text descriptions for images.
+    extract_images: Annotated[
+        bool,
+        "Extract images from the document."
+    ] = True
+    image_description_prompt: Annotated[
+        str,
+        "The prompt to use for generating image descriptions.",
+        "Default is a string containing the Gemini prompt."
+    ] = """You are a document analysis expert who specializes in creating text descriptions for images.
 You will receive an image of a picture or figure.  Your job will be to create a short description of the image.
 **Instructions:**
 1. Carefully examine the provided image.
@@ -27,6 +36,9 @@ Apples, Bananas, Oranges
 Output:
 In this figure, a bar chart titled "Fruit Preference Survey" is showing the number of people who prefer different types of fruits.  The x-axis shows the types of fruits, and the y-axis shows the number of people.  The bar chart shows that most people prefer apples, followed by bananas and oranges.  20 people prefer apples, 15 people prefer bananas, and 10 people prefer oranges.
 **Input:**
+```text
+{raw_text}
+```
 """
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
@@ -35,8 +47,8 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
             # Since this processor replaces images with descriptions
             return
 
-        prompt = self.image_description_prompt + '```text\n`' + block.raw_text(document) + '`\n```\n'
-        image = self.extract_image(page, block)
+        prompt = self.image_description_prompt.replace("{raw_text}", block.raw_text(document))
+        image = self.extract_image(document, block)
         response_schema = content.Schema(
             type=content.Type.OBJECT,
             enum=[],
