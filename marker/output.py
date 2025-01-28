@@ -1,12 +1,30 @@
 import json
 import os
 
+from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 from marker.renderers.html import HTMLOutput
-from marker.renderers.json import JSONOutput
+from marker.renderers.json import JSONOutput, JSONBlockOutput
 from marker.renderers.markdown import MarkdownOutput
 from marker.settings import settings
+
+def json_to_html(block: JSONBlockOutput):
+    # Utility function to take in json block output and give html for the block.
+    if not getattr(block, "children", None):
+        return block.html
+    else:
+        child_html = [json_to_html(child) for child in block.children]
+        child_ids = [child.id for child in block.children]
+
+        soup = BeautifulSoup(block.html, "html.parser")
+        content_refs = soup.find_all("content-ref")
+        for ref in content_refs:
+            src_id = ref.attrs["src"]
+            if src_id in child_ids:
+                child_soup = BeautifulSoup(child_html[child_ids.index(src_id)], "html.parser")
+                ref.replace_with(child_soup)
+        return str(soup)
 
 
 def output_exists(output_dir: str, fname_base: str):
