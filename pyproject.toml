@@ -12,7 +12,7 @@ packages = [
 ]
 include = [
     "marker/scripts/*.sh",
-    "marker/scripts/marker/scripts/streamlit_app_blocks_viz.html",
+    "marker/scripts/*.html",
 ]
 
 [tool.poetry.dependencies]
