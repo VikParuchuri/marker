@@ -28,7 +28,7 @@ from marker.models import create_model_dict
 
 from scoring import wrap_table_html, similarity_eval_html
 from gemini import gemini_table_rec
-from ground_truth_forcing import GroundTruthPagesForcer, ChangedTableConverter, convert_to_page
+from input_word_bboxes import GroundTruthPagesForcer, ChangedTableConverter, convert_to_page
 
 def update_teds_score(result, prefix: str = "marker"):
     prediction, ground_truth = result[f'{prefix}_table'], result['gt_table']

@@ -1,5 +1,7 @@
 """
 Convert synthtabnet dataset into huggingface
+Source: see https://github.com/IBM/SynthTabNet.
+Annotation file will be called synthetic_data.jsonl.
 """
 import json
 import io
@@ -8,12 +10,13 @@ import PIL
 from tqdm import tqdm
 import datasets
 
+dataset_variant_names = ["fintabnet", "marketing", "pubtabnet", "sparse"]
 
+DATASET_NAME = 'pubtabnet'
+DATASET_VARIANT = dataset_variant_names.index(DATASET_NAME)
+assert DATASET_VARIANT != -1
 ANNOTATION_LOCATION: str # Path to .../synthetic_data.jsonl
 TEST_IMAGES_LOCATION: str # Directory containing images
-dataset_variant_names = ["fintabnet", "marketing", "pubtabnet", "sparse"]
-DATASET_VARIANT = 3
-DATASET_NAME = dataset_variant_names[DATASET_VARIANT]
 
 print("Processing", DATASET_NAME)
 
