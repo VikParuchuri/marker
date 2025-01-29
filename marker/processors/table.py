@@ -226,7 +226,8 @@ class TableProcessor(BaseProcessor):
                             new_cell_count += 1
 
                     # For each new row we add, shift up subsequent rows
-                    shift_up += line_lens[0] - 1
+                    # The max is to account for partial rows
+                    shift_up += max(line_lens) - 1
                 else:
                     for cell in row_cells:
                         cell.row_id += shift_up
