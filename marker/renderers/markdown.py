@@ -181,6 +181,12 @@ class Markdownify(MarkdownConverter):
         else:
             return text
 
+    def escape(self, text):
+        text = super().escape(text)
+        if self.options['escape_dollars']:
+            text = text.replace('$', r'\$')
+        return text
+
 class MarkdownOutput(BaseModel):
     markdown: str
     images: dict
@@ -203,6 +209,7 @@ class MarkdownRenderer(HTMLRenderer):
             escape_misc=False,
             escape_underscores=False,
             escape_asterisks=False,
+            escape_dollars=True,
             sub_symbol="<sub>",
             sup_symbol="<sup>",
             inline_math_delimiters=self.inline_math_delimiters,

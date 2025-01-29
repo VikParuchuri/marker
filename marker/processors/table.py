@@ -3,7 +3,6 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import Annotated, List
 from collections import Counter
-from PIL import ImageDraw
 
 from ftfy import fix_text
 from surya.detection import DetectionPredictor
