@@ -4,11 +4,10 @@ on: [push]
 
 env:
   TORCH_DEVICE: "cpu"
-  OCR_ENGINE: "surya"
 
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.11
