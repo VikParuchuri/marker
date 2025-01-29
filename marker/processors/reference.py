@@ -7,7 +7,6 @@ from marker.schema.document import Document
 from marker.schema.groups.list import ListGroup
 from marker.schema.groups.table import TableGroup
 from marker.schema.registry import get_block_class
-from marker.schema.groups.picture import PictureGroup
 from marker.schema.groups.figure import FigureGroup
 
 

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            font-family: "Source Sans Pro",sans-serif;
+            font-weight: 400;
+            -moz-osx-font-smoothing: auto
+        }
+
+        .tippy-box {
+            font-size: 10px
+        }
+
+        .image-container {
+            position: relative;
+            width: 90%
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto
+        }
+
+        .blocks-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%
+        }
+
+        .blocks-overlay rect.block {
+            fill-opacity: .2;
+            stroke-opacity: .5
+        }
+
+        .blocks-overlay rect.block:hover {
+            stroke-opacity: 1;
+            cursor: pointer
+        }
+
+        #block-info-dialog {
+            width: 65%
+        }
+
+        #block-info-dialog button.close-button {
+            font-size: 20px;
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin: 0;
+            border: 0;
+            background: 0 0;
+            padding: 0 4px 0 0;
+            cursor: pointer
+        }
+
+        #block-info-dialog button.close-button:focus {
+            outline: 0
+        }
+
+        #block-info-dialog button.close-button::after {
+            content: "╳"
+        }
+
+        #block-info-dialog button.copy-json-button {
+            font-size: 10px;
+            color: #bababa;
+            cursor: pointer;
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            border: 0;
+            background: 0 0
+        }
+
+        #block-info-dialog button.copy-json-button:hover {
+            color: #666
+        }
+
+        #block-info-dialog button.copy-json-button:active {
+            color: #000
+        }
+
+        #block-info-dialog h1 {
+            margin: 0 0 10px;
+            text-align: left;
+            font-size: 1em
+        }
+
+        #block-info-dialog .text-content {
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre
+        }
+
+        #block-info-dialog .images {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px
+        }
+
+        #block-info-dialog .images img {
+            max-width: 40%;
+            height: auto
+        }
+    </style>
+  </head>
+  <body>
+    <div style="text-align: center" class="image-container">
+      <dialog id="block-info-dialog">
+        <button 
+          class="close-button"
+          onclick="document.querySelector('#block-info-dialog').close()"
+        ></button>
+        <h1></h1>
+        <div class="text-content"></div>
+        <div class="images"></div>
+        <button
+          class="copy-json-button"
+          onclick="navigator.clipboard.writeText(this.parentNode.dataset.blockJSON)">
+          copy block JSON
+        </button>
+      </dialog>
+      <img
+        src="$image_data_url"
+        style="max-width: 100%; height: auto"
+        alt="Image"
+      />
+      <svg
+        class="blocks-overlay"
+        width="$image_width"
+        height="$image_height"
+      ></svg>
+    </div>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <script>
+      const f = () => {
+        const BLOCKS = $blocks_json;
+        const COLORS = $colors_json;
+        const BLOCK_TYPES = $block_types_json;
+        const blocksById = {};
+        const blockInfoDialog = document.querySelector("dialog#block-info-dialog");
+  
+        function blockTypeColor(blockType) {
+          return COLORS[BLOCK_TYPES[blockType] % COLORS.length];
+        }
+  
+        function traverseAndGenerateSVG(block) {
+          let svg = "";
+  
+          if (block.polygon) {
+            const color = blockTypeColor(block.block_type);
+  
+            // dollar signs are escaped because this files gets read into a template string
+            svg += `<rect id="$${block.id}"
+                                class="block type-$${block.block_type}"
+                                data-type="$${block.block_type}"
+                                x="$${block.polygon[0][0]}" y="$${block.polygon[0][1]}"
+                                width="$${
+                                  block.polygon[1][0] - block.polygon[0][0]
+                                }"
+                                height="$${
+                                  block.polygon[3][1] - block.polygon[1][1]
+                                }"
+                                fill=$${color} stroke=$${color}>
+                          </rect>`;
+  
+            blocksById[block.id] = block;
+          }
+  
+          if (Array.isArray(block.children) && block.children.length > 0) {
+            block.children.forEach((child) => {
+              svg += traverseAndGenerateSVG(child);
+            });
+          }
+  
+          return svg;
+        }
+  
+        if (Object.keys(BLOCKS).length == 0) {
+          // bail out if no blocks
+          return;
+        }
+  
+        const [vbWidth, vbHeight] = BLOCKS.children[0].polygon[2];
+        document
+            .querySelector("svg")
+            .setAttribute("viewBox", `0 0 $${vbWidth} $${vbHeight}`);
+    
+        const blocksOverlay = document.querySelector(".blocks-overlay");
+        blocksOverlay.innerHTML = traverseAndGenerateSVG(BLOCKS.children[0]);
+    
+        tippy("rect.block", {
+            content: (block) => block.getAttribute("data-type"),
+            placement: "top-start",
+            arrow: false,
+            offset: [0, 5],
+        });
+  
+        blocksOverlay.addEventListener("click", (event) => {
+            if (event.target.tagName !== "rect") return;
+  
+            const blockId = event.target.id;
+            const block = blocksById[blockId];
+        
+            blockInfoDialog.querySelector("h1").innerHTML = `
+              $${blockId} <span style="color: $${blockTypeColor(block.block_type)}">($${block.block_type})</span>
+            `;
+            blockInfoDialog.querySelector(".text-content").textContent = block.html;
+  
+            blockInfoDialog.dataset.blockJSON = JSON.stringify(block, null, 2);
+        
+            if (block.images) {
+                const imagesDiv = blockInfoDialog.querySelector(".images");
+                imagesDiv.innerHTML = "";
+                for ([id, image] of Object.entries(block.images)) {
+                  const img = document.createElement("img");
+                  img.src = "data:image/jpeg;base64," + image;
+                  imagesDiv.appendChild(img);
+                }
+            }
+            blockInfoDialog.showModal();
+        });
+      }; f();
+    </script>
+  </body>
+</html>
