@@ -1,10 +1,10 @@
 import os
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for an op, which is not supported on MPS
+
+from pathlib import Path
 from itertools import repeat
-from tkinter import Image
-
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for a simple op, which is not supported on MPS
-
 from typing import List
+
 import numpy as np
 import base64
 import time
@@ -20,6 +20,7 @@ from pypdfium2._helpers.misc import PdfiumError
 import pypdfium2 as pdfium
 from marker.util import matrix_intersection_area
 from marker.renderers.json import JSONOutput, JSONBlockOutput
+from marker.settings import settings
 
 from marker.config.parser import ConfigParser
 from marker.converters.table import TableConverter
@@ -47,7 +48,7 @@ def extract_tables(children: List[JSONBlockOutput]):
 
 
 @click.command(help="Benchmark Table to HTML Conversion")
-@click.argument("out_file", type=str)
+@click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "table"), help="Output path for results.")
 @click.option("--dataset", type=str, default="datalab-to/fintabnet-test", help="Dataset to use")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of PDFs to process")
 @click.option("--max_workers", type=int, default=16, help="Maximum number of workers to use")
@@ -55,7 +56,7 @@ def extract_tables(children: List[JSONBlockOutput]):
 @click.option("--table_rec_batch_size", type=int, default=None, help="Batch size for table recognition.")
 @click.option("--use_gemini", is_flag=True, help="Evaluate Gemini for table recognition.")
 def main(
-        out_file: str,
+        result_path: str,
         dataset: str,
         max_rows: int,
         max_workers: int,
@@ -64,7 +65,7 @@ def main(
         use_gemini: bool = False
 ):
     models = create_model_dict()
-    config_parser = ConfigParser({'output_format': 'json', "use_llm": use_llm, "table_rec_batch_size": table_rec_batch_size})
+    config_parser = ConfigParser({'output_format': 'json', "use_llm": use_llm, "table_rec_batch_size": table_rec_batch_size, "disable_tqdm": True})
     start = time.time()
 
 
@@ -93,9 +94,7 @@ def main(
             with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb") as temp_pdf_file:
                 temp_pdf_file.write(pdf_binary)
                 temp_pdf_file.seek(0)
-                tqdm.disable = True
                 marker_json = converter(temp_pdf_file.name).children
-                tqdm.disable = False
 
                 doc = pdfium.PdfDocument(temp_pdf_file.name)
                 page_image = doc[0].render(scale=92/72).to_pil()
@@ -223,8 +222,11 @@ def main(
         "gemini": gemini_results
     }
 
-    with open(out_file, "w+") as f:
+    out_path = Path(result_path) / "table.json"
+    with open(out_path, "w+") as f:
         json.dump(results, f, indent=2)
+
+    print(f"Results saved to {out_path}.")
 
 if __name__ == '__main__':
     main()

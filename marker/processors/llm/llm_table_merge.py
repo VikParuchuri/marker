@@ -44,6 +44,10 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
         int,
         "The maximum gap between columns to merge tables"
     ] = 50
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
     table_merge_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
@@ -137,7 +141,7 @@ Table 2
         return max_cols
 
     def rewrite_blocks(self, document: Document):
-        pbar = tqdm(desc=f"{self.__class__.__name__} running")
+        pbar = tqdm(desc=f"{self.__class__.__name__} running", disable=self.disable_tqdm)
         table_runs = []
         table_run = []
         prev_block = None

@@ -50,6 +50,10 @@ class LLMLayoutBuilder(LayoutBuilder):
         int,
         "The timeout for requests to the Gemini model.",
     ] = 60
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
     topk_relabelling_prompt: Annotated[
         str,
         "The prompt to use for relabelling blocks.",
@@ -107,7 +111,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
             print(f"Error relabelling blocks: {e}")
 
     def relabel_blocks(self, document: Document):
-        pbar = tqdm(desc="LLM layout relabelling")
+        pbar = tqdm(desc="LLM layout relabelling", disable=self.disable_tqdm)
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             futures = []
             for page in document.pages:
