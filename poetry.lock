@@ -2371,13 +2371,13 @@ dill = ">=0.3.8"
 
 [[package]]
 name = "narwhals"
-version = "1.24.0"
+version = "1.24.1"
 description = "Extremely lightweight compatibility layer between dataframe libraries"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "narwhals-1.24.0-py3-none-any.whl", hash = "sha256:73ff60578641059221de2e4f337bfdf0260378fb1553f787d27411602cfc5e72"},
-    {file = "narwhals-1.24.0.tar.gz", hash = "sha256:23f0a05efbe29864d184842dd6bf11c044210bca1d443d6dbffe7e65a70bf063"},
+    {file = "narwhals-1.24.1-py3-none-any.whl", hash = "sha256:d8983fe14851c95d60576ddca37c094bd4ed24ab9ea98396844fb20ad9aaf184"},
+    {file = "narwhals-1.24.1.tar.gz", hash = "sha256:b09b8253d945f23cdb683a84685abf3afb9f96114d89e9f35dc876e143f65007"},
 ]
 
 [package.extras]
@@ -4641,13 +4641,13 @@ snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[
 
 [[package]]
 name = "surya-ocr"
-version = "0.9.3"
+version = "0.10.0"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "surya_ocr-0.9.3-py3-none-any.whl", hash = "sha256:6013131f3af004f93ab5422dfa8c49a83aa72beb2f8120fd59dca04803d98009"},
-    {file = "surya_ocr-0.9.3.tar.gz", hash = "sha256:a69347a3c85c04d48e3df62d11f045dc13e22ab8b3efebfdae1dd94f05a25b99"},
+    {file = "surya_ocr-0.10.0-py3-none-any.whl", hash = "sha256:ccad25a308eefd61a21b2c97fc3f5b8364887e09f197a3aaa5fee30c03f81ae1"},
+    {file = "surya_ocr-0.10.0.tar.gz", hash = "sha256:966bc0c1aef346df42e458d2c1cbc95665004ea61020577e1656789107d09119"},
 ]
 
 [package.dependencies]
@@ -5489,4 +5489,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "33297ed1b238e67f880534882876a29012559d3263ceba2ba0cdd738598af00c"
+content-hash = "d43373ff00de4feb00b0aed4fe98d2a84ecb5742d1a916cabbace5104f888d54"
