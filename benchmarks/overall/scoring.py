@@ -69,8 +69,10 @@ def standardize_markdown(markdown):
     markdown = re.sub(pattern, standardize_math, markdown)
 
     # Replace image urls
-    pattern = r'!\[(.*?)\]\((.*?)(?:\?.*?width=(\d+).*?height=(\d+).*?)\)'
-    markdown =  re.sub(pattern, r'![/api/placeholder]', markdown)
+    pattern = r'!\[(.*?)\]\((https?://[^\s\)]+)\)'
+    markdown =  re.sub(pattern, r'![link]', markdown)
+    markdown = strip_latex_symbols(markdown)
+    markdown = replace_centered_lines(markdown)
 
     # Clean up html tags
     markdown = markdown.replace("<br>", "\n")
@@ -84,8 +86,33 @@ def standardize_markdown(markdown):
     markdown = re.sub("\\.+", ".", markdown) # Replace repeated periods with a single period, like in table of contents
     markdown = re.sub("#+", "#", markdown) # Replace repeated headers with a single header
     markdown = re.sub(r"\$", "", markdown) # Remove equation delimiters
-    markdown = markdown.encode().decode('unicode-escape') # Decode unicode characters properly
+    markdown = markdown.encode().decode('unicode-escape', errors="ignore") # Decode unicode characters properly
     return markdown.strip().lower()
+
+
+def replace_centered_lines(text):
+    def replace_match(m):
+        content = m.group(0)
+        dash_count = content.count('-')
+        return '-' * dash_count
+
+    pattern = r':-+:'
+    return re.sub(pattern, replace_match, text)
+
+
+def strip_latex_symbols(text):
+    # Handle short math mode sequences first - only match $ $ with brief content
+    text = re.sub(r'\$\s*\\?[a-zA-Z]+\d?\s*\$', '', text)
+
+    # Handle common patterns inside remaining math mode
+    patterns = [
+        r'\$\s*\\?[a-zA-Z]+\d?\s*\$',  # \alpha or \alpha2 in math mode
+        r'\$\s*\d+\\[a-zA-Z]+\s*\$',  # 45\circ in math mode
+        r'\$\s*[a-zA-Z0-9]\\[a-zA-Z]+\s*\$'  # x\dagger in math mode
+    ]
+
+    pattern = '|'.join(patterns)
+    return re.sub(pattern, '', text)
 
 
 def standardize_math(match):

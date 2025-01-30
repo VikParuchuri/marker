@@ -128,7 +128,7 @@ class Markdownify(MarkdownConverter):
                                 grid[row_idx + r][col_idx + c] = '' # Empty cell due to rowspan/colspan
                         except IndexError:
                             # Sometimes the colspan/rowspan predictions can overflow
-                            print(f"Overflow in columns: {col_idx + c} >= {total_cols}")
+                            print(f"Overflow in columns: {col_idx + c} >= {total_cols} or rows: {row_idx + r} >= {total_rows}")
                             continue
 
                 col_idx += colspan

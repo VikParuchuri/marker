@@ -1,4 +1,5 @@
-import datasets
+from typing import List
+
 import numpy as np
 from bs4 import BeautifulSoup
 import pypdfium2 as pdfium
@@ -10,7 +11,19 @@ from benchmarks.table.gemini import gemini_table_rec
 from marker.config.parser import ConfigParser
 from marker.converters.table import TableConverter
 from marker.models import create_model_dict
+from marker.renderers.json import JSONBlockOutput
+from marker.schema.polygon import PolygonBox
 from marker.util import matrix_intersection_area
+
+
+def extract_tables(children: List[JSONBlockOutput]):
+    tables = []
+    for child in children:
+        if child.block_type == 'Table':
+            tables.append(child)
+        elif child.children:
+            tables.extend(extract_tables(child.children))
+    return tables
 
 
 def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, max_rows: int, use_gemini: bool):
@@ -18,9 +31,6 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
     config_parser = ConfigParser({'output_format': 'json', "use_llm": use_llm, "table_rec_batch_size": table_rec_batch_size, "disable_tqdm": True})
     total_unaligned = 0
     results = []
-
-    dataset = datasets.load_dataset(dataset, split='train')
-    dataset = dataset.shuffle(seed=0)
 
     iterations = len(dataset)
     if max_rows is not None:
@@ -45,7 +55,8 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
                 marker_json = converter(temp_pdf_file.name).children
 
                 doc = pdfium.PdfDocument(temp_pdf_file.name)
-                page_image = doc[0].render(scale=92 / 72).to_pil()
+                page_image = doc[0].render(scale=96/72).to_pil()
+                doc.close()
 
             if len(marker_json) == 0 or len(gt_tables) == 0:
                 print(f'No tables detected, skipping...')
@@ -55,10 +66,17 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
             marker_tables = extract_tables(marker_json)
             marker_table_boxes = [table.bbox for table in marker_tables]
             page_bbox = marker_json[0].bbox
-            w_scaler, h_scaler = page_image.width / page_bbox[2], page_image.height / page_bbox[3]
+
             table_images = [
-                page_image.crop([bbox[0] * w_scaler, bbox[1] * h_scaler, bbox[2] * w_scaler, bbox[3] * h_scaler]) for bbox
-                in marker_table_boxes]
+                page_image.crop(
+                    PolygonBox.from_bbox(bbox)
+                    .rescale(
+                        (page_bbox[2], page_bbox[3]), (page_image.width, page_image.height)
+                    ).bbox
+                )
+                for bbox
+                in marker_table_boxes
+            ]
 
             # Normalize the bboxes
             for bbox in marker_table_boxes:

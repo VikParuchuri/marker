@@ -1,7 +1,4 @@
 import os
-
-from benchmarks.table.inference import inference_tables
-
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Transformers uses .isin for an op, which is not supported on MPS
 
 from pathlib import Path
@@ -15,11 +12,9 @@ import click
 from tabulate import tabulate
 import json
 from concurrent.futures import ProcessPoolExecutor
-from marker.renderers.json import JSONBlockOutput
-from marker.settings import settings
 
-from marker.config.parser import ConfigParser
-from marker.models import create_model_dict
+from marker.settings import settings
+from benchmarks.table.inference import inference_tables
 
 from scoring import wrap_table_html, similarity_eval_html
 
@@ -29,16 +24,6 @@ def update_teds_score(result, prefix: str = "marker"):
     score = similarity_eval_html(prediction, ground_truth)
     result.update({f'{prefix}_score':score})
     return result
-
-
-def extract_tables(children: List[JSONBlockOutput]):
-    tables = []
-    for child in children:
-        if child.block_type == 'Table':
-            tables.append(child)
-        elif child.children:
-            tables.extend(extract_tables(child.children))
-    return tables
 
 
 @click.command(help="Benchmark Table to HTML Conversion")

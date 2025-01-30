@@ -31,7 +31,7 @@ def get_method_scores(ds, model_dict, max_rows=None, score_func=marker_scoring_f
         doc_type = sample["classification"]
 
         try:
-            gt_html = [block["html"] for block in gt_blocks]
+            gt_html = [block["html"] for block in gt_blocks if len(block["html"]) > 0]
             scores = score_func(model_dict, sample, gt_html, **kwargs)
         except ValueError as e:
             print(f"Error with sample {idx}: {e}")
