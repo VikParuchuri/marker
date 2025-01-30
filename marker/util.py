@@ -80,3 +80,12 @@ def matrix_intersection_area(boxes1: List[List[float]], boxes2: List[List[float]
     height = np.maximum(0, max_y - min_y)
 
     return width * height  # Shape: (N, M)
+
+def rescale_bbox(bbox: List[float], old_size=tuple[float], new_size=tuple[float]):
+    width_scaler, height_scaler = new_size[0]/old_size[0], new_size[1]/old_size[1]
+    return [
+        bbox[0]*width_scaler,
+        bbox[1]*height_scaler,
+        bbox[2]*width_scaler,
+        bbox[3]*height_scaler
+    ]

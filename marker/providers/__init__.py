@@ -19,6 +19,9 @@ class ProviderOutput(BaseModel):
     def raw_text(self):
         return "".join(span.text for span in self.spans)
 
+    def __hash__(self):
+        return hash(tuple(self.line.polygon.bbox))
+
 ProviderPageLines = Dict[int, List[ProviderOutput]]
 
 class BaseProvider:
