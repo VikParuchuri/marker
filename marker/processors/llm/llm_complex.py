@@ -85,4 +85,4 @@ Output:
 
         # Convert LLM markdown to html
         corrected_markdown = corrected_markdown.strip().lstrip("```markdown").rstrip("```").strip()
-        block.html = markdown2.markdown(corrected_markdown)
+        block.html = markdown2.markdown(corrected_markdown, extras=["tables"])

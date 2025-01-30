@@ -219,11 +219,11 @@ rendered = converter("FILEPATH")
 text, _, images = text_from_rendered(rendered)
 ```
 
-This takes all the same configuration as the PdfConverter.  You can specify the configuration `--force_layout_block=Table` to avoid layout detection and instead assume every page is a table.
+This takes all the same configuration as the PdfConverter.  You can specify the configuration `force_layout_block=Table` to avoid layout detection and instead assume every page is a table.  Set `output_format=json` to also get cell bounding boxes.
 
 You can also run this via the CLI with 
 ```shell
-python convert_single.py FILENAME --use_llm --force_layout_block Table --converter_cls marker.converters.table.TableConverter
+marker_single FILENAME --use_llm --force_layout_block Table --converter_cls marker.converters.table.TableConverter --output_format json
 ```
 
 # Output Formats

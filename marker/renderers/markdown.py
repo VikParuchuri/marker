@@ -198,10 +198,9 @@ class MarkdownRenderer(HTMLRenderer):
     inline_math_delimiters: Annotated[Tuple[str], "The delimiters to use for inline math."] = ("$", "$")
     block_math_delimiters: Annotated[Tuple[str], "The delimiters to use for block math."] = ("$$", "$$")
 
-    def __call__(self, document: Document) -> MarkdownOutput:
-        document_output = document.render()
-        full_html, images = self.extract_html(document, document_output)
-        md_cls = Markdownify(
+    @property
+    def md_cls(self):
+        return Markdownify(
             self.paginate_output,
             self.page_separator,
             heading_style="ATX",
@@ -215,7 +214,12 @@ class MarkdownRenderer(HTMLRenderer):
             inline_math_delimiters=self.inline_math_delimiters,
             block_math_delimiters=self.block_math_delimiters
         )
-        markdown = md_cls.convert(full_html)
+
+
+    def __call__(self, document: Document) -> MarkdownOutput:
+        document_output = document.render()
+        full_html, images = self.extract_html(document, document_output)
+        markdown = self.md_cls.convert(full_html)
         markdown = cleanup_text(markdown)
         return MarkdownOutput(
             markdown=markdown,

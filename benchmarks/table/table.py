@@ -223,6 +223,7 @@ def main(
     }
 
     out_path = Path(result_path) / "table.json"
+    out_path.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w+") as f:
         json.dump(results, f, indent=2)
 
