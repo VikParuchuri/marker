@@ -128,6 +128,7 @@ class OcrBuilder(BaseBuilder):
             if provider_lines_good:
                 #Merge inline math blocks into the provider lines, only persist new detected text lines which do not overlap with existing provider lines
                 page_lines[document_page.page_id].extend(self.merge_provider_lines_inline_math(document_page.page_id, provider_lines, detected_inline_math_lines, image_size, page_size))
+                lines_to_ocr[document_page.page_id].extend(self.filter_detected_text_lines(provider_lines, detected_text_lines, image_size, page_size))
                 continue
 
             #Skip inline math merging if no provider lines are good; OCR all text lines and all inline math lines
@@ -159,7 +160,7 @@ class OcrBuilder(BaseBuilder):
         return page_lines, ocr_lines
 
 
-    def filter_detected_text_lines(self, provider_lines, detected_text_lines, image_size, page_size, threshold=0.8):
+    def filter_detected_text_lines(self, provider_lines, detected_text_lines, image_size, page_size, threshold=0.7):
         filtered_lines = []
         for detected_line in detected_text_lines:
             keep_line = True
