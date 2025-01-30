@@ -1,13 +1,14 @@
 import json
 import os
-import traceback
 from collections import defaultdict
 from pathlib import Path
+from typing import Dict
 
 import click
 import datasets
 import tabulate
 from tqdm import tqdm
+import pypdfium2 as pdfium
 
 from benchmarks.overall.inference import marker_scoring_func, mathpix_scoring_func
 from benchmarks.overall.schema import FullResult
@@ -28,12 +29,17 @@ def get_method_scores(ds, model_dict, max_rows=None, score_func=marker_scoring_f
 
         gt_blocks = json.loads(sample["gt_blocks"])
         doc_type = sample["classification"]
+
         try:
             gt_html = [block["html"] for block in gt_blocks]
             scores = score_func(model_dict, sample, gt_html, **kwargs)
         except ValueError as e:
             print(f"Error with sample {idx}: {e}")
             continue
+        except pdfium.PdfiumError as e:
+            print(f"Error opening pdf: {e}")
+            continue
+
         averages_by_type[doc_type].append(scores["overall_score"])
 
         for score, gt_block in zip(scores["scores"], gt_blocks):
@@ -50,27 +56,48 @@ def get_method_scores(ds, model_dict, max_rows=None, score_func=marker_scoring_f
         "average_score": sum([bench_scores[k]["overall_score"] for k in bench_scores]) / len(bench_scores)
     }
 
-def print_scores(scores: FullResult, method: str):
-    averages_by_type = scores["averages_by_type"]
-    averages_by_block_type = scores["averages_by_block_type"]
-    bench_scores = scores["raw_scores"]
+def print_scores(scores: Dict[str, FullResult], out_path: Path, default_method="marker"):
+    inference_types = [default_method] + [k for k in scores.keys() if k != default_method]
 
-    for k in averages_by_type:
-        averages_by_type[k] = sum(averages_by_type[k]) / len(averages_by_type[k])
-    averages_by_type = sorted(averages_by_type.items())
+    document_types = list(scores[default_method]["averages_by_type"].keys())
+    document_rows = [[k] for k in document_types]
+    for k in inference_types:
+        for i, doc_type in enumerate(document_types):
+            avg = sum(scores[k]["averages_by_type"][doc_type]) / max(1, len(scores[k]["averages_by_type"][doc_type]))
+            document_rows[i].append(avg)
 
-    print(f"Scores for method {method}:")
-    print(tabulate.tabulate(averages_by_type, headers=["Document Type", "Average Score"], tablefmt="github"))
+    print("Document types")
+    document_type_table = tabulate.tabulate(document_rows, headers=["Document Type"] + inference_types, tablefmt="github")
+    print(document_type_table)
+    with open(out_path / "document_types.md", "w", encoding="utf-8") as f:
+        f.write(document_type_table)
 
-    for k in averages_by_block_type:
-        averages_by_block_type[k] = sum(averages_by_block_type[k]) / len(averages_by_block_type[k])
-    averages_by_block_type = sorted(averages_by_block_type.items())
+    block_types = list(scores[default_method]["averages_by_block_type"].keys())
+    block_rows = [[k] for k in block_types]
+    for k in inference_types:
+        for i, block_type in enumerate(block_types):
+            avg = sum(scores[k]["averages_by_block_type"][block_type]) / max(1, len(scores[k]["averages_by_block_type"][block_type]))
+            block_rows[i].append(avg)
 
-    print(tabulate.tabulate(averages_by_block_type, headers=["Block Type", "Average Score"], tablefmt="github"))
+    print("Block types")
+    block_type_table = tabulate.tabulate(block_rows, headers=["Block Type"] + inference_types, tablefmt="github")
+    print(block_type_table)
+    with open(out_path / "block_types.md", "w", encoding="utf-8") as f:
+        f.write(block_type_table)
 
-    overall_average = sum([bench_scores[k]["overall_score"] for k in bench_scores]) / len(bench_scores)
-    print(tabulate.tabulate([["Overall Average", overall_average]], tablefmt="github"))
-    print()
+    headers = ["Method", "Avg Score", "Avg Time"]
+    inference_rows = [[k] for k in inference_types]
+    for i, k in enumerate(inference_types):
+        inference_rows[i].append(scores[k]["average_score"])
+        inference_rows[i].append(scores[k]["average_time"])
+
+    print("Overall")
+    overall_table = tabulate.tabulate(inference_rows, headers=headers, tablefmt="github")
+    print(overall_table)
+    with open(out_path / "overall.md", "w", encoding="utf-8") as f:
+        f.write(overall_table)
+
+    print("Scores computed by aligning ground truth markdown blocks with predicted markdown for each method.  The scores are 0-100 based on edit distance.")
 
 @click.command(help="Benchmark PDF to MD conversion.")
 @click.option("--dataset", type=str, help="Path to the benchmark dataset", default="datalab-to/marker_benchmark")
@@ -85,6 +112,9 @@ def main(
         max_rows: int,
         use_llm: bool
 ):
+    out_path = Path(result_path)
+    out_path.mkdir(parents=True, exist_ok=True)
+
     allowed_methods = ["mathpix", ""]
     methods = other_methods.split(",")
     for method in methods:
@@ -104,11 +134,9 @@ def main(
         mathpix_scores = get_method_scores(ds, model_dict, max_rows=max_rows, score_func=mathpix_scoring_func, mathpix_ds=mathpix_ds)
         all_scores["mathpix"] = mathpix_scores
 
-    for k,v in all_scores.items():
-        print_scores(v, k)
+    # Display formatted score tables
+    print_scores(all_scores, out_path)
 
-    out_path = Path(result_path)
-    out_path.mkdir(parents=True, exist_ok=True)
     with open(out_path / "overall.json", "w", encoding="utf-8") as f:
         json.dump(all_scores, f, indent=2, ensure_ascii=False)
 
