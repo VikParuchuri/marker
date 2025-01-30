@@ -213,8 +213,6 @@ class OcrBuilder(BaseBuilder):
             for span in provider_line.spans:
                 flag = False
                 span_area = span.polygon.area
-                if span_area==0:
-                    print(f'Zero area {span}')
                 for math_line in math_lines:
                     math_line_polygon = PolygonBox(polygon=math_line.polygon).rescale(image_size, page_size)
                     overlap = span.polygon.intersection_area(math_line_polygon)/span_area
@@ -276,7 +274,6 @@ class OcrBuilder(BaseBuilder):
             scaled_bboxes.append(highres_boxes)
 
         if sum(len(b) for b in scaled_bboxes)==0:
-            print('Should be hitting this a lot')
             return {page.page_id: [] for page in document.pages}
 
         # Remove tables because we re-OCR them later with the table processor
