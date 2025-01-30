@@ -2,7 +2,7 @@ from typing import Annotated, List, Optional, Tuple
 
 from ftfy import fix_text
 import numpy as np
-from surya.detection import DetectionPredictor
+from surya.detection import DetectionPredictor, TextBox
 from surya.recognition import RecognitionPredictor
 from surya.ocr_error import OCRErrorPredictor
 
@@ -118,8 +118,9 @@ class OcrBuilder(BaseBuilder):
 
         for document_page, detection_result, ocr_error_detection_label in zip(document.pages, detection_results, ocr_error_detection_results.labels):
             provider_lines = provider.page_lines.get(document_page.page_id, [])
-            detected_text_lines = [box for box in detection_result.bboxes if not box.math]
-            detected_inline_math_lines = [box for box in detection_result.bboxes if box.math]
+            detection_result_split = self.split_detected_text_and_inline_boxes(text_boxes=[box for box in detection_result.bboxes if not box.math], inline_boxes=[box for box in detection_result.bboxes if box.math])
+            detected_text_lines = [box for box in detection_result_split if not box.math]
+            detected_inline_math_lines = [box for box in detection_result_split if box.math]
             image_size = PolygonBox.from_bbox(detection_result.image_bbox).size
             page_size = provider.get_page_bbox(document_page.page_id).size
 
@@ -359,3 +360,130 @@ class OcrBuilder(BaseBuilder):
         for document_page in document.pages:
             document_page.merge_blocks(page_provider_lines[document_page.page_id], text_extraction_method="pdftext")
             document_page.merge_blocks(page_ocr_lines[document_page.page_id], text_extraction_method="surya")
+
+
+    def split_detected_text_and_inline_boxes(
+        self,
+        text_boxes: List[TextBox], 
+        inline_boxes: List[TextBox], 
+    ) -> List[TextBox]:
+        """
+        Splits horizontal text boxes around inline boxes, skips vertical text boxes, 
+        and retains unrelated text boxes.
+
+        Args:
+            text_boxes: List of TextBox objects representing text boxes.
+            inline_boxes: List of TextBox objects representing inline boxes.
+
+        Returns:
+            A new list of TextBox objects with split text boxes, inline boxes, 
+            and unmodified vertical/unrelated text boxes.
+        """
+        result_boxes = []  # Final result to store the split boxes and retained boxes
+        horizontal_text_boxes = []  # Only horizontal text boxes to process
+
+        # Step 1: Separate vertical and horizontal text boxes
+        for text_box in text_boxes:
+            if text_box.height > text_box.width:
+                # Retain vertical text boxes
+                result_boxes.append(text_box)
+            else:
+                horizontal_text_boxes.append(text_box)
+
+        # Step 2: Assign inline boxes to horizontal text boxes
+        inline_assignments = {inline_box: None for inline_box in inline_boxes}
+
+        for inline_box in inline_boxes:
+            max_overlap_ratio = 0.3     #Need atleast this much overlap to even consider assignment at all
+            assigned_text_box = None
+
+            for text_box in horizontal_text_boxes:
+                # Calculate intersection area
+                intersection_area = text_box.intersection_area(inline_box)
+
+                # Calculate overlap ratios
+                inline_overlap_ratio = intersection_area / inline_box.area if inline_box.area > 0 else 0
+                text_overlap_ratio = intersection_area / text_box.area if text_box.area > 0 else 0
+
+                # Check if the inline box fully covers the text box
+                if text_overlap_ratio == 1:
+                    # Fully covered text box: Remove it and retain only the inline box
+                    if text_box in horizontal_text_boxes:
+                        horizontal_text_boxes.remove(text_box)
+                    inline_assignments[inline_box] = None
+                elif inline_overlap_ratio > max_overlap_ratio:
+                    # Assign inline box to the text box with the highest overlap ratio
+                    max_overlap_ratio = inline_overlap_ratio
+                    assigned_text_box = text_box
+
+            # Assign inline box to the selected text box (if not fully covering)
+            if assigned_text_box:
+                inline_assignments[inline_box] = assigned_text_box
+
+
+        for text_box in horizontal_text_boxes:
+            # Get all inline boxes assigned to this text box
+            assigned_inline_boxes = [
+                inline_box for inline_box, assigned_text in inline_assignments.items() if assigned_text == text_box
+            ]
+
+            if not assigned_inline_boxes:
+                # Retain the text box if it is not intersected by any inline boxes
+                result_boxes.append(text_box)
+                continue
+            # Sort assigned inline boxes from left to right
+            assigned_inline_boxes.sort(key=lambda box: box.bbox[0])
+
+            current_x1 = text_box.bbox[0]  # Start with the leftmost x-coordinate of the text box
+            y1_t, y2_t = min(box.bbox[1] for box in [text_box]+assigned_inline_boxes), max(box.bbox[3] for box in [text_box]+assigned_inline_boxes)
+            text_segments = []
+
+            for inline_box in assigned_inline_boxes:
+                x1_i, x2_i = inline_box.bbox[0], inline_box.bbox[2]
+
+                # Add the text segment before the inline box, if any
+                if current_x1 < x1_i:
+                    text_segments.append(TextBox(
+                        polygon=[
+                            [current_x1, y1_t],
+                            [x1_i, y1_t],
+                            [x1_i, y2_t],
+                            [current_x1, y2_t],
+                        ]
+                    ))
+
+                # Add the inline box itself
+                text_segments.append(TextBox(
+                    polygon=[
+                        [x1_i, y1_t],
+                        [x2_i, y1_t],
+                        [x2_i, y2_t],
+                        [x1_i, y2_t],
+                    ],
+                    confidence=inline_box.confidence,
+                    math=True
+                ))
+                current_x1 = x2_i  # Move the start point to after the current inline box
+
+            # Add any remaining text after the last inline box, if any
+            if current_x1 < text_box.bbox[2]:
+                text_segments.append(TextBox(
+                    polygon=[
+                        [current_x1, y1_t],
+                        [text_box.bbox[2], y1_t],
+                        [text_box.bbox[2], y2_t],
+                        [current_x1, y2_t],
+                    ]
+                ))
+
+            # Append all split parts to the result
+            result_boxes.extend(text_segments)
+
+        # Step 4: Add inline boxes that replaced fully covered text boxes
+        for inline_box, assigned_text in inline_assignments.items():
+            if assigned_text is None:  # Covers a text box
+                inline_box.math = True
+                result_boxes.append(inline_box)
+
+
+        return result_boxes
