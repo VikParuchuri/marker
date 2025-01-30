@@ -49,7 +49,7 @@ def extract_tables(children: List[JSONBlockOutput]):
 
 @click.command(help="Benchmark Table to HTML Conversion")
 @click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "table"), help="Output path for results.")
-@click.option("--dataset", type=str, default="datalab-to/fintabnet-test", help="Dataset to use")
+@click.option("--dataset", type=str, default="datalab-to/fintabnet_bench_marker", help="Dataset to use")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of PDFs to process")
 @click.option("--max_workers", type=int, default=16, help="Maximum number of workers to use")
 @click.option("--use_llm", is_flag=True, help="Use LLM for improving table recognition.")
@@ -222,9 +222,9 @@ def main(
         "gemini": gemini_results
     }
 
-    out_path = Path(result_path) / "table.json"
+    out_path = Path(result_path)
     out_path.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w+") as f:
+    with open(out_path / "table.json", "w+") as f:
         json.dump(results, f, indent=2)
 
     print(f"Results saved to {out_path}.")

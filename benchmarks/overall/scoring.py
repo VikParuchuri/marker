@@ -12,6 +12,9 @@ def kendall_tau(correct_order: List[int], actual_order: List[int]) -> float:
     concordant = 0
     discordant = 0
 
+    if n <= 1:
+        return 100
+
     for i in range(n):
         for j in range(i + 1, n):
             correct_sign = correct_order[i] - correct_order[j]
@@ -61,18 +64,27 @@ def convert_to_md(html):
     return markdown
 
 def standardize_markdown(markdown):
+    # Replace math expressions
     pattern = r'(?<!\\)\$(?:\$([^$]+)\$\$|\s*([^$\n]+?)\s*\$)'
     markdown = re.sub(pattern, standardize_math, markdown)
 
+    # Replace image urls
+    pattern = r'!\[(.*?)\]\((.*?)(?:\?.*?width=(\d+).*?height=(\d+).*?)\)'
+    markdown =  re.sub(pattern, r'![/api/placeholder]', markdown)
+
+    # Clean up html tags
     markdown = markdown.replace("<br>", "\n")
     markdown = re.sub(r"<sub>(.*?)</sub>", r"\1", markdown)
     markdown = re.sub(r"<sup>(.*?)</sup>", r"\1", markdown)
+    markdown = re.sub(r"<span.*?>(.*?)</span>", r"\1", markdown) # Remove span tags and keep content
 
+    # Clean up markdown
     markdown = re.sub(r"\s+", " ", markdown)
     markdown = re.sub(r"\n+", "\n", markdown)
     markdown = re.sub("\\.+", ".", markdown) # Replace repeated periods with a single period, like in table of contents
     markdown = re.sub("#+", "#", markdown) # Replace repeated headers with a single header
     markdown = re.sub(r"\$", "", markdown) # Remove equation delimiters
+    markdown = markdown.encode().decode('unicode-escape') # Decode unicode characters properly
     return markdown.strip().lower()
 
 
@@ -116,10 +128,14 @@ def score_blocks(gt_html, method_html, convert=True) -> BlockScores:
     gt = [standardize_markdown(convert_to_md(gt)) for gt in gt_html]
     alignments = find_fuzzy_alignments(method_html, gt)
     scores = [alignment["score"] for alignment in alignments]
+
+    # Find order score
     orders = [alignment["start"] for alignment in alignments]
-    correct_order = range(len(gt))
+    correct_order = list(range(len(gt)))
     actual_order = sorted(range(len(gt)), key=lambda x: orders[x])
     order_score = kendall_tau(correct_order, actual_order)
+
+    # Weight score by sequence length
     gt_weights = [len(g) for g in gt]
     weighted_scores = [score * weight for score, weight in zip(scores, gt_weights)]
 
@@ -131,5 +147,6 @@ def score_blocks(gt_html, method_html, convert=True) -> BlockScores:
         "order_score": order_score,
         "gt": gt,
         "method": method_html,
-        "overall_score": overall_score
+        "overall_score": overall_score,
+        "time": None
     }

@@ -6,11 +6,9 @@ def verify_scores(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
 
-    multicolcnn_score = data["marker"]["files"]["multicolcnn.pdf"]["score"]
-    switch_trans_score = data["marker"]["files"]["switch_trans.pdf"]["score"]
-
-    if multicolcnn_score <= 0.34 or switch_trans_score <= 0.40:
-        raise ValueError("One or more scores are below the required threshold of 0.4")
+    marker_score = data["marker"]["average_score"]
+    if marker_score < 90:
+        raise ValueError("Marker score below 90")
 
 
 def verify_table_scores(file_path):
