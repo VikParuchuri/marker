@@ -72,4 +72,4 @@ Formatting should be in markdown, with the following rules:
             return
 
         markdown = markdown.strip().lstrip("```markdown").rstrip("```").strip()
-        block.html = markdown2.markdown(markdown)
+        block.html = markdown2.markdown(markdown, extras=["tables"])

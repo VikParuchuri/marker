@@ -1,0 +1,28 @@
+name: Integration test
+
+on: [push]
+
+env:
+  PYTHONIOENCODING: "utf-8"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Install python dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Run benchmark test
+        run: |
+          poetry run python benchmarks/overall/overall.py --max_rows 5
+          poetry run python benchmarks/verify_scores.py conversion_results/benchmark/overall/overall.json --type marker
+      - name: Run table benchmark
+        run: |
+          poetry run python benchmarks/table/table.py --max_rows 5
+          poetry run python benchmarks/verify_scores.py conversion_results/benchmark/table/table.json --type table

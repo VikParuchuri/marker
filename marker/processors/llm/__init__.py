@@ -44,6 +44,10 @@ class BaseLLMProcessor(BaseProcessor):
         bool,
         "Whether to use the LLM model.",
     ] = False
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
     block_types = None
 
     def __init__(self, config=None):
@@ -73,7 +77,7 @@ class BaseLLMProcessor(BaseProcessor):
         if total_blocks == 0:
             return
 
-        pbar = tqdm(desc=f"{self.__class__.__name__} running")
+        pbar = tqdm(desc=f"{self.__class__.__name__} running", disable=self.disable_tqdm)
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             for future in as_completed([
                 executor.submit(self.process_rewriting, document, page, block)

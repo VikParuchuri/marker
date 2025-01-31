@@ -1,7 +1,4 @@
 from typing import Annotated, List, Optional, Tuple
-
-from texify.inference import batch_inference
-from texify.model.model import GenerateVisionEncoderDecoderModel
 from tqdm import tqdm
 
 from marker.models import TexifyPredictor
@@ -32,6 +29,10 @@ class EquationProcessor(BaseProcessor):
         int,
         "The number of tokens to buffer above max for the Texify model.",
     ] = 256
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
 
     def __init__(self, texify_model: TexifyPredictor, config=None):
         super().__init__(config)
@@ -80,7 +81,7 @@ class EquationProcessor(BaseProcessor):
         predictions = [""] * len(equation_data)
         batch_size = self.get_batch_size()
 
-        for i in tqdm(range(0, len(equation_data), batch_size), desc="Recognizing equations"):
+        for i in tqdm(range(0, len(equation_data), batch_size), desc="Recognizing equations", disable=self.disable_tqdm):
             # Dynamically set max length to save inference time
             min_idx = i
             max_idx = min(min_idx + batch_size, len(equation_data))
