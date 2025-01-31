@@ -1,18 +1,16 @@
 import copy
-from typing import Annotated, List, Optional, Tuple
+from typing import Annotated, List, Optional
 
 from ftfy import fix_text
 from surya.recognition import RecognitionPredictor
 
 from marker.builders import BaseBuilder
-from marker.providers import ProviderOutput, ProviderPageLines
+from marker.providers import ProviderPageLines
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.blocks import BlockId
 from marker.schema.document import Document
-from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
-from marker.schema.text.line import Line
 from marker.schema.text.span import Span
 from marker.settings import settings
 
