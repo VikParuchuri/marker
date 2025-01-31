@@ -1,6 +1,8 @@
 from typing import Annotated, List, Optional, Tuple
 
+from ftfy import fix_text
 import numpy as np
+from collections import defaultdict
 
 from surya.detection import DetectionPredictor, InlineDetectionPredictor
 from surya.ocr_error import OCRErrorPredictor
@@ -113,8 +115,8 @@ class LineBuilder(BaseBuilder):
 
             if provider_lines_good:
                 #Merge inline math blocks into the provider lines, only persist new detected text lines which do not overlap with existing provider lines
-                page_lines[document_page.page_id].extend(self.merge_provider_lines_inline_math(document_page.page_id, provider_lines, detected_inline_math_lines, image_size, page_size))
                 boxes_to_ocr[document_page.page_id].extend(self.filter_detected_text_lines(provider_lines, detected_text_lines, image_size, page_size))
+                page_lines[document_page.page_id].extend(self.merge_provider_lines_inline_math(document_page.page_id, provider_lines, detected_inline_math_lines, image_size, page_size))
                 continue
 
             #Skip inline math merging if no provider lines are good; OCR all text lines and all inline math lines
@@ -193,53 +195,47 @@ class LineBuilder(BaseBuilder):
         return filtered_lines
 
 
-    def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size, min_inline_overlap=0.1, span_overlap_threshold=0.4):
-        updated_provider_lines = []
-        provider_to_math = {provider_line: [] for provider_line in provider_lines}
+    def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size, line_overlap_threshold=0.):
+        #When provider lines is empty
+        if not provider_lines:
+            return provider_lines
 
-        SpanClass: Span = get_block_class(BlockTypes.Span)
+        updated_provider_lines = []
+        provider_line_to_inline = {provider_line: [] for provider_line in provider_lines}
+        provider_has_chars = provider_lines[0].chars is not None
 
         for math_line in inline_math_lines:
             math_line_polygon = PolygonBox(polygon=math_line.polygon).rescale(image_size, page_size)
             math_line_area = math_line_polygon.area
+            if math_line_area == 0:
+                continue
+            
             best_match = None
-            best_overlap = min_inline_overlap if min_inline_overlap else 0        #Start with this threshold atleast, skip all boxes if not reached
+            best_overlap = line_overlap_threshold
 
             for provider_line in provider_lines:
-                intersection_area = provider_line.line.polygon.intersection_area(math_line_polygon)
+                overlap = provider_line.line.polygon.intersection_area(math_line_polygon) / math_line_area
+                if overlap>line_overlap_threshold:
+                    self._reconstruct_provider_line(provider_line, math_line_polygon, provider_has_chars)
+                    pass
+                if overlap>best_overlap:
+                    best_overlap = overlap
+                    best_match = provider_line
                 
-                if math_line_area > 0:
-                    overlap = intersection_area / math_line_area
-                    if overlap > best_overlap:
-                        best_overlap = overlap
-                        best_match = provider_line
-            
             if best_match:
-                provider_to_math[best_match].append(math_line)
+                provider_line_to_inline[best_match].append(math_line)
 
-        for provider_line, math_lines in provider_to_math.items():
+        for provider_line, math_lines in provider_line_to_inline.items():
             #No intersection with math, or vertical text line - Skip
             if not math_lines or provider_line.line.polygon.height>provider_line.line.polygon.width:
                 updated_provider_lines.append(provider_line)
                 continue
 
-            #Remove all spans in the line that intersect with the math line
-            spans_to_keep = []
-            for span in provider_line.spans:
-                flag = False
-                span_area = span.polygon.area
-                for math_line in math_lines:
-                    math_line_polygon = PolygonBox(polygon=math_line.polygon).rescale(image_size, page_size)
-                    overlap = span.polygon.intersection_area(math_line_polygon)/span_area
-                    if overlap>span_overlap_threshold:
-                        flag = True
-                        break
-                if not flag:
-                    spans_to_keep.append(span)
-
+            new_spans = provider_line.spans
             #Add math lines in as new spans - Empty text to be replaced with latex by EquationProcessor later
+            SpanClass: Span = get_block_class(BlockTypes.Span)
             for math_line in math_lines:
-                spans_to_keep.append(
+                new_spans.append(
                     SpanClass(
                         text="",
                         formats=['math'],
@@ -252,10 +248,38 @@ class LineBuilder(BaseBuilder):
                         font_size=0,
                     )
                 )
-            provider_line.spans = sorted(spans_to_keep, key=lambda s:s.polygon.x_start)
+            provider_line.spans = sorted(new_spans, key=lambda s:s.polygon.x_start)
             updated_provider_lines.append(provider_line)
 
         return updated_provider_lines
+
+    def _reconstruct_provider_line(self, provider_line, math_line_polygon, provider_has_chars, span_overlap_threshold=0.4):
+        spans_to_keep = []
+        spans = provider_line.spans
+
+        if False:
+            chars_per_span = provider_line.chars
+            for span, chars in zip(spans, chars_per_span):
+                chars_to_keep = []
+                for char in chars:
+                    if char.polygon.x_start >= math_line_polygon.x_start and char.polygon.x_end <= math_line_polygon.x_end:
+                        pass
+                    else:
+                        chars_to_keep.append(char)
+                if chars_to_keep:
+                    span.text = fix_text(''.join(c.char for c in chars_to_keep))
+                    spans_to_keep.append(span)
+        else:
+            for span in spans:
+                span_area = span.polygon.area
+                overlap = span.polygon.intersection_area(math_line_polygon)/span_area
+                if overlap>=span_overlap_threshold:
+                    pass
+                else:
+                    spans_to_keep.append(span)
+        provider_line.spans = spans_to_keep
+
+
 
     def check_layout_coverage(
         self,
