@@ -2,6 +2,7 @@ from typing import Annotated
 
 from marker.builders import BaseBuilder
 from marker.builders.layout import LayoutBuilder
+from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
@@ -27,9 +28,10 @@ class DocumentBuilder(BaseBuilder):
         "Disable OCR processing.",
     ] = False
 
-    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, ocr_builder: OcrBuilder):
+    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, line_builder: LineBuilder, ocr_builder: OcrBuilder):
         document = self.build_document(provider)
         layout_builder(document, provider)
+        line_builder(document, provider)
         if not self.disable_ocr:
             ocr_builder(document, provider)
         return document

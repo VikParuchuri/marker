@@ -7,7 +7,7 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for a 
 from typing import List
 from PIL import Image
 
-from surya.detection import DetectionPredictor
+from surya.detection import DetectionPredictor, InlineDetectionPredictor
 from surya.layout import LayoutPredictor
 from surya.ocr_error import OCRErrorPredictor
 from surya.recognition import RecognitionPredictor
@@ -45,5 +45,6 @@ def create_model_dict(device=None, dtype=None) -> dict:
         "recognition_model": RecognitionPredictor(device=device, dtype=dtype),
         "table_rec_model": TableRecPredictor(device=device, dtype=dtype),
         "detection_model": DetectionPredictor(device=device, dtype=dtype),
+        "inline_detection_model": InlineDetectionPredictor(device=device, dtype=dtype),
         "ocr_error_model": OCRErrorPredictor(device=device, dtype=dtype)
     }
