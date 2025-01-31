@@ -4,10 +4,9 @@ from typing import TypedDict, List, Dict, Optional
 class BlockScores(TypedDict):
     scores: List[float]
     order_score: float
-    gt: List[str]
-    method: str
     overall_score: float
     time: Optional[float]
+    markdown: str
 
 
 class FullResult(TypedDict):

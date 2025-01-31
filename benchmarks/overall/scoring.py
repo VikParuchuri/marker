@@ -2,9 +2,8 @@ from typing import List
 
 from rapidfuzz import fuzz
 
+from benchmarks.overall.clean import convert_to_md, MarkdownCleaner
 from benchmarks.overall.schema import BlockScores
-from marker.renderers.markdown import MarkdownRenderer
-import re
 
 
 def kendall_tau(correct_order: List[int], actual_order: List[int]) -> float:
@@ -58,112 +57,19 @@ def find_fuzzy_alignments(
         })
     return alignments
 
-def convert_to_md(html):
-    md = MarkdownRenderer()
-    markdown = md.md_cls.convert(html)
-    return markdown
 
-def standardize_markdown(markdown):
-    # Replace math expressions
-    pattern = r'(?<!\\)\$(?:\$([^$]+)\$\$|\s*([^$\n]+?)\s*\$)'
-    markdown = re.sub(pattern, standardize_math, markdown)
-
-    # Replace image urls
-    pattern = r'!\[(.*?)\]\((https?://[^\s\)]+)\)'
-    markdown =  re.sub(pattern, r'![link]', markdown)
-    markdown = strip_latex_symbols(markdown)
-    markdown = replace_centered_lines(markdown)
-
-    # Clean up html tags
-    markdown = markdown.replace("<br>", "\n")
-    markdown = re.sub(r"<sub>(.*?)</sub>", r"\1", markdown)
-    markdown = re.sub(r"<sup>(.*?)</sup>", r"\1", markdown)
-    markdown = re.sub(r"<span.*?>(.*?)</span>", r"\1", markdown) # Remove span tags and keep content
-
-    # Clean up markdown
-    markdown = re.sub(r"\s+", " ", markdown)
-    markdown = re.sub(r"\n+", "\n", markdown)
-    markdown = re.sub("\\.+", ".", markdown) # Replace repeated periods with a single period, like in table of contents
-    markdown = re.sub("#+", "#", markdown) # Replace repeated headers with a single header
-    markdown = re.sub(r"\$", "", markdown) # Remove equation delimiters
-    markdown = markdown.encode().decode('unicode-escape', errors="ignore") # Decode unicode characters properly
-    return markdown.strip().lower()
-
-
-def replace_centered_lines(text):
-    def replace_match(m):
-        content = m.group(0)
-        dash_count = content.count('-')
-        return '-' * dash_count
-
-    pattern = r':-+:'
-    return re.sub(pattern, replace_match, text)
-
-
-def strip_latex_symbols(text):
-    # Handle short math mode sequences first - only match $ $ with brief content
-    text = re.sub(r'\$\s*\\?[a-zA-Z]+\d?\s*\$', '', text)
-
-    # Handle common patterns inside remaining math mode
-    patterns = [
-        r'\$\s*\\?[a-zA-Z]+\d?\s*\$',  # \alpha or \alpha2 in math mode
-        r'\$\s*\d+\\[a-zA-Z]+\s*\$',  # 45\circ in math mode
-        r'\$\s*[a-zA-Z0-9]\\[a-zA-Z]+\s*\$'  # x\dagger in math mode
-    ]
-
-    pattern = '|'.join(patterns)
-    return re.sub(pattern, '', text)
-
-
-def standardize_math(match):
-    try:
-        delim = "$$" if match.group(0).startswith('$$') else "$"
-        math_content = match.group(1) or match.group(2)
-        result = clean_latex(math_content)
-        return f'{delim}{result}{delim}'
-    except Exception as e:
-        print(f"Failed to standardize math expression: {match.group(0)} with error: {e}")
-        return match.group(0)
-
-
-def clean_latex(latex_str):
-    latex_str = re.sub(r'\s+', ' ', latex_str.strip())
-    for tag in [r'\\text', r'\\mathrm', r'\\mathbf', r'\\textbf']:
-        latex_str = re.sub(tag + r'\{([^}]+)\}', r'\1', latex_str)
-
-
-    replacements = {
-        '\\times': '*',
-        '\\cdot': '*',
-        '\\div': '/',
-        '\\le': '<=',
-        '\\ge': '>=',
-        '\\neq': '!=',
-        '\\to': '\\rightarrow',
-    }
-
-    for old, new in replacements.items():
-        latex_str = latex_str.replace(old, new)
-
-    return latex_str
-
-
-def score_blocks(gt_html, method_html, convert=True) -> BlockScores:
-    if convert:
-        method_html = convert_to_md(method_html)
-    method_html = standardize_markdown(method_html)
-    gt = [standardize_markdown(convert_to_md(gt)) for gt in gt_html]
-    alignments = find_fuzzy_alignments(method_html, gt)
+def score_blocks(gt_markdown: List[str], method_markdown: str) -> BlockScores:
+    alignments = find_fuzzy_alignments(method_markdown, gt_markdown)
     scores = [alignment["score"] for alignment in alignments]
 
     # Find order score
     orders = [alignment["start"] for alignment in alignments]
-    correct_order = list(range(len(gt)))
-    actual_order = sorted(range(len(gt)), key=lambda x: orders[x])
+    correct_order = list(range(len(gt_markdown)))
+    actual_order = sorted(range(len(gt_markdown)), key=lambda x: orders[x])
     order_score = kendall_tau(correct_order, actual_order)
 
     # Weight score by sequence length
-    gt_weights = [len(g) for g in gt]
+    gt_weights = [len(g) for g in gt_markdown]
     weighted_scores = [score * weight for score, weight in zip(scores, gt_weights)]
 
     # Weight the score by sequence length
@@ -172,8 +78,6 @@ def score_blocks(gt_html, method_html, convert=True) -> BlockScores:
     return {
         "scores": scores,
         "order_score": order_score,
-        "gt": gt,
-        "method": method_html,
         "overall_score": overall_score,
         "time": None
     }

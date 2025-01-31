@@ -7,9 +7,11 @@ from typing import Dict
 import click
 import datasets
 import tabulate
+from benchmarks.overall.render import build_dataset
 from tqdm import tqdm
 import pypdfium2 as pdfium
 
+from benchmarks.overall.clean import convert_to_md, clean_input
 from benchmarks.overall.inference import marker_scoring_func, mathpix_scoring_func
 from benchmarks.overall.schema import FullResult
 from marker.logger import configure_logging
@@ -32,7 +34,8 @@ def get_method_scores(ds, model_dict, max_rows=None, score_func=marker_scoring_f
 
         try:
             gt_html = [block["html"] for block in gt_blocks if len(block["html"]) > 0]
-            scores = score_func(model_dict, sample, gt_html, **kwargs)
+            gt_markdown = [clean_input(convert_to_md(block)) for block in gt_html]
+            scores = score_func(model_dict, sample, gt_markdown, **kwargs)
         except ValueError as e:
             print(f"Error with sample {idx}: {e}")
             continue
@@ -101,12 +104,14 @@ def print_scores(scores: Dict[str, FullResult], out_path: Path, default_method="
 
 @click.command(help="Benchmark PDF to MD conversion.")
 @click.option("--dataset", type=str, help="Path to the benchmark dataset", default="datalab-to/marker_benchmark")
+@click.option("--out_dataset", type=str, help="Path to the output dataset", default=None)
 @click.option("--other_methods", type=str, help="Comma separated list of other methods to compare against.  Possible values: mathpix", default="")
 @click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "overall"), help="Output path for results.")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of rows to process.")
 @click.option("--use_llm", is_flag=True, help="Use the LLM model for better marker quality.")
 def main(
         dataset: str,
+        out_dataset: str,
         other_methods: str,
         result_path: str,
         max_rows: int,
@@ -141,6 +146,11 @@ def main(
         json.dump(all_scores, f, indent=2, ensure_ascii=False)
 
     print(f"Results saved to {out_path}.")
+
+    # Push up comparison dataset
+    if out_dataset is not None:
+        out_ds = build_dataset(ds, all_scores)
+        out_ds.push_to_hub(out_dataset)
 
 if __name__ == "__main__":
     main()
