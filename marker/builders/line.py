@@ -56,6 +56,18 @@ class LineBuilder(BaseBuilder):
         "The minimum ratio of pages that must pass the layout coverage check",
         "to avoid OCR.",
     ] = .8
+    detected_provider_line_overlap: Annotated[
+        float,
+        "The maximum overlap between a detected text line and a provider line to consider as a new line"
+    ] = .3
+    span_inline_math_overlap_threshold: Annotated[
+        float,
+        "The minimum overlap of a span with an inline math box to consider for removal"
+    ] = .5
+    line_inline_math_overlap_threshold: Annotated[
+        float,
+        "The minimum overlap of a provider line with an inline math box to consider as a match"
+    ] = 0.
     excluded_for_coverage: Annotated[
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
@@ -177,7 +189,7 @@ class LineBuilder(BaseBuilder):
         )
         return ocr_error_detection_results
 
-    def filter_detected_text_lines(self, provider_lines, detected_text_lines, image_size, page_size, threshold=0.7):
+    def filter_detected_text_lines(self, provider_lines, detected_text_lines, image_size, page_size):
         filtered_lines = []
         for detected_line in detected_text_lines:
             keep_line = True
@@ -185,7 +197,7 @@ class LineBuilder(BaseBuilder):
             detected_line_area = detected_line_polygon.area
             for provider_line in provider_lines:
                 intersection_area = provider_line.line.polygon.intersection_area(detected_line_polygon)
-                if detected_line_area > 0 and (intersection_area / detected_line_area) > threshold:
+                if detected_line_area > 0 and (intersection_area / detected_line_area) > self.detected_provider_line_overlap:
                     keep_line = False
                     break
             
@@ -195,14 +207,13 @@ class LineBuilder(BaseBuilder):
         return filtered_lines
 
 
-    def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size, line_overlap_threshold=0.):
+    def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size):
         #When provider lines is empty
         if not provider_lines:
             return provider_lines
 
         updated_provider_lines = []
         provider_line_to_inline = {provider_line: [] for provider_line in provider_lines}
-        provider_has_chars = provider_lines[0].chars is not None
 
         for math_line in inline_math_lines:
             math_line_polygon = PolygonBox(polygon=math_line.polygon).rescale(image_size, page_size)
@@ -211,12 +222,15 @@ class LineBuilder(BaseBuilder):
                 continue
             
             best_match = None
-            best_overlap = line_overlap_threshold
+            best_overlap = self.line_inline_math_overlap_threshold
 
             for provider_line in provider_lines:
                 overlap = provider_line.line.polygon.intersection_area(math_line_polygon) / math_line_area
-                if overlap>line_overlap_threshold:
-                    self._reconstruct_provider_line(provider_line, math_line_polygon, provider_has_chars)
+                if overlap>self.line_inline_math_overlap_threshold:
+                    print(overlap, repr(' '.join(s.text for s in provider_line.spans)))
+                    print('-'*100)
+                    self._reconstruct_provider_line(provider_line, math_line_polygon)
+                    print('_'*100)
                     pass
                 if overlap>best_overlap:
                     best_overlap = overlap
@@ -224,6 +238,7 @@ class LineBuilder(BaseBuilder):
                 
             if best_match:
                 provider_line_to_inline[best_match].append(math_line)
+            import ipdb; ipdb.set_trace()
 
         for provider_line, math_lines in provider_line_to_inline.items():
             #No intersection with math, or vertical text line - Skip
@@ -253,32 +268,17 @@ class LineBuilder(BaseBuilder):
 
         return updated_provider_lines
 
-    def _reconstruct_provider_line(self, provider_line, math_line_polygon, provider_has_chars, span_overlap_threshold=0.4):
+    def _reconstruct_provider_line(self, provider_line, math_line_polygon):
         spans_to_keep = []
         spans = provider_line.spans
 
-        if False:
-            chars_per_span = provider_line.chars
-            for span, chars in zip(spans, chars_per_span):
-                chars_to_keep = []
-                for char in chars:
-                    if char.polygon.x_start >= math_line_polygon.x_start and char.polygon.x_end <= math_line_polygon.x_end:
-                        pass
-                    else:
-                        chars_to_keep.append(char)
-                if chars_to_keep:
-                    span.text = fix_text(''.join(c.char for c in chars_to_keep))
-                    spans_to_keep.append(span)
-        else:
-            for span in spans:
-                span_area = span.polygon.area
-                overlap = span.polygon.intersection_area(math_line_polygon)/span_area
-                if overlap>=span_overlap_threshold:
-                    pass
-                else:
-                    spans_to_keep.append(span)
+        for span in spans:
+            span_area = span.polygon.area
+            overlap = span.polygon.intersection_area(math_line_polygon)/span_area
+            print(overlap, repr(span.text))
+            if overlap<self.span_inline_math_overlap_threshold:
+                spans_to_keep.append(span)
         provider_line.spans = spans_to_keep
-
 
 
     def check_layout_coverage(

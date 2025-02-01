@@ -11,7 +11,7 @@ from pdftext.schema import Reference
 from PIL import Image
 from pypdfium2 import PdfiumError
 
-from marker.providers import BaseProvider, ProviderOutput, SpanChar, ProviderPageLines
+from marker.providers import BaseProvider, ProviderOutput, ProviderPageLines
 from marker.providers.utils import alphanum_ratio
 from marker.schema import BlockTypes
 from marker.schema.polygon import PolygonBox
@@ -191,9 +191,7 @@ class PdfProvider(BaseProvider):
             for block in page["blocks"]:
                 for line in block["lines"]:
                     spans: List[Span] = []
-                    chars = []
                     for span in line["spans"]:
-                        span_chars = [SpanChar(char=c['char'], polygon=PolygonBox.from_bbox(c['bbox'], ensure_nonzero_area=True)) for c in span['chars']]
                         if not span["text"]:
                             continue
                         font_formats = self.font_flags_to_format(span["font"]["flags"]).union(self.font_names_to_format(span["font"]["name"]))
@@ -216,13 +214,11 @@ class PdfProvider(BaseProvider):
                                 url=span.get("url"),
                             )
                         )
-                        chars.append(span_chars)
                     polygon = PolygonBox.from_bbox(line["bbox"], ensure_nonzero_area=True)
                     lines.append(
                         ProviderOutput(
                             line=LineClass(polygon=polygon, page_id=page_id),
                             spans=spans,
-                            chars=chars
                         )
                     )
             if self.check_line_spans(lines):

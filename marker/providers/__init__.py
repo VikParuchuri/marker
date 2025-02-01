@@ -10,14 +10,9 @@ from marker.schema.text import Span
 from marker.schema.text.line import Line
 from marker.util import assign_config
 
-class SpanChar(BaseModel):
-    polygon: PolygonBox
-    char: str
-
 class ProviderOutput(BaseModel):
     line: Line
     spans: List[Span]
-    chars: Optional[List[List[SpanChar]]] = None
 
     @property
     def raw_text(self):
