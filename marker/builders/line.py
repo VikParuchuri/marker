@@ -227,10 +227,7 @@ class LineBuilder(BaseBuilder):
             for provider_line in provider_lines:
                 overlap = provider_line.line.polygon.intersection_area(math_line_polygon) / math_line_area
                 if overlap>self.line_inline_math_overlap_threshold:
-                    print(overlap, repr(' '.join(s.text for s in provider_line.spans)))
-                    print('-'*100)
                     self._reconstruct_provider_line(provider_line, math_line_polygon)
-                    print('_'*100)
                     pass
                 if overlap>best_overlap:
                     best_overlap = overlap
@@ -238,7 +235,6 @@ class LineBuilder(BaseBuilder):
                 
             if best_match:
                 provider_line_to_inline[best_match].append(math_line)
-            import ipdb; ipdb.set_trace()
 
         for provider_line, math_lines in provider_line_to_inline.items():
             #No intersection with math, or vertical text line - Skip
@@ -275,7 +271,6 @@ class LineBuilder(BaseBuilder):
         for span in spans:
             span_area = span.polygon.area
             overlap = span.polygon.intersection_area(math_line_polygon)/span_area
-            print(overlap, repr(span.text))
             if overlap<self.span_inline_math_overlap_threshold:
                 spans_to_keep.append(span)
         provider_line.spans = spans_to_keep
