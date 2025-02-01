@@ -29,10 +29,10 @@ The number of output lines MUST match the number of input lines.  Stay as faithf
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
 5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.
-6. Do not remove any <a href='#...'>...</a> tags, those are important for references and are coming directly from the document, you MUST always keep them.
-7. Ensure that inline math is properly with inline math tags.
-8. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.
-9. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.
+6. Ensure that inline math is properly with inline math tags.
+7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.
+8. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.
+9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
 **Example:**
 
@@ -40,7 +40,7 @@ Input:
 ```
 {
  "extracted_lines": [
-  "Adversarial training (AT) [23], which aims to minimize\n",
+  "Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize\n",
   "the model's risk under the worst-case perturbations, is cur-\n",
   "rently the most effective approach for improving the robust-\n",
   "ness of deep neural networks. For a given neural network\n",
@@ -55,7 +55,7 @@ Output:
 ```json
 {
  "corrected_lines": [
-  "Adversarial training (AT) [23], which aims to minimize\n",
+  "Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize\n",
   "the model's risk under the worst-case perturbations, is cur-\n",
   "rently the most effective approach for improving the robust-\n",
   "ness of deep neural networks. For a given neural network\n",
