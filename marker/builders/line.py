@@ -64,6 +64,10 @@ class LineBuilder(BaseBuilder):
         float,
         "The minimum overlap of a span with an inline math box to consider for removal"
     ] = .5
+    char_inline_math_overlap_threshold: Annotated[
+        float,
+        "The minimum overlap of a character with an inline math box to consider for removal"
+    ] = .5
     line_inline_math_overlap_threshold: Annotated[
         float,
         "The minimum overlap of a provider line with an inline math box to consider as a match"
@@ -267,13 +271,68 @@ class LineBuilder(BaseBuilder):
     def _reconstruct_provider_line(self, provider_line, math_line_polygon):
         spans_to_keep = []
         spans = provider_line.spans
+        SpanClass: Span = get_block_class(BlockTypes.Span)
 
-        for span in spans:
-            span_area = span.polygon.area
-            overlap = span.polygon.intersection_area(math_line_polygon)/span_area
-            if overlap<self.span_inline_math_overlap_threshold:
+        #For providers which do not surface characters
+        if provider_line.chars is None:
+            for span in spans:
+                if span.polygon.intersection_pct(math_line_polygon)<self.span_inline_math_overlap_threshold:
+                    spans_to_keep.append(span)
+            provider_line.spans = spans_to_keep
+            return
+
+        #For providers which surface characters - Split the span based on overlapping characters
+        chars_to_keep = []
+        assert len(spans) == len(provider_line.chars)
+        for span, span_chars in zip(spans, provider_line.chars):
+            if span.polygon.intersection_area(math_line_polygon)==0:
                 spans_to_keep.append(span)
+                chars_to_keep.append(span_chars)
+                continue
+            #Split at the inline math
+            left_chars, right_chars = [], []
+            math_line_center_x = math_line_polygon.center[0]
+
+            for char in span_chars:
+                if char.polygon.intersection_pct(math_line_polygon)>self.char_inline_math_overlap_threshold:
+                    continue  # Skip characters that overlap with the math polygon
+                
+                # Since chars are already in left-to-right order, we can just check position
+                if char.polygon.center[0] < math_line_center_x:
+                    left_chars.append(char)
+                else:
+                    right_chars.append(char)
+
+            if left_chars:
+                left_polygon = left_chars[0].polygon.merge([c.polygon for c in left_chars])
+                spans_to_keep.append(SpanClass(
+                    text=fix_text(''.join(c.char for c in left_chars)),
+                    formats=span.formats,
+                    page_id=span.page_id,
+                    polygon=left_polygon,
+                    minimum_position=left_chars[0].char_idx,
+                    maximum_position=left_chars[-1].char_idx,
+                    font=span.font,
+                    font_weight=span.font_weight,
+                    font_size=span.font_size
+                ))
+                chars_to_keep.append(left_chars)
+            if right_chars:
+                right_polygon = right_chars[0].polygon.merge([c.polygon for c in right_chars])
+                spans_to_keep.append(SpanClass(
+                    text=fix_text(''.join(c.char for c in right_chars)),
+                    formats=span.formats,
+                    page_id=span.page_id,
+                    polygon=right_polygon,
+                    minimum_position=right_chars[0].char_idx,
+                    maximum_position=right_chars[-1].char_idx,
+                    font=span.font,
+                    font_weight=span.font_weight,
+                    font_size=span.font_size
+                ))
+                chars_to_keep.append(right_chars)
         provider_line.spans = spans_to_keep
+        provider_line.chars = chars_to_keep
 
 
     def check_layout_coverage(
