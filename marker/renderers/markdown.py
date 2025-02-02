@@ -12,12 +12,16 @@ from marker.schema import BlockTypes
 from marker.schema.document import Document
 
 
+def escape_dollars(text):
+    return text.replace("$", r"\$")
+
 def cleanup_text(full_text):
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
     return full_text.strip()
 
 def get_formatted_table_text(element):
+
     text = []
     for content in element.contents:
         if content is None:
@@ -26,13 +30,14 @@ def get_formatted_table_text(element):
         if isinstance(content, NavigableString):
             stripped = content.strip()
             if stripped:
-                text.append(stripped)
+                text.append(escape_dollars(stripped))
         elif content.name == 'br':
             text.append('<br>')
         elif content.name == "math":
             text.append("$" + content.text + "$")
         else:
-            text.append(str(content))
+            content_str = escape_dollars(str(content))
+            text.append(content_str)
 
     full_text = ""
     for i, t in enumerate(text):
@@ -120,7 +125,7 @@ class Markdownify(MarkdownConverter):
                             if r == 0 and c == 0:
                                 grid[row_idx][col_idx] = value
                             else:
-                                grid[row_idx + r][col_idx + c] = ''
+                                grid[row_idx + r][col_idx + c] = '' # Empty cell due to rowspan/colspan
                         except IndexError:
                             # Sometimes the colspan/rowspan predictions can overflow
                             print(f"Overflow in columns: {col_idx + c} >= {total_cols}")
