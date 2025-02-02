@@ -1,3 +1,4 @@
+import re
 from typing import Annotated, List, Optional, Tuple
 
 from texify.inference import batch_inference
@@ -7,7 +8,9 @@ from tqdm import tqdm
 from marker.models import TexifyPredictor
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
+from marker.schema.blocks.equation import Equation
 from marker.schema.document import Document
+from marker.schema.text.span import Span
 from marker.settings import settings
 
 
@@ -42,16 +45,17 @@ class EquationProcessor(BaseProcessor):
         equation_data = []
 
         for page in document.pages:
-            for block in page.contained_blocks(document, self.block_types):
-                image = block.get_image(document, highres=False).convert("RGB")
-                raw_text = block.raw_text(document)
-                token_count = self.get_total_texify_tokens(raw_text)
+            for block in page.contained_blocks(document):
+                if isinstance(block, Equation) or (isinstance(block, Span) and 'math' in block.formats):
+                    image = block.get_image(document, highres=False).convert("RGB")
+                    raw_text = block.raw_text(document)
+                    token_count = self.get_total_texify_tokens(raw_text)
 
-                equation_data.append({
-                    "image": image,
-                    "block_id": block.id,
-                    "token_count": token_count
-                })
+                    equation_data.append({
+                        "image": image,
+                        "block_id": block.id,
+                        "token_count": token_count
+                    })
 
         predictions = self.get_latex_batched(equation_data)
         for prediction, equation_d in zip(predictions, equation_data):
@@ -63,9 +67,14 @@ class EquationProcessor(BaseProcessor):
             ]
             if not all(conditions):
                 continue
-
+            
             block = document.get_block(equation_d["block_id"])
-            block.html = prediction
+            if isinstance(block, Equation):
+                block.html = prediction
+            elif isinstance(block, Span) and 'math' in block.formats:
+                block.text = re.sub(r"<math[^>]*>(.*?)</math>", r"$\1$", prediction)
+            else:
+                raise ValueError(f"Unexpected block of type {block.block_type}")
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:
