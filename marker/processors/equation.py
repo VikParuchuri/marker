@@ -72,7 +72,7 @@ class EquationProcessor(BaseProcessor):
             if isinstance(block, Equation):
                 block.html = prediction
             elif isinstance(block, Span) and 'math' in block.formats:
-                block.text = re.sub(r"<math[^>]*>(.*?)</math>", r"$\1$", prediction)
+                block.text = re.sub(r'<[^>]+>', '', prediction)
             else:
                 raise ValueError(f"Unexpected block of type {block.block_type}")
 
