@@ -15,3 +15,4 @@ class FullResult(TypedDict):
     averages_by_block_type: Dict[str, List[float]]
     average_time: float
     average_score: float
+    gt_markdown: List[str]

@@ -56,7 +56,7 @@ def get_method_scores(ds, model_dict, max_rows=None, score_func=marker_scoring_f
         "averages_by_type": averages_by_type,
         "averages_by_block_type": averages_by_block_type,
         "average_time": avg_time,
-        "average_score": sum([bench_scores[k]["overall_score"] for k in bench_scores]) / len(bench_scores)
+        "average_score": sum([bench_scores[k]["overall_score"] for k in bench_scores]) / len(bench_scores),
     }
 
 def print_scores(scores: Dict[str, FullResult], out_path: Path, default_method="marker"):

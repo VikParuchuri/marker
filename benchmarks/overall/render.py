@@ -12,6 +12,7 @@ import datasets
 import markdown2
 from playwright.sync_api import sync_playwright
 
+from benchmarks.overall.clean import convert_to_md, clean_input
 from benchmarks.overall.schema import FullResult
 
 def convert_to_html(md: str):
@@ -90,7 +91,13 @@ def build_dataset(ds: datasets.Dataset, all_scores: Dict[str, FullResult]) -> da
 
     ds_rows = defaultdict(dict)
     for idx in full_idxs:
-        row = ds[idx] # img, gt_blocks, classification, language, uuid
+        row = ds[idx]
+        ds_rows[idx].update({
+            "img": row["img"],
+            "classification": row["classification"],
+            "language": row["language"],
+            "uuid": row["uuid"]
+        })
         for method in all_scores:
             method_row = all_scores[method]["raw_scores"][idx]
             ds_rows[idx].update({
@@ -99,10 +106,11 @@ def build_dataset(ds: datasets.Dataset, all_scores: Dict[str, FullResult]) -> da
                 f"{method}_image": markdown_to_image(method_row["markdown"]),
                 f"{method}_time": method_row["time"]
             })
-        gt_md = "\n\n".join([clean_input(convert_to_md(block)) for block in json.loads(row["gt_blocks"])])
+        gt_html = [block["html"] for block in json.loads(row["gt_blocks"]) if len(block["html"]) > 0]
+        gt_md = "\n\n".join([convert_to_md(block) for block in gt_html])
         ds_rows[idx].update({
             "gt_markdown": gt_md,
-            "gt_image": markdown_to_image(gt_md)
+            "gt_markdown_image": markdown_to_image(gt_md)
         })
     out_dataset = datasets.Dataset.from_list([ds_rows[k] for k in full_idxs])
     return out_dataset
