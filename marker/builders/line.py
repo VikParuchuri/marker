@@ -67,7 +67,7 @@ class LineBuilder(BaseBuilder):
     char_inline_math_overlap_threshold: Annotated[
         float,
         "The minimum overlap of a character with an inline math box to consider for removal"
-    ] = .5
+    ] = .8
     line_inline_math_overlap_threshold: Annotated[
         float,
         "The minimum overlap of a provider line with an inline math box to consider as a match"
@@ -112,7 +112,6 @@ class LineBuilder(BaseBuilder):
         )
         ocr_error_detection_results = self.ocr_error_detection(document.pages, provider.page_lines)
 
-        #For each page, need to carry out the following steps:
         boxes_to_ocr = {page.page_id: [] for page in document.pages}
         page_lines = {page.page_id: [] for page in document.pages}
 
@@ -124,6 +123,7 @@ class LineBuilder(BaseBuilder):
             detection_result_split = self.split_detected_text_and_inline_boxes(text_boxes=[box for box in detection_result.bboxes], inline_boxes=[box for box in inline_detection_result.bboxes])
             detected_text_lines = [box for box in detection_result_split if not box.math]
             detected_inline_math_lines = [box for box in detection_result_split if box.math]
+
             image_size = PolygonBox.from_bbox(detection_result.image_bbox).size
             page_size = provider.get_page_bbox(document_page.page_id).size
 
@@ -294,7 +294,7 @@ class LineBuilder(BaseBuilder):
             math_line_center_x = math_line_polygon.center[0]
 
             for char in span_chars:
-                if char.polygon.intersection_pct(math_line_polygon)>self.char_inline_math_overlap_threshold:
+                if char.polygon.intersection_pct(math_line_polygon)>=self.char_inline_math_overlap_threshold:
                     continue  # Skip characters that overlap with the math polygon
                 
                 # Since chars are already in left-to-right order, we can just check position
@@ -509,6 +509,5 @@ class LineBuilder(BaseBuilder):
                     confidence=inline_box.confidence,
                     math=True
                 ))
-
 
         return result_boxes

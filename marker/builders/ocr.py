@@ -96,11 +96,14 @@ class OcrBuilder(BaseBuilder):
         SpanClass: Span = get_block_class(BlockTypes.Span)
         for document_page, page_recognition_result, page_line_ids in zip(document.pages, recognition_results, line_ids):
             for line_id, ocr_line in zip(page_line_ids, page_recognition_result.text_lines):
+                if not fix_text(ocr_line.text):
+                    continue
+
                 line = document_page.get_block(line_id)
                 assert line.structure is None
                 new_span = SpanClass(
                     text=fix_text(ocr_line.text) + '\n',
-                    formats=['math'],
+                    formats=['plain'],
                     page_id=document_page.page_id,
                     polygon=copy.deepcopy(line.polygon),
                     minimum_position=0,
