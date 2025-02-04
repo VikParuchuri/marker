@@ -68,8 +68,10 @@ class OcrBuilder(BaseBuilder):
                 block_lines = block.contained_blocks(document, [BlockTypes.Line])
                 block_detected_lines = [block_line for block_line in block_lines if block_line.text_extraction_method=='surya']
                 if len(block_lines)==0 or len(block_detected_lines)/len(block_lines)<self.block_ocr_threshold:
+                    block.text_extraction_method = 'pdftext'
                     continue
-
+                
+                block.text_extraction_method = 'surya'
                 for line in block_detected_lines:
                     line_polygon = copy.deepcopy(line.polygon)
                     page_highres_boxes.append(line_polygon.rescale(page_size, image_size).bbox)
