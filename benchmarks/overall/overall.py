@@ -8,12 +8,13 @@ import click
 import datasets
 from tqdm import tqdm
 
+from benchmarks.overall.display.dataset import build_dataset
 from benchmarks.overall.registry import SCORE_REGISTRY, METHOD_REGISTRY
 from benchmarks.overall.schema import FullResult
 from marker.logger import configure_logging
 from marker.models import create_model_dict
 from marker.settings import settings
-from benchmarks.overall.display import print_scores
+from benchmarks.overall.display.table import print_scores
 
 configure_logging()
 
@@ -32,6 +33,7 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
         gt_cls = METHOD_REGISTRY["gt"]
         gt_blocks = json.loads(sample["gt_blocks"])
         gt_md = gt_cls(**artifacts)(sample)["markdown"]
+        markdown_by_method[idx]["gt"] = gt_md
 
         out_data = defaultdict(dict)
 
@@ -115,8 +117,13 @@ def main(
     # Display benchmark scoring tables
     print_scores(result, out_path, methods, score_types)
 
+    # Write to json
     with open(out_path / "result.json", "w") as f:
         json.dump(result, f)
+
+    if out_dataset:
+        dataset = build_dataset(benchmark_dataset, result, score_types)
+        dataset.push_to_hub(out_dataset)
 
 
 if __name__ == "__main__":

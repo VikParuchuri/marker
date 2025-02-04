@@ -6,7 +6,9 @@ def verify_scores(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
 
-    marker_score = data["marker"]["average_score"]
+    raw_scores = [data["scores"][k] for k in data["scores"]]
+    marker_scores = [r["marker"]["heuristic"]["score"] for r in raw_scores]
+    marker_score = sum(marker_scores) / len(marker_scores)
     if marker_score < 90:
         raise ValueError("Marker score below 90")
 
