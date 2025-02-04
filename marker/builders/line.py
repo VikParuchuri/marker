@@ -372,8 +372,9 @@ class LineBuilder(BaseBuilder):
 
     def merge_blocks(self, document: Document, page_provider_lines: ProviderPageLines, page_ocr_lines: ProviderPageLines):
         for document_page in document.pages:
-            document_page.merge_blocks(page_provider_lines[document_page.page_id], text_extraction_method="pdftext")
-            document_page.merge_blocks(page_ocr_lines[document_page.page_id], text_extraction_method="surya")
+            all_lines = page_provider_lines[document_page.page_id] + page_ocr_lines[document_page.page_id]
+            all_lines = list(sorted(all_lines, key=lambda line:(line.line.polygon.y_start, line.line.polygon.x_start)))
+            document_page.merge_blocks(all_lines, text_extraction_method=None)
 
 
     def split_detected_text_and_inline_boxes(
