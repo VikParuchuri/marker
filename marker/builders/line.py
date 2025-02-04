@@ -130,11 +130,14 @@ class LineBuilder(BaseBuilder):
             provider_lines_good = bool(provider) and ocr_error_detection_label!='bad' and self.check_layout_coverage(document_page, provider_lines)
 
             if provider_lines_good:
-                #Merge inline math blocks into the provider lines, only persist new detected text lines which do not overlap with existing provider lines
+                # Merge inline math blocks into the provider lines, only persist new detected text lines which do not overlap with existing provider lines
+                #The missing lines are not from a table, so we can safely set this - The attribute for individual blocks is overidden by OCRBuilder
+                document_page.text_extraction_method = 'pdftext'        
                 boxes_to_ocr[document_page.page_id].extend(self.filter_detected_text_lines(provider_lines, detected_text_lines, image_size, page_size))
                 page_lines[document_page.page_id].extend(self.merge_provider_lines_inline_math(document_page.page_id, provider_lines, detected_inline_math_lines, image_size, page_size))
                 continue
 
+            document_page.text_extraction_method = 'surya'
             #Skip inline math merging if no provider lines are good; OCR all text lines and all inline math lines
             boxes_to_ocr[document_page.page_id].extend(detected_text_lines)
             for line in detected_inline_math_lines:
