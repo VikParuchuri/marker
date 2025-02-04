@@ -91,6 +91,7 @@ class OcrBuilder(BaseBuilder):
             bboxes=line_boxes,
             langs=[self.languages] * len(document.pages),
             recognition_batch_size=int(self.get_recognition_batch_size()),
+            sort_lines=False
         )
 
         SpanClass: Span = get_block_class(BlockTypes.Span)

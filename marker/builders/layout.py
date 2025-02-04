@@ -45,7 +45,6 @@ class LayoutBuilder(BaseBuilder):
         else:
             layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
-        # self.merge_blocks(document.pages, provider.page_lines)
 
     def get_batch_size(self):
         if self.batch_size is not None:
