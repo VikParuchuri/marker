@@ -5,8 +5,6 @@ from pathlib import Path
 
 import latex2mathml.converter
 
-from marker.renderers.markdown import MarkdownRenderer
-
 class MarkdownCleaner:
     def __init__(self):
         pass
@@ -110,16 +108,6 @@ class MarkdownCleaner:
             latex_str = latex_str.replace(old, new)
 
         return latex_str
-
-
-def convert_to_md(html):
-    md = MarkdownRenderer()
-    markdown = md.md_cls.convert(html)
-    return markdown
-
-def clean_input(markdown):
-    cleaner = MarkdownCleaner()
-    return cleaner(markdown)
 
 
 
