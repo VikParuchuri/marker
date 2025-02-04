@@ -229,6 +229,8 @@ class LineBuilder(BaseBuilder):
             best_overlap = self.line_inline_math_overlap_threshold
 
             for provider_line in provider_lines:
+                if provider_line.line.polygon.height>provider_line.line.polygon.width:
+                    continue
                 overlap = provider_line.line.polygon.intersection_area(math_line_polygon) / math_line_area
                 if overlap>self.line_inline_math_overlap_threshold:
                     self._reconstruct_provider_line(provider_line, math_line_polygon)
@@ -371,11 +373,39 @@ class LineBuilder(BaseBuilder):
         return text_okay
 
     def merge_blocks(self, document: Document, page_provider_lines: ProviderPageLines, page_ocr_lines: ProviderPageLines):
-        for document_page in document.pages:
-            all_lines = page_provider_lines[document_page.page_id] + page_ocr_lines[document_page.page_id]
-            all_lines = list(sorted(all_lines, key=lambda line:(line.line.polygon.y_start, line.line.polygon.x_start)))
-            document_page.merge_blocks(all_lines, text_extraction_method=None)
+        def reading_order(line1, line2):
+            """
+            Determines the reading order between two lines, assuming lists of lines are already individually in reading order
+            """
+            poly1, poly2 = line1.line.polygon, line2.line.polygon
 
+            vertical_overlap = poly1.overlap_y(poly2)
+            avg_height = (poly1.height + poly2.height) / 2
+
+            if vertical_overlap > 0.5 * avg_height:
+                return poly1.x_start - poly2.x_start  # Left-to-right order
+            return poly1.y_start - poly2.y_start  # Top-to-bottom order
+
+        for document_page in document.pages:
+            provider_lines = page_provider_lines[document_page.page_id]
+            ocr_lines = page_ocr_lines[document_page.page_id]
+
+            merged_lines = []
+            i, j = 0, 0
+
+            while i < len(provider_lines) and j < len(ocr_lines):
+                if reading_order(provider_lines[i], ocr_lines[j]) <= 0:
+                    merged_lines.append(provider_lines[i])
+                    i += 1
+                else:
+                    merged_lines.append(ocr_lines[j])
+                    j += 1
+
+            merged_lines.extend(provider_lines[i:])
+            merged_lines.extend(ocr_lines[j:])
+
+            #Text extraction method is overidden later for OCRed documents
+            document_page.merge_blocks(merged_lines, text_extraction_method='pdftext')
 
     def split_detected_text_and_inline_boxes(
         self,
