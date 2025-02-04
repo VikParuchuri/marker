@@ -67,7 +67,7 @@ class LineBuilder(BaseBuilder):
     char_inline_math_overlap_threshold: Annotated[
         float,
         "The minimum overlap of a character with an inline math box to consider for removal"
-    ] = .8
+    ] = .5
     line_inline_math_overlap_threshold: Annotated[
         float,
         "The minimum overlap of a provider line with an inline math box to consider as a match"
