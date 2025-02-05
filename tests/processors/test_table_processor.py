@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 from marker.renderers.json import JSONRenderer
 
@@ -39,4 +41,39 @@ def test_avoid_double_ocr(pdf_document, detection_model, recognition_model, tabl
     renderer = MarkdownRenderer()
     table_output = renderer(pdf_document)
     assert "Participants" in table_output.markdown
+
+
+@pytest.mark.filename("multicol-blocks.pdf")
+@pytest.mark.config({"page_range": [3]})
+def test_overlap_blocks(pdf_document, detection_model, recognition_model, table_rec_model):
+    page = pdf_document.pages[0]
+    assert "Cascading, and the Auxiliary Problem Principle" in page.raw_text(pdf_document)
+
+    processor = TableProcessor(detection_model, recognition_model, table_rec_model)
+    processor(pdf_document)
+
+    assert "Cascading, and the Auxiliary Problem Principle" in page.raw_text(pdf_document)
+
+
+@pytest.mark.filename("pres.pdf")
+@pytest.mark.config({"page_range": [4]})
+def test_ocr_table(pdf_document, detection_model, recognition_model, table_rec_model):
+    processor = TableProcessor(detection_model, recognition_model, table_rec_model)
+    processor(pdf_document)
+
+    renderer = MarkdownRenderer()
+    table_output = renderer(pdf_document)
+    assert "1.2E-38" in table_output.markdown
+
+
+@pytest.mark.config({"page_range": [11]})
+def test_split_rows(pdf_document, detection_model, recognition_model, table_rec_model):
+    processor = TableProcessor(detection_model, recognition_model, table_rec_model)
+    processor(pdf_document)
+
+    table = pdf_document.contained_blocks((BlockTypes.Table,))[-1]
+    cells: List[TableCell] = table.contained_blocks(pdf_document, (BlockTypes.TableCell,))
+    unique_rows = len(set([cell.row_id for cell in cells]))
+    assert unique_rows == 6
+
 

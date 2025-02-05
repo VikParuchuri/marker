@@ -120,11 +120,10 @@ class PageGroup(Group):
                 continue
 
             max_intersection = intersection_line.argmax()
-            if intersection_matrix[line_idx, max_intersection] > 0:
-                max_intersections[line_idx] = (
-                    intersection_matrix[line_idx, max_intersection],
-                    blocks[max_intersection].id
-                )
+            max_intersections[line_idx] = (
+                intersection_matrix[line_idx, max_intersection],
+                blocks[max_intersection].id
+            )
         return max_intersections
 
     def replace_block(self, block: Block, new_block: Block):

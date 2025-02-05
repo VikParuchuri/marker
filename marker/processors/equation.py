@@ -22,7 +22,7 @@ class EquationProcessor(BaseProcessor):
     model_max_length: Annotated[
         int,
         "The maximum number of tokens to allow for the Texify model.",
-    ] = 384
+    ] = 768
     texify_batch_size: Annotated[
         Optional[int],
         "The batch size to use for the Texify model.",
@@ -65,7 +65,7 @@ class EquationProcessor(BaseProcessor):
                 continue
 
             block = document.get_block(equation_d["block_id"])
-            block.latex = prediction
+            block.html = prediction
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:
@@ -86,24 +86,19 @@ class EquationProcessor(BaseProcessor):
             max_idx = min(min_idx + batch_size, len(equation_data))
 
             batch_equations = equation_data[min_idx:max_idx]
-            max_length = max([eq["token_count"] for eq in batch_equations])
-            max_length = min(max_length, self.model_max_length)
-            max_length += self.token_buffer
-
             batch_images = [eq["image"] for eq in batch_equations]
 
             model_output = self.texify_model(
-                batch_images,
-                max_tokens=max_length
+                batch_images
             )
 
             for j, output in enumerate(model_output):
-                token_count = self.get_total_texify_tokens(output)
-                if token_count >= max_length - 1:
-                    output = ""
+                token_count = self.get_total_texify_tokens(output.text)
+                if token_count >= self.model_max_length - 1:
+                    output.text = ""
 
                 image_idx = i + j
-                predictions[image_idx] = output
+                predictions[image_idx] = output.text
         return predictions
 
     def get_total_texify_tokens(self, text):

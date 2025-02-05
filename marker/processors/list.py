@@ -66,6 +66,10 @@ class ListProcessor(BaseProcessor):
                 for list_item_id in block.structure:
                     list_item_block: ListItem = page.get_block(list_item_id)
 
+                    # This can be a line sometimes
+                    if list_item_block.block_type != BlockTypes.ListItem:
+                        continue
+
                     while stack and list_item_block.polygon.x_start <= stack[-1].polygon.x_start + (self.min_x_indent * page.polygon.width):
                         stack.pop()
 

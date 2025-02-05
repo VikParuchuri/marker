@@ -41,7 +41,7 @@ Some guidelines:
 - Make sure to reproduce the original values as faithfully as possible.
 - If you see any math in a table cell, fence it with the <math display="inline"> tag.  Block math should be fenced with <math display="block">.
 - Replace any images with a description, like "Image: [description]".
-- Only use the tags th, td, tr, span, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.
+- Only use the tags th, td, tr, br, span, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
 
 **Instructions:**
 1. Carefully examine the provided text block image.
@@ -172,11 +172,11 @@ No corrections needed.
         return parsed_cells
 
     @staticmethod
-    def get_cell_text(element, keep_tags=('br',)):
+    def get_cell_text(element, keep_tags=('br','i', 'b', 'span', 'math')) -> str:
         for tag in element.find_all(True):
             if tag.name not in keep_tags:
                 tag.unwrap()
-        return element.decode_contents().replace("<br>", "\n")
+        return element.decode_contents()
 
     def parse_html_table(self, html_text: str, block: Block, page: PageGroup) -> List[TableCell]:
         soup = BeautifulSoup(html_text, 'html.parser')

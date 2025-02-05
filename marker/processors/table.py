@@ -3,7 +3,6 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import Annotated, List
 from collections import Counter
-from PIL import ImageDraw
 
 from ftfy import fix_text
 from surya.detection import DetectionPredictor
@@ -49,6 +48,14 @@ class TableProcessor(BaseProcessor):
         List[BlockTypes],
         "Block types to remove if they're contained inside the tables."
     ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+    ] = 4
+    row_split_threshold: Annotated[
+        float,
+        "The percentage of rows that need to be split across the table before row splitting is active.",
+    ] = 0.5
 
     def __init__(
         self,
@@ -131,7 +138,9 @@ class TableProcessor(BaseProcessor):
             for block in page.contained_blocks(document, self.block_types):
                 intersections = matrix_intersection_area([c.polygon.bbox for c in child_contained_blocks], [block.polygon.bbox])
                 for child, intersection in zip(child_contained_blocks, intersections):
-                    if intersection > 0.95 and child.id in page.structure:
+                    # Adjust this to percentage of the child block that is enclosed by the table
+                    intersection_pct = intersection / max(child.polygon.area, 1)
+                    if intersection_pct > 0.95 and child.id in page.structure:
                         page.structure.remove(child.id)
 
     def finalize_cell_text(self, cell: SuryaTableCell):
@@ -165,10 +174,7 @@ class TableProcessor(BaseProcessor):
                 # Skip empty tables
                 continue
             unique_rows = sorted(list(set([c.row_id for c in table.cells])))
-            new_cells = []
-            shift_up = 0
-            max_cell_id = max([c.cell_id for c in table.cells])
-            new_cell_count = 0
+            row_info = []
             for row in unique_rows:
                 # Cells in this row
                 # Deepcopy is because we do an in-place mutation later, and that can cause rows to shift to match rows in unique_rows
@@ -195,9 +201,25 @@ class TableProcessor(BaseProcessor):
                     len(line_lens_counter) == 2 and counter_keys[0] <= 1 and counter_keys[1] > 1 and line_lens_counter[counter_keys[0]] == 1, # Allow a single column with a single line - keys are the line lens, values are the counts
                 ])
                 should_split = should_split_entire_row or should_split_partial_row
-                if should_split:
-                    for i in range(0, max(line_lens)):
-                        for cell in row_cells:
+                row_info.append({
+                    "should_split": should_split,
+                    "row_cells": row_cells,
+                    "line_lens": line_lens
+                })
+
+            # Don't split if we're not splitting most of the rows in the table.  This avoids splitting stray multiline rows.
+            if sum([r["should_split"] for r in row_info]) / len(row_info) < self.row_split_threshold:
+                continue
+
+            new_cells = []
+            shift_up = 0
+            max_cell_id = max([c.cell_id for c in table.cells])
+            new_cell_count = 0
+            for row, item_info in zip(unique_rows, row_info):
+                max_lines = max(item_info["line_lens"])
+                if item_info["should_split"]:
+                    for i in range(0, max_lines):
+                        for cell in item_info["row_cells"]:
                             # Calculate height based on number of splits
                             split_height = cell.bbox[3] - cell.bbox[1]
                             current_bbox = [cell.bbox[0], cell.bbox[1] + i * split_height, cell.bbox[2], cell.bbox[1] + (i + 1) * split_height]
@@ -220,9 +242,10 @@ class TableProcessor(BaseProcessor):
                             new_cell_count += 1
 
                     # For each new row we add, shift up subsequent rows
-                    shift_up += line_lens[0] - 1
+                    # The max is to account for partial rows
+                    shift_up += max_lines - 1
                 else:
-                    for cell in row_cells:
+                    for cell in item_info["row_cells"]:
                         cell.row_id += shift_up
                         new_cells.append(cell)
 
@@ -273,14 +296,18 @@ class TableProcessor(BaseProcessor):
                 "tables": tables,
                 "img_size": img_size
             })
-        cell_text = table_output(filepath, table_inputs, page_range=unique_pages)
+        cell_text = table_output(filepath, table_inputs, page_range=unique_pages, workers=self.pdftext_workers)
         assert len(cell_text) == len(unique_pages), "Number of pages and table inputs must match"
 
         for pidx, (page_tables, pnum) in enumerate(zip(cell_text, unique_pages)):
             table_idx = 0
             for block in extract_blocks:
                 if block["page_id"] == pnum:
-                    block["table_text_lines"] = page_tables[table_idx]
+                    table_text = page_tables[table_idx]
+                    if len(table_text) == 0:
+                        block["ocr_block"] = True # Re-OCR the block if pdftext didn't find any text
+                    else:
+                        block["table_text_lines"] = page_tables[table_idx]
                     table_idx += 1
             assert table_idx == len(page_tables), "Number of tables and table inputs must match"
 

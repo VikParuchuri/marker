@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Annotated, Tuple
 
 import regex
+from bs4 import NavigableString
 from markdownify import MarkdownConverter
 from pydantic import BaseModel
 
@@ -11,13 +12,42 @@ from marker.schema import BlockTypes
 from marker.schema.document import Document
 
 
+def escape_dollars(text):
+    return text.replace("$", r"\$")
+
 def cleanup_text(full_text):
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
     return full_text.strip()
 
-def get_text_with_br(element):
-    return ''.join(str(content) if content.name == 'br' else content.strip() for content in element.contents)
+def get_formatted_table_text(element):
+
+    text = []
+    for content in element.contents:
+        if content is None:
+            continue
+
+        if isinstance(content, NavigableString):
+            stripped = content.strip()
+            if stripped:
+                text.append(escape_dollars(stripped))
+        elif content.name == 'br':
+            text.append('<br>')
+        elif content.name == "math":
+            text.append("$" + content.text + "$")
+        else:
+            content_str = escape_dollars(str(content))
+            text.append(content_str)
+
+    full_text = ""
+    for i, t in enumerate(text):
+        if t == '<br>':
+            full_text += t
+        elif i > 0 and text[i - 1] != '<br>':
+            full_text += " " + t
+        else:
+            full_text += t
+    return full_text
 
 
 class Markdownify(MarkdownConverter):
@@ -81,7 +111,7 @@ class Markdownify(MarkdownConverter):
                     col_idx += 1
 
                 # Fill in grid
-                value = get_text_with_br(cell).replace("\n", " ").replace("|", " ")
+                value = get_formatted_table_text(cell).replace("\n", " ").replace("|", " ").strip()
                 rowspan = int(cell.get('rowspan', 1))
                 colspan = int(cell.get('colspan', 1))
 
@@ -95,7 +125,7 @@ class Markdownify(MarkdownConverter):
                             if r == 0 and c == 0:
                                 grid[row_idx][col_idx] = value
                             else:
-                                grid[row_idx + r][col_idx + c] = ''
+                                grid[row_idx + r][col_idx + c] = '' # Empty cell due to rowspan/colspan
                         except IndexError:
                             # Sometimes the colspan/rowspan predictions can overflow
                             print(f"Overflow in columns: {col_idx + c} >= {total_cols}")
@@ -143,11 +173,19 @@ class Markdownify(MarkdownConverter):
     def convert_a(self, el, text, convert_as_inline):
         text = self.escape(text)
         text = re.sub(r"([\[\]])", r"\\\1", text)
-        return super().convert_a(el, self.escape(text), convert_as_inline)
+        return super().convert_a(el, text, convert_as_inline)
 
     def convert_span(self, el, text, convert_as_inline):
-        return f'<span id="{el["id"]}"/>'
+        if el.get("id"):
+            return f'<span id="{el["id"]}">{text}</span>'
+        else:
+            return text
 
+    def escape(self, text):
+        text = super().escape(text)
+        if self.options['escape_dollars']:
+            text = text.replace('$', r'\$')
+        return text
 
 class MarkdownOutput(BaseModel):
     markdown: str
@@ -171,6 +209,7 @@ class MarkdownRenderer(HTMLRenderer):
             escape_misc=False,
             escape_underscores=False,
             escape_asterisks=False,
+            escape_dollars=True,
             sub_symbol="<sub>",
             sup_symbol="<sup>",
             inline_math_delimiters=self.inline_math_delimiters,

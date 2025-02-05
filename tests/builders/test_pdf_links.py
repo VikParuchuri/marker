@@ -29,7 +29,7 @@ def test_pdf_links(pdf_document: Document, pdf_converter: PdfConverter, temp_pdf
     markdown = markdown_output.markdown
 
     assert '[II.](#page-1-0)' in markdown
-    assert '<span id="page-1-0"/>II. THEORETICAL FRAMEWORK' in markdown
+    assert '<span id="page-1-0"></span>II. THEORETICAL FRAMEWORK' in markdown
 
-    for ref in set([f'<span id="page-{m[0]}-{m[1]}"/>' for m in re.findall(r'\]\(#page-(\d+)-(\d+)\)', markdown)]):
+    for ref in set([f'<span id="page-{m[0]}-{m[1]}">' for m in re.findall(r'\]\(#page-(\d+)-(\d+)\)', markdown)]):
         assert ref in markdown, f"Reference {ref} not found in markdown"
