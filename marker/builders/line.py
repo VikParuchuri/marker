@@ -4,7 +4,7 @@ from ftfy import fix_text
 import numpy as np
 from collections import defaultdict
 
-from surya.detection import DetectionPredictor, InlineDetectionPredictor
+from surya.detection import DetectionPredictor, InlineDetectionPredictor, TextDetectionResult
 from surya.ocr_error import OCRErrorPredictor
 
 from marker.builders import BaseBuilder
@@ -40,6 +40,10 @@ class LineBuilder(BaseBuilder):
     enable_table_ocr: Annotated[
         bool,
         "Whether to skip OCR on tables.  The TableProcessor will re-OCR them.  Only enable if the TableProcessor is not running.",
+    ] = False
+    enable_inline_math_detection: Annotated[
+        bool,
+        "Whether to detect inline math separately to replace with latex. Only enable if EquationProcessor is also running."
     ] = False
     layout_coverage_min_lines: Annotated[
         int,
@@ -107,10 +111,19 @@ class LineBuilder(BaseBuilder):
         detection_results = self.detection_model(
             images=page_images,
         )
-        inline_detection_results = self.inline_detection_model(
-            images=page_images,
-        )
         ocr_error_detection_results = self.ocr_error_detection(document.pages, provider.page_lines)
+        if self.enable_inline_math_detection:
+            inline_detection_results = self.inline_detection_model(
+                images=page_images,
+            )
+        else:
+            inline_detection_results = [TextDetectionResult(
+                bboxes=[],
+                vertical_lines=[],
+                heatmap=None,
+                affinity_map=None,
+                image_bbox=[]
+            )]*len(page_images)
 
         boxes_to_ocr = {page.page_id: [] for page in document.pages}
         page_lines = {page.page_id: [] for page in document.pages}
@@ -217,6 +230,10 @@ class LineBuilder(BaseBuilder):
     def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size):
         #When provider lines is empty
         if not provider_lines:
+            return provider_lines
+        
+        #When no inline math is detected
+        if not inline_math_lines:
             return provider_lines
 
         updated_provider_lines = []
@@ -427,6 +444,11 @@ class LineBuilder(BaseBuilder):
             A new list of TextBox objects with split text boxes, inline boxes, 
             and unmodified vertical/unrelated text boxes.
         """
+        
+        #Skip if no inline math was detected
+        if not inline_boxes:
+            return [TextBox(polygon=text_box.polygon, confidence=text_box.confidence, math=False) for text_box in text_boxes]
+
         result_boxes = []  # Final result to store the split boxes and retained boxes
         horizontal_text_boxes = []  # Only horizontal text boxes to process
 
