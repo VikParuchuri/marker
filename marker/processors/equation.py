@@ -54,6 +54,9 @@ class EquationProcessor(BaseProcessor):
                     "token_count": token_count
                 })
 
+        if len(equation_data) == 0:
+            return
+
         predictions = self.get_latex_batched(equation_data)
         for prediction, equation_d in zip(predictions, equation_data):
             conditions = [
