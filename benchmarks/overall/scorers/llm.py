@@ -126,7 +126,7 @@ class LLMScorer(BaseScorer):
     def llm_response_wrapper(self, prompt, response_schema, depth=0):
         import google.generativeai as genai
         genai.configure(api_key=settings.GOOGLE_API_KEY)
-        gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+        gemini_model = genai.GenerativeModel("gemini-2.0-flash")
         try:
             responses = gemini_model.generate_content(
                 prompt,

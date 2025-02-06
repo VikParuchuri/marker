@@ -37,29 +37,35 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
 
         out_data = defaultdict(dict)
 
-        for method in methods:
-            method_cls = METHOD_REGISTRY[method](**artifacts)
-            method_info = method_cls(sample)
-            method_md = method_info["markdown"]
-            average_times[method].append(method_info["time"])
-            markdown_by_method[idx][method] = method_md
+        try:
+            for method in methods:
+                method_cls = METHOD_REGISTRY[method](**artifacts)
+                method_info = method_cls(sample)
+                method_md = method_info["markdown"]
+                average_times[method].append(method_info["time"])
+                markdown_by_method[idx][method] = method_md
 
-            for score_type in score_types:
-                score_cls = SCORE_REGISTRY[score_type]()
-                try:
-                    scores = score_cls(sample, gt_md, method_md)
-                except Exception as e:
-                    # Some scorers can fail, like the LLM one
-                    print(f"Failed to score {method} with {score_type}: {e}")
-                    continue
+                for score_type in score_types:
+                    score_cls = SCORE_REGISTRY[score_type]()
+                    try:
+                        scores = score_cls(sample, gt_md, method_md)
+                    except Exception as e:
+                        # Some scorers can fail, like the LLM one
+                        print(f"Failed to score {method} with {score_type}: {e}")
+                        continue
 
-                out_data[method][score_type] = scores
+                    out_data[method][score_type] = scores
 
-                averages_by_type[method][score_type][doc_type].append(scores["score"])
+                    averages_by_type[method][score_type][doc_type].append(scores["score"])
 
-                if "by_block" in scores["specific_scores"]: # Not all scorers support this
-                    for score, gt_block in zip(scores["specific_scores"]["by_block"], gt_blocks):
-                        averages_by_block_type[method][score_type][gt_block["block_type"]].append(score)
+                    if "by_block" in scores["specific_scores"]: # Not all scorers support this
+                        for score, gt_block in zip(scores["specific_scores"]["by_block"], gt_blocks):
+                            averages_by_block_type[method][score_type][gt_block["block_type"]].append(score)
+        except Exception as e:
+            print(f"Failed to process {idx}: {e}")
+            if idx in markdown_by_method:
+                del markdown_by_method[idx]
+            continue
 
         bench_scores[idx] = out_data
 
@@ -122,7 +128,9 @@ def main(
         json.dump(result, f)
 
     if out_dataset:
-        dataset = build_dataset(benchmark_dataset, result, score_types)
+        if use_llm:
+            out_dataset += "_llm"
+        dataset = build_dataset(benchmark_dataset, result, score_types, max_rows=max_rows)
         dataset.push_to_hub(out_dataset)
 
 

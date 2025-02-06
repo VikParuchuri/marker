@@ -53,7 +53,13 @@ def print_scores(result: FullResult, out_path: Path, methods: List[str], score_t
         avg_time = sum(result["average_times"][method]) / max(1, len(result["average_times"][method]))
         inference_rows[i].append(avg_time)
         for score_type in score_types:
-            scores_lst = [ar[method][score_type]["score"] for ar in all_raw_scores]
+            scores_lst = []
+            for ar in all_raw_scores:
+                try:
+                    # Sometimes a few llm scores are missing
+                    scores_lst.append(ar[method][score_type]["score"])
+                except KeyError:
+                    continue
             avg_score = sum(scores_lst) / max(1, len(scores_lst))
             inference_rows[i].append(avg_score)
 

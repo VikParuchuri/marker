@@ -1,4 +1,5 @@
 import io
+import random
 import re
 from typing import Tuple
 
@@ -63,7 +64,9 @@ class BaseMethod:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
-            page.set_content(f"""
+            html_str = f"""
+            <!DOCTYPE html>
+            <html>
                 <head>
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css" integrity="sha384-zh0CIslj+VczCZtlzBcjt5ppRcsAmDnRem7ESsYwWwg3m/OaJ2l4x7YBZl9Kxxib" crossorigin="anonymous">
                     <!-- The loading of KaTeX is deferred to speed up page rendering -->
@@ -74,16 +77,22 @@ class BaseMethod:
                 <body>
                     {html}
                         <script>
+                        document.addEventListener("DOMContentLoaded", function() {{
                             renderMathInElement(document.body, {{
                                 delimiters: [
                                     {{left: '$$', right: '$$', display: true}},
                                     {{left: '$', right: '$', display: false}}
-                                ]
+                                ],
+                                throwOnError : false
                             }});
+                        }});
                         </script>
                 </body>
-            """)
+            </html>
+            """.strip()
             page.set_viewport_size({"width": 1200, "height": 800})
+            page.set_content(html_str)
+            page.wait_for_load_state("domcontentloaded")
             page.wait_for_timeout(500)  # Wait for KaTeX to render
             screenshot_bytes = page.screenshot(full_page=True)
             browser.close()
