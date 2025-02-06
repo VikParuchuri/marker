@@ -32,7 +32,7 @@ def gemini_table_rec(image: Image.Image):
         }
     )
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     responses = model.generate_content(
         [image, prompt],  # According to gemini docs, it performs better if the image is the first element
