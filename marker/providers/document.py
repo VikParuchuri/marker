@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 import re
+import tempfile
 from io import BytesIO
 
 import mammoth
@@ -53,10 +54,9 @@ td {
 
 class DocumentProvider(PdfProvider):
     def __init__(self, filepath: str, config=None):
-        home_dir = os.path.expanduser("~")
-        rel_path = os.path.relpath(filepath, home_dir)
-        base_name, _ = os.path.splitext(rel_path)
-        self.temp_pdf_path = os.path.join('/tmp', f"{base_name}.pdf")
+        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=f".pdf")
+        self.temp_pdf_path = temp_pdf.name
+        temp_pdf.close()
 
         # Convert DOCX to PDF
         try:

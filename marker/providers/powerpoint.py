@@ -1,5 +1,6 @@
 import base64
 import os
+import tempfile
 import traceback
 
 from pptx import Presentation
@@ -43,10 +44,9 @@ class PowerPointProvider(PdfProvider):
     include_slide_number: bool = False
 
     def __init__(self, filepath: str, config=None):
-        home_dir = os.path.expanduser("~")
-        rel_path = os.path.relpath(filepath, home_dir)
-        base_name, _ = os.path.splitext(rel_path)
-        self.temp_pdf_path = os.path.join('/tmp', f"{base_name}.pdf")
+        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=f".pdf")
+        self.temp_pdf_path = temp_pdf.name
+        temp_pdf.close()
 
         # Convert PPTX to PDF
         try:

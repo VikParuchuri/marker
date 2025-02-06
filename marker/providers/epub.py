@@ -1,6 +1,7 @@
 import base64
 import logging
 import os
+import tempfile
 
 import ebooklib
 from bs4 import BeautifulSoup
@@ -53,10 +54,9 @@ td {
 
 class EpubProvider(PdfProvider):
     def __init__(self, filepath: str, config=None):
-        home_dir = os.path.expanduser("~")
-        rel_path = os.path.relpath(filepath, home_dir)
-        base_name, _ = os.path.splitext(rel_path)
-        self.temp_pdf_path = os.path.join('/tmp', f"{base_name}.pdf")
+        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=f".pdf")
+        self.temp_pdf_path = temp_pdf.name
+        temp_pdf.close()
 
         # Convert Epub to PDF
         try:
@@ -106,7 +106,7 @@ class EpubProvider(PdfProvider):
                     image['xlink:href'] = img_tags[normalized_src]
 
         html_content = str(soup)
-        full_style = ''.join([css])# + styles)
+        full_style = ''.join([css])  # + styles)
 
         # we convert the epub to HTML
         result = HTML(string=html_content, base_url=filepath).write_pdf(
