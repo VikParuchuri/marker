@@ -9,6 +9,8 @@ from lxml import html
 from collections import deque
 
 def wrap_table_html(table_html:str)->str:
+    if '<table>' not in table_html:
+        table_html = f'<table>{table_html}</table>'
     return f'<html><body>{table_html}</body></html>'
 
 class TableTree(Tree):
