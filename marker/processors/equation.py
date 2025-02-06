@@ -57,8 +57,6 @@ class EquationProcessor(BaseProcessor):
         predictions = self.get_latex_batched(equation_data)
         for prediction, equation_d in zip(predictions, equation_data):
             conditions = [
-                self.get_total_texify_tokens(prediction) < self.model_max_length,
-                # Make sure we didn't get to the overall token max, indicates run-on
                 len(prediction) > equation_d["token_count"] * .4,
                 len(prediction.strip()) > 0
             ]
@@ -78,28 +76,15 @@ class EquationProcessor(BaseProcessor):
         return 2
 
     def get_latex_batched(self, equation_data: List[dict]):
-        predictions = [""] * len(equation_data)
-        batch_size = self.get_batch_size()
+        inference_images = [eq["image"] for eq in equation_data]
+        model_output = self.texify_model(inference_images, batch_size=self.get_batch_size())
+        predictions = [output.text for output in model_output]
 
-        for i in tqdm(range(0, len(equation_data), batch_size), desc="Recognizing equations", disable=self.disable_tqdm):
-            # Dynamically set max length to save inference time
-            min_idx = i
-            max_idx = min(min_idx + batch_size, len(equation_data))
-
-            batch_equations = equation_data[min_idx:max_idx]
-            batch_images = [eq["image"] for eq in batch_equations]
-
-            model_output = self.texify_model(
-                batch_images
-            )
-
-            for j, output in enumerate(model_output):
-                token_count = self.get_total_texify_tokens(output.text)
-                if token_count >= self.model_max_length - 1:
-                    output.text = ""
-
-                image_idx = i + j
-                predictions[image_idx] = output.text
+        for i, pred in enumerate(predictions):
+            token_count = self.get_total_texify_tokens(pred)
+            # If we're at the max token length, the prediction may be repetitive or invalid
+            if token_count >= self.model_max_length - 1:
+                predictions[i] = ""
         return predictions
 
     def get_total_texify_tokens(self, text):
