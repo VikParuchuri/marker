@@ -40,6 +40,7 @@ mammoth = "^1.9.0"
 weasyprint = "^63.1"
 openpyxl = "^3.1.5"
 python-pptx = "^1.0.2"
+ebooklib = "^0.18"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

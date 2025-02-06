@@ -1,8 +1,11 @@
 import filetype
 import filetype.match as match
+from bs4 import BeautifulSoup
 from filetype.types import archive, document
 
 from marker.providers.document import DocumentProvider
+from marker.providers.epub import EpubProvider
+from marker.providers.html import HTMLProvider
 from marker.providers.image import ImageProvider
 from marker.providers.pdf import PdfProvider
 from marker.providers.powerpoint import PowerPointProvider
@@ -14,6 +17,8 @@ def provider_from_filepath(filepath: str):
         return ImageProvider
     if match(filepath, (archive.Pdf(),)) is not None:
         return PdfProvider
+    if match(filepath, (archive.Epub(),)) is not None:
+        return EpubProvider
     if match(
             filepath, (
                 document.Doc(),
@@ -35,5 +40,13 @@ def provider_from_filepath(filepath: str):
                 document.Odp(),
             )) is not None:
         return PowerPointProvider
+
+    try:
+        soup = BeautifulSoup(open(filepath, 'r').read(), 'html.parser')
+        # Check if there are any HTML tags
+        if bool(soup.find()):
+            return HTMLProvider
+    except:
+        pass
 
     return PdfProvider

@@ -976,6 +976,20 @@ files = [
 ]
 
 [[package]]
+name = "ebooklib"
+version = "0.18"
+description = "Ebook library which can handle EPUB2/EPUB3 and Kindle format"
+optional = false
+python-versions = "*"
+files = [
+    {file = "EbookLib-0.18.tar.gz", hash = "sha256:38562643a7bc94d9bf56e9930b4927e4e93b5d1d0917f697a6454db5a1c1a533"},
+]
+
+[package.dependencies]
+lxml = "*"
+six = "*"
+
+[[package]]
 name = "et-xmlfile"
 version = "2.0.0"
 description = "An implementation of lxml.xmlfile for the standard library"
@@ -6009,4 +6023,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "78001740906e61993933c0f6708f0326fd5206e66f4a27fc48c1c45b38f82c1d"
+content-hash = "1cba9dec2bd9279e646e67b6faeea8fb55c08d9860d7dffc0a44c5f6b7e226d8"
