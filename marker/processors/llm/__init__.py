@@ -23,7 +23,7 @@ class BaseLLMProcessor(BaseProcessor):
     model_name: Annotated[
         str,
         "The name of the Gemini model to use.",
-    ] = "gemini-1.5-flash"
+    ] = "gemini-2.0-flash"
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the Gemini model.",
