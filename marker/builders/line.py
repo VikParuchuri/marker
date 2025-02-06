@@ -115,6 +115,7 @@ class LineBuilder(BaseBuilder):
         if self.enable_inline_math_detection:
             inline_detection_results = self.inline_detection_model(
                 images=page_images,
+                text_boxes=[[b.bbox for b in det_result.bboxes] for det_result in detection_results]
             )
         else:
             inline_detection_results = [TextDetectionResult(
