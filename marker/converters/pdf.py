@@ -76,7 +76,6 @@ class PdfConverter(BaseConverter):
         LLMTableMergeProcessor,
         LLMFormProcessor,
         TextProcessor,
-        LLMTextProcessor,
         LLMComplexRegionProcessor,
         LLMImageDescriptionProcessor,
         LLMEquationProcessor,

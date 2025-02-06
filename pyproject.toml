@@ -31,10 +31,10 @@ regex = "^2024.4.28"
 pdftext = "~0.5.1"
 markdownify = "^0.13.1"
 click = "^8.1.7"
-google-generativeai = "^0.8.3"
 markdown2 = "^2.5.2"
 filetype = "^1.2.0"
 scikit-learn = "^1.6.1"
+google-genai = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

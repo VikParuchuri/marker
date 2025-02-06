@@ -1,8 +1,7 @@
 import markdown2
+from pydantic import BaseModel
 
 from marker.processors.llm import BaseLLMProcessor
-
-from google.ai.generativelanguage_v1beta.types import content
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Handwriting, Text
@@ -49,18 +48,8 @@ Formatting should be in markdown, with the following rules:
         prompt = self.handwriting_generation_prompt
 
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["markdown"],
-            properties={
-                "markdown": content.Schema(
-                    type=content.Type.STRING
-                )
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(prompt, image, block, HandwritingSchema)
 
         if not response or "markdown" not in response:
             block.update_metadata(llm_error_count=1)
@@ -73,3 +62,6 @@ Formatting should be in markdown, with the following rules:
 
         markdown = markdown.strip().lstrip("```markdown").rstrip("```").strip()
         block.html = markdown2.markdown(markdown, extras=["tables"])
+
+class HandwritingSchema(BaseModel):
+    markdown: str

@@ -1,10 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated
 
-from google.ai.generativelanguage_v1beta.types import content
 from surya.layout import LayoutPredictor
 from surya.ocr_error import OCRErrorPredictor
 from tqdm import tqdm
+from pydantic import BaseModel
 
 from marker.builders.layout import LayoutBuilder
 from marker.processors.llm import GoogleModel
@@ -41,7 +41,7 @@ class LLMLayoutBuilder(LayoutBuilder):
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the Gemini model.",
-    ] = 3
+    ] = 2
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
@@ -158,21 +158,15 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 
     def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["image_description", "label"],
-            properties={
-                "image_description": content.Schema(
-                    type=content.Type.STRING,
-                ),
-                "label": content.Schema(
-                    type=content.Type.STRING,
-                ),
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(
+            prompt,
+            image,
+            block,
+            LayoutSchema,
+            max_retries=self.max_retries,
+            timeout=self.timeout
+        )
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]
@@ -188,3 +182,8 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 
     def extract_image(self, document: Document, image_block: Block, expand: float = 0.01):
         return image_block.get_image(document, highres=False, expansion=(expand, expand))
+
+
+class LayoutSchema(BaseModel):
+    image_description: str
+    label: str

@@ -1,6 +1,6 @@
-from marker.processors.llm import BaseLLMProcessor
+from pydantic import BaseModel
 
-from google.ai.generativelanguage_v1beta.types import content
+from marker.processors.llm import BaseLLMProcessor
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -49,18 +49,8 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
 
         prompt = self.image_description_prompt.replace("{raw_text}", block.raw_text(document))
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["image_description"],
-            properties={
-                "image_description": content.Schema(
-                    type=content.Type.STRING
-                )
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(prompt, image, block, ImageSchema)
 
         if not response or "image_description" not in response:
             block.update_metadata(llm_error_count=1)
@@ -72,3 +62,6 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
             return
 
         block.description = image_description
+
+class ImageSchema(BaseModel):
+    image_description: str
