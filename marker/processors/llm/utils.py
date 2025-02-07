@@ -38,8 +38,8 @@ class GoogleModel:
             image: PIL.Image.Image | List[PIL.Image.Image],
             block: Block,
             response_schema: type[BaseModel],
-            max_retries: int = 2,
-            timeout: int = 60
+            max_retries: int = 1,
+            timeout: int = 15
     ):
         if not isinstance(image, list):
             image = [image]

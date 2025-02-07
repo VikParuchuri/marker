@@ -27,7 +27,7 @@ class BaseLLMProcessor(BaseProcessor):
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the Gemini model.",
-    ] = 3
+    ] = 1
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
@@ -35,7 +35,7 @@ class BaseLLMProcessor(BaseProcessor):
     timeout: Annotated[
         int,
         "The timeout for requests to the Gemini model.",
-    ] = 60
+    ] = 15
     image_expansion_ratio: Annotated[
         float,
         "The ratio to expand the image by when cropping.",

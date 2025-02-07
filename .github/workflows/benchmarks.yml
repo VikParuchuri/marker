@@ -25,7 +25,7 @@ jobs:
       - name: Run benchmark test
         run: |
           poetry run python benchmarks/overall/overall.py --max_rows 5
-          poetry run python benchmarks/verify_scores.py conversion_results/benchmark/overall/overall.json --type marker
+          poetry run python benchmarks/verify_scores.py conversion_results/benchmark/overall/result.json --type marker
       - name: Run table benchmark
         run: |
           poetry run python benchmarks/table/table.py --max_rows 5

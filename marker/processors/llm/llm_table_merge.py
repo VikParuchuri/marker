@@ -118,6 +118,9 @@ Table 2
 
     @staticmethod
     def get_row_count(cells: List[TableCell]):
+        if not cells:
+            return 0
+
         max_rows = None
         for col_id in set([cell.col_id for cell in cells]):
             col_cells = [cell for cell in cells if cell.col_id == col_id]
@@ -130,6 +133,9 @@ Table 2
 
     @staticmethod
     def get_column_count(cells: List[TableCell]):
+        if not cells:
+            return 0
+
         max_cols = None
         for row_id in set([cell.row_id for cell in cells]):
             row_cells = [cell for cell in cells if cell.row_id == row_id]
