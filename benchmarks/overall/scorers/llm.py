@@ -4,8 +4,8 @@ import time
 from typing import List
 
 from PIL import Image
-from google.ai.generativelanguage_v1beta.types import content
-from google.api_core.exceptions import ResourceExhausted
+from google.genai.errors import APIError
+from google import genai
 import pypdfium2 as pdfium
 
 from benchmarks.overall.scorers import BaseScorer, BlockScores
@@ -106,15 +106,14 @@ class LLMScorer(BaseScorer):
         req_keys = text_keys + score_keys
         properties = {}
         for key in req_keys:
-            content_type = content.Type.INTEGER if key in score_keys else content.Type.STRING
-            properties[key] = content.Schema(type=content_type)
+            content_type = "INTEGER" if key in score_keys else "STRING"
+            properties[key] = {"type": content_type}
 
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            required=req_keys,
-            properties=properties
-        )
-
+        response_schema = {
+            "required": req_keys,
+            "properties": properties,
+            "type": "OBJECT"
+        }
         prompt = rating_prompt.replace("{{markdown}}", markdown)
         response = self.llm_response_wrapper([img, prompt], response_schema)
         assert all([k in response for k in req_keys]), f"Missing keys in response: {response}"
@@ -124,23 +123,23 @@ class LLMScorer(BaseScorer):
         }
 
     def llm_response_wrapper(self, prompt, response_schema, depth=0):
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+        client = genai.Client(
+            api_key=settings.GOOGLE_API_KEY,
+            http_options={"timeout": 60000}
+        )
         try:
-            responses = gemini_model.generate_content(
-                prompt,
-                stream=False,
-                generation_config={
+            responses = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+                config={
                     "temperature": 0,
                     "response_schema": response_schema,
                     "response_mime_type": "application/json",
                 },
-                request_options={'timeout': 60}
             )
             output = responses.candidates[0].content.parts[0].text
             return json.loads(output)
-        except ResourceExhausted as e:
+        except APIError as e:
             print(f"Hit Gemini rate limit, waiting 120 seconds")
             time.sleep(120)
             if depth > 2:

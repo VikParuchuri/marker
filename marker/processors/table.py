@@ -29,7 +29,7 @@ class TableProcessor(BaseProcessor):
         bool,
         "Whether to detect boxes for the table recognition model.",
     ] = False
-    detector_batch_size: Annotated[
+    detection_batch_size: Annotated[
         int,
         "The batch size to use for the table detection model.",
         "Default is None, which will use the default batch size for the model."
@@ -318,7 +318,7 @@ class TableProcessor(BaseProcessor):
             [None] * len(det_images),
             self.detection_model,
             recognition_batch_size=self.get_recognition_batch_size(),
-            detection_batch_size=self.get_detector_batch_size()
+            detection_batch_size=self.get_detection_batch_size()
         )
 
         for block, ocr_res in zip(ocr_blocks, ocr_results):
@@ -333,9 +333,9 @@ class TableProcessor(BaseProcessor):
             block["table_text_lines"] = table_cells
 
 
-    def get_detector_batch_size(self):
-        if self.detector_batch_size is not None:
-            return self.detector_batch_size
+    def get_detection_batch_size(self):
+        if self.detection_batch_size is not None:
+            return self.detection_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 4
         return 4

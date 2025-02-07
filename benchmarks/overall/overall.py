@@ -114,9 +114,12 @@ def main(
     benchmark_dataset = datasets.load_dataset(dataset, split="train")
     artifacts = {
         "model_dict": create_model_dict(),
-        "mathpix_ds": datasets.load_dataset("datalab-to/marker_benchmark_mathpix", split="train"),
-        "use_llm": use_llm
+        "use_llm": use_llm,
+        "mathpix_ds": None
     }
+
+    if "mathpix" in methods:
+        artifacts["mathpix_ds"] = datasets.load_dataset("datalab-to/marker_benchmark_mathpix", split="train")
 
     result = get_method_scores(benchmark_dataset, methods, score_types, artifacts, max_rows=max_rows)
 
