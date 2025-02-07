@@ -1,8 +1,8 @@
 from typing import Annotated, List, Tuple
 
 from bs4 import BeautifulSoup
-from google.ai.generativelanguage_v1beta.types import content
 from PIL import Image
+from pydantic import BaseModel
 
 from marker.processors.llm import BaseLLMProcessor
 from marker.schema import BlockTypes
@@ -133,18 +133,7 @@ No corrections needed.
     def rewrite_single_chunk(self, page: PageGroup, block: Block, block_html: str, children: List[TableCell], image: Image.Image):
         prompt = self.table_rewriting_prompt.replace("{block_html}", block_html)
 
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["corrected_html"],
-            properties={
-                "corrected_html": content.Schema(
-                    type=content.Type.STRING
-                )
-            },
-        )
-
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(prompt, image, block, TableSchema)
 
         if not response or "corrected_html" not in response:
             block.update_metadata(llm_error_count=1)
@@ -246,3 +235,6 @@ No corrections needed.
                 cur_col += colspan
 
         return cells
+
+class TableSchema(BaseModel):
+    correct_html: str

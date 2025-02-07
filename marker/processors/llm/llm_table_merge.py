@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated, List, Tuple, Literal
 
-from google.ai.generativelanguage_v1beta.types import content
+from pydantic import BaseModel
 from tqdm import tqdm
 from PIL import Image
 
@@ -44,6 +44,10 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
         int,
         "The maximum gap between columns to merge tables"
     ] = 50
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
     table_merge_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
@@ -143,7 +147,7 @@ Table 2
         return max_cols
 
     def rewrite_blocks(self, document: Document):
-        pbar = tqdm(desc=f"{self.__class__.__name__} running")
+        pbar = tqdm(desc=f"{self.__class__.__name__} running", disable=self.disable_tqdm)
         table_runs = []
         table_run = []
         prev_block = None
@@ -236,36 +240,11 @@ Table 2
 
             prompt = self.table_merge_prompt.replace("{{table1}}", start_html).replace("{{table2}}", curr_html)
 
-            response_schema = content.Schema(
-                type=content.Type.OBJECT,
-                enum=[],
-                required=["table1_description", "table2_description", "explanation", "merge", "direction"],
-                properties={
-                    "table1_description": content.Schema(
-                        type=content.Type.STRING
-                    ),
-                    "table2_description": content.Schema(
-                        type=content.Type.STRING
-                    ),
-                    "explanation": content.Schema(
-                        type=content.Type.STRING
-                    ),
-                    "merge": content.Schema(
-                        type=content.Type.STRING,
-                        enum=["true", "false"]
-                    ),
-                    "direction": content.Schema(
-                        type=content.Type.STRING,
-                        enum=["bottom", "right"]
-                    ),
-                },
-            )
-
             response = self.model.generate_response(
                 prompt,
                 [start_image, curr_image],
                 curr_block,
-                response_schema
+                MergeSchema,
             )
 
             if not response or ("direction" not in response or "merge" not in response):
@@ -338,3 +317,11 @@ Table 2
             new_img.paste(image1, (0, 0))
             new_img.paste(image2, (0, h1))
         return new_img
+
+
+class MergeSchema(BaseModel):
+    table1_description: str
+    table2_description: str
+    explanation: str
+    merge: Literal["true", "false"]
+    direction: Literal["bottom", "right"]

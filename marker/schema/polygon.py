@@ -126,6 +126,9 @@ class PolygonBox(BaseModel):
         else:
             return abs(self.center[0] - other.center[0]) * x_weight + abs(self.center[1] - other.center[1]) * y_weight
 
+    def tl_distance(self, other: PolygonBox):
+        return ((self.bbox[0] - other.bbox[0]) ** 2 + (self.bbox[1] - other.bbox[1]) ** 2) ** 0.5
+
     def rescale(self, old_size, new_size):
         # Point is in x, y format
         page_width, page_height = old_size

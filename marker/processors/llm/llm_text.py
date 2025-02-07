@@ -1,9 +1,10 @@
 import json
-import textwrap
+from typing import List
+
+from pydantic import BaseModel
 
 from marker.processors.llm import BaseLLMProcessor
 from bs4 import BeautifulSoup
-from google.ai.generativelanguage_v1beta.types import content
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
@@ -79,21 +80,8 @@ Output:
 
         prompt = self.text_math_rewriting_prompt.replace("{extracted_lines}", json.dumps({"extracted_lines": extracted_lines}, indent=2))
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["corrected_lines"],
-            properties={
-                "corrected_lines": content.Schema(
-                    type=content.Type.ARRAY,
-                    items=content.Schema(
-                        type=content.Type.STRING,
-                    ),
-                )
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(prompt, image, block, LLMTextSchema)
         if not response or "corrected_lines" not in response:
             block.update_metadata(llm_error_count=1)
             return
@@ -159,3 +147,6 @@ Output:
                 })
 
         return spans
+
+class LLMTextSchema(BaseModel):
+    corrected_lines: List[str]

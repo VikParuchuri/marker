@@ -6,18 +6,18 @@ def verify_scores(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
 
-    multicolcnn_score = data["marker"]["files"]["multicolcnn.pdf"]["score"]
-    switch_trans_score = data["marker"]["files"]["switch_trans.pdf"]["score"]
-
-    if multicolcnn_score <= 0.34 or switch_trans_score <= 0.40:
-        raise ValueError("One or more scores are below the required threshold of 0.4")
+    raw_scores = [data["scores"][k] for k in data["scores"]]
+    marker_scores = [r["marker"]["heuristic"]["score"] for r in raw_scores]
+    marker_score = sum(marker_scores) / len(marker_scores)
+    if marker_score < 90:
+        raise ValueError("Marker score below 90")
 
 
 def verify_table_scores(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
 
-    avg = sum([r["score"] for r in data]) / len(data)
+    avg = sum([r["marker_score"] for r in data["marker"]]) / len(data)
     if avg < 0.7:
         raise ValueError("Average score is below the required threshold of 0.7")
 

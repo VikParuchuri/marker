@@ -1,6 +1,6 @@
-from marker.processors.llm import BaseLLMProcessor
+from pydantic import BaseModel
 
-from google.ai.generativelanguage_v1beta.types import content
+from marker.processors.llm import BaseLLMProcessor
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -73,18 +73,8 @@ Output:
         prompt = self.form_rewriting_prompt.replace("{block_html}", block_html)
 
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["corrected_html"],
-            properties={
-                "corrected_html": content.Schema(
-                    type=content.Type.STRING
-                )
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(prompt, image, block, FormSchema)
 
         if not response or "corrected_html" not in response:
             block.update_metadata(llm_error_count=1)
@@ -103,3 +93,6 @@ Output:
 
         corrected_html = corrected_html.strip().lstrip("```html").rstrip("```").strip()
         block.html = corrected_html
+
+class FormSchema(BaseModel):
+    corrected_html: str

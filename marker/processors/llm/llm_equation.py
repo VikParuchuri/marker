@@ -1,6 +1,6 @@
-from marker.processors.llm import BaseLLMProcessor
+from pydantic import BaseModel
 
-from google.ai.generativelanguage_v1beta.types import content
+from marker.processors.llm import BaseLLMProcessor
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Equation
@@ -67,18 +67,8 @@ Output:
         prompt = self.equation_latex_prompt.replace("{equation}", text)
 
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["html_equation"],
-            properties={
-                "html_equation": content.Schema(
-                    type=content.Type.STRING
-                )
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(prompt, image, block, EquationSchema)
 
         if not response or "html_equation" not in response:
             block.update_metadata(llm_error_count=1)
@@ -89,3 +79,6 @@ Output:
             block.update_metadata(llm_error_count=1)
             return
         block.html = html_equation
+
+class EquationSchema(BaseModel):
+    html_equation: str
