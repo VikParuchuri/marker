@@ -1,4 +1,5 @@
 from benchmarks.overall.methods.gt import GTMethod
+from benchmarks.overall.methods.llamaparse import LlamaParseMethod
 from benchmarks.overall.methods.marker import MarkerMethod
 from benchmarks.overall.methods.mathpix import MathpixMethod
 from benchmarks.overall.scorers.heuristic import HeuristicScorer
@@ -12,5 +13,6 @@ SCORE_REGISTRY = {
 METHOD_REGISTRY = {
     "marker": MarkerMethod,
     "gt": GTMethod,
-    "mathpix": MathpixMethod
+    "mathpix": MathpixMethod,
+    "llamaparse": LlamaParseMethod
 }

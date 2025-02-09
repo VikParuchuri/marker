@@ -80,7 +80,7 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
 @click.command(help="Benchmark PDF to MD conversion.")
 @click.option("--dataset", type=str, help="Path to the benchmark dataset", default="datalab-to/marker_benchmark")
 @click.option("--out_dataset", type=str, help="Path to the output dataset", default=None)
-@click.option("--methods", type=str, help="Comma separated list of other methods to compare against.  Possible values: marker,mathpix", default="marker")
+@click.option("--methods", type=str, help="Comma separated list of other methods to compare against.  Possible values: marker,mathpix,llamaparse", default="marker")
 @click.option("--scores", type=str, help="Comma separated list of scoring functions to use.  Possible values: heuristic,llm", default="heuristic")
 @click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "overall"), help="Output path for results.")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of rows to process.")
@@ -103,8 +103,9 @@ def main(
             raise ValueError(f"Method {method} not allowed.  Allowed methods are {METHOD_REGISTRY.keys()}")
 
     # Ensure marker is always first
-    methods = list(set(methods))
-    methods = ["marker"] + [m for m in methods if m != "marker"]
+    all_methods = list(set(methods))
+    methods = ["marker"] if "marker" in all_methods else []
+    methods += [m for m in all_methods if m != "marker"]
 
     score_types = scores.split(",")
     for score_type in score_types:
@@ -115,16 +116,21 @@ def main(
     artifacts = {
         "model_dict": create_model_dict(),
         "use_llm": use_llm,
-        "mathpix_ds": None
+        "mathpix_ds": None,
+        "llamaparse_ds": None,
     }
 
     if "mathpix" in methods:
         artifacts["mathpix_ds"] = datasets.load_dataset("datalab-to/marker_benchmark_mathpix", split="train")
 
+    if "llamaparse" in methods:
+        artifacts["llamaparse_ds"] = datasets.load_dataset("datalab-to/marker_benchmark_llamaparse", split="train")
+
+    print(f"Running benchmark with methods: {methods} and scores: {score_types}")
     result = get_method_scores(benchmark_dataset, methods, score_types, artifacts, max_rows=max_rows)
 
     # Display benchmark scoring tables
-    print_scores(result, out_path, methods, score_types)
+    print_scores(result, out_path, methods, score_types, default_method=methods[0], default_score_type=score_types[0])
 
     # Write to json
     with open(out_path / "result.json", "w") as f:
