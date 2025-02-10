@@ -24,7 +24,7 @@ Guidelines:
 
 prompt_with_header = prompt.replace(
     "Only use <table>, <tr>, and <td> tags.  Only use the colspan and rowspan attributes if necessary.  Do not use <tbody>, <thead>, or <th> tags.",
-    "Only use <table>, <tr>, <th>, and <td> tags.  Only use the colspan and rowspan attributes if necessary.  Do not use <tbody> or <thead> tags.", 1
+    "Only use <table>, <tbody>, <thead>, <tr>, and <td> tags.  Only use the colspan and rowspan attributes if necessary.  Use <tbody> and <thead>, but do not use <th>.", 1
 )
 
 

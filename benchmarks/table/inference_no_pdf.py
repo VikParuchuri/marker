@@ -1,75 +1,36 @@
-# marker_single experiments/pdf/tiny.pdf --output_dir experiments/out
-# marker_single experiments/pdf/tiny.pdf --output_dir experiments/out --converter_cls marker.converters.table.TableConverter --debug --output_format json
+"""
+Detect tables when the pdf is not available
+"""
 
+
+from functools import partialmethod
+import io
 import os
 import tempfile
 from typing import Tuple
-from marker.builders.document import DocumentBuilder
-from marker.builders.ocr import OcrBuilder
+
+from bs4 import BeautifulSoup
+from tqdm import tqdm
+from benchmarks.table.gemini import gemini_table_rec, prompt_with_header
+from benchmarks.table.inference import FinTabNetBenchmark
 from marker.processors import BaseProcessor
 from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.llm.llm_table_merge import LLMTableMergeProcessor
 from marker.processors.table import TableProcessor
-from marker.providers import ProviderOutput
-from marker.providers.image import ImageProvider
-from marker.schema.polygon import PolygonBox
-from marker.schema.text.line import Line
-from marker.schema.text.span import Span
-from marker.schema.blocks.base import Block
-import pdftext.schema
-
 from marker.converters.table import TableConverter
-from marker.models import create_model_dict
-from marker.output import text_from_rendered
 
+import pdftext.schema
+from surya.detection import DetectionPredictor
+from surya.recognition import RecognitionPredictor
+from surya.table_rec import TableRecPredictor
 
-# unused
-def _convert_to_provider_output(words, page_id=0):
-    outputs = []
-
-    for word in words:
-        x0, y0, x1, y1, text = word
-
-        # Create the PolygonBox
-        polygon = PolygonBox(polygon=[[x0, y0], [x1, y0], [x1, y1], [x0, y1]])
-
-        # Create the Line
-        line = Line(
-            polygon=polygon,
-            # block_description="A line of text.",
-            source="layout",
-            page_id=page_id
-        )
-
-        # Create the Span
-        span = Span(
-            polygon=polygon,
-            # block_description="A span of text inside a line.",
-            text=text,
-            font="DefaultFont",
-            font_weight=400,
-            font_size=12.0,
-            minimum_position=0,
-            maximum_position=100,
-            formats=["plain"],
-            source="layout",
-            page_id=page_id
-        )
-
-        # Combine into ProviderOutput
-        provider_output = ProviderOutput(line=line, spans=[span])
-        outputs.append(provider_output)
-
-    return outputs
-
-# Convert the input format to the desired page format
-def convert_to_page(word_bboxes, words, page_bbox, page_number): 
+def convert_to_page(word_bboxes: list[tuple], words: list[str], page_bbox: tuple, page_number: int): 
+    """Converts word bboxes into a pdftext Page object"""
     blocks = []
     block_lines = []
 
-    # for word in words:
     for vec4, text in zip(word_bboxes, words):
         x0, y0, x1, y1 = vec4
         word_bbox = pdftext.schema.Bbox(bbox=[x0, y0, x1, y1])
@@ -87,7 +48,6 @@ def convert_to_page(word_bboxes, words, page_bbox, page_number):
                 char_idx=i
             ))
 
-        # Create the Span
         span = pdftext.schema.Span(
             bbox=word_bbox,
             text=text,
@@ -99,7 +59,6 @@ def convert_to_page(word_bboxes, words, page_bbox, page_number):
             url=""
         )
 
-        # Create the Line
         line = pdftext.schema.Line(
             spans=[span],
             bbox=word_bbox,
@@ -108,7 +67,6 @@ def convert_to_page(word_bboxes, words, page_bbox, page_number):
 
         block_lines.append(line)
 
-    # Create the Block
     block = pdftext.schema.Block(
         lines=block_lines,
         bbox=page_bbox,
@@ -116,7 +74,6 @@ def convert_to_page(word_bboxes, words, page_bbox, page_number):
     )
     blocks.append(block)
 
-    # Create the Page
     page = pdftext.schema.Page(
         page=page_number,
         bbox=page_bbox,
@@ -129,9 +86,6 @@ def convert_to_page(word_bboxes, words, page_bbox, page_number):
 
     return page
 
-from surya.detection import DetectionPredictor
-from surya.recognition import RecognitionPredictor, OCRResult
-from surya.table_rec import TableRecPredictor
 
 class GroundTruthPagesForcer:
     def __init__(self):
@@ -215,6 +169,112 @@ class ChangedTableConverter(TableConverter):
         LLMFormProcessor,
         LLMComplexRegionProcessor,
     )
-    
-    # def provider_from_filepath(self, filepath):
-        # return ChangedProvider # override
+
+class SynthTabNetBenchmark(FinTabNetBenchmark):
+    gt_forcer: GroundTruthPagesForcer
+    def get_converter(self, models, config_parser, **kwargs):
+        config_parser.cli_options['force_layout_block'] = 'Table'
+        self.gt_forcer = GroundTruthPagesForcer()
+
+        return ChangedTableConverter(
+            config={
+                **config_parser.generate_config_dict(),
+                "document_ocr_threshold": 0 # never perform OCR for evaluation: we know the ground truth
+            },
+            artifact_dict={
+                '_gt_forcer': self.gt_forcer,
+                **models
+            },
+            processor_list=config_parser.get_processors(),
+            renderer=config_parser.get_renderer()
+        )
+
+    def synthtabnet_page_with_gt_words(self, row, page_image):
+        bboxes = row['word_bboxes']
+        words = row['words']
+        good = [i for i, word in enumerate(words) if word] # allow only non-empty words
+        bboxes = [bboxes[i] for i in good]
+        words = [words[i] for i in good]
+
+        image_bbox = [0, 0, page_image.width, page_image.height]
+        return convert_to_page(bboxes, words, image_bbox, 0)
+
+    def extract_tables_from_doc(self, converter, row):
+        original_tqdm = tqdm.__init__
+
+        # https://stackoverflow.com/a/23212515
+        manual_management = os.name == 'nt' 
+        with tempfile.NamedTemporaryFile(suffix=".png", mode="wb", delete=not manual_management) as temp_png_file:
+
+            bytesio = io.BytesIO()
+            page_image = row['image'] # PIL.Image.Image
+            page_image.save(bytesio, format="PNG")
+
+            temp_png_file.write(bytesio.getvalue())
+            temp_png_file.seek(0)
+
+            self.gt_forcer.forced_pages = [
+                self.synthtabnet_page_with_gt_words(row, page_image)
+            ]
+
+            tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
+            marker_json = converter(temp_png_file.name).children # word bboxes are ingested by way of "gt_forcer"
+            tqdm.__init__ = original_tqdm # enable
+
+            if manual_management:
+                temp_png_file.close()
+                os.remove(temp_png_file.name)
+        return marker_json, page_image
+
+    def extract_gt_tables(self, row, **kwargs):
+        return [{
+            'normalized_bbox': [0, 0, 1, 1],
+            'html': row['html']
+        }]
+
+    def extract_gemini_tables(self, row, image, **kwargs):
+        gemini_table = gemini_table_rec(image, prompt=prompt_with_header)
+        # gemini_table_html = self.postprocess_marker_to_html(gemini_table) # put through same th --> thead/tbody pipeline
+        return gemini_table
+
+
+    def postprocess_marker_to_html(self, marker_table: str):
+        marker_table_soup = BeautifulSoup(marker_table, 'html.parser')
+        # Synthtabnet uses thead and tbody tags
+        # Marker uses th tags
+        thead = marker_table_soup.new_tag('thead')
+        tbody = marker_table_soup.new_tag('tbody')
+        in_thead = True
+
+        for tr in marker_table_soup.find_all('tr'):
+            if in_thead and all(th_tag.name == 'th' for th_tag in tr.find_all()):
+                thead.append(tr)
+            else:
+                in_thead = False
+                tbody.append(tr)
+
+        # create anew
+        marker_table_soup.clear()
+        marker_table_soup.append(thead)
+        marker_table_soup.append(tbody)
+
+        for th_tag in marker_table_soup.find_all('th'):
+            th_tag.name = 'td'
+        marker_table_html = str(marker_table_soup)
+        marker_table_html = marker_table_html.replace("<br>", " ") # Fintabnet uses spaces instead of newlines
+        marker_table_html = marker_table_html.replace("\n", " ")
+        return marker_table_html
+
+    def postprocess_gemini_to_html(self, gemini_table: str) -> str:
+        gemini_table = super().postprocess_gemini_to_html(gemini_table)
+        gemini_table = gemini_table.replace("<table>", "").replace("</table>", "")
+        return gemini_table
+
+    def construct_row_result(self, row, gt_table, marker_table, gemini_table, **kwargs):
+        return {
+            "filename": row['filename'],
+            "dataset_variant": row.get('dataset_variant', row.get('dataset')),
+            "marker_table": marker_table,
+            "gt_table": gt_table,
+            "gemini_table": gemini_table
+        }
