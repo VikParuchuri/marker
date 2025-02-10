@@ -121,7 +121,10 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
 
                 gemini_html = ""
                 if use_gemini:
-                    gemini_html = gemini_table_rec(table_images[aligned_idx])
+                    try:
+                        gemini_html = gemini_table_rec(table_images[aligned_idx])
+                    except Exception as e:
+                        print(f'Gemini failed: {e}')
 
                 aligned_tables.append(
                     (marker_tables[aligned_idx], gt_tables[table_idx], gemini_html)

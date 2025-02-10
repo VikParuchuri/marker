@@ -34,7 +34,9 @@ It only uses models where necessary, which improves speed and accuracy.
 
 ![Benchmark overall](data/images/overall.png)
 
-The above results are with marker setup so it takes ~7GB of VRAM on an A10.
+Marker benchmarks favorably compared to cloud services like Llamaparse and Mathpix.
+
+The above results are running single PDF pages serially.  Marker is significantly faster when running in batch mode, with a projected throughput of 122 pages/second on an H100 (.18 seconds per page across 22 processes).
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
@@ -377,30 +379,31 @@ There are some settings that you may find useful if things aren't working the wa
 Pass the `debug` option to activate debug mode.  This will save images of each page with detected layout and text, as well as output a json file with additional bounding box information.
 
 # Benchmarks
+
 ## Overall PDF Conversion
-Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
+We created a [benchmark set](https://huggingface.co/datasets/datalab-to/marker_benchmark) by extracting single PDF pages from common crawl.
 
-**Speed**
-
-| Method  | Average Score | Time per page | Time per document |
-|---------|----------------|---------------|------------------|
-| marker  | 0.625115       | 0.234184     | 21.545           |
-
-**Accuracy**
-
-| Method  | thinkpython.pdf | switch_trans.pdf | thinkdsp.pdf | crowd.pdf | thinkos.pdf | multicolcnn.pdf |
-|---------|----------------|-----------------|--------------|------------|-------------|----------------|
-| marker  | 0.720347       | 0.592002       | 0.70468     | 0.515082   | 0.701394    | 0.517184      |
+| Method     |   Avg Time | Heuristic Score | LLM Score |
+|------------|------------|-----------------|-----------|
+| marker     |    2.83837 | 95.6709         | 4.23916   |
+| llamaparse |   23.348   | 84.2442         | 3.97619   |
+| mathpix    |    6.36223 | 86.4281         | 4.15626   |
+| docling    |  3.86      | 87.7347         | 3.72222   |
 
 Peak GPU memory usage during the benchmark is `6GB` for marker.  Benchmarks were run on an A10.
 
-**Throughput**
+## Throughput
 
-Marker takes about 6GB of VRAM on average per task, so you can convert 8 documents in parallel on an A6000.
+We benchmarked throughput using a [single long PDF](https://www.greenteapress.com/thinkpython/thinkpython.pdf).
 
-![Benchmark results](data/images/per_doc.png)
+| Method  | Time per page | Time per document | VRAM used |
+|---------|---------------|-------------------|---------- |
+| marker  | 0.18          | 43.42             |  3.17GB   |
+
+The projected throughput is 122 pages per second on an H100 - we can run 22 individual processes.
 
 ## Table Conversion
+
 Marker can extract tables from PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a tree edit distance based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves these scores:
 
 | Avg score | Total tables | use_llm |
@@ -433,7 +436,7 @@ python benchmarks/overall.py data/pdfs data/references report.json
 The processed FinTabNet dataset is hosted [here](https://huggingface.co/datasets/datalab-to/fintabnet-test) and is automatically downloaded. Run the benchmark with:
 
 ```shell
-python benchmarks/table/table.py table_report.json --max_rows 1000
+python benchmarks/table/table.py --max_rows 1000
 ```
 
 # Thanks
