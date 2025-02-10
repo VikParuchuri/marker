@@ -89,6 +89,8 @@ class LineBuilder(BaseBuilder):
         self.ocr_error_model = ocr_error_model
 
     def __call__(self, document: Document, provider: PdfProvider):
+        #Disable Inline Detection for documents where layout model doesn't detect any equations
+        self.enable_inline_math_detection = self.enable_inline_math_detection and document.contained_blocks([BlockTypes.Equation])
         provider_lines, ocr_lines= self.get_all_lines(document, provider)
         self.merge_blocks(document, provider_lines, ocr_lines)
 
