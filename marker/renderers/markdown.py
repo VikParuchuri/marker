@@ -94,9 +94,13 @@ class Markdownify(MarkdownConverter):
         for i, row in enumerate(el.find_all('tr')):
             row_cols = rowspan_cols[i]
             for cell in row.find_all(['td', 'th']):
-                colspan = int(cell.get('colspan', 1))
+                colspan = cell.get('colspan', 1)
+                colspan = 1 if colspan == "" else int(colspan)
                 row_cols += colspan
-                for r in range(int(cell.get('rowspan', 1)) - 1):
+
+                rowspan = cell.get('rowspan', 1)
+                rowspan = 1 if rowspan == "" else int(rowspan)
+                for r in range(rowspan - 1):
                     rowspan_cols[i + r] += colspan # Add the colspan to the next rows, so they get the correct number of columns
             colspans.append(row_cols)
         total_cols = max(colspans)
@@ -112,8 +116,10 @@ class Markdownify(MarkdownConverter):
 
                 # Fill in grid
                 value = get_formatted_table_text(cell).replace("\n", " ").replace("|", " ").strip()
-                rowspan = int(cell.get('rowspan', 1))
-                colspan = int(cell.get('colspan', 1))
+                rowspan = cell.get('rowspan', 1)
+                rowspan = 1 if rowspan == "" else int(rowspan)
+                colspan = cell.get('colspan', 1)
+                colspan = 1 if colspan == "" else int(colspan)
 
                 if col_idx >= total_cols:
                     # Skip this cell if we're out of bounds

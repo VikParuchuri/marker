@@ -128,9 +128,12 @@ class PdfConverter(BaseConverter):
 
         return cls(**resolved_kwargs)
 
+    def provider_from_filepath(self, filepath):
+        return provider_from_filepath(filepath)
+
     @cache
     def build_document(self, filepath: str):
-        provider_cls = provider_from_filepath(filepath)
+        provider_cls = self.provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         with provider_cls(filepath, self.config) as provider:
