@@ -33,7 +33,7 @@ def update_teds_score(result, prefix: str = "marker"):
 @click.option("--max_workers", type=int, default=16, help="Maximum number of workers to use")
 @click.option("--use_llm", is_flag=True, help="Use LLM for improving table recognition.")
 @click.option("--table_rec_batch_size", type=int, default=None, help="Batch size for table recognition.")
-@click.option("--use_gemini", is_flag=True, help="Evaluate Gemini for table recognition.")
+@click.option("--compare_gemini", is_flag=True, help="Evaluate Gemini alone for table recognition.")
 def main(
         result_path: str,
         dataset: str,
@@ -41,7 +41,7 @@ def main(
         max_workers: int,
         use_llm: bool,
         table_rec_batch_size: int | None,
-        use_gemini: bool = False
+        compare_gemini: bool = False
 ):
     start = time.time()
 
@@ -49,7 +49,7 @@ def main(
     dataset = datasets.load_dataset(dataset, split='train')
     dataset = dataset.shuffle(seed=0)
 
-    results, total_unaligned = inference_tables(dataset, use_llm, table_rec_batch_size, max_rows, use_gemini)
+    results, total_unaligned = inference_tables(dataset, use_llm, table_rec_batch_size, max_rows, compare_gemini)
 
     print(f"Total time: {time.time() - start}.")
     print(f"Could not align {total_unaligned} tables from fintabnet.")
@@ -65,7 +65,7 @@ def main(
     headers = ["Avg score", "Total tables"]
     data = [f"{avg_score:.3f}", len(marker_results)]
     gemini_results = None
-    if use_gemini:
+    if compare_gemini:
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             gemini_results = list(
                 tqdm(

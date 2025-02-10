@@ -1,3 +1,5 @@
+from functools import partialmethod
+import os
 from typing import List
 
 import numpy as np
@@ -36,28 +38,36 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
     if max_rows is not None:
         iterations = min(max_rows, len(dataset))
 
+    converter = TableConverter(
+        config=config_parser.generate_config_dict(),
+        artifact_dict=models,
+        processor_list=config_parser.get_processors(),
+        renderer=config_parser.get_renderer()
+    )
+    original_tqdm = tqdm.__init__
     for i in tqdm(range(iterations), desc='Converting Tables'):
         try:
             row = dataset[i]
             pdf_binary = base64.b64decode(row['pdf'])
-            gt_tables = row['tables']  # Already sorted by reading order, which is what marker returns
 
-            converter = TableConverter(
-                config=config_parser.generate_config_dict(),
-                artifact_dict=models,
-                processor_list=config_parser.get_processors(),
-                renderer=config_parser.get_renderer()
-            )
-
-            with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb") as temp_pdf_file:
+            # https://stackoverflow.com/a/23212515
+            manual_management = os.name == 'nt' 
+            with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb", delete=not manual_management) as temp_pdf_file:
                 temp_pdf_file.write(pdf_binary)
                 temp_pdf_file.seek(0)
+
+                tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
                 marker_json = converter(temp_pdf_file.name).children
+                tqdm.__init__ = original_tqdm
 
                 doc = pdfium.PdfDocument(temp_pdf_file.name)
                 page_image = doc[0].render(scale=96/72).to_pil()
                 doc.close()
-
+                if manual_management:
+                    temp_pdf_file.close()
+                    os.remove(temp_pdf_file.name)
+            
+            gt_tables = row['tables']  # Already sorted by reading order, which is what marker returns
             if len(marker_json) == 0 or len(gt_tables) == 0:
                 print(f'No tables detected, skipping...')
                 total_unaligned += len(gt_tables)

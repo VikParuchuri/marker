@@ -22,10 +22,16 @@ Guidelines:
 3. Output only the HTML for the table, starting with the <table> tag and ending with the </table> tag.
 """.strip()
 
+prompt_with_header = prompt.replace(
+    "Only use <table>, <tr>, and <td> tags.  Only use the colspan and rowspan attributes if necessary.  Do not use <tbody>, <thead>, or <th> tags.",
+    "Only use <table>, <tr>, <th>, and <td> tags.  Only use the colspan and rowspan attributes if necessary.  Do not use <tbody> or <thead> tags.", 1
+)
+
+
 class TableSchema(BaseModel):
     table_html: str
 
-def gemini_table_rec(image: Image.Image):
+def gemini_table_rec(image: Image.Image, prompt=prompt):
     client = genai.Client(
         api_key=settings.GOOGLE_API_KEY,
         http_options={"timeout": 60000}
