@@ -406,10 +406,11 @@ The projected throughput is 122 pages per second on an H100 - we can run 22 indi
 
 Marker can extract tables from PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a tree edit distance based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves these scores:
 
-| Avg score | Total tables | use_llm |
-|-----------|--------------|---------|
-| 0.822     | 54           | False   |
-| 0.887     | 54           | True    |
+| Method           | Avg score | Total tables |
+|------------------|-----------|--------------|
+| marker           | 0.822     | 54           |
+| marker w/use_llm | 0.887     | 54           |
+| gemini           |           | 54           |
 
 The `--use_llm` flag can significantly improve table recognition performance, as you can see.
 
@@ -429,8 +430,15 @@ poetry install
 Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run the overall benchmark like this:
 
 ```shell
-python benchmarks/overall.py data/pdfs data/references report.json
+python benchmarks/overall.py --methods marker --scores heuristic,llm
 ```
+
+Options:
+
+- `--use_llm` use an llm to improve the marker results.
+- `--max_rows` how many rows to process for the benchmark.
+- `--methods` can be `llamaparse`, `mathpix`, `docling`, `marker`.  Comma separated.
+- `--scores` which scoring functions to use, can be `--llm`, `--heuristic`.
 
 ### Table Conversion
 The processed FinTabNet dataset is hosted [here](https://huggingface.co/datasets/datalab-to/fintabnet-test) and is automatically downloaded. Run the benchmark with:

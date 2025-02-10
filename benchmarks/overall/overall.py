@@ -80,7 +80,7 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
 @click.command(help="Benchmark PDF to MD conversion.")
 @click.option("--dataset", type=str, help="Path to the benchmark dataset", default="datalab-to/marker_benchmark")
 @click.option("--out_dataset", type=str, help="Path to the output dataset", default=None)
-@click.option("--methods", type=str, help="Comma separated list of other methods to compare against.  Possible values: marker,mathpix,llamaparse", default="marker")
+@click.option("--methods", type=str, help="Comma separated list of other methods to compare against.  Possible values: marker,mathpix,llamaparse,docling", default="marker")
 @click.option("--scores", type=str, help="Comma separated list of scoring functions to use.  Possible values: heuristic,llm", default="heuristic")
 @click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "overall"), help="Output path for results.")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of rows to process.")

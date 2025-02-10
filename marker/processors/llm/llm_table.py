@@ -42,13 +42,13 @@ Some guidelines:
 - If you see any math in a table cell, fence it with the <math display="inline"> tag.  Block math should be fenced with <math display="block">.
 - Replace any images with a description, like "Image: [description]".
 - Only use the tags th, td, tr, br, span, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
+- If you see a dollar sign ($), or a percent sign (%) associated with a number, combine it with the number it is associated with in a single column versus splitting it into multiple columns.
 
 **Instructions:**
 1. Carefully examine the provided text block image.
 2. Analyze the html representation of the table.
-3. If the html representation is largely correct, or you cannot read the image properly, then write "No corrections needed."
-4. If the html representation contains errors, generate the corrected html representation.  
-5. Output only either the corrected html representation or "No corrections needed."
+3. Write a comparison of the image and the html representation.
+4. If the html representation is largely correct, or you cannot read the image properly, then write "No corrections needed."  If the html representation contains errors, generate the corrected html representation.  Output only either the corrected html representation or "No corrections needed."
 **Example:**
 Input:
 ```html
@@ -67,6 +67,7 @@ Input:
 ```
 Output:
 ```html
+Comparison: The image shows a table with 2 rows and 3 columns.  The text and formatting of the html table matches the image.
 No corrections needed.
 ```
 **Input:**
@@ -237,4 +238,5 @@ No corrections needed.
         return cells
 
 class TableSchema(BaseModel):
+    description: str
     correct_html: str

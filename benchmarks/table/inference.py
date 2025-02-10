@@ -11,6 +11,8 @@ from benchmarks.table.gemini import gemini_table_rec
 from marker.config.parser import ConfigParser
 from marker.converters.table import TableConverter
 from marker.models import create_model_dict
+from marker.processors.llm.llm_table import LLMTableProcessor
+from marker.processors.table import TableProcessor
 from marker.renderers.json import JSONBlockOutput
 from marker.schema.polygon import PolygonBox
 from marker.util import matrix_intersection_area
@@ -42,10 +44,14 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
             pdf_binary = base64.b64decode(row['pdf'])
             gt_tables = row['tables']  # Already sorted by reading order, which is what marker returns
 
+            # Only use the basic table processors
             converter = TableConverter(
                 config=config_parser.generate_config_dict(),
                 artifact_dict=models,
-                processor_list=config_parser.get_processors(),
+                processor_list=[
+                    "marker.processors.table.TableProcessor",
+                    "marker.processors.llm.llm_table.LLMTableProcessor",
+                ],
                 renderer=config_parser.get_renderer()
             )
 
@@ -66,6 +72,11 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
             marker_tables = extract_tables(marker_json)
             marker_table_boxes = [table.bbox for table in marker_tables]
             page_bbox = marker_json[0].bbox
+
+            if len(marker_tables) != len(gt_tables):
+                print(f'Number of tables do not match, skipping...')
+                total_unaligned += len(gt_tables)
+                continue
 
             table_images = [
                 page_image.crop(
@@ -102,6 +113,11 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
                     unaligned_tables.add(table_idx)
                     continue
 
+                if max_area <= .01:
+                    # No alignment found
+                    unaligned_tables.add(table_idx)
+                    continue
+
                 if aligned_idx in used_tables:
                     # Marker table already aligned with another gt table
                     unaligned_tables.add(table_idx)
@@ -109,13 +125,13 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
 
                 # Gt table doesn't align well with any marker table
                 gt_table_pct = gt_areas[table_idx] / max_area
-                if not .75 < gt_table_pct < 1.25:
+                if not .85 < gt_table_pct < 1.15:
                     unaligned_tables.add(table_idx)
                     continue
 
                 # Marker table doesn't align with gt table
                 marker_table_pct = marker_areas[aligned_idx] / max_area
-                if not .75 < marker_table_pct < 1.25:
+                if not .85 < marker_table_pct < 1.15:
                     unaligned_tables.add(table_idx)
                     continue
 

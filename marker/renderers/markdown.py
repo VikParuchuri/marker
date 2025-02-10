@@ -99,7 +99,7 @@ class Markdownify(MarkdownConverter):
                 for r in range(int(cell.get('rowspan', 1)) - 1):
                     rowspan_cols[i + r] += colspan # Add the colspan to the next rows, so they get the correct number of columns
             colspans.append(row_cols)
-        total_cols = max(colspans)
+        total_cols = max(colspans) if colspans else 0
 
         grid = [[None for _ in range(total_cols)] for _ in range(total_rows)]
 

@@ -39,7 +39,7 @@ class LLMTableMergeProcessor(BaseLLMProcessor):
     horizontal_table_distance_threshold: Annotated[
         int,
         "The maximum distance between table edges for adjacency."
-    ] = 20
+    ] = 10
     column_gap_threshold: Annotated[
         int,
         "The maximum gap between columns to merge tables"
