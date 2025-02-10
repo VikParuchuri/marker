@@ -22,6 +22,8 @@ from marker.util import matrix_intersection_area
 
 class TextBox(PolygonBox):
     math: bool =False
+    def __hash__(self):
+        return hash(tuple(self.bbox))
 
 class LineBuilder(BaseBuilder):
     """
@@ -241,6 +243,7 @@ class LineBuilder(BaseBuilder):
 
         updated_provider_lines = []
         provider_line_to_inline = {provider_line: [] for provider_line in provider_lines}
+        inline_math_removed_text = defaultdict(str)
 
         for math_line in inline_math_lines:
             math_line_polygon = PolygonBox(polygon=math_line.polygon).rescale(image_size, page_size)
@@ -256,7 +259,8 @@ class LineBuilder(BaseBuilder):
                     continue
                 overlap = provider_line.line.polygon.intersection_area(math_line_polygon) / math_line_area
                 if overlap>self.line_inline_math_overlap_threshold:
-                    self._reconstruct_provider_line(provider_line, math_line_polygon)
+                    line_removed_text = self._reconstruct_provider_line(provider_line, math_line_polygon)
+                    inline_math_removed_text[math_line] += line_removed_text + " "
                     pass
                 if overlap>best_overlap:
                     best_overlap = overlap
@@ -277,7 +281,7 @@ class LineBuilder(BaseBuilder):
             for math_line in math_lines:
                 new_spans.append(
                     SpanClass(
-                        text="",
+                        text=inline_math_removed_text[math_line],
                         formats=['math'],
                         page_id=document_page_id,
                         polygon=PolygonBox(polygon=math_line.polygon).rescale(image_size, page_size),
@@ -300,13 +304,17 @@ class LineBuilder(BaseBuilder):
 
         #For providers which do not surface characters
         if provider_line.chars is None:
+            removed_text = ""
             for span in spans:
                 if span.polygon.intersection_pct(math_line_polygon)<self.span_inline_math_overlap_threshold:
                     spans_to_keep.append(span)
+                else:
+                    removed_text += span.text
             provider_line.spans = spans_to_keep
-            return
+            return removed_text.strip()
 
         #For providers which surface characters - Split the span based on overlapping characters
+        removed_text = ""
         chars_to_keep = []
         assert len(spans) == len(provider_line.chars)
         for span, span_chars in zip(spans, provider_line.chars):
@@ -320,6 +328,7 @@ class LineBuilder(BaseBuilder):
 
             for char in span_chars:
                 if char.polygon.intersection_pct(math_line_polygon)>=self.char_inline_math_overlap_threshold:
+                    removed_text += char.char
                     continue  # Skip characters that overlap with the math polygon
                 
                 # Since chars are already in left-to-right order, we can just check position
@@ -356,8 +365,11 @@ class LineBuilder(BaseBuilder):
                     font_size=span.font_size
                 ))
                 chars_to_keep.append(right_chars)
+            removed_text += ' '
         provider_line.spans = spans_to_keep
         provider_line.chars = chars_to_keep
+
+        return removed_text.strip()
 
 
     def check_layout_coverage(
