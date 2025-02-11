@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import BaseLLMComplexBlockProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, TableCell, Table
 from marker.schema.document import Document
@@ -12,7 +12,7 @@ from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
 
 
-class LLMTableProcessor(BaseLLMProcessor):
+class LLMTableProcessor(BaseLLMComplexBlockProcessor):
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",
