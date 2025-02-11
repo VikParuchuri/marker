@@ -1,8 +1,7 @@
 import markdown2
+from pydantic import BaseModel
 
 from marker.processors.llm import BaseLLMProcessor
-
-from google.ai.generativelanguage_v1beta.types import content
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -55,18 +54,8 @@ Output:
         text = block.raw_text(document)
         prompt = self.complex_region_prompt.replace("{extracted_text}", text)
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["corrected_markdown"],
-            properties={
-                "corrected_markdown": content.Schema(
-                    type=content.Type.STRING
-                )
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(prompt, image, block, ComplexSchema)
 
         if not response or "corrected_markdown" not in response:
             block.update_metadata(llm_error_count=1)
@@ -85,4 +74,7 @@ Output:
 
         # Convert LLM markdown to html
         corrected_markdown = corrected_markdown.strip().lstrip("```markdown").rstrip("```").strip()
-        block.html = markdown2.markdown(corrected_markdown)
+        block.html = markdown2.markdown(corrected_markdown, extras=["tables"])
+
+class ComplexSchema(BaseModel):
+    corrected_markdown: str

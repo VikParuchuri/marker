@@ -27,7 +27,7 @@ class BaseLLMProcessor(BaseProcessor):
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the Gemini model.",
-    ] = 3
+    ] = 1
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
@@ -35,7 +35,7 @@ class BaseLLMProcessor(BaseProcessor):
     timeout: Annotated[
         int,
         "The timeout for requests to the Gemini model.",
-    ] = 60
+    ] = 15
     image_expansion_ratio: Annotated[
         float,
         "The ratio to expand the image by when cropping.",
@@ -43,6 +43,10 @@ class BaseLLMProcessor(BaseProcessor):
     use_llm: Annotated[
         bool,
         "Whether to use the LLM model.",
+    ] = False
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
     ] = False
     block_types = None
 
@@ -73,7 +77,7 @@ class BaseLLMProcessor(BaseProcessor):
         if total_blocks == 0:
             return
 
-        pbar = tqdm(desc=f"{self.__class__.__name__} running")
+        pbar = tqdm(desc=f"{self.__class__.__name__} running", disable=self.disable_tqdm)
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             for future in as_completed([
                 executor.submit(self.process_rewriting, document, page, block)

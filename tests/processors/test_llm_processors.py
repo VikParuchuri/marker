@@ -97,25 +97,6 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
     assert "Value 1 $x$" in markdown
 
 
-@pytest.mark.filename("adversarial.pdf")
-@pytest.mark.config({"page_range": [0]})
-def test_llm_text_processor(pdf_document, mocker):
-    inline_math_block = pdf_document.contained_blocks((BlockTypes.TextInlineMath,))[0]
-    text_lines = inline_math_block.contained_blocks(pdf_document, (BlockTypes.Line,))
-    corrected_lines = ["<i>Text</i>"] * len(text_lines)
-
-    mock_cls = Mock()
-    mock_cls.return_value.generate_response.return_value = {"corrected_lines": corrected_lines}
-    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
-
-    processor = LLMTextProcessor({"use_llm": True, "google_api_key": "test"})
-    processor(pdf_document)
-
-    contained_spans = text_lines[0].contained_blocks(pdf_document, (BlockTypes.Span,))
-    assert contained_spans[0].text == "Text\n" # Newline inserted at end of line
-    assert contained_spans[0].formats == ["italic"]
-
-
 @pytest.mark.filename("A17_FlightPlan.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_caption_processor_disabled(pdf_document):
@@ -169,3 +150,21 @@ def test_llm_complex_region_processor(pdf_document, mocker):
     rendered_md = renderer(pdf_document).markdown
 
     assert md in rendered_md
+
+@pytest.mark.filename("adversarial.pdf")
+@pytest.mark.config({"page_range": [0]})
+def test_llm_text_processor(pdf_document, mocker):
+    inline_math_block = pdf_document.contained_blocks((BlockTypes.TextInlineMath,))[0]
+    text_lines = inline_math_block.contained_blocks(pdf_document, (BlockTypes.Line,))
+    corrected_lines = ["<i>Text</i>"] * len(text_lines)
+
+    mock_cls = Mock()
+    mock_cls.return_value.generate_response.return_value = {"corrected_lines": corrected_lines}
+    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
+
+    processor = LLMTextProcessor({"use_llm": True, "google_api_key": "test"})
+    processor(pdf_document)
+
+    contained_spans = text_lines[0].contained_blocks(pdf_document, (BlockTypes.Span,))
+    assert contained_spans[0].text == "Text\n" # Newline inserted at end of line
+    assert contained_spans[0].formats == ["italic"]

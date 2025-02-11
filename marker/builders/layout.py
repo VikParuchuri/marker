@@ -22,7 +22,7 @@ class LayoutBuilder(BaseBuilder):
     """
     A builder for performing layout detection on PDF pages and merging the results into the document.
     """
-    batch_size: Annotated[
+    layout_batch_size: Annotated[
         Optional[int],
         "The batch size to use for the layout model.",
         "Default is None, which will use the default batch size for the model."
@@ -36,7 +36,7 @@ class LayoutBuilder(BaseBuilder):
         float,
         "The minimum coverage ratio required for the layout model to consider",
         "the lines from the PdfProvider valid.",
-    ] = .1
+    ] = .25
     document_ocr_threshold: Annotated[
         float,
         "The minimum ratio of pages that must pass the layout coverage check",
@@ -67,8 +67,8 @@ class LayoutBuilder(BaseBuilder):
         self.merge_blocks(document.pages, provider.page_lines)
 
     def get_batch_size(self):
-        if self.batch_size is not None:
-            return self.batch_size
+        if self.layout_batch_size is not None:
+            return self.layout_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 6
         return 6
@@ -140,7 +140,11 @@ class LayoutBuilder(BaseBuilder):
         good_pages = []
         for (document_page, ocr_error_detection_label) in zip(document_pages, ocr_error_detection_labels):
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            good_pages.append(bool(provider_lines) and self.check_layout_coverage(document_page, provider_lines) and (ocr_error_detection_label != "bad"))
+            good_pages.append(
+                bool(provider_lines) and
+                self.check_layout_coverage(document_page, provider_lines) and
+                (ocr_error_detection_label != "bad")
+            )
 
         ocr_document = sum(good_pages) / len(good_pages) < self.document_ocr_threshold
         for idx, document_page in enumerate(document_pages):
@@ -180,7 +184,7 @@ class LayoutBuilder(BaseBuilder):
                 large_text_blocks += 1
 
         coverage_ratio = covered_blocks / total_blocks if total_blocks > 0 else 1
-        text_okay = coverage_ratio >= self.layout_coverage_threshold
+        text_okay = coverage_ratio > self.layout_coverage_threshold
 
         # Model will sometimes say there is a single block of text on the page when it is blank
         if not text_okay and (total_blocks == 1 and large_text_blocks == 1):
