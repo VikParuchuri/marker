@@ -1,22 +1,19 @@
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
-
+from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData, BlockData
 from marker.schema import BlockTypes
-from marker.schema.blocks import Equation
 from marker.schema.document import Document
-from marker.schema.groups.page import PageGroup
 
-from typing import Annotated
+from typing import Annotated, List
 
 
-class LLMEquationProcessor(BaseLLMProcessor):
+class LLMEquationProcessor(BaseLLMSimpleBlockProcessor):
     block_types = (BlockTypes.Equation,)
     min_equation_height: Annotated[
         float,
         "The minimum ratio between equation height and page height to consider for processing.",
      ] = 0.08
-    equation_image_expansion_ratio: Annotated[
+    image_expansion_ratio: Annotated[
         float,
         "The ratio to expand the image by when cropping.",
     ] = 0.05 # Equations sometimes get bboxes that are too tight
@@ -62,13 +59,39 @@ Output:
 ```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Equation):
+    def inference_blocks(self, document: Document) -> List[BlockData]:
+        blocks = super().inference_blocks(document)
+        out_blocks = []
+        for block_data in blocks:
+            block = block_data["block"]
+            page = block_data["page"]
+            if block.polygon.height / page.polygon.height < self.min_equation_height:
+                continue
+            out_blocks.append(block_data)
+        return out_blocks
+
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block_data in self.inference_blocks(document):
+            block = block_data["block"]
+            text = block.html if block.html else block.raw_text(document)
+            prompt = self.equation_latex_prompt.replace("{equation}", text)
+            image = self.extract_image(document, block)
+
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": block,
+                "schema": EquationSchema,
+                "page": block_data["page"]
+            })
+
+        return prompt_data
+
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        block = prompt_data["block"]
         text = block.html if block.html else block.raw_text(document)
-        prompt = self.equation_latex_prompt.replace("{equation}", text)
-
-        image = self.extract_image(document, block)
-
-        response = self.model.generate_response(prompt, image, block, EquationSchema)
 
         if not response or "html_equation" not in response:
             block.update_metadata(llm_error_count=1)

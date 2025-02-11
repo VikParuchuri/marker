@@ -1,17 +1,14 @@
 import markdown2
 from pydantic import BaseModel
-
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import PromptData, BaseLLMSimpleBlockProcessor, BlockData
 
 from marker.schema import BlockTypes
-from marker.schema.blocks import Handwriting, Text
 from marker.schema.document import Document
-from marker.schema.groups.page import PageGroup
 
-from typing import Annotated
+from typing import Annotated, List
 
 
-class LLMHandwritingProcessor(BaseLLMProcessor):
+class LLMHandwritingProcessor(BaseLLMSimpleBlockProcessor):
     block_types = (BlockTypes.Handwriting, BlockTypes.Text)
     handwriting_generation_prompt: Annotated[
         str,
@@ -36,20 +33,40 @@ Formatting should be in markdown, with the following rules:
 2. Output the markdown representing the content of the image.
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Handwriting | Text):
+    def inference_blocks(self, document: Document) -> List[BlockData]:
+        blocks = super().inference_blocks(document)
+        out_blocks = []
+        for block_data in blocks:
+            raw_text = block_data["block"].raw_text(document)
+            block = block_data["block"]
+            # Don't process text blocks that contain lines already
+            if block.block_type == BlockTypes.Text:
+                lines = block.contained_blocks(document, (BlockTypes.Line,))
+                if len(lines) > 0 or len(raw_text.strip()) > 0:
+                    continue
+            out_blocks.append(block_data)
+        return out_blocks
+
+
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block_data in self.inference_blocks(document):
+            block = block_data["block"]
+            prompt = self.handwriting_generation_prompt
+            image = self.extract_image(document, block)
+
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": block,
+                "schema": HandwritingSchema,
+                "page": block_data["page"]
+            })
+        return prompt_data
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        block = prompt_data["block"]
         raw_text = block.raw_text(document)
-
-        # Don't process text blocks that contain lines already
-        if block.block_type == BlockTypes.Text:
-            lines = block.contained_blocks(document, (BlockTypes.Line,))
-            if len(lines) > 0 or len(raw_text.strip()) > 0:
-                return
-
-        prompt = self.handwriting_generation_prompt
-
-        image = self.extract_image(document, block)
-
-        response = self.model.generate_response(prompt, image, block, HandwritingSchema)
 
         if not response or "markdown" not in response:
             block.update_metadata(llm_error_count=1)

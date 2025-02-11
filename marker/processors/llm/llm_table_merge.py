@@ -5,13 +5,13 @@ from pydantic import BaseModel
 from tqdm import tqdm
 from PIL import Image
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import BaseLLMComplexBlockProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, TableCell
 from marker.schema.document import Document
 
 
-class LLMTableMergeProcessor(BaseLLMProcessor):
+class LLMTableMergeProcessor(BaseLLMComplexBlockProcessor):
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",

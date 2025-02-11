@@ -1,14 +1,14 @@
+from typing import List
+
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import PromptData, BaseLLMSimpleBlockProcessor, BlockData
 
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
 from marker.schema.document import Document
-from marker.schema.groups.page import PageGroup
 
 
-class LLMFormProcessor(BaseLLMProcessor):
+class LLMFormProcessor(BaseLLMSimpleBlockProcessor):
     block_types = (BlockTypes.Form,)
     form_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and an html representation of the form in the image.
@@ -61,18 +61,38 @@ Comparison: The html representation has the labels in the first row and the valu
 ```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        children = block.contained_blocks(document, (BlockTypes.TableCell,))
-        if not children:
-            # Happens if table/form processors didn't run
-            return
+    def inference_blocks(self, document: Document) -> List[BlockData]:
+        blocks = super().inference_blocks(document)
+        out_blocks = []
+        for block_data in blocks:
+            block = block_data["block"]
+            children = block.contained_blocks(document, (BlockTypes.TableCell,))
+            if not children:
+                continue
+            out_blocks.append(block_data)
+        return out_blocks
 
+
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block_data in self.inference_blocks(document):
+            block = block_data["block"]
+            block_html = block.render(document).html
+            prompt = self.form_rewriting_prompt.replace("{block_html}", block_html)
+            image = self.extract_image(document, block)
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": block,
+                "schema": FormSchema,
+                "page": block_data["page"]
+            })
+        return prompt_data
+
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        block = prompt_data["block"]
         block_html = block.render(document).html
-        prompt = self.form_rewriting_prompt.replace("{block_html}", block_html)
-
-        image = self.extract_image(document, block)
-
-        response = self.model.generate_response(prompt, image, block, FormSchema)
 
         if not response or "corrected_html" not in response:
             block.update_metadata(llm_error_count=1)

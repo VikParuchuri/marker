@@ -1,16 +1,14 @@
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import PromptData, BaseLLMSimpleBlockProcessor, BlockData
 
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
 from marker.schema.document import Document
-from marker.schema.groups.page import PageGroup
 
-from typing import Annotated
+from typing import Annotated, List
 
 
-class LLMImageDescriptionProcessor(BaseLLMProcessor):
+class LLMImageDescriptionProcessor(BaseLLMSimpleBlockProcessor):
     block_types = (BlockTypes.Picture, BlockTypes.Figure,)
     extract_images: Annotated[
         bool,
@@ -41,16 +39,31 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
 ```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
+    def inference_blocks(self, document: Document) -> List[BlockData]:
+        blocks = super().inference_blocks(document)
         if self.extract_images:
-            # We will only run this processor if we're not extracting images
-            # Since this processor replaces images with descriptions
-            return
+            return []
+        return blocks
 
-        prompt = self.image_description_prompt.replace("{raw_text}", block.raw_text(document))
-        image = self.extract_image(document, block)
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block_data in self.inference_blocks(document):
+            block = block_data["block"]
+            prompt = self.image_description_prompt.replace("{raw_text}", block.raw_text(document))
+            image = self.extract_image(document, block)
 
-        response = self.model.generate_response(prompt, image, block, ImageSchema)
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": block,
+                "schema": ImageSchema,
+                "page": block_data["page"]
+            })
+
+        return prompt_data
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        block = prompt_data["block"]
 
         if not response or "image_description" not in response:
             block.update_metadata(llm_error_count=1)
