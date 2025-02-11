@@ -80,3 +80,22 @@ def matrix_intersection_area(boxes1: List[List[float]], boxes2: List[List[float]
     height = np.maximum(0, max_y - min_y)
 
     return width * height  # Shape: (N, M)
+
+
+def matrix_distance(boxes1: List[List[float]], boxes2: List[List[float]]) -> np.ndarray:
+    if len(boxes2) == 0:
+        return np.zeros((len(boxes1), 0))
+    if len(boxes1) == 0:
+        return np.zeros((0, len(boxes2)))
+
+    boxes1 = np.array(boxes1)  # Shape: (N, 4)
+    boxes2 = np.array(boxes2)  # Shape: (M, 4)
+
+    boxes1_centers = (boxes1[:, :2] + boxes1[:, 2:]) / 2 # Shape: (M, 2)
+    boxes2_centers = (boxes2[:, :2] + boxes2[:, 2:]) / 2  # Shape: (M, 2)
+
+    boxes1_centers = boxes1_centers[:, np.newaxis, :]  # Shape: (N, 1, 2)
+    boxes2_centers = boxes2_centers[np.newaxis, :, :]  # Shape: (1, M, 2)
+
+    distances = np.linalg.norm(boxes1_centers - boxes2_centers, axis=2)  # Shape: (N, M)
+    return distances

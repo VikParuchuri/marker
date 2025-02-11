@@ -1,13 +1,13 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated
 
-from google.ai.generativelanguage_v1beta.types import content
 from surya.layout import LayoutPredictor
 from surya.ocr_error import OCRErrorPredictor
 from tqdm import tqdm
+from pydantic import BaseModel
 
 from marker.builders.layout import LayoutBuilder
-from marker.processors.llm import GoogleModel
+from marker.services.google import GoogleModel
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -37,11 +37,11 @@ class LLMLayoutBuilder(LayoutBuilder):
     model_name: Annotated[
         str,
         "The name of the Gemini model to use.",
-    ] = "gemini-1.5-flash"
+    ] = "gemini-2.0-flash"
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the Gemini model.",
-    ] = 3
+    ] = 2
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
@@ -50,6 +50,10 @@ class LLMLayoutBuilder(LayoutBuilder):
         int,
         "The timeout for requests to the Gemini model.",
     ] = 60
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
     topk_relabelling_prompt: Annotated[
         str,
         "The prompt to use for relabelling blocks.",
@@ -107,7 +111,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
             print(f"Error relabelling blocks: {e}")
 
     def relabel_blocks(self, document: Document):
-        pbar = tqdm(desc="LLM layout relabelling")
+        pbar = tqdm(desc="LLM layout relabelling", disable=self.disable_tqdm)
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             futures = []
             for page in document.pages:
@@ -154,21 +158,15 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 
     def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["image_description", "label"],
-            properties={
-                "image_description": content.Schema(
-                    type=content.Type.STRING,
-                ),
-                "label": content.Schema(
-                    type=content.Type.STRING,
-                ),
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.model.generate_response(
+            prompt,
+            image,
+            block,
+            LayoutSchema,
+            max_retries=self.max_retries,
+            timeout=self.timeout
+        )
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]
@@ -184,3 +182,8 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 
     def extract_image(self, document: Document, image_block: Block, expand: float = 0.01):
         return image_block.get_image(document, highres=False, expansion=(expand, expand))
+
+
+class LayoutSchema(BaseModel):
+    image_description: str
+    label: str

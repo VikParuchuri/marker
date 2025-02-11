@@ -115,7 +115,10 @@ def pillow_image_to_base64_string(img: Image) -> str:
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 
-def block_display(image: Image, blocks: dict = {}, dpi=96):
+def block_display(image: Image, blocks: dict | None = None, dpi=96):
+    if blocks is None:
+        blocks = {}
+
     image_data_url = (
         'data:image/jpeg;base64,' + pillow_image_to_base64_string(image)
     )

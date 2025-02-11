@@ -42,6 +42,7 @@ from marker.schema.blocks import Block
 from marker.schema.registry import register_block_class
 from marker.util import strings_to_classes
 from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
+from marker.processors.order import OrderProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -60,6 +61,7 @@ class PdfConverter(BaseConverter):
         "Enable higher quality processing with LLMs.",
     ] = False
     default_processors: Tuple[BaseProcessor, ...] = (
+        OrderProcessor,
         BlockquoteProcessor,
         CodeProcessor,
         DocumentTOCProcessor,
@@ -101,31 +103,14 @@ class PdfConverter(BaseConverter):
             renderer = MarkdownRenderer
 
         self.artifact_dict = artifact_dict
-        self.processor_list = processor_list
         self.renderer = renderer
+
+        processor_list = self.initialize_processors(processor_list)
+        self.processor_list = processor_list
 
         self.layout_builder_class = LayoutBuilder
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
-
-    def resolve_dependencies(self, cls):
-        init_signature = inspect.signature(cls.__init__)
-        parameters = init_signature.parameters
-
-        resolved_kwargs = {}
-        for param_name, param in parameters.items():
-            if param_name == 'self':
-                continue
-            elif param_name == 'config':
-                resolved_kwargs[param_name] = self.config
-            elif param.name in self.artifact_dict:
-                resolved_kwargs[param_name] = self.artifact_dict[param_name]
-            elif param.default != inspect.Parameter.empty:
-                resolved_kwargs[param_name] = param.default
-            else:
-                raise ValueError(f"Cannot resolve dependency for parameter: {param_name}")
-
-        return cls(**resolved_kwargs)
 
     @cache
     def build_document(self, filepath: str):
@@ -137,8 +122,7 @@ class PdfConverter(BaseConverter):
             document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
         StructureBuilder(self.config)(document)
 
-        for processor_cls in self.processor_list:
-            processor = self.resolve_dependencies(processor_cls)
+        for processor in self.processor_list:
             processor(document)
 
         return document

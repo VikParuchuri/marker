@@ -3,7 +3,6 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import Annotated, List
 from collections import Counter
-from PIL import ImageDraw
 
 from ftfy import fix_text
 from surya.detection import DetectionPredictor
@@ -30,7 +29,7 @@ class TableProcessor(BaseProcessor):
         bool,
         "Whether to detect boxes for the table recognition model.",
     ] = False
-    detector_batch_size: Annotated[
+    detection_batch_size: Annotated[
         int,
         "The batch size to use for the table detection model.",
         "Default is None, which will use the default batch size for the model."
@@ -53,6 +52,10 @@ class TableProcessor(BaseProcessor):
         int,
         "The number of workers to use for pdftext.",
     ] = 4
+    row_split_threshold: Annotated[
+        float,
+        "The percentage of rows that need to be split across the table before row splitting is active.",
+    ] = 0.5
 
     def __init__(
         self,
@@ -98,6 +101,7 @@ class TableProcessor(BaseProcessor):
         )
         self.assign_text_to_cells(tables, table_data)
         self.split_combined_rows(tables) # Split up rows that were combined
+        self.combine_dollar_column(tables) # Combine columns that are just dollar signs
 
         # Assign table cells to the table
         table_idx = 0
@@ -165,16 +169,71 @@ class TableProcessor(BaseProcessor):
             text = text.replace(space, ' ')
         return text
 
+
+    def combine_dollar_column(self, tables: List[TableResult]):
+        for table in tables:
+            if len(table.cells) == 0:
+                # Skip empty tables
+                continue
+            unique_cols = sorted(list(set([c.col_id for c in table.cells])))
+            max_col = max(unique_cols)
+            dollar_cols = []
+            for col in unique_cols:
+                # Cells in this col
+                col_cells = [c for c in table.cells if c.col_id == col]
+                col_text = ["\n".join(self.finalize_cell_text(c)).strip() for c in col_cells]
+                all_dollars = all([ct in ["", "$"] for ct in col_text])
+                colspans = [c.colspan for c in col_cells]
+                span_into_col = [c for c in table.cells if c.col_id != col and c.col_id + c.colspan > col > c.col_id]
+
+                # This is a column that is entirely dollar signs
+                if all([
+                    all_dollars,
+                    len(col_cells) > 1,
+                    len(span_into_col) == 0,
+                    all([c == 1 for c in colspans]),
+                    col < max_col
+                ]):
+                    next_col_cells = [c for c in table.cells if c.col_id == col + 1]
+                    next_col_rows = [c.row_id for c in next_col_cells]
+                    col_rows = [c.row_id for c in col_cells]
+                    if len(next_col_cells) == len(col_cells) and next_col_rows == col_rows:
+                        dollar_cols.append(col)
+
+
+            if len(dollar_cols) == 0:
+                continue
+
+            dollar_cols = sorted(dollar_cols)
+            col_offset = 0
+            for col in unique_cols:
+                col_cells = [c for c in table.cells if c.col_id == col]
+                if col_offset == 0 and col not in dollar_cols:
+                    continue
+
+                if col in dollar_cols:
+                    col_offset += 1
+                    for cell in col_cells:
+                        text_lines = cell.text_lines if cell.text_lines else []
+                        next_row_col = [c for c in table.cells if c.row_id == cell.row_id and c.col_id == col + 1]
+
+                        # Add dollar to start of the next column
+                        next_text_lines = next_row_col[0].text_lines if next_row_col[0].text_lines else []
+                        next_row_col[0].text_lines = deepcopy(text_lines) + deepcopy(next_text_lines)
+                        table.cells = [c for c in table.cells if c.cell_id != cell.cell_id] # Remove original cell
+                        next_row_col[0].col_id -= col_offset
+                else:
+                    for cell in col_cells:
+                        cell.col_id -= col_offset
+
+
     def split_combined_rows(self, tables: List[TableResult]):
         for table in tables:
             if len(table.cells) == 0:
                 # Skip empty tables
                 continue
             unique_rows = sorted(list(set([c.row_id for c in table.cells])))
-            new_cells = []
-            shift_up = 0
-            max_cell_id = max([c.cell_id for c in table.cells])
-            new_cell_count = 0
+            row_info = []
             for row in unique_rows:
                 # Cells in this row
                 # Deepcopy is because we do an in-place mutation later, and that can cause rows to shift to match rows in unique_rows
@@ -201,9 +260,25 @@ class TableProcessor(BaseProcessor):
                     len(line_lens_counter) == 2 and counter_keys[0] <= 1 and counter_keys[1] > 1 and line_lens_counter[counter_keys[0]] == 1, # Allow a single column with a single line - keys are the line lens, values are the counts
                 ])
                 should_split = should_split_entire_row or should_split_partial_row
-                if should_split:
-                    for i in range(0, max(line_lens)):
-                        for cell in row_cells:
+                row_info.append({
+                    "should_split": should_split,
+                    "row_cells": row_cells,
+                    "line_lens": line_lens
+                })
+
+            # Don't split if we're not splitting most of the rows in the table.  This avoids splitting stray multiline rows.
+            if sum([r["should_split"] for r in row_info]) / len(row_info) < self.row_split_threshold:
+                continue
+
+            new_cells = []
+            shift_up = 0
+            max_cell_id = max([c.cell_id for c in table.cells])
+            new_cell_count = 0
+            for row, item_info in zip(unique_rows, row_info):
+                max_lines = max(item_info["line_lens"])
+                if item_info["should_split"]:
+                    for i in range(0, max_lines):
+                        for cell in item_info["row_cells"]:
                             # Calculate height based on number of splits
                             split_height = cell.bbox[3] - cell.bbox[1]
                             current_bbox = [cell.bbox[0], cell.bbox[1] + i * split_height, cell.bbox[2], cell.bbox[1] + (i + 1) * split_height]
@@ -226,9 +301,10 @@ class TableProcessor(BaseProcessor):
                             new_cell_count += 1
 
                     # For each new row we add, shift up subsequent rows
-                    shift_up += line_lens[0] - 1
+                    # The max is to account for partial rows
+                    shift_up += max_lines - 1
                 else:
-                    for cell in row_cells:
+                    for cell in item_info["row_cells"]:
                         cell.row_id += shift_up
                         new_cells.append(cell)
 
@@ -301,7 +377,7 @@ class TableProcessor(BaseProcessor):
             [None] * len(det_images),
             self.detection_model,
             recognition_batch_size=self.get_recognition_batch_size(),
-            detection_batch_size=self.get_detector_batch_size()
+            detection_batch_size=self.get_detection_batch_size()
         )
 
         for block, ocr_res in zip(ocr_blocks, ocr_results):
@@ -316,9 +392,9 @@ class TableProcessor(BaseProcessor):
             block["table_text_lines"] = table_cells
 
 
-    def get_detector_batch_size(self):
-        if self.detector_batch_size is not None:
-            return self.detector_batch_size
+    def get_detection_batch_size(self):
+        if self.detection_batch_size is not None:
+            return self.detection_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 4
         return 4

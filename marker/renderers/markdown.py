@@ -99,7 +99,7 @@ class Markdownify(MarkdownConverter):
                 for r in range(int(cell.get('rowspan', 1)) - 1):
                     rowspan_cols[i + r] += colspan # Add the colspan to the next rows, so they get the correct number of columns
             colspans.append(row_cols)
-        total_cols = max(colspans)
+        total_cols = max(colspans) if colspans else 0
 
         grid = [[None for _ in range(total_cols)] for _ in range(total_rows)]
 
@@ -128,7 +128,7 @@ class Markdownify(MarkdownConverter):
                                 grid[row_idx + r][col_idx + c] = '' # Empty cell due to rowspan/colspan
                         except IndexError:
                             # Sometimes the colspan/rowspan predictions can overflow
-                            print(f"Overflow in columns: {col_idx + c} >= {total_cols}")
+                            print(f"Overflow in columns: {col_idx + c} >= {total_cols} or rows: {row_idx + r} >= {total_rows}")
                             continue
 
                 col_idx += colspan
@@ -181,6 +181,12 @@ class Markdownify(MarkdownConverter):
         else:
             return text
 
+    def escape(self, text):
+        text = super().escape(text)
+        if self.options['escape_dollars']:
+            text = text.replace('$', r'\$')
+        return text
+
 class MarkdownOutput(BaseModel):
     markdown: str
     images: dict
@@ -192,10 +198,9 @@ class MarkdownRenderer(HTMLRenderer):
     inline_math_delimiters: Annotated[Tuple[str], "The delimiters to use for inline math."] = ("$", "$")
     block_math_delimiters: Annotated[Tuple[str], "The delimiters to use for block math."] = ("$$", "$$")
 
-    def __call__(self, document: Document) -> MarkdownOutput:
-        document_output = document.render()
-        full_html, images = self.extract_html(document, document_output)
-        md_cls = Markdownify(
+    @property
+    def md_cls(self):
+        return Markdownify(
             self.paginate_output,
             self.page_separator,
             heading_style="ATX",
@@ -203,12 +208,18 @@ class MarkdownRenderer(HTMLRenderer):
             escape_misc=False,
             escape_underscores=False,
             escape_asterisks=False,
+            escape_dollars=True,
             sub_symbol="<sub>",
             sup_symbol="<sup>",
             inline_math_delimiters=self.inline_math_delimiters,
             block_math_delimiters=self.block_math_delimiters
         )
-        markdown = md_cls.convert(full_html)
+
+
+    def __call__(self, document: Document) -> MarkdownOutput:
+        document_output = document.render()
+        full_html, images = self.extract_html(document, document_output)
+        markdown = self.md_cls.convert(full_html)
         markdown = cleanup_text(markdown)
         return MarkdownOutput(
             markdown=markdown,

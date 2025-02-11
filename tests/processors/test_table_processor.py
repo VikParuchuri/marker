@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 from marker.renderers.json import JSONRenderer
 
@@ -62,4 +64,16 @@ def test_ocr_table(pdf_document, detection_model, recognition_model, table_rec_m
     renderer = MarkdownRenderer()
     table_output = renderer(pdf_document)
     assert "1.2E-38" in table_output.markdown
+
+
+@pytest.mark.config({"page_range": [11]})
+def test_split_rows(pdf_document, detection_model, recognition_model, table_rec_model):
+    processor = TableProcessor(detection_model, recognition_model, table_rec_model)
+    processor(pdf_document)
+
+    table = pdf_document.contained_blocks((BlockTypes.Table,))[-1]
+    cells: List[TableCell] = table.contained_blocks(pdf_document, (BlockTypes.TableCell,))
+    unique_rows = len(set([cell.row_id for cell in cells]))
+    assert unique_rows == 6
+
 

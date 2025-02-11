@@ -46,14 +46,6 @@ class Settings(BaseSettings):
         else:
             return torch.float32
 
-    # Texify model
-    TEXIFY_MODEL_NAME: str = "vikp/texify"
-
-    @computed_field
-    @property
-    def TEXIFY_DTYPE(self) -> torch.dtype:
-        return torch.float32 if self.TORCH_DEVICE_MODEL == "cpu" else torch.float16
-
     class Config:
         env_file = find_dotenv("local.env")
         extra = "ignore"

@@ -22,7 +22,7 @@ class LayoutBuilder(BaseBuilder):
     """
     A builder for performing layout detection on PDF pages and merging the results into the document.
     """
-    batch_size: Annotated[
+    layout_batch_size: Annotated[
         Optional[int],
         "The batch size to use for the layout model.",
         "Default is None, which will use the default batch size for the model."
@@ -47,8 +47,8 @@ class LayoutBuilder(BaseBuilder):
         self.add_blocks_to_pages(document.pages, layout_results)
 
     def get_batch_size(self):
-        if self.batch_size is not None:
-            return self.batch_size
+        if self.layout_batch_size is not None:
+            return self.layout_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 6
         return 6
