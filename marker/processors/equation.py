@@ -35,6 +35,11 @@ class EquationProcessor(BaseProcessor):
         int,
         "The number of tokens to buffer above max for the Texify model.",
     ] = 256
+    inline_math_token_threshold: Annotated[
+        int,
+        "The minimum number of texify-generated tokens to replace inline math with the latex representation",
+        "Prevents replacing single chars and unecessary equations"
+    ] = 20
 
     def __init__(self, texify_model: TexifyPredictor, config=None):
         super().__init__(config)
@@ -72,7 +77,12 @@ class EquationProcessor(BaseProcessor):
             if isinstance(block, Equation):
                 block.html = prediction
             elif isinstance(block, Span) and 'math' in block.formats:
-                block.text = re.sub(r'<[^>]+>', '', prediction)
+                inline_math_text = re.sub(r'<[^>]+>', '', prediction)
+                print(self.get_total_texify_tokens(inline_math_text), inline_math_text)
+                if self.get_total_texify_tokens(inline_math_text) > self.inline_math_token_threshold:
+                    block.text = inline_math_text
+                else:
+                    block.formats.remove('math')
             else:
                 raise ValueError(f"Unexpected block of type {block.block_type}")
 

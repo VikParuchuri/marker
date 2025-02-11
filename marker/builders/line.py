@@ -231,6 +231,16 @@ class LineBuilder(BaseBuilder):
         
         return filtered_lines
 
+    #Add appropriate formats to math spans added by inline math detection - Useful for when the span is skipped by EquationProcessor
+    def fix_span_formats(self, provider_line):
+        for idx, span in enumerate(provider_line.spans):
+            if 'math' in span.formats:
+                prev_formats = [] if idx==0 else provider_line.spans[idx-1].formats
+                next_formats = [] if idx==len(provider_line.spans)-1 else provider_line.spans[idx+1].formats
+                if not prev_formats or not next_formats or prev_formats==next_formats:      #Matching formats, accounting for current span being start/end
+                    span.formats += prev_formats
+                    span.formats += next_formats
+                span.formats = list(set(span.formats))
 
     def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size):
         #When provider lines is empty
@@ -260,7 +270,7 @@ class LineBuilder(BaseBuilder):
                 overlap = provider_line.line.polygon.intersection_area(math_line_polygon) / math_line_area
                 if overlap>self.line_inline_math_overlap_threshold:
                     line_removed_text = self._reconstruct_provider_line(provider_line, math_line_polygon)
-                    inline_math_removed_text[math_line] += line_removed_text + " "
+                    inline_math_removed_text[math_line] += line_removed_text
                     pass
                 if overlap>best_overlap:
                     best_overlap = overlap
@@ -293,6 +303,7 @@ class LineBuilder(BaseBuilder):
                     )
                 )
             provider_line.spans = sorted(new_spans, key=lambda s:s.polygon.x_start)
+            self.fix_span_formats(provider_line)
             updated_provider_lines.append(provider_line)
 
         return updated_provider_lines
@@ -365,11 +376,10 @@ class LineBuilder(BaseBuilder):
                     font_size=span.font_size
                 ))
                 chars_to_keep.append(right_chars)
-            removed_text += ' '
         provider_line.spans = spans_to_keep
         provider_line.chars = chars_to_keep
 
-        return removed_text.strip()
+        return removed_text
 
 
     def check_layout_coverage(
