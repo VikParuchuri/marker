@@ -10,26 +10,6 @@ Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurate
 - Optionally boost accuracy with an LLM
 - Works on GPU, CPU, or MPS
 
-## How it works
-
-Marker is a pipeline of deep learning models:
-
-- Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
-- Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
-- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify), [surya](https://github.com/VikParuchuri/surya))
-- Optionally use an LLM to improve quality
-- Combine blocks and postprocess complete text
-
-It only uses models where necessary, which improves speed and accuracy.
-
-## Examples
-
-| PDF | File type | Markdown                                                                                                                     | JSON                                                                                                   |
-|-----|-----------|------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/thinkpython/thinkpython.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/thinkpython.json)         |
-| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/switch_transformers/switch_trans.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/switch_trans.json) |
-| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/multicolcnn/multicolcnn.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/multicolcnn.json)         |
-
 ## Performance
 
 <img src="data/images/overall.png" width="800px"/>
@@ -48,7 +28,15 @@ Here is a table benchmark comparing marker, gemini flash alone, and marker with 
 
 <img src="data/images/table.png" width="400px"/>
 
-As you can see the use_llm mode offers higher accuracy than marker or gemini alone.
+As you can see, the use_llm mode offers higher accuracy than marker or gemini alone.
+
+## Examples
+
+| PDF | File type | Markdown                                                                                                                     | JSON                                                                                                   |
+|-----|-----------|------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/thinkpython/thinkpython.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/thinkpython.json)         |
+| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/switch_transformers/switch_trans.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/switch_trans.json) |
+| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/multicolcnn/multicolcnn.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/multicolcnn.json)         |
 
 # Commercial usage
 
@@ -68,17 +56,6 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 
 [Discord](https://discord.gg//KuZwXNGnfH) is where we discuss future development.
 
-# Limitations
-
-PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
-
-- Marker will only convert block equations
-- Very complex layouts, with nested tables and forms, may not work
-
-Passing the `--use_llm` flag will format tables and forms properly, and merge tables across pages.
-
-Note: Passing the `--use_llm` flag will mostly solve these issues.
-
 # Installation
 
 You'll need python 3.10+ and PyTorch.  You may need to install the CPU version of torch first if you're not using a Mac or a GPU machine.  See [here](https://pytorch.org/get-started/locally/) for more details.
@@ -94,7 +71,7 @@ pip install marker-pdf
 First, some configuration:
 
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag on the CLI or via configuration to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and only strip out any existing OCR text.
+- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and strip out any existing OCR text.
 
 ## Interactive App
 
@@ -478,6 +455,27 @@ Options:
 
 - `--use_llm` uses an llm with marker to improve accuracy.
 - `--use_gemini` also benchmarks gemini 2.0 flash.
+
+# How it works
+
+Marker is a pipeline of deep learning models:
+
+- Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
+- Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
+- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify), [surya](https://github.com/VikParuchuri/surya))
+- Optionally use an LLM to improve quality
+- Combine blocks and postprocess complete text
+
+It only uses models where necessary, which improves speed and accuracy.
+
+# Limitations
+
+PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
+
+- Marker will only convert block equations
+- Very complex layouts, with nested tables and forms, may not work
+
+Note: Passing the `--use_llm` flag will mostly solve these issues.
 
 # Thanks
 
