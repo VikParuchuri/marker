@@ -43,7 +43,7 @@ class LineBuilder(BaseBuilder):
         bool,
         "Whether to skip OCR on tables.  The TableProcessor will re-OCR them.  Only enable if the TableProcessor is not running.",
     ] = False
-    enable_inline_math_detection: Annotated[
+    disable_inline_math_detection: Annotated[
         bool,
         "Whether to detect inline math separately to replace with latex. Only enable if EquationProcessor is also running."
     ] = False
@@ -92,8 +92,8 @@ class LineBuilder(BaseBuilder):
 
     def __call__(self, document: Document, provider: PdfProvider):
         #Disable Inline Detection for documents where layout model doesn't detect any equations
-        self.enable_inline_math_detection = self.enable_inline_math_detection and document.contained_blocks([BlockTypes.Equation])
-        provider_lines, ocr_lines= self.get_all_lines(document, provider)
+        do_inline_math_detection = not self.disable_inline_math_detection and document.contained_blocks([BlockTypes.Equation])
+        provider_lines, ocr_lines= self.get_all_lines(document, provider, do_inline_math_detection)
         self.merge_blocks(document, provider_lines, ocr_lines)
 
     def get_detection_batch_size(self):
@@ -110,13 +110,13 @@ class LineBuilder(BaseBuilder):
             return 4
         return 4
 
-    def get_all_lines(self, document: Document, provider: PdfProvider):
+    def get_all_lines(self, document: Document, provider: PdfProvider, do_inline_math_detection=False):
         page_images = [page.get_image(highres=False, remove_tables=not self.enable_table_ocr) for page in document.pages]
         detection_results = self.detection_model(
             images=page_images,
         )
         ocr_error_detection_results = self.ocr_error_detection(document.pages, provider.page_lines)
-        if self.enable_inline_math_detection:
+        if do_inline_math_detection:
             inline_detection_results = self.inline_detection_model(
                 images=page_images,
                 text_boxes=[[b.bbox for b in det_result.bboxes] for det_result in detection_results]
