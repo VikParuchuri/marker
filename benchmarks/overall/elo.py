@@ -106,7 +106,11 @@ class Comparer:
         version_b: str
     ) -> str | None:
         hydrated_prompt = rating_prompt.replace("{{version_a}}", version_a).replace("{{version_b}}", version_b)
-        rating = self.llm_rater(img, hydrated_prompt)
+        try:
+            rating = self.llm_rater(img, hydrated_prompt)
+        except Exception as e:
+            print(f"Error: {e}")
+            return
         return rating
 
 
@@ -141,6 +145,9 @@ class Comparer:
             return json.loads(output)
         except APIError as e:
             print(f"Hit Gemini rate limit")
+            return
+        except Exception as e:
+            print(f"Error: {e}")
             return
 
 @dataclass
@@ -189,22 +196,24 @@ def main(
 
     for i in tqdm(range(min(len(ds), max_rows)), desc="Calculating ELO"):
         row = ds[i]
-        for j in range(row_samples):
-            method_a = random.choice(method_lst)
-            method_b = random.choice(method_lst)
-            if method_a == method_b:
-                continue
+        # Avoid any bias in ordering
+        random.shuffle(method_lst)
 
-            method_a_md = row[f"{method_a}_md"]
-            method_b_md = row[f"{method_b}_md"]
-            winner = comparer(row["img"], method_a_md, method_b_md)
-            if not winner:
-                continue
+        for j, method_a in enumerate(method_lst[:-1]):
+            for z, method_b in enumerate(method_lst[j:]):
+                if method_a == method_b:
+                    continue
 
-            if winner == "version_a":
-                elo.update_ratings(method_a, method_b)
-            else:
-                elo.update_ratings(method_b, method_a)
+                method_a_md = row[f"{method_a}_md"]
+                method_b_md = row[f"{method_b}_md"]
+                winner = comparer(row["img"], method_a_md, method_b_md)
+                if not winner:
+                    continue
+
+                if winner == "version_a":
+                    elo.update_ratings(method_a, method_b)
+                else:
+                    elo.update_ratings(method_b, method_a)
         if i % 10 == 0:
             print(elo.methods)
 

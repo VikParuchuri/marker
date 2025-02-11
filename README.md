@@ -32,9 +32,9 @@ It only uses models where necessary, which improves speed and accuracy.
 
 ## Performance
 
-![Benchmark overall](data/images/overall.png)
+<img src="data/images/overall.png" width="800px"/>
 
-Marker benchmarks favorably compared to cloud services like Llamaparse and Mathpix.
+Marker benchmarks favorably compared to cloud services like Llamaparse and Mathpix, as well as other open source tools.
 
 The above results are running single PDF pages serially.  Marker is significantly faster when running in batch mode, with a projected throughput of 122 pages/second on an H100 (.18 seconds per page across 22 processes).
 
@@ -381,16 +381,33 @@ Pass the `debug` option to activate debug mode.  This will save images of each p
 # Benchmarks
 
 ## Overall PDF Conversion
-We created a [benchmark set](https://huggingface.co/datasets/datalab-to/marker_benchmark) by extracting single PDF pages from common crawl.
 
-| Method     |   Avg Time | Heuristic Score | LLM Score |
-|------------|------------|-----------------|-----------|
-| marker     |    2.83837 | 95.6709         | 4.23916   |
-| llamaparse |   23.348   | 84.2442         | 3.97619   |
-| mathpix    |    6.36223 | 86.4281         | 4.15626   |
-| docling    |  3.86      | 87.7347         | 3.72222   |
+We created a [benchmark set](https://huggingface.co/datasets/datalab-to/marker_benchmark) by extracting single PDF pages from common crawl.  We scored based on a heuristic that aligns text with ground truth text segments, and an LLM as a judge scoring method.
 
-Peak GPU memory usage during the benchmark is `6GB` for marker.  Benchmarks were run on an A10.
+| Method     | Avg Time | Heuristic Score | LLM Score |
+|------------|----------|-----------------|-----------|
+| marker     | 2.83837  | 95.6709         | 4.23916   |
+| llamaparse | 23.348   | 84.2442         | 3.97619   |
+| mathpix    | 6.36223  | 86.4281         | 4.15626   |
+| docling    | 3.69949  | 86.7073         | 3.70429   |
+
+Benchmarks were run on an H100 for markjer and docling - llamaparse and mathpix used their cloud services.  We can also look at it by document type:
+
+<img src="data/images/per_doc.png" width="1000px"/>
+
+| Document Type        | Marker heuristic | Marker LLM | Llamaparse Heuristic | Llamaparse LLM | Mathpix Heuristic | Mathpix LLM | Docling Heuristic | Docling LLM |
+|----------------------|------------------|------------|----------------------|----------------|-------------------|-------------|-------------------|-------------|
+| Scientific paper     | 96.6737          | 4.34899    | 87.1651              | 3.96421        | 91.2267           | 4.46861     | 92.135            | 3.72422     |
+| Book page            | 97.1846          | 4.16168    | 90.9532              | 4.07186        | 93.8886           | 4.35329     | 90.0556           | 3.64671     |
+| Other                | 95.1632          | 4.25076    | 81.1385              | 4.01835        | 79.6231           | 4.00306     | 83.8223           | 3.76147     |
+| Form                 | 88.0147          | 3.84663    | 66.3081              | 3.68712        | 64.7512           | 3.33129     | 68.3857           | 3.40491     |
+| Presentation         | 95.1562          | 4.13669    | 81.2261              | 4              | 83.6737           | 3.95683     | 84.8405           | 3.86331     |
+| Financial document   | 95.3697          | 4.39106    | 82.5812              | 4.16111        | 81.3115           | 4.05556     | 86.3882           | 3.8         |
+| Letter               | 98.4021          | 4.5        | 93.4477              | 4.28125        | 96.0383           | 4.45312     | 92.0952           | 4.09375     |
+| Engineering document | 93.9244          | 4.04412    | 77.4854              | 3.72059        | 80.3319           | 3.88235     | 79.6807           | 3.42647     |
+| Legal document       | 96.689           | 4.27759    | 86.9769              | 3.87584        | 91.601            | 4.20805     | 87.8383           | 3.65552     |
+| Newspaper page       | 98.8733          | 4.25806    | 84.7492              | 3.90323        | 96.9963           | 4.45161     | 92.6496           | 3.51613     |
+| Magazine page        | 98.2145          | 4.38776    | 87.2902              | 3.97959        | 93.5934           | 4.16327     | 93.0892           | 4.02041     |
 
 ## Throughput
 
@@ -400,7 +417,7 @@ We benchmarked throughput using a [single long PDF](https://www.greenteapress.co
 |---------|---------------|-------------------|---------- |
 | marker  | 0.18          | 43.42             |  3.17GB   |
 
-The projected throughput is 122 pages per second on an H100 - we can run 22 individual processes.
+The projected throughput is 122 pages per second on an H100 - we can run 22 individual processes given the VRAM used.
 
 ## Table Conversion
 
@@ -408,9 +425,9 @@ Marker can extract tables from PDFs using `marker.converters.table.TableConverte
 
 | Method           | Avg score | Total tables |
 |------------------|-----------|--------------|
-| marker           | 0.822     | 54           |
+| marker           | 0.816     | 99           |
 | marker w/use_llm | 0.887     | 54           |
-| gemini           |           | 54           |
+| gemini           | 0.829     | 99           |
 
 The `--use_llm` flag can significantly improve table recognition performance, as you can see.
 
@@ -438,14 +455,19 @@ Options:
 - `--use_llm` use an llm to improve the marker results.
 - `--max_rows` how many rows to process for the benchmark.
 - `--methods` can be `llamaparse`, `mathpix`, `docling`, `marker`.  Comma separated.
-- `--scores` which scoring functions to use, can be `--llm`, `--heuristic`.
+- `--scores` which scoring functions to use, can be `llm`, `heuristic`.  Comma separated.
 
 ### Table Conversion
 The processed FinTabNet dataset is hosted [here](https://huggingface.co/datasets/datalab-to/fintabnet-test) and is automatically downloaded. Run the benchmark with:
 
 ```shell
-python benchmarks/table/table.py --max_rows 1000
+python benchmarks/table/table.py --max_rows 100
 ```
+
+Options:
+
+- `--use_llm` uses an llm with marker to improve accuracy.
+- `--use_gemini` also benchmarks gemini 2.0 flash.
 
 # Thanks
 
