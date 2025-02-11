@@ -34,21 +34,21 @@ class LLMTableProcessor(BaseLLMProcessor):
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt."
     ] = """You are a text correction expert specializing in accurately reproducing text from images.
-You will receive an image of a text block and an html representation of the table in the image.
+You will receive an image and an html representation of the table in the image.
 Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table as possible.
 
 Some guidelines:
 - Make sure to reproduce the original values as faithfully as possible.
-- If you see any math in a table cell, fence it with the <math display="inline"> tag.  Block math should be fenced with <math display="block">.
+- If you see any math in a table cell, fence it with the <math> tag.  Block math should be fenced with <math display="block">.
 - Replace any images with a description, like "Image: [description]".
 - Only use the tags th, td, tr, br, span, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
-- If you see a dollar sign ($), or a percent sign (%) associated with a number, combine it with the number it is associated with in a single column versus splitting it into multiple columns.
+- Make sure the columns and rows match the image faithfully, and are easily readable and interpretable by a human.
 
 **Instructions:**
 1. Carefully examine the provided text block image.
 2. Analyze the html representation of the table.
 3. Write a comparison of the image and the html representation.
-4. If the html representation is largely correct, or you cannot read the image properly, then write "No corrections needed."  If the html representation contains errors, generate the corrected html representation.  Output only either the corrected html representation or "No corrections needed."
+4. If the html representation is completely correct, or you cannot read the image properly, then write "No corrections needed."  If the html representation has errors, generate the corrected html representation.  Output only either the corrected html representation or "No corrections needed."
 **Example:**
 Input:
 ```html
@@ -238,5 +238,5 @@ No corrections needed.
         return cells
 
 class TableSchema(BaseModel):
-    description: str
-    correct_html: str
+    comparison: str
+    corrected_html: str

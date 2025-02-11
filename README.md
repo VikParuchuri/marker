@@ -40,6 +40,16 @@ The above results are running single PDF pages serially.  Marker is significantl
 
 See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
 
+## Hybrid Mode
+
+For the highest accuracy, pass the `--use_llm` flag to use an LLM alongside marker.  This will do things like merge tables across pages, format tables properly, and extract values from forms.  It uses `gemini-flash-2.0`, which is cheap and fast.
+
+Here is a table benchmark comparing marker, gemini flash alone, and marker with use_llm:
+
+<img src="data/images/table.png" width="400px"/>
+
+As you can see the use_llm mode offers higher accuracy than marker or gemini alone.
+
 # Commercial usage
 
 I want marker to be as widely accessible as possible, while still funding my development/training costs.  Research and personal usage is always okay, but there are some restrictions on commercial usage.
@@ -63,9 +73,9 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
 - Marker will only convert block equations
-- Tables are not always formatted 100% correctly
-- Forms are not converted optimally
 - Very complex layouts, with nested tables and forms, may not work
+
+Passing the `--use_llm` flag will format tables and forms properly, and merge tables across pages.
 
 Note: Passing the `--use_llm` flag will mostly solve these issues.
 
@@ -426,7 +436,7 @@ Marker can extract tables from PDFs using `marker.converters.table.TableConverte
 | Method           | Avg score | Total tables |
 |------------------|-----------|--------------|
 | marker           | 0.816     | 99           |
-| marker w/use_llm | 0.887     | 54           |
+| marker w/use_llm | 0.907     | 99           |
 | gemini           | 0.829     | 99           |
 
 The `--use_llm` flag can significantly improve table recognition performance, as you can see.
