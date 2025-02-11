@@ -78,7 +78,6 @@ class EquationProcessor(BaseProcessor):
                 block.html = prediction
             elif isinstance(block, Span) and 'math' in block.formats:
                 inline_math_text = re.sub(r'<[^>]+>', '', prediction)
-                print(self.get_total_texify_tokens(inline_math_text), inline_math_text)
                 if self.get_total_texify_tokens(inline_math_text) > self.inline_math_token_threshold:
                     block.text = inline_math_text
                 else:
