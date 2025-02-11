@@ -67,7 +67,8 @@ Output:
 
     def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
         block = prompt_data["block"]
-        text = block["block"].raw_text(document)
+        text = block.raw_text(document)
+
         if not response or "corrected_markdown" not in response:
             block.update_metadata(llm_error_count=1)
             return

@@ -2,9 +2,11 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
+from marker.processors.llm.llm_equation import LLMEquationProcessor
 
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
+from marker.processors.llm.llm_meta import LLMSimpleBlockMetaProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
 from marker.processors.llm.llm_text import LLMTextProcessor
 from marker.processors.table import TableProcessor
@@ -15,7 +17,8 @@ from marker.schema.blocks import ComplexRegion
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_form_processor_no_config(pdf_document):
-    processor = LLMFormProcessor()
+    processor_lst = [LLMFormProcessor()]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst)
     processor(pdf_document)
 
     forms = pdf_document.contained_blocks((BlockTypes.Form,))
@@ -25,7 +28,8 @@ def test_llm_form_processor_no_config(pdf_document):
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_form_processor_no_cells(pdf_document):
-    processor = LLMFormProcessor({"use_llm": True, "google_api_key": "test"})
+    processor_lst = [LLMFormProcessor({"use_llm": True, "google_api_key": "test"})]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst)
     processor(pdf_document)
 
     forms = pdf_document.contained_blocks((BlockTypes.Form,))
@@ -45,7 +49,9 @@ def test_llm_form_processor(pdf_document, detection_model, table_rec_model, reco
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)
     cell_processor(pdf_document)
 
-    processor = LLMFormProcessor({"use_llm": True, "google_api_key": "test"})
+    config = {"use_llm": True, "google_api_key": "test"}
+    processor_lst = [LLMFormProcessor(config)]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
     processor(pdf_document)
 
     forms = pdf_document.contained_blocks((BlockTypes.Form,))
@@ -100,7 +106,9 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
 @pytest.mark.filename("A17_FlightPlan.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_caption_processor_disabled(pdf_document):
-    processor = LLMImageDescriptionProcessor({"use_llm": True, "google_api_key": "test"})
+    config = {"use_llm": True, "google_api_key": "test"}
+    processor_lst = [LLMImageDescriptionProcessor(config)]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
     processor(pdf_document)
 
     contained_pictures = pdf_document.contained_blocks((BlockTypes.Picture, BlockTypes.Figure))
@@ -113,7 +121,10 @@ def test_llm_caption_processor(pdf_document, mocker):
     mock_cls = Mock()
     mock_cls.return_value.generate_response.return_value = {"image_description": description}
     mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
-    processor = LLMImageDescriptionProcessor({"use_llm": True, "google_api_key": "test", "extract_images": False})
+
+    config = {"use_llm": True, "google_api_key": "test", "extract_images": False}
+    processor_lst = [LLMImageDescriptionProcessor(config)]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
     processor(pdf_document)
 
     contained_pictures = pdf_document.contained_blocks((BlockTypes.Picture, BlockTypes.Figure))
@@ -142,7 +153,9 @@ def test_llm_complex_region_processor(pdf_document, mocker):
     pdf_document.pages[0].replace_block(old_block, new_block)
 
     # Test processor
-    processor = LLMComplexRegionProcessor({"use_llm": True, "google_api_key": "test"})
+    config = {"use_llm": True, "google_api_key": "test"}
+    processor_lst = [LLMComplexRegionProcessor(config)]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
     processor(pdf_document)
 
     # Ensure the rendering includes the description
@@ -150,6 +163,26 @@ def test_llm_complex_region_processor(pdf_document, mocker):
     rendered_md = renderer(pdf_document).markdown
 
     assert md in rendered_md
+
+@pytest.mark.filename("adversarial.pdf")
+@pytest.mark.config({"page_range": [0]})
+def test_multi_llm_processors(pdf_document, mocker):
+    description = "<math>This is an image description.  And here is a lot of writing about it.</math>" * 10
+    mock_cls = Mock()
+    mock_cls.return_value.generate_response.return_value = {"image_description": description, "html_equation": description}
+    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
+
+    config = {"use_llm": True, "google_api_key": "test", "extract_images": False, "min_equation_height": .001}
+    processor_lst = [LLMImageDescriptionProcessor(config), LLMEquationProcessor(config)]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
+    processor(pdf_document)
+
+    contained_pictures = pdf_document.contained_blocks((BlockTypes.Picture, BlockTypes.Figure))
+    assert all(picture.description == description for picture in contained_pictures)
+
+    contained_equations = pdf_document.contained_blocks((BlockTypes.Equation,))
+    print([equation.html for equation in contained_equations])
+    assert all(equation.html == description for equation in contained_equations)
 
 @pytest.mark.filename("adversarial.pdf")
 @pytest.mark.config({"page_range": [0]})
@@ -162,7 +195,9 @@ def test_llm_text_processor(pdf_document, mocker):
     mock_cls.return_value.generate_response.return_value = {"corrected_lines": corrected_lines}
     mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
 
-    processor = LLMTextProcessor({"use_llm": True, "google_api_key": "test"})
+    config = {"use_llm": True, "google_api_key": "test"}
+    processor_lst = [LLMTextProcessor(config)]
+    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
     processor(pdf_document)
 
     contained_spans = text_lines[0].contained_blocks(pdf_document, (BlockTypes.Span,))

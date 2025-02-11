@@ -102,9 +102,10 @@ class PdfConverter(BaseConverter):
             renderer = MarkdownRenderer
 
         self.artifact_dict = artifact_dict
+        self.renderer = renderer
+
         processor_list = self.initialize_processors(processor_list)
         self.processor_list = processor_list
-        self.renderer = renderer
 
         self.layout_builder_class = LayoutBuilder
         if self.use_llm:

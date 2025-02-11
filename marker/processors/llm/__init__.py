@@ -1,3 +1,4 @@
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated, TypedDict, List
 
@@ -122,6 +123,7 @@ class BaseLLMSimpleBlockProcessor(BaseLLMProcessor):
             self.rewrite_block(result, prompt_data, document)
         except Exception as e:
             print(f"Error rewriting block in {self.__class__.__name__}: {e}")
+            traceback.print_exc()
 
     def inference_blocks(self, document: Document) -> List[BlockData]:
         blocks = []
