@@ -56,7 +56,7 @@ class LineBuilder(BaseBuilder):
         float,
         "The minimum coverage ratio required for the layout model to consider",
         "the lines from the PdfProvider valid.",
-    ] = .1
+    ] = .25
     document_ocr_threshold: Annotated[
         float,
         "The minimum ratio of pages that must pass the layout coverage check",
@@ -91,9 +91,9 @@ class LineBuilder(BaseBuilder):
         self.ocr_error_model = ocr_error_model
 
     def __call__(self, document: Document, provider: PdfProvider):
-        #Disable Inline Detection for documents where layout model doesn't detect any equations
+        # Disable Inline Detection for documents where layout model doesn't detect any equations
         do_inline_math_detection = not self.disable_inline_math_detection and document.contained_blocks([BlockTypes.Equation])
-        provider_lines, ocr_lines= self.get_all_lines(document, provider, do_inline_math_detection)
+        provider_lines, ocr_lines = self.get_all_lines(document, provider, do_inline_math_detection)
         self.merge_blocks(document, provider_lines, ocr_lines)
 
     def get_detection_batch_size(self):
@@ -116,19 +116,22 @@ class LineBuilder(BaseBuilder):
             images=page_images,
         )
         ocr_error_detection_results = self.ocr_error_detection(document.pages, provider.page_lines)
+
         if do_inline_math_detection:
             inline_detection_results = self.inline_detection_model(
                 images=page_images,
                 text_boxes=[[b.bbox for b in det_result.bboxes] for det_result in detection_results]
             )
         else:
-            inline_detection_results = [TextDetectionResult(
-                bboxes=[],
-                vertical_lines=[],
-                heatmap=None,
-                affinity_map=None,
-                image_bbox=[]
-            )]*len(page_images)
+            inline_detection_results = [
+               TextDetectionResult(
+                    bboxes=[],
+                    vertical_lines=[],
+                    heatmap=None,
+                    affinity_map=None,
+                    image_bbox=[]
+                )
+           ] * len(page_images)
 
         boxes_to_ocr = {page.page_id: [] for page in document.pages}
         page_lines = {page.page_id: [] for page in document.pages}
@@ -145,14 +148,22 @@ class LineBuilder(BaseBuilder):
             image_size = PolygonBox.from_bbox(detection_result.image_bbox).size
             page_size = provider.get_page_bbox(document_page.page_id).size
 
-            provider_lines_good = bool(provider) and ocr_error_detection_label!='bad' and self.check_layout_coverage(document_page, provider_lines)
+            provider_lines_good = all([
+                bool(provider),
+                ocr_error_detection_label != 'bad',
+                self.check_layout_coverage(document_page, provider_lines)
+            ])
 
             if provider_lines_good:
                 # Merge inline math blocks into the provider lines, only persist new detected text lines which do not overlap with existing provider lines
                 #The missing lines are not from a table, so we can safely set this - The attribute for individual blocks is overidden by OCRBuilder
                 document_page.text_extraction_method = 'pdftext'        
-                boxes_to_ocr[document_page.page_id].extend(self.filter_detected_text_lines(provider_lines, detected_text_lines, image_size, page_size))
-                page_lines[document_page.page_id].extend(self.merge_provider_lines_inline_math(document_page.page_id, provider_lines, detected_inline_math_lines, image_size, page_size))
+                boxes_to_ocr[document_page.page_id].extend(
+                    self.filter_detected_text_lines(provider_lines, detected_text_lines, image_size, page_size)
+                )
+                page_lines[document_page.page_id].extend(
+                    self.merge_provider_lines_inline_math(document_page.page_id, provider_lines, detected_inline_math_lines, image_size, page_size)
+                )
                 continue
 
             document_page.text_extraction_method = 'surya'
@@ -243,50 +254,45 @@ class LineBuilder(BaseBuilder):
                 span.formats = list(set(span.formats))
 
     def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size):
-        #When provider lines is empty
-        if not provider_lines:
-            return provider_lines
-        
-        #When no inline math is detected
-        if not inline_math_lines:
+        # When provider lines is empty or no inline math detected, return provider lines
+        if not provider_lines or not inline_math_lines:
             return provider_lines
 
         updated_provider_lines = []
         provider_line_to_inline = {provider_line: [] for provider_line in provider_lines}
         inline_math_removed_text = defaultdict(str)
 
-        for math_line in inline_math_lines:
-            math_line_polygon = PolygonBox(polygon=math_line.polygon).rescale(image_size, page_size)
-            math_line_area = math_line_polygon.area
-            if math_line_area == 0:
-                continue
-            
-            best_match = None
-            best_overlap = self.line_inline_math_overlap_threshold
+        horizontal_provider_lines = [provider_line for provider_line in provider_lines if provider_line.line.polygon.height < provider_line.line.polygon.width]
+        provider_line_boxes = [p.line.polygon.bbox for p in horizontal_provider_lines]
+        math_line_boxes = [PolygonBox(polygon=m.polygon).rescale(image_size, page_size).bbox for m in inline_math_lines]
 
-            for provider_line in provider_lines:
-                if provider_line.line.polygon.height>provider_line.line.polygon.width:
-                    continue
-                overlap = provider_line.line.polygon.intersection_area(math_line_polygon) / math_line_area
-                if overlap>self.line_inline_math_overlap_threshold:
-                    line_removed_text = self._reconstruct_provider_line(provider_line, math_line_polygon)
-                    inline_math_removed_text[math_line] += line_removed_text
-                    pass
-                if overlap>best_overlap:
-                    best_overlap = overlap
-                    best_match = provider_line
-                
-            if best_match:
-                provider_line_to_inline[best_match].append(math_line)
+        overlaps = matrix_intersection_area(math_line_boxes, provider_line_boxes)
+
+        for i in range(len(math_line_boxes)):
+            math_line_polygon = PolygonBox(polygon=inline_math_lines[i].polygon).rescale(image_size, page_size)
+            max_overlap = np.max(overlaps[i])
+            if max_overlap <= self.line_inline_math_overlap_threshold:
+                continue
+
+            nonzero_idxs = np.nonzero(overlaps[i] > self.line_inline_math_overlap_threshold)[0]
+            for idx in nonzero_idxs:
+                provider_line = horizontal_provider_lines[idx]
+                line_removed_text = self._reconstruct_provider_line(provider_line, math_line_polygon)
+                inline_math_removed_text[inline_math_lines[i]] += line_removed_text
+
+            best_match = np.argmax(overlaps[i])
+            provider_line = horizontal_provider_lines[best_match]
+            provider_line_to_inline[provider_line].append(inline_math_lines[i])
+
 
         for provider_line, math_lines in provider_line_to_inline.items():
-            #No intersection with math, or vertical text line - Skip
-            if not math_lines or provider_line.line.polygon.height>provider_line.line.polygon.width:
+            # No intersection with math, or vertical text line - Skip
+            if not math_lines or provider_line.line.polygon.height > provider_line.line.polygon.width:
                 updated_provider_lines.append(provider_line)
                 continue
 
             new_spans = provider_line.spans
-            #Add math lines in as new spans - Empty text to be replaced with latex by EquationProcessor later
+            # Add math lines in as new spans - Empty text to be replaced with latex by EquationProcessor later
             SpanClass: Span = get_block_class(BlockTypes.Span)
             for math_line in math_lines:
                 new_spans.append(
@@ -313,11 +319,11 @@ class LineBuilder(BaseBuilder):
         spans = provider_line.spans
         SpanClass: Span = get_block_class(BlockTypes.Span)
 
-        #For providers which do not surface characters
+        # For providers which do not surface characters
         if provider_line.chars is None:
             removed_text = ""
             for span in spans:
-                if span.polygon.intersection_pct(math_line_polygon)<self.span_inline_math_overlap_threshold:
+                if span.polygon.intersection_pct(math_line_polygon) < self.span_inline_math_overlap_threshold:
                     spans_to_keep.append(span)
                 else:
                     removed_text += span.text
@@ -329,16 +335,12 @@ class LineBuilder(BaseBuilder):
         chars_to_keep = []
         assert len(spans) == len(provider_line.chars)
         for span, span_chars in zip(spans, provider_line.chars):
-            if span.polygon.intersection_area(math_line_polygon)==0:
-                spans_to_keep.append(span)
-                chars_to_keep.append(span_chars)
-                continue
-            #Split at the inline math
+            # Split at the inline math
             left_chars, right_chars = [], []
             math_line_center_x = math_line_polygon.center[0]
 
             for char in span_chars:
-                if char.polygon.intersection_pct(math_line_polygon)>=self.char_inline_math_overlap_threshold:
+                if char.polygon.intersection_pct(math_line_polygon) >= self.char_inline_math_overlap_threshold:
                     removed_text += char.char
                     continue  # Skip characters that overlap with the math polygon
                 
@@ -362,6 +364,7 @@ class LineBuilder(BaseBuilder):
                     font_size=span.font_size
                 ))
                 chars_to_keep.append(left_chars)
+
             if right_chars:
                 right_polygon = right_chars[0].polygon.merge([c.polygon for c in right_chars])
                 spans_to_keep.append(SpanClass(
@@ -449,7 +452,7 @@ class LineBuilder(BaseBuilder):
             merged_lines.extend(provider_lines[i:])
             merged_lines.extend(ocr_lines[j:])
 
-            #Text extraction method is overidden later for OCRed documents
+            # Text extraction method is overidden later for OCRed documents
             document_page.merge_blocks(merged_lines, text_extraction_method='pdftext')
 
     def split_detected_text_and_inline_boxes(
