@@ -7,7 +7,7 @@ from tqdm import tqdm
 from pydantic import BaseModel
 
 from marker.builders.layout import LayoutBuilder
-from marker.processors.llm import GoogleModel
+from marker.services.google import GoogleModel
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block

@@ -1,15 +1,29 @@
-import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Annotated, Optional
+from typing import Annotated, TypedDict, List
 
+from pydantic import BaseModel
 from tqdm import tqdm
+from PIL import Image
 
 from marker.processors import BaseProcessor
-from marker.processors.llm.utils import GoogleModel
+from marker.services.google import GoogleModel
 from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.groups import PageGroup
 from marker.settings import settings
+
+
+class PromptData(TypedDict):
+    prompt: str
+    image: Image.Image
+    block: Block
+    schema: BaseModel
+    page: PageGroup
+
+
+class BlockData(TypedDict):
+    page: PageGroup
+    block: Block
 
 
 class BaseLLMProcessor(BaseProcessor):
@@ -35,7 +49,7 @@ class BaseLLMProcessor(BaseProcessor):
     timeout: Annotated[
         int,
         "The timeout for requests to the Gemini model.",
-    ] = 15
+    ] = 20
     image_expansion_ratio: Annotated[
         float,
         "The ratio to expand the image by when cropping.",
@@ -59,6 +73,14 @@ class BaseLLMProcessor(BaseProcessor):
 
         self.model = GoogleModel(self.google_api_key, self.model_name)
 
+    def extract_image(self, document: Document, image_block: Block):
+        return image_block.get_image(document, highres=True, expansion=(self.image_expansion_ratio, self.image_expansion_ratio))
+
+
+class BaseLLMComplexBlockProcessor(BaseLLMProcessor):
+    """
+    A processor for using LLMs to convert blocks with more complex logic.
+    """
     def __call__(self, document: Document):
         if not self.use_llm or self.model is None:
             return
@@ -89,5 +111,32 @@ class BaseLLMProcessor(BaseProcessor):
 
         pbar.close()
 
-    def extract_image(self, document: Document, image_block: Block):
-        return image_block.get_image(document, highres=True, expansion=(self.image_expansion_ratio, self.image_expansion_ratio))
+
+class BaseLLMSimpleBlockProcessor(BaseLLMProcessor):
+    """
+    A processor for using LLMs to convert single blocks.
+    """
+
+    def __call__(self, result: dict, prompt_data: PromptData, document: Document):
+        try:
+            self.rewrite_block(result, prompt_data, document)
+        except Exception as e:
+            print(f"Error rewriting block in {self.__class__.__name__}: {e}")
+
+    def inference_blocks(self, document: Document) -> List[BlockData]:
+        blocks = []
+        for page in document.pages:
+            for block in page.contained_blocks(document, self.block_types):
+                blocks.append({
+                    "page": page,
+                    "block": block
+                })
+        return blocks
+
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        raise NotImplementedError()
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        raise NotImplementedError()
+
+

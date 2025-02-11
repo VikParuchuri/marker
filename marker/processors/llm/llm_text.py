@@ -1,19 +1,17 @@
 import json
-from typing import List
+from typing import List, Tuple
 
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData
 from bs4 import BeautifulSoup
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
-from marker.schema.groups.page import PageGroup
 from marker.schema.registry import get_block_class
-from marker.schema.text.span import Span
 
 
-class LLMTextProcessor(BaseLLMProcessor):
+class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
     block_types = (BlockTypes.TextInlineMath,)
     text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
@@ -72,16 +70,36 @@ Output:
 ```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        SpanClass: Span = get_block_class(BlockTypes.Span)
-
+    def get_block_lines(self, block: Block, document: Document) -> Tuple[list, list]:
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))
         extracted_lines = [line.formatted_text(document) for line in text_lines]
+        return text_lines, extracted_lines
 
-        prompt = self.text_math_rewriting_prompt.replace("{extracted_lines}", json.dumps({"extracted_lines": extracted_lines}, indent=2))
-        image = self.extract_image(document, block)
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block_data in self.inference_blocks(document):
+            block = block_data["block"]
+            _, extracted_lines = self.get_block_lines(block, document)
 
-        response = self.model.generate_response(prompt, image, block, LLMTextSchema)
+            prompt = self.text_math_rewriting_prompt.replace("{extracted_lines}",
+                                                             json.dumps({"extracted_lines": extracted_lines}, indent=2))
+            image = self.extract_image(document, block)
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": block,
+                "schema": LLMTextSchema,
+                "page": block_data["page"]
+            })
+        return prompt_data
+
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        block = prompt_data["block"]
+        page = prompt_data["page"]
+        SpanClass = get_block_class(BlockTypes.Span)
+
+        text_lines, extracted_lines = self.get_block_lines(block, document)
         if not response or "corrected_lines" not in response:
             block.update_metadata(llm_error_count=1)
             return
