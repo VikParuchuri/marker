@@ -460,14 +460,6 @@ class LineBuilder(BaseBuilder):
         """
         Splits horizontal text boxes around inline boxes, skips vertical text boxes, 
         and retains unrelated text boxes.
-
-        Args:
-            text_boxes: List of TextBox objects representing text boxes.
-            inline_boxes: List of TextBox objects representing inline boxes.
-
-        Returns:
-            A new list of TextBox objects with split text boxes, inline boxes, 
-            and unmodified vertical/unrelated text boxes.
         """
         
         #Skip if no inline math was detected

@@ -78,7 +78,8 @@ class EquationProcessor(BaseProcessor):
                 block.html = prediction
             elif isinstance(block, Span) and 'math' in block.formats:
                 inline_math_text = re.sub(r'<[^>]+>', '', prediction)
-                if self.get_total_texify_tokens(inline_math_text) > self.inline_math_token_threshold:
+                #In case of OCRed lines - The inline math span does not have any original text retained, has to be replaced from texify
+                if self.get_total_texify_tokens(inline_math_text) > self.inline_math_token_threshold or block.text=='':
                     block.text = inline_math_text
                 else:
                     block.formats.remove('math')

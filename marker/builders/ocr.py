@@ -86,7 +86,6 @@ class OcrBuilder(BaseBuilder):
         if sum(len(b) for b in line_boxes)==0:
             return
 
-        # Remove tables because we re-OCR them later with the table processor
         recognition_results = self.recognition_model(
             images=images,
             bboxes=line_boxes,
