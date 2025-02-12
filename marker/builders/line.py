@@ -135,12 +135,22 @@ class LineBuilder(BaseBuilder):
                 ocr_error_detection_results.labels
         ):
             provider_lines: List[ProviderOutput] = provider.page_lines.get(document_page.page_id, [])
+            image_size = PolygonBox.from_bbox(detection_result.image_bbox).size
+            page_size = provider.get_page_bbox(document_page.page_id).size
+
+            # Filter out detected equation blocks
+            inline_detection_result = self.filter_equation_overlaps(
+                document,
+                document_page,
+                inline_detection_result,
+                image_size,
+                page_size
+            )
+
+            # Merge text and inline math detection results
             merged_detection_boxes = self.determine_math_lines(text_result=detection_result, inline_result=inline_detection_result)
             math_detection_boxes = [box for box in merged_detection_boxes if box.math]
             nonmath_detection_boxes = [box for box in merged_detection_boxes if not box.math]
-
-            image_size = PolygonBox.from_bbox(detection_result.image_bbox).size
-            page_size = provider.get_page_bbox(document_page.page_id).size
 
             provider_lines_good = all([
                 bool(provider),
@@ -289,6 +299,30 @@ class LineBuilder(BaseBuilder):
 
             # Text extraction method is overidden later for OCRed documents
             document_page.merge_blocks(merged_lines, text_extraction_method='pdftext')
+
+    def filter_equation_overlaps(
+            self,
+            document,
+            page: PageGroup,
+            inline_boxes: TextDetectionResult,
+            image_size,
+            page_size
+    ):
+        if inline_boxes is None:
+            return inline_boxes
+
+        equations = page.contained_blocks(document, (BlockTypes.Equation,))
+        equation_boxes = [eq.polygon.bbox for eq in equations]
+        inline_bboxes = [PolygonBox(polygon=box.polygon).rescale(image_size, page_size).bbox for box in inline_boxes.bboxes]
+
+        if len(equation_boxes) == 0 or len(inline_bboxes) == 0:
+            return inline_boxes
+
+        overlaps = matrix_intersection_area(inline_bboxes, equation_boxes)
+        overlap_idxs = np.max(overlaps, axis=-1) > self.line_inline_math_overlap_threshold
+        inline_boxes.bboxes = [ib for i, ib in enumerate(inline_boxes.bboxes) if not overlap_idxs[i]]
+        return inline_boxes
+
 
     def determine_math_lines(
         self,
