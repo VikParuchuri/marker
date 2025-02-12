@@ -12,7 +12,7 @@ from marker.schema.registry import get_block_class
 
 
 class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
-    block_types = (BlockTypes.TextInlineMath,)
+    block_types = (BlockTypes.Line,)
     text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
