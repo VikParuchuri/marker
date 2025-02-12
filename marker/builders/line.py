@@ -176,7 +176,7 @@ class LineBuilder(BaseBuilder):
 
             if provider_lines_good:
                 # Merge inline math blocks into the provider lines, only persist new detected text lines which do not overlap with existing provider lines
-                # The missing lines are not from a table, so we can safely set this - The attribute for individual blocks is overidden by OCRBuilder
+                # The missing lines are not from a table, so we can safely set this - The attribute for individual blocks is overridden by OCRBuilder
                 document_page.text_extraction_method = 'pdftext'
 
                 # Add in the provider lines - merge ones that get broken by inline math
@@ -443,11 +443,7 @@ class LineBuilder(BaseBuilder):
             best_overlap_y1 = best_overlap_line[1].line.polygon.y_start
 
             nonzero_idxs = np.nonzero(overlaps[i] > self.line_inline_math_overlap_threshold)[0]
-
-            # Sometimes equation pieces in between other pieces aren't picked up by nonzero
-            min_idx = min(nonzero_idxs)
-            max_idx = max(nonzero_idxs)
-            for idx in range(min_idx, max_idx + 1):
+            for idx in nonzero_idxs:
                 provider_idx, provider_line = horizontal_provider_lines[idx]
                 provider_line_y1 = provider_line.line.polygon.y_start
 
@@ -456,14 +452,6 @@ class LineBuilder(BaseBuilder):
                     should_merge_line = True
 
                 line_overlaps = self.find_overlapping_math_chars(provider_line, math_line_polygon, remove_chars=not should_merge_line)
-
-                # Clear the line if it is not a math line and the area is too small - this is likely a stray character from a math line
-                if all([
-                    not should_merge_line,
-                    provider_line.line.polygon.area < self.inline_math_minimum_area,
-                    len("".join([span.text for span in provider_line.spans]).strip()) < 5
-                ]):
-                    self.clear_line_text(provider_line)
 
                 # Do not merge if too far above/below (but remove characters)
                 if line_overlaps and should_merge_line:
