@@ -27,10 +27,6 @@ class OcrBuilder(BaseBuilder):
         bool,
         "Whether to skip OCR on tables.  The TableProcessor will re-OCR them.  Only enable if the TableProcessor is not running.",
     ] = False
-    block_ocr_threshold: Annotated[
-        float,
-        "The minimum fraction of detected lines in a block to OCR the block"
-    ] = 0.05
     languages: Annotated[
         Optional[List[str]],
         "A list of languages to use for OCR.",
@@ -66,9 +62,7 @@ class OcrBuilder(BaseBuilder):
             image_size = page_highres_image.size
             for block in document_page.contained_blocks(document):
                 block_lines = block.contained_blocks(document, [BlockTypes.Line])
-                block_detected_lines = [block_line for block_line in block_lines if block_line.text_extraction_method=='surya']
-                if len(block_lines)==0 or len(block_detected_lines)/len(block_lines)<self.block_ocr_threshold:
-                    continue
+                block_detected_lines = [block_line for block_line in block_lines if block_line.text_extraction_method == 'surya']
                 
                 block.text_extraction_method = 'surya'
                 for line in block_detected_lines:

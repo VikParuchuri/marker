@@ -6,6 +6,8 @@ from PIL import Image
 
 from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData, BlockData
 from bs4 import BeautifulSoup
+
+from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
@@ -141,8 +143,6 @@ Output:
         blocks = prompt_data["additional_data"]["blocks"]
         pages = prompt_data["additional_data"]["pages"]
 
-        SpanClass = get_block_class(BlockTypes.Span)
-
         if not response or "corrected_lines" not in response:
             blocks[0].update_metadata(llm_error_count=1)
             return
@@ -154,60 +154,7 @@ Output:
 
         for text_line, page, corrected_text in zip(blocks, pages, corrected_lines):
             text_line.structure = []
-            corrected_spans = self.text_to_spans(corrected_text)
-
-            for span_idx, span in enumerate(corrected_spans):
-                if span_idx == len(corrected_spans) - 1:
-                    span['content'] += "\n"
-
-                span_block = page.add_full_block(
-                    SpanClass(
-                        polygon=text_line.polygon,
-                        text=span['content'],
-                        font='Unknown',
-                        font_weight=0,
-                        font_size=0,
-                        minimum_position=0,
-                        maximum_position=0,
-                        formats=[span['type']],
-                        url=span.get('url'),
-                        page_id=text_line.page_id,
-                        text_extraction_method="gemini",
-                    )
-                )
-                text_line.structure.append(span_block.id)
-
-    @staticmethod
-    def text_to_spans(text):
-        soup = BeautifulSoup(text, 'html.parser')
-
-        tag_types = {
-            'b': 'bold',
-            'i': 'italic',
-            'math': 'math',
-        }
-        spans = []
-
-        for element in soup.descendants:
-            if not len(list(element.parents)) == 1:
-                continue
-
-            url = element.attrs.get('href') if hasattr(element, 'attrs') else None
-
-            if element.name in tag_types:
-                spans.append({
-                    'type': tag_types[element.name],
-                    'content': element.get_text(),
-                    'url': url
-                })
-            elif element.string:
-                spans.append({
-                    'type': 'plain',
-                    'content': element.string,
-                    'url': url
-                })
-
-        return spans
+            add_math_spans_to_line(corrected_text, text_line, page)
 
 class LLMTextSchema(BaseModel):
     corrected_lines: List[str]
