@@ -24,13 +24,39 @@ class LineNumbersProcessor(BaseProcessor):
         "The minimum length of a line (in characters) to consider it significant when checking for",
         "numeric prefixes or suffixes. Prevents false positives for short lines.",
     ] = 10
+    min_line_number_span_ratio: Annotated[
+        float,
+        "The minimum ratio of detected line number spans to total lines required to treat them as line numbers.",
+    ] = .6
 
     def __init__(self, config):
         super().__init__(config)
 
     def __call__(self, document: Document):
+        self.ignore_line_number_spans(document)
         self.ignore_line_starts_ends(document)
         self.ignore_line_number_blocks(document)
+
+    def ignore_line_number_spans(self, document: Document):
+        for page in document.pages:
+            line_count = 0
+            line_number_spans = []
+            for block in page.contained_blocks(document, (BlockTypes.Line,)):
+                if block.structure is None:
+                    continue
+
+                line_count += 1
+                leftmost_span = None
+                for span in block.contained_blocks(document, (BlockTypes.Span,)):
+                    if leftmost_span is None or span.polygon.x_start < leftmost_span.polygon.x_start:
+                        leftmost_span = span
+
+                if leftmost_span is not None and leftmost_span.text.strip().split(' ')[0].isnumeric():
+                    line_number_spans.append(leftmost_span)
+
+            if line_count > 0 and len(line_number_spans) / line_count > self.min_line_number_span_ratio:
+                for span in line_number_spans:
+                    span.ignore_for_output = True
 
     def ignore_line_number_blocks(self, document: Document):
         for page in document.pages:
