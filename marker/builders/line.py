@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
+from ftfy import fix_text
 
 from surya.detection import DetectionPredictor, InlineDetectionPredictor, TextDetectionResult
 from surya.ocr_error import OCRErrorPredictor
@@ -57,6 +58,10 @@ class LineBuilder(BaseBuilder):
         "The minimum ratio of pages that must pass the layout coverage check",
         "to avoid OCR.",
     ] = .8
+    min_ocr_line_pct: Annotated[
+        float,
+        "The minimum percentage of lines that need to be OCRed per page for OCR to actually happen."
+    ] = .1
     detected_provider_line_overlap: Annotated[
         float,
         "The maximum overlap between a detected text line and a provider line to consider as a new line"
@@ -77,6 +82,10 @@ class LineBuilder(BaseBuilder):
         float,
         "The minimum area for an inline math block, in pixels."
     ] = 20
+    inline_math_line_vertical_merge_threshold: Annotated[
+        int,
+        "The maximum pixel distance between y1s for two lines to be merged"
+    ] = 5
     excluded_for_coverage: Annotated[
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
@@ -227,6 +236,10 @@ class LineBuilder(BaseBuilder):
             max_intersection = np.max(intersection) / detected_line.area
             if max_intersection < self.detected_provider_line_overlap:
                 filtered_lines.append(detected_line)
+
+        # If we have too few OCR lines, we should OCR none of them (assume provider is okay)
+        if len(filtered_lines) / len(detected_text_lines) < self.min_ocr_line_pct:
+            filtered_lines = []
         
         return filtered_lines
 
@@ -401,11 +414,23 @@ class LineBuilder(BaseBuilder):
             if max_overlap <= self.line_inline_math_overlap_threshold:
                 continue
 
+            best_overlap = np.argmax(overlaps[i])
+            best_overlap_line = horizontal_provider_lines[best_overlap]
+            best_overlap_y1 = best_overlap_line[1].line.polygon.y_start
+
             nonzero_idxs = np.nonzero(overlaps[i] > self.line_inline_math_overlap_threshold)[0]
             for idx in nonzero_idxs:
                 provider_idx, provider_line = horizontal_provider_lines[idx]
-                line_overlaps = self.check_char_math_overlap(provider_line, math_line_polygon)
-                if line_overlaps:
+                provider_line_y1 = provider_line.line.polygon.y_start
+
+                remove_overlaps = False
+                if abs(provider_line_y1 - best_overlap_y1) > self.inline_math_line_vertical_merge_threshold:
+                    remove_overlaps = True
+
+                line_overlaps = self.find_overlapping_math_chars(provider_line, math_line_polygon, remove_chars=remove_overlaps)
+
+                # Do not merge if too far above/below (but remove characters)
+                if line_overlaps and not remove_overlaps:
                     # Add the index of the provider line to the merge line
                     merge_line.append(provider_idx)
 
@@ -439,6 +464,7 @@ class LineBuilder(BaseBuilder):
                     # Combine the spans of the provider line with the merged line
                     merged_line = merged_line.merge(provider_line)
                     self.add_math_span_format(merged_line)
+                already_merged.add(idx) # Prevent double merging
             out_provider_lines.append((min_idx, merged_line))
 
         # Sort to preserve original order
@@ -446,7 +472,7 @@ class LineBuilder(BaseBuilder):
         out_provider_lines = [p for _, p in out_provider_lines]
         return out_provider_lines
 
-    def check_char_math_overlap(self, provider_line, math_line_polygon):
+    def find_overlapping_math_chars(self, provider_line, math_line_polygon, remove_chars=False):
         # Identify if a character in the provider line overlaps with the inline math line - meaning that the line can be treated as math
         spans = provider_line.spans
         math_overlaps = False
@@ -461,8 +487,18 @@ class LineBuilder(BaseBuilder):
         # For providers which surface characters - find line overlap based on characters
         assert len(spans) == len(provider_line.chars), "Number of spans and characters in provider line do not match"
         for span, span_chars in zip(spans, provider_line.chars):
+            new_span_chars = []
+            span_overlaps = False
             for char in span_chars:
                 if char.polygon.intersection_pct(math_line_polygon) >= self.char_inline_math_overlap_threshold:
-                    return True
+                    span_overlaps = True
+                else:
+                    new_span_chars.append(char)
+
+            # Remove stray characters that overlap with math lines
+            if span_overlaps and remove_chars:
+                span.text = fix_text(''.join(c.char for c in new_span_chars))
+
+            math_overlaps = math_overlaps or span_overlaps
 
         return math_overlaps
