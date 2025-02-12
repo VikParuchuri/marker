@@ -15,11 +15,7 @@ def test_garbled_pdf(pdf_document, detection_model, recognition_model, table_rec
 
     table_cell = pdf_document.pages[0].get_block(table_block.structure[0])
     assert table_cell.block_type == BlockTypes.Line
-    assert table_cell.structure[0] == "/page/0/Span/2"
-
-    span = pdf_document.pages[0].contained_blocks(pdf_document, (BlockTypes.Span,))[0]
-    assert span.block_type == BlockTypes.Span
-    assert len(span.text.strip()) == 0
+    assert table_cell.structure is None
 
     # We don't OCR in the initial pass, only with the TableProcessor
     processor = TableProcessor(detection_model, recognition_model, table_rec_model)
@@ -27,6 +23,9 @@ def test_garbled_pdf(pdf_document, detection_model, recognition_model, table_rec
 
     table = pdf_document.pages[0].contained_blocks(pdf_document, (BlockTypes.Table,))[0]
     assert "варіант" in table.raw_text(pdf_document)
+
+    table_cell = pdf_document.pages[0].get_block(table_block.structure[0])
+    assert table_cell.block_type == BlockTypes.TableCell
 
 
 @pytest.mark.filename("hindi_judgement.pdf")

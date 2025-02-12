@@ -420,7 +420,10 @@ class LineBuilder(BaseBuilder):
         if not provider_lines or not inline_math_lines:
             return provider_lines
 
-        horizontal_provider_lines = [(j, provider_line) for j, provider_line in enumerate(provider_lines) if provider_line.line.polygon.height < provider_line.line.polygon.width]
+        horizontal_provider_lines = [
+            (j, provider_line) for j, provider_line in enumerate(provider_lines)
+            if provider_line.line.polygon.height < provider_line.line.polygon.width * 3 # Multiply to account for small blocks inside equations, but filter out big vertical lines
+        ]
         provider_line_boxes = [p.line.polygon.bbox for _, p in horizontal_provider_lines]
         math_line_boxes = [PolygonBox(polygon=m.polygon).rescale(image_size, page_size).bbox for m in inline_math_lines]
 
@@ -448,15 +451,19 @@ class LineBuilder(BaseBuilder):
                 provider_idx, provider_line = horizontal_provider_lines[idx]
                 provider_line_y1 = provider_line.line.polygon.y_start
 
-                remove_overlaps = False
                 should_merge_line = False
                 if abs(provider_line_y1 - best_overlap_y1) <= self.inline_math_line_vertical_merge_threshold:
                     should_merge_line = True
 
-                if idx != best_overlap:
-                    remove_overlaps = True
+                line_overlaps = self.find_overlapping_math_chars(provider_line, math_line_polygon, remove_chars=not should_merge_line)
 
-                line_overlaps = self.find_overlapping_math_chars(provider_line, math_line_polygon, remove_chars=remove_overlaps)
+                # Clear the line if it is not a math line and the area is too small - this is likely a stray character from a math line
+                if all([
+                    not should_merge_line,
+                    provider_line.line.polygon.area < self.inline_math_minimum_area,
+                    len("".join([span.text for span in provider_line.spans]).strip()) < 5
+                ]):
+                    self.clear_line_text(provider_line)
 
                 # Do not merge if too far above/below (but remove characters)
                 if line_overlaps and should_merge_line:
@@ -500,6 +507,10 @@ class LineBuilder(BaseBuilder):
         out_provider_lines = sorted(out_provider_lines, key=lambda x: x[0])
         out_provider_lines = [p for _, p in out_provider_lines]
         return out_provider_lines
+
+    def clear_line_text(self, provider_line):
+        for span in provider_line.spans:
+            span.text = ""
 
     def find_overlapping_math_chars(self, provider_line, math_line_polygon, remove_chars=False):
         # Identify if a character in the provider line overlaps with the inline math line - meaning that the line can be treated as math
