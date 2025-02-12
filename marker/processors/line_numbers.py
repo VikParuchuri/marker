@@ -51,7 +51,7 @@ class LineNumbersProcessor(BaseProcessor):
                     if leftmost_span is None or span.polygon.x_start < leftmost_span.polygon.x_start:
                         leftmost_span = span
 
-                if leftmost_span is not None and leftmost_span.text.strip().split(' ')[0].isnumeric():
+                if leftmost_span is not None and leftmost_span.text.strip().isnumeric():
                     line_number_spans.append(leftmost_span)
 
             if line_count > 0 and len(line_number_spans) / line_count > self.min_line_number_span_ratio:
