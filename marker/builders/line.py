@@ -60,8 +60,8 @@ class LineBuilder(BaseBuilder):
     ] = .8
     min_ocr_line_pct: Annotated[
         float,
-        "The minimum percentage of lines that need to be OCRed per page for OCR to actually happen."
-    ] = .1
+        "The minimum percentage of lines that need to be flagged as needing OCR per page for OCR to actually happen."
+    ] = .2
     detected_provider_line_overlap: Annotated[
         float,
         "The maximum overlap between a detected text line and a provider line to consider as a new line"
@@ -158,13 +158,20 @@ class LineBuilder(BaseBuilder):
 
             # Merge text and inline math detection results
             merged_detection_boxes = self.determine_math_lines(text_result=detection_result, inline_result=inline_detection_result)
-            math_detection_boxes = [box for box in merged_detection_boxes if box.math]
-            nonmath_detection_boxes = [box for box in merged_detection_boxes if not box.math]
+            math_detection_boxes = [(i, box) for i, box in enumerate(merged_detection_boxes) if box.math]
+            nonmath_detection_boxes = [(i, box) for i, box in enumerate(merged_detection_boxes) if not box.math]
+            text_lines_without_matches = self.filter_detected_text_lines(
+                provider_lines,
+                [b for _,b in nonmath_detection_boxes],
+                image_size,
+                page_size
+            )
 
             provider_lines_good = all([
                 bool(provider),
                 ocr_error_detection_label != 'bad',
-                self.check_layout_coverage(document_page, provider_lines)
+                self.check_layout_coverage(document_page, provider_lines),
+                (len(text_lines_without_matches) / len(nonmath_detection_boxes) < self.min_ocr_line_pct or len(text_lines_without_matches) < 2)
             ])
 
             if provider_lines_good:
@@ -172,20 +179,25 @@ class LineBuilder(BaseBuilder):
                 # The missing lines are not from a table, so we can safely set this - The attribute for individual blocks is overidden by OCRBuilder
                 document_page.text_extraction_method = 'pdftext'
 
-                # OCR any lines that don't overlap with a provider line
-                boxes_to_ocr[document_page.page_id].extend(
-                    self.filter_detected_text_lines(provider_lines, nonmath_detection_boxes, image_size, page_size)
-                )
-
                 # Add in the provider lines - merge ones that get broken by inline math
                 page_lines[document_page.page_id].extend(
-                    self.merge_provider_lines_inline_math(document_page.page_id, provider_lines, math_detection_boxes, image_size, page_size)
+                    self.merge_provider_lines_inline_math(
+                        provider_lines,
+                        [b for _,b in math_detection_boxes],
+                        image_size,
+                        page_size
+                    )
                 )
             else:
                 document_page.text_extraction_method = 'surya'
 
+                # Sort lines properly
+                full_lines = nonmath_detection_boxes + math_detection_boxes
+                full_lines = sorted(full_lines, key=lambda x: x[0])
+                full_lines = [b for _, b in full_lines]
+
                 # Skip inline math merging if no provider lines are good; OCR all text lines and all inline math lines
-                boxes_to_ocr[document_page.page_id].extend(nonmath_detection_boxes + math_detection_boxes)
+                boxes_to_ocr[document_page.page_id].extend(full_lines)
 
         # Dummy lines to merge into the document - Contains no spans, will be filled in later by OCRBuilder
         ocr_lines = {document_page.page_id: [] for document_page in document.pages}
@@ -229,18 +241,21 @@ class LineBuilder(BaseBuilder):
             image_size,
             page_size
     ):
+        if len(provider_lines) == 0:
+            return detected_text_lines
+
+        if len(detected_text_lines) == 0:
+            return []
+
         filtered_lines = []
         rescaled_line_boxes = [PolygonBox(polygon=line.polygon).rescale(image_size, page_size).bbox for line in detected_text_lines]
-        intersections = matrix_intersection_area(rescaled_line_boxes, [line.line.polygon.bbox for line in provider_lines])
+        provider_line_boxes = [line.line.polygon.bbox for line in provider_lines]
+        intersections = matrix_intersection_area(rescaled_line_boxes, provider_line_boxes)
         for detected_line, intersection in zip(detected_text_lines, intersections):
             max_intersection = np.max(intersection) / detected_line.area
             if max_intersection < self.detected_provider_line_overlap:
                 filtered_lines.append(detected_line)
 
-        # If we have too few OCR lines, we should OCR none of them (assume provider is okay)
-        if len(filtered_lines) / len(detected_text_lines) < self.min_ocr_line_pct:
-            filtered_lines = []
-        
         return filtered_lines
 
     def check_layout_coverage(
@@ -257,6 +272,12 @@ class LineBuilder(BaseBuilder):
 
         layout_bboxes = [block.polygon.bbox for block in layout_blocks]
         provider_bboxes = [line.line.polygon.bbox for line in provider_lines]
+
+        if len(layout_bboxes) == 0:
+            return True
+
+        if len(provider_bboxes) == 0:
+            return False
 
         intersection_matrix = matrix_intersection_area(layout_bboxes, provider_bboxes)
 
@@ -279,38 +300,14 @@ class LineBuilder(BaseBuilder):
         return text_okay
 
     def merge_blocks(self, document: Document, page_provider_lines: ProviderPageLines, page_ocr_lines: ProviderPageLines):
-        def reading_order(line1, line2):
-            """
-            Determines the reading order between two lines, assuming lists of lines are already individually in reading order
-            """
-            poly1, poly2 = line1.line.polygon, line2.line.polygon
-
-            vertical_overlap = poly1.overlap_y(poly2)
-            avg_height = (poly1.height + poly2.height) / 2
-
-            if vertical_overlap > 0.5 * avg_height:
-                return poly1.x_start - poly2.x_start  # Left-to-right order
-            return poly1.y_start - poly2.y_start  # Top-to-bottom order
-
         for document_page in document.pages:
             provider_lines = page_provider_lines[document_page.page_id]
             ocr_lines = page_ocr_lines[document_page.page_id]
 
-            merged_lines = []
-            i, j = 0, 0
+            # Only one or the other will have lines
+            merged_lines = provider_lines + ocr_lines
 
-            while i < len(provider_lines) and j < len(ocr_lines):
-                if reading_order(provider_lines[i], ocr_lines[j]) <= 0:
-                    merged_lines.append(provider_lines[i])
-                    i += 1
-                else:
-                    merged_lines.append(ocr_lines[j])
-                    j += 1
-
-            merged_lines.extend(provider_lines[i:])
-            merged_lines.extend(ocr_lines[j:])
-
-            # Text extraction method is overidden later for OCRed documents
+            # Text extraction method is overridden later for OCRed documents
             document_page.merge_blocks(merged_lines, text_extraction_method='pdftext')
 
     def filter_equation_overlaps(
@@ -341,6 +338,7 @@ class LineBuilder(BaseBuilder):
         self,
         text_result: TextDetectionResult,
         inline_result: TextDetectionResult,
+        math_box_padding: float = .05
     ) -> List[TextBox]:
         """
         Marks lines as math if they contain inline math boxes.
@@ -358,6 +356,13 @@ class LineBuilder(BaseBuilder):
 
         inline_bboxes = [m.bbox for m in inline_result.bboxes]
         text_bboxes = [t.bbox for t in text_boxes]
+
+        if len(inline_bboxes) == 0:
+            return text_boxes
+
+        if len(text_boxes) == 0:
+            return []
+
         overlaps = matrix_intersection_area(inline_bboxes, text_bboxes)
 
         # Mark text boxes as math if they overlap with an inline math box
@@ -378,6 +383,23 @@ class LineBuilder(BaseBuilder):
 
             max_overlap_box.math = True
 
+        # Expand math lines to include the entire line
+        for i, box in enumerate(text_boxes):
+            if not box.math:
+                continue
+
+            y1_minus = box.expand_y1(math_box_padding)
+            y2_plus = box.expand_y2(math_box_padding)
+
+            if i <= len(text_boxes) - 2:
+                next_box = text_boxes[i + 1]
+                if y2_plus.bbox[1] < next_box.bbox[1]:
+                    box.polygon = y2_plus.polygon
+            elif i > 0:
+                prev_box = text_boxes[i - 1]
+                if y1_minus.bbox[3] > prev_box.bbox[3]:
+                    box.polygon = y1_minus.polygon
+
         return text_boxes
 
     # Add appropriate formats to math spans added by inline math detection
@@ -389,7 +411,6 @@ class LineBuilder(BaseBuilder):
 
     def merge_provider_lines_inline_math(
             self,
-            document_page_id,
             provider_lines: List[ProviderOutput],
             inline_math_lines: List[TextBox],
             image_size,
@@ -419,18 +440,26 @@ class LineBuilder(BaseBuilder):
             best_overlap_y1 = best_overlap_line[1].line.polygon.y_start
 
             nonzero_idxs = np.nonzero(overlaps[i] > self.line_inline_math_overlap_threshold)[0]
-            for idx in nonzero_idxs:
+
+            # Sometimes equation pieces in between other pieces aren't picked up by nonzero
+            min_idx = min(nonzero_idxs)
+            max_idx = max(nonzero_idxs)
+            for idx in range(min_idx, max_idx + 1):
                 provider_idx, provider_line = horizontal_provider_lines[idx]
                 provider_line_y1 = provider_line.line.polygon.y_start
 
                 remove_overlaps = False
-                if abs(provider_line_y1 - best_overlap_y1) > self.inline_math_line_vertical_merge_threshold:
+                should_merge_line = False
+                if abs(provider_line_y1 - best_overlap_y1) <= self.inline_math_line_vertical_merge_threshold:
+                    should_merge_line = True
+
+                if idx != best_overlap:
                     remove_overlaps = True
 
                 line_overlaps = self.find_overlapping_math_chars(provider_line, math_line_polygon, remove_chars=remove_overlaps)
 
                 # Do not merge if too far above/below (but remove characters)
-                if line_overlaps and not remove_overlaps:
+                if line_overlaps and should_merge_line:
                     # Add the index of the provider line to the merge line
                     merge_line.append(provider_idx)
 
