@@ -1,12 +1,9 @@
 from typing import Annotated, List, Optional, Tuple
-import re
 
 from marker.models import TexifyPredictor
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
-from marker.schema.blocks.equation import Equation
 from marker.schema.document import Document
-from marker.schema.text.span import Span
 from marker.settings import settings
 
 
@@ -50,17 +47,16 @@ class EquationProcessor(BaseProcessor):
         equation_data = []
 
         for page in document.pages:
-            for block in page.contained_blocks(document):
-                if isinstance(block, Equation) or (isinstance(block, Span) and 'math' in block.formats):
-                    image = block.get_image(document, highres=False).convert("RGB")
-                    raw_text = block.raw_text(document)
-                    token_count = self.get_total_texify_tokens(raw_text)
+            for block in page.contained_blocks(document, self.block_types):
+                image = block.get_image(document, highres=False).convert("RGB")
+                raw_text = block.raw_text(document)
+                token_count = self.get_total_texify_tokens(raw_text)
 
-                    equation_data.append({
-                        "image": image,
-                        "block_id": block.id,
-                        "token_count": token_count
-                    })
+                equation_data.append({
+                    "image": image,
+                    "block_id": block.id,
+                    "token_count": token_count
+                })
 
         if len(equation_data) == 0:
             return
@@ -75,17 +71,7 @@ class EquationProcessor(BaseProcessor):
                 continue
 
             block = document.get_block(equation_d["block_id"])
-            if isinstance(block, Equation):
-                block.html = prediction
-            elif isinstance(block, Span) and 'math' in block.formats:
-                inline_math_text = re.sub(r'<[^>]+>', '', prediction)
-                #In case of OCRed lines - The inline math span does not have any original text retained, has to be replaced from texify
-                if self.get_total_texify_tokens(inline_math_text) > self.inline_math_token_threshold or block.text=='':
-                    block.text = inline_math_text
-                else:
-                    block.formats.remove('math')
-            else:
-                raise ValueError(f"Unexpected block of type {block.block_type}")
+            block.html = prediction
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:

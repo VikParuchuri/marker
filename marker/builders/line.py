@@ -136,7 +136,7 @@ class LineBuilder(BaseBuilder):
                 inline_detection_results,
                 ocr_error_detection_results.labels
         ):
-            provider_lines = provider.page_lines.get(document_page.page_id, [])
+            provider_lines: List[ProviderOutput] = provider.page_lines.get(document_page.page_id, [])
             merged_detection_boxes = self.determine_math_lines(text_result=detection_result, inline_result=inline_detection_result)
             math_detection_boxes = [box for box in merged_detection_boxes if box.math]
             nonmath_detection_boxes = [box for box in merged_detection_boxes if not box.math]
@@ -206,12 +206,18 @@ class LineBuilder(BaseBuilder):
         )
         return ocr_error_detection_results
 
-    def filter_detected_text_lines(self, provider_lines, detected_text_lines, image_size, page_size):
+    def filter_detected_text_lines(
+            self,
+            provider_lines: List[ProviderOutput],
+            detected_text_lines: List[TextBox],
+            image_size,
+            page_size
+    ):
         filtered_lines = []
         rescaled_line_boxes = [PolygonBox(polygon=line.polygon).rescale(image_size, page_size).bbox for line in detected_text_lines]
-        intersections = matrix_intersection_area(rescaled_line_boxes, [line.polygon.bbox for line in provider_lines])
+        intersections = matrix_intersection_area(rescaled_line_boxes, [line.line.polygon.bbox for line in provider_lines])
         for detected_line, intersection in zip(detected_text_lines, intersections):
-            max_intersection = np.max(intersection) / detected_line.bbox.area
+            max_intersection = np.max(intersection) / detected_line.area
             if max_intersection < self.detected_provider_line_overlap:
                 filtered_lines.append(detected_line)
         
@@ -332,12 +338,19 @@ class LineBuilder(BaseBuilder):
 
     # Add appropriate formats to math spans added by inline math detection
     def add_math_span_format(self, provider_line):
-        if not provider_line.formats:
-            provider_line.formats = ["math"]
-        elif "math" not in provider_line.formats:
-            provider_line.formats.append("math")
+        if not provider_line.line.formats:
+            provider_line.line.formats = ["math"]
+        elif "math" not in provider_line.line.formats:
+            provider_line.line.formats.append("math")
 
-    def merge_provider_lines_inline_math(self, document_page_id, provider_lines, inline_math_lines, image_size, page_size):
+    def merge_provider_lines_inline_math(
+            self,
+            document_page_id,
+            provider_lines: List[ProviderOutput],
+            inline_math_lines: List[TextBox],
+            image_size,
+            page_size
+    ):
         # When provider lines is empty or no inline math detected, return provider lines
         if not provider_lines or not inline_math_lines:
             return provider_lines
@@ -364,33 +377,40 @@ class LineBuilder(BaseBuilder):
                     # Add the index of the provider line to the merge line
                     merge_line.append(provider_idx)
 
-            if merge_line and len(merge_line) > 1:
+            if len(merge_line) > 0:
                 merge_lines.append(merge_line)
 
         already_merged = set()
         potential_merges = set([m for merge_line in merge_lines for m in merge_line])
-        out_provider_lines = [p for i, p in enumerate(provider_lines) if i not in potential_merges]
+        out_provider_lines = [(i, p) for i, p in enumerate(provider_lines) if i not in potential_merges]
         for merge_section in merge_lines:
             merge_section = [m for m in merge_section if m not in already_merged]
             if len(merge_section) == 0:
                 continue
-            elif len(merge_section) == 0:
-                merged_line = provider_lines[merge_section[0]]
+            elif len(merge_section) == 1:
+                line_idx = merge_section[0]
+                merged_line = provider_lines[line_idx]
                 self.add_math_span_format(merged_line)
-                out_provider_lines.append(merged_line)
+                out_provider_lines.append((line_idx, merged_line))
                 already_merged.add(merge_section[0])
                 continue
 
             merge_section = sorted(merge_section)
             merged_line = None
+            min_idx = min(merge_section)
             for idx in merge_section:
                 provider_line = provider_lines[idx]
                 if merged_line is None:
                     merged_line = provider_line
                 else:
-                    merged_line.spans += provider_line.spans
+                    # Combine the spans of the provider line with the merged line
+                    merged_line = merged_line.merge(provider_line)
                     self.add_math_span_format(merged_line)
-            out_provider_lines.append(merged_line)
+            out_provider_lines.append((min_idx, merged_line))
+
+        # Sort to preserve original order
+        out_provider_lines = sorted(out_provider_lines, key=lambda x: x[0])
+        out_provider_lines = [p for _, p in out_provider_lines]
         return out_provider_lines
 
     def check_char_math_overlap(self, provider_line, math_line_polygon):

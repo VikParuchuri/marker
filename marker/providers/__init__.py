@@ -27,6 +27,16 @@ class ProviderOutput(BaseModel):
     def __hash__(self):
         return hash(tuple(self.line.polygon.bbox))
 
+    def merge(self, other: "ProviderOutput"):
+        self.spans.extend(other.spans)
+        if self.chars is not None and other.chars is not None:
+            self.chars.extend(other.chars)
+        elif other.chars is not None:
+            self.chars = other.chars
+
+        self.line.polygon = self.line.polygon.merge([other.line.polygon])
+
+
 ProviderPageLines = Dict[int, List[ProviderOutput]]
 
 class BaseProvider:

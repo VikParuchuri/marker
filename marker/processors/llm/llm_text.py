@@ -1,17 +1,24 @@
 import json
-from typing import List, Tuple
+from typing import List, Tuple, Annotated
 
 from pydantic import BaseModel
+from PIL import Image
 
-from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData
+from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData, BlockData
 from bs4 import BeautifulSoup
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.registry import get_block_class
+from marker.schema.text import Line
 
 
 class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
+    math_line_batch_size: Annotated[
+        int,
+        "The number of math lines to batch together.",
+    ] = 10
+
     block_types = (BlockTypes.Line,)
     text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
@@ -70,46 +77,82 @@ Output:
 ```
 """
 
+    def inference_blocks(self, document: Document) -> List[List[BlockData]]:
+        blocks = []
+        for page in document.pages:
+            for block in page.contained_blocks(document, self.block_types):
+                if block.formats and "math" in block.formats:
+                    blocks.append({
+                        "page": page,
+                        "block": block
+                    })
+
+        out_blocks = []
+        for i in range(0, len(blocks), self.math_line_batch_size):
+            batch = blocks[i:i + self.math_line_batch_size]
+            out_blocks.append(batch)
+        return out_blocks
+
+
+
     def get_block_lines(self, block: Block, document: Document) -> Tuple[list, list]:
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))
         extracted_lines = [line.formatted_text(document) for line in text_lines]
         return text_lines, extracted_lines
 
+    def combine_images(self, images: List[Image.Image]):
+        widths, heights = zip(*(i.size for i in images))
+        total_width = max(widths)
+        total_height = sum(heights) + 5 * len(images)
+
+        new_im = Image.new('RGB', (total_width, total_height), (255, 255, 255))
+
+        y_offset = 0
+        for im in images:
+            new_im.paste(im, (0, y_offset))
+            y_offset += im.size[1] + 5
+
+        return new_im
+
     def block_prompts(self, document: Document) -> List[PromptData]:
         prompt_data = []
         for block_data in self.inference_blocks(document):
-            block = block_data["block"]
-            _, extracted_lines = self.get_block_lines(block, document)
+            blocks: List[Line] = [b["block"] for b in block_data]
+            pages = [b["page"] for b in block_data]
+            block_lines = [block.formatted_text(document) for block in blocks]
 
             prompt = self.text_math_rewriting_prompt.replace("{extracted_lines}",
-                                                             json.dumps({"extracted_lines": extracted_lines}, indent=2))
-            image = self.extract_image(document, block)
+                                                             json.dumps({"extracted_lines": block_lines}, indent=2))
+            images = [self.extract_image(document, block) for block in blocks]
+            image = self.combine_images(images)
+
             prompt_data.append({
                 "prompt": prompt,
                 "image": image,
-                "block": block,
+                "block": blocks[0],
                 "schema": LLMTextSchema,
-                "page": block_data["page"]
+                "page": pages[0],
+                "additional_data": {"blocks": blocks, "pages": pages}
             })
         return prompt_data
 
 
     def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
-        block = prompt_data["block"]
-        page = prompt_data["page"]
+        blocks = prompt_data["additional_data"]["blocks"]
+        pages = prompt_data["additional_data"]["pages"]
+
         SpanClass = get_block_class(BlockTypes.Span)
 
-        text_lines, extracted_lines = self.get_block_lines(block, document)
         if not response or "corrected_lines" not in response:
-            block.update_metadata(llm_error_count=1)
+            blocks[0].update_metadata(llm_error_count=1)
             return
 
         corrected_lines = response["corrected_lines"]
-        if not corrected_lines or len(corrected_lines) != len(extracted_lines):
-            block.update_metadata(llm_error_count=1)
+        if not corrected_lines or len(corrected_lines) != len(blocks):
+            blocks[0].update_metadata(llm_error_count=1)
             return
 
-        for text_line, corrected_text in zip(text_lines, corrected_lines):
+        for text_line, page, corrected_text in zip(blocks, pages, corrected_lines):
             text_line.structure = []
             corrected_spans = self.text_to_spans(corrected_text)
 
