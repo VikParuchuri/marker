@@ -61,7 +61,7 @@ class LineBuilder(BaseBuilder):
     min_ocr_line_pct: Annotated[
         float,
         "The minimum percentage of lines that need to be flagged as needing OCR per page for OCR to actually happen."
-    ] = .2
+    ] = .9
     detected_provider_line_overlap: Annotated[
         float,
         "The maximum overlap between a detected text line and a provider line to consider as a new line"
@@ -94,6 +94,14 @@ class LineBuilder(BaseBuilder):
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
     ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
+    use_llm: Annotated[
+        bool,
+        "Whether to use the LLM model for advanced processing."
+    ] = False
+    texify_inline_spans: Annotated[
+        bool,
+        "Whether to run texify on inline math spans."
+    ] = False
 
     def __init__(self, detection_model: DetectionPredictor, inline_detection_model: InlineDetectionPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         super().__init__(config)
@@ -104,7 +112,8 @@ class LineBuilder(BaseBuilder):
 
     def __call__(self, document: Document, provider: PdfProvider):
         # Disable Inline Detection for documents where layout model doesn't detect any equations
-        do_inline_math_detection = document.contained_blocks([BlockTypes.Equation])
+        # Also disable if we won't use the inline detections (if we aren't using the LLM or texify)
+        do_inline_math_detection = document.contained_blocks([BlockTypes.Equation]) and (self.texify_inline_spans or self.use_llm)
         provider_lines, ocr_lines = self.get_all_lines(document, provider, do_inline_math_detection)
         self.merge_blocks(document, provider_lines, ocr_lines)
 

@@ -1,6 +1,6 @@
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Annotated, TypedDict, List, NotRequired
+from typing import Annotated, TypedDict, List
 
 from pydantic import BaseModel
 from tqdm import tqdm
@@ -20,7 +20,7 @@ class PromptData(TypedDict):
     block: Block
     schema: BaseModel
     page: PageGroup
-    additional_data: NotRequired[dict]
+    additional_data: dict | None
 
 
 class BlockData(TypedDict):
