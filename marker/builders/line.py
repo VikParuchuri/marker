@@ -1,8 +1,7 @@
+from copy import deepcopy
 from typing import Annotated, List, Optional, Tuple
 
-from ftfy import fix_text
 import numpy as np
-from collections import defaultdict
 
 from surya.detection import DetectionPredictor, InlineDetectionPredictor, TextDetectionResult
 from surya.ocr_error import OCRErrorPredictor
@@ -16,7 +15,6 @@ from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
-from marker.schema.text.span import Span
 from marker.settings import settings
 from marker.util import matrix_intersection_area
 
@@ -195,7 +193,6 @@ class LineBuilder(BaseBuilder):
     def ocr_error_detection(self, pages:List[PageGroup], provider_page_lines: ProviderPageLines):
         page_texts = []
         for document_page in pages:
-            page_text = ''
             provider_lines = provider_page_lines.get(document_page.page_id, [])
             page_text = '\n'.join(' '.join(s.text for s in line.spans) for line in provider_lines)
             page_texts.append(page_text)
@@ -361,6 +358,7 @@ class LineBuilder(BaseBuilder):
 
         overlaps = matrix_intersection_area(math_line_boxes, provider_line_boxes)
 
+        # Find potential merges
         merge_lines = []
         for i in range(len(math_line_boxes)):
             merge_line = []
@@ -380,6 +378,7 @@ class LineBuilder(BaseBuilder):
             if len(merge_line) > 0:
                 merge_lines.append(merge_line)
 
+        # Handle the merging
         already_merged = set()
         potential_merges = set([m for merge_line in merge_lines for m in merge_line])
         out_provider_lines = [(i, p) for i, p in enumerate(provider_lines) if i not in potential_merges]
@@ -399,7 +398,7 @@ class LineBuilder(BaseBuilder):
             merged_line = None
             min_idx = min(merge_section)
             for idx in merge_section:
-                provider_line = provider_lines[idx]
+                provider_line = deepcopy(provider_lines[idx])
                 if merged_line is None:
                     merged_line = provider_line
                 else:

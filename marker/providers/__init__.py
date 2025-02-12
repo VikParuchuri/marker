@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, Optional, Dict
 
 from PIL import Image
@@ -28,13 +29,17 @@ class ProviderOutput(BaseModel):
         return hash(tuple(self.line.polygon.bbox))
 
     def merge(self, other: "ProviderOutput"):
-        self.spans.extend(other.spans)
-        if self.chars is not None and other.chars is not None:
-            self.chars.extend(other.chars)
-        elif other.chars is not None:
-            self.chars = other.chars
+        new_output = deepcopy(self)
+        other_copy = deepcopy(other)
 
-        self.line.polygon = self.line.polygon.merge([other.line.polygon])
+        new_output.spans.extend(other_copy.spans)
+        if new_output.chars is not None and other_copy.chars is not None:
+            new_output.chars.extend(other_copy.chars)
+        elif other_copy.chars is not None:
+            new_output.chars = other_copy.chars
+
+        new_output.line.polygon = new_output.line.polygon.merge([other_copy.line.polygon])
+        return new_output
 
 
 ProviderPageLines = Dict[int, List[ProviderOutput]]
