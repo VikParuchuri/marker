@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, Optional, Dict
 
 from PIL import Image
@@ -10,14 +11,36 @@ from marker.schema.text import Span
 from marker.schema.text.line import Line
 from marker.util import assign_config
 
+class Char(BaseModel):
+    char: str
+    polygon: PolygonBox
+    char_idx: int
 
 class ProviderOutput(BaseModel):
     line: Line
     spans: List[Span]
+    chars: Optional[List[List[Char]]] = None
 
     @property
     def raw_text(self):
         return "".join(span.text for span in self.spans)
+
+    def __hash__(self):
+        return hash(tuple(self.line.polygon.bbox))
+
+    def merge(self, other: "ProviderOutput"):
+        new_output = deepcopy(self)
+        other_copy = deepcopy(other)
+
+        new_output.spans.extend(other_copy.spans)
+        if new_output.chars is not None and other_copy.chars is not None:
+            new_output.chars.extend(other_copy.chars)
+        elif other_copy.chars is not None:
+            new_output.chars = other_copy.chars
+
+        new_output.line.polygon = new_output.line.polygon.merge([other_copy.line.polygon])
+        return new_output
+
 
 ProviderPageLines = Dict[int, List[ProviderOutput]]
 

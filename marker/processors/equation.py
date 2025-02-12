@@ -1,5 +1,4 @@
 from typing import Annotated, List, Optional, Tuple
-from tqdm import tqdm
 
 from marker.models import TexifyPredictor
 from marker.processors import BaseProcessor
@@ -33,6 +32,11 @@ class EquationProcessor(BaseProcessor):
         bool,
         "Whether to disable the tqdm progress bar.",
     ] = False
+    inline_math_token_threshold: Annotated[
+        int,
+        "The minimum number of texify-generated tokens to replace inline math with the latex representation",
+        "Prevents replacing single chars and unecessary equations"
+    ] = 20
 
     def __init__(self, texify_model: TexifyPredictor, config=None):
         super().__init__(config)
