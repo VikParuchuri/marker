@@ -78,6 +78,10 @@ class LineBuilder(BaseBuilder):
         float,
         "The minimum overlap of a line with an inline math box to consider as a match"
     ] = 0.
+    line_text_overlap_threshold: Annotated[
+        float,
+        "The minimum overlap of an equation with a text line to consider as a match"
+    ] = .5
     inline_math_minimum_area: Annotated[
         float,
         "The minimum area for an inline math block, in pixels."
@@ -153,14 +157,16 @@ class LineBuilder(BaseBuilder):
                 document_page,
                 inline_detection_result,
                 image_size,
-                page_size
+                page_size,
+                self.line_inline_math_overlap_threshold
             )
             detection_result = self.filter_equation_overlaps(
                 document,
                 document_page,
                 detection_result,
                 image_size,
-                page_size
+                page_size,
+                self.line_text_overlap_threshold
             )
 
             # Merge text and inline math detection results
@@ -323,20 +329,23 @@ class LineBuilder(BaseBuilder):
             page: PageGroup,
             inline_boxes: TextDetectionResult,
             image_size,
-            page_size
+            page_size,
+            threshold: float
     ):
         if inline_boxes is None:
             return inline_boxes
 
         equations = page.contained_blocks(document, (BlockTypes.Equation,))
         equation_boxes = [eq.polygon.bbox for eq in equations]
-        inline_bboxes = [PolygonBox(polygon=box.polygon).rescale(image_size, page_size).bbox for box in inline_boxes.bboxes]
+        inline_polys = [PolygonBox(polygon=box.polygon).rescale(image_size, page_size) for box in inline_boxes.bboxes]
+        inline_bboxes = [poly.bbox for poly in inline_polys]
+        inline_areas = [poly.area for poly in inline_polys]
 
         if len(equation_boxes) == 0 or len(inline_bboxes) == 0:
             return inline_boxes
 
         overlaps = matrix_intersection_area(inline_bboxes, equation_boxes)
-        overlap_idxs = np.max(overlaps, axis=-1) > self.line_inline_math_overlap_threshold
+        overlap_idxs = (np.max(overlaps, axis=-1) / np.array(inline_areas)) > threshold
         inline_boxes.bboxes = [ib for i, ib in enumerate(inline_boxes.bboxes) if not overlap_idxs[i]]
         return inline_boxes
 
@@ -389,23 +398,6 @@ class LineBuilder(BaseBuilder):
                 continue
 
             max_overlap_box.math = True
-
-        # Expand math lines to include the entire line
-        for i, box in enumerate(text_boxes):
-            if not box.math:
-                continue
-
-            y1_minus = box.expand_y1(math_box_padding)
-            y2_plus = box.expand_y2(math_box_padding)
-
-            if i <= len(text_boxes) - 2:
-                next_box = text_boxes[i + 1]
-                if y2_plus.bbox[1] < next_box.bbox[1]:
-                    box.polygon = y2_plus.polygon
-            elif i > 0:
-                prev_box = text_boxes[i - 1]
-                if y1_minus.bbox[3] > prev_box.bbox[3]:
-                    box.polygon = y1_minus.polygon
 
         return text_boxes
 
@@ -522,10 +514,16 @@ class LineBuilder(BaseBuilder):
         # For providers which surface characters - find line overlap based on characters
         assert len(spans) == len(provider_line.chars), "Number of spans and characters in provider line do not match"
         for span, span_chars in zip(spans, provider_line.chars):
+            if len(span_chars) == 0:
+                continue
+
+            char_intersections_areas = matrix_intersection_area([char.polygon.bbox for char in span_chars], [math_line_polygon.bbox]).max(axis=-1)
+            char_intersections = char_intersections_areas / np.array([char.polygon.area for char in span_chars])
+
             new_span_chars = []
             span_overlaps = False
-            for char in span_chars:
-                if char.polygon.intersection_pct(math_line_polygon) >= self.char_inline_math_overlap_threshold:
+            for char, intersection_pct in zip(span_chars, char_intersections):
+                if intersection_pct >= self.char_inline_math_overlap_threshold:
                     span_overlaps = True
                 else:
                     new_span_chars.append(char)
