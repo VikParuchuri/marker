@@ -5,13 +5,11 @@ from pydantic import BaseModel
 from PIL import Image
 
 from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData, BlockData
-from bs4 import BeautifulSoup
 
 from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
-from marker.schema.registry import get_block_class
 from marker.schema.text import Line
 
 
@@ -94,8 +92,6 @@ Output:
             batch = blocks[i:i + self.math_line_batch_size]
             out_blocks.append(batch)
         return out_blocks
-
-
 
     def get_block_lines(self, block: Block, document: Document) -> Tuple[list, list]:
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))

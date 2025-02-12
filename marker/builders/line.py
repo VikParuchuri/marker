@@ -155,6 +155,13 @@ class LineBuilder(BaseBuilder):
                 image_size,
                 page_size
             )
+            detection_result = self.filter_equation_overlaps(
+                document,
+                document_page,
+                detection_result,
+                image_size,
+                page_size
+            )
 
             # Merge text and inline math detection results
             merged_detection_boxes = self.determine_math_lines(text_result=detection_result, inline_result=inline_detection_result)
