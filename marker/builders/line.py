@@ -136,9 +136,9 @@ class LineBuilder(BaseBuilder):
                 idx += 1
             else:
                 detection_results.append(None)
-        assert idx == len(page_detection_results)
+        assert idx == len(page_images)
 
-        inline_detection_results = [None] * len(page_images)
+        inline_detection_results = [None] * len(run_detection)
         if do_inline_math_detection:
             inline_detection_results = self.inline_detection_model(
                 images=page_images,
