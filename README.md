@@ -3,11 +3,11 @@
 Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
 
 - Supports a range of documents in all languages
-- Formats tables, forms, equations, links, references, and code blocks
-- Extracts and saves images along with the markdown
+- Formats tables, forms, equations, inline math, links, references, and code blocks
+- Extracts and saves images
 - Removes headers/footers/other artifacts
-- Easily extensible with your own formatting and logic
-- Optionally boost accuracy with an LLM
+- Extensible with your own formatting and logic
+- Optionally boost accuracy with LLMs
 - Works on GPU, CPU, or MPS
 
 ## Performance
@@ -485,8 +485,8 @@ It only uses models where necessary, which improves speed and accuracy.
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
-- Marker will only convert block equations
 - Very complex layouts, with nested tables and forms, may not work
+- Forms may not be rendered well
 
 Note: Passing the `--use_llm` flag will mostly solve these issues.
 
