@@ -3,7 +3,7 @@ from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
 from ftfy import fix_text
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from surya.detection import DetectionPredictor, InlineDetectionPredictor, TextDetectionResult
 from surya.ocr_error import OCRErrorPredictor
@@ -55,6 +55,10 @@ class LineBuilder(BaseBuilder):
         "The minimum coverage ratio required for the layout model to consider",
         "the lines from the PdfProvider valid.",
     ] = .25
+    min_document_ocr_threshold: Annotated[
+        float,
+        "If less pages than this threshold are good, OCR will happen in the document.  Otherwise it will not."
+    ] = 0.85
     span_inline_math_overlap_threshold: Annotated[
         float,
         "The minimum overlap of a span with an inline math box to consider for removal"
@@ -163,11 +167,15 @@ class LineBuilder(BaseBuilder):
         for document_page, ocr_error_detection_label in zip(document.pages, ocr_error_detection_results.labels):
             provider_lines: List[ProviderOutput] = provider.page_lines.get(document_page.page_id, [])
             provider_lines_good = all([
-                bool(provider),
+                bool(provider_lines),
                 ocr_error_detection_label != 'bad',
                 self.check_layout_coverage(document_page, provider_lines)
             ])
             layout_good.append(provider_lines_good)
+
+        # Don't OCR if only a few pages are bad
+        if sum(layout_good) > len(document.pages) * self.min_document_ocr_threshold:
+            layout_good = [True] * len(document.pages)
 
         run_detection = [not good or do_inline_math_detection for good in layout_good]
         page_images = [page.get_image(highres=False, remove_blocks=self.ocr_remove_blocks) for page, good in zip(document.pages, run_detection) if good]
