@@ -120,7 +120,8 @@ class PdfConverter(BaseConverter):
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         with provider_cls(filepath, self.config) as provider:
             document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
-        StructureBuilder(self.config)(document)
+        structure_builder_cls = self.resolve_dependencies(StructureBuilder)
+        structure_builder_cls(document)
 
         for processor in self.processor_list:
             processor(document)

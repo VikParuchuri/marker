@@ -39,6 +39,7 @@ Formatting should be in markdown, with the following rules:
         for block_data in blocks:
             raw_text = block_data["block"].raw_text(document)
             block = block_data["block"]
+
             # Don't process text blocks that contain lines already
             if block.block_type == BlockTypes.Text:
                 lines = block.contained_blocks(document, (BlockTypes.Line,))

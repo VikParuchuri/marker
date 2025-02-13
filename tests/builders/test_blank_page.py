@@ -21,6 +21,5 @@ def test_blank_page(config, pdf_provider, layout_model, ocr_error_model, recogni
     layout_builder.add_blocks_to_pages(document.pages, layout_results)
     line_builder.merge_blocks(document, provider_lines, ocr_lines)
 
-
     assert all([isinstance(p.children, list) for p in document.pages])
     assert all([isinstance(p.structure, list) for p in document.pages])

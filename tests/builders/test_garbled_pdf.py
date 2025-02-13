@@ -15,7 +15,7 @@ def test_garbled_pdf(pdf_document, detection_model, recognition_model, table_rec
 
     table_cell = pdf_document.pages[0].get_block(table_block.structure[0])
     assert table_cell.block_type == BlockTypes.Line
-    assert table_cell.structure is None
+    assert table_cell.structure[0] == "/page/0/Span/2"
 
     # We don't OCR in the initial pass, only with the TableProcessor
     processor = TableProcessor(detection_model, recognition_model, table_rec_model)

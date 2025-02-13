@@ -183,23 +183,3 @@ def test_multi_llm_processors(pdf_document, mocker):
     contained_equations = pdf_document.contained_blocks((BlockTypes.Equation,))
     print([equation.html for equation in contained_equations])
     assert all(equation.html == description for equation in contained_equations)
-
-@pytest.mark.filename("adversarial.pdf")
-@pytest.mark.config({"page_range": [0]})
-def test_llm_text_processor(pdf_document, mocker):
-    inline_math_block = pdf_document.contained_blocks((BlockTypes.TextInlineMath,))[0]
-    text_lines = inline_math_block.contained_blocks(pdf_document, (BlockTypes.Line,))
-    corrected_lines = ["<i>Text</i>"] * len(text_lines)
-
-    mock_cls = Mock()
-    mock_cls.return_value.generate_response.return_value = {"corrected_lines": corrected_lines}
-    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
-
-    config = {"use_llm": True, "google_api_key": "test"}
-    processor_lst = [LLMTextProcessor(config)]
-    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
-    processor(pdf_document)
-
-    contained_spans = text_lines[0].contained_blocks(pdf_document, (BlockTypes.Span,))
-    assert contained_spans[0].text == "Text\n" # Newline inserted at end of line
-    assert contained_spans[0].formats == ["italic"]

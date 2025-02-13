@@ -54,10 +54,6 @@ class LineBuilder(BaseBuilder):
         "The minimum coverage ratio required for the layout model to consider",
         "the lines from the PdfProvider valid.",
     ] = .25
-    detected_provider_line_overlap: Annotated[
-        float,
-        "The maximum overlap between a detected text line and a provider line to consider as a new line"
-    ] = .3
     span_inline_math_overlap_threshold: Annotated[
         float,
         "The minimum overlap of a span with an inline math box to consider for removal"
@@ -124,29 +120,33 @@ class LineBuilder(BaseBuilder):
         return 4
 
     def get_detection_results(self, page_images: List[Image.Image], run_detection: List[bool], do_inline_math_detection: bool):
+        page_images = [p for p, good in zip(page_images, run_detection) if good]
         page_detection_results = self.detection_model(
-            images=[p for p, good in zip(page_images, run_detection) if good],
+            images=page_images,
             batch_size=self.get_detection_batch_size()
         )
+        inline_detection_results = [None] * len(page_detection_results)
+        if do_inline_math_detection:
+            inline_detection_results = self.inline_detection_model(
+                images=page_images,
+                text_boxes=[[b.bbox for b in det_result.bboxes] for det_result in page_detection_results],
+                batch_size=self.get_detection_batch_size()
+            )
+
         detection_results = []
+        inline_results = []
         idx = 0
         for good in run_detection:
             if good:
                 detection_results.append(page_detection_results[idx])
+                inline_results.append(inline_detection_results[idx])
                 idx += 1
             else:
                 detection_results.append(None)
+                inline_results.append(None)
         assert idx == len(page_images)
 
-        inline_detection_results = [None] * len(run_detection)
-        if do_inline_math_detection:
-            inline_detection_results = self.inline_detection_model(
-                images=page_images,
-                text_boxes=[[b.bbox for b in det_result.bboxes] for det_result in detection_results],
-                batch_size=self.get_detection_batch_size()
-            )
-
-        return detection_results, inline_detection_results
+        return detection_results, inline_results
 
 
     def get_all_lines(self, document: Document, provider: PdfProvider, do_inline_math_detection: bool):
@@ -171,6 +171,7 @@ class LineBuilder(BaseBuilder):
         page_images = [page.get_image(highres=False, remove_tables=not self.enable_table_ocr) for page, good in zip(document.pages, run_detection) if good]
         detection_results, inline_detection_results = self.get_detection_results(page_images, run_detection, do_inline_math_detection)
 
+        assert len(detection_results) == len(inline_detection_results) == len(layout_good) == len(document.pages)
         for document_page, detection_result, inline_detection_result, provider_lines_good in zip(
                 document.pages,
                 detection_results,
