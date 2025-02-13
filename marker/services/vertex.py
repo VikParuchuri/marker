@@ -12,7 +12,11 @@ class GoogleVertexService(BaseGeminiService):
     vertex_location: Annotated[
         str,
         "Google Cloud Location for Vertex AI.",
-    ] = None
+    ] = "us-central1"
+    gemini_model_name: Annotated[
+        str,
+        "The name of the Google model to use for the service."
+    ] = "gemini-1.5-flash-002"
 
     def get_google_client(self, timeout: int = 60):
         return genai.Client(

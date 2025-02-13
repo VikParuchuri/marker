@@ -317,8 +317,10 @@ All output formats will return a metadata dictionary, with the following fields:
 When running with the `--use_llm` flag, you have a choice of services you can use:
 
 - `Gemini` - this will use the Gemini developer API by default.  You'll need to pass `--gemini_api_key` to configuration.
-- `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id` and `--vertex_location`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
-- `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.vertex.OllamaService`.
+- `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
+- `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.ollama.OllamaService`.
+
+These services may have additional optional configuration as well - you can see it by viewing the classes.
 
 # Internals
 
