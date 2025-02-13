@@ -18,7 +18,8 @@ from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.schema.text.line import Line
 from marker.settings import settings
-from marker.util import matrix_intersection_area
+from marker.util import matrix_intersection_area, sort_text_lines
+
 
 class TextBox(PolygonBox):
     math: bool = False
@@ -185,6 +186,9 @@ class LineBuilder(BaseBuilder):
 
             # Merge text and inline math detection results
             merged_detection_boxes = self.determine_math_lines(text_result=detection_result, inline_result=inline_detection_result)
+            # Sort the lines to ensure that the order is preserved
+            merged_detection_boxes = sort_text_lines(merged_detection_boxes)
+
             math_detection_boxes = [(i, box) for i, box in enumerate(merged_detection_boxes) if box.math]
             nonmath_detection_boxes = [(i, box) for i, box in enumerate(merged_detection_boxes) if not box.math]
 
