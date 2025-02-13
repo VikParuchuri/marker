@@ -1,10 +1,11 @@
 import inspect
-import re
 from importlib import import_module
-from typing import List
+from typing import List, Annotated
 
 import numpy as np
 from pydantic import BaseModel
+
+from marker.schema.polygon import PolygonBox
 
 
 def strings_to_classes(items: List[str]) -> List[type]:
@@ -22,6 +23,19 @@ def classes_to_strings(items: List[type]) -> List[str]:
             raise ValueError(f"Item {item} is not a class")
 
     return [f"{item.__module__}.{item.__name__}" for item in items]
+
+
+def verify_config_keys(obj):
+    annotations = inspect.get_annotations(obj.__class__)
+
+    none_vals = ""
+    for attr_name, annotation in annotations.items():
+        if isinstance(annotation, type(Annotated[str, ""])):
+            value = getattr(obj, attr_name)
+            if value is None:
+                none_vals += f"{attr_name}, "
+
+    assert len(none_vals) == 0, f"In order to use {obj.__class__.__name__}, you must set the configuration values `{none_vals}`."
 
 
 def assign_config(cls, config: BaseModel | dict | None):
@@ -99,3 +113,22 @@ def matrix_distance(boxes1: List[List[float]], boxes2: List[List[float]]) -> np.
 
     distances = np.linalg.norm(boxes1_centers - boxes2_centers, axis=2)  # Shape: (N, M)
     return distances
+
+
+def sort_text_lines(lines: List[PolygonBox], tolerance=1.25):
+    # Sorts in reading order.  Not 100% accurate, this should only
+    # be used as a starting point for more advanced sorting.
+    vertical_groups = {}
+    for line in lines:
+        group_key = round(line.bbox[1] / tolerance) * tolerance
+        if group_key not in vertical_groups:
+            vertical_groups[group_key] = []
+        vertical_groups[group_key].append(line)
+
+    # Sort each group horizontally and flatten the groups into a single list
+    sorted_lines = []
+    for _, group in sorted(vertical_groups.items()):
+        sorted_group = sorted(group, key=lambda x: x.bbox[0])
+        sorted_lines.extend(sorted_group)
+
+    return sorted_lines

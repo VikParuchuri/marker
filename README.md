@@ -3,11 +3,11 @@
 Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
 
 - Supports a range of documents in all languages
-- Formats tables, forms, equations, links, references, and code blocks
-- Extracts and saves images along with the markdown
+- Formats tables, forms, equations, inline math, links, references, and code blocks
+- Extracts and saves images
 - Removes headers/footers/other artifacts
-- Easily extensible with your own formatting and logic
-- Optionally boost accuracy with an LLM
+- Extensible with your own formatting and logic
+- Optionally boost accuracy with LLMs
 - Works on GPU, CPU, or MPS
 
 ## Performance
@@ -22,7 +22,7 @@ See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instruc
 
 ## Hybrid Mode
 
-For the highest accuracy, pass the `--use_llm` flag to use an LLM alongside marker.  This will do things like merge tables across pages, format tables properly, and extract values from forms.  It uses `gemini-flash-2.0`, which is cheap and fast.
+For the highest accuracy, pass the `--use_llm` flag to use an LLM alongside marker.  This will do things like merge tables across pages, handle inline math, format tables properly, and extract values from forms.  It can use any gemini or ollama model.  By default, it uses `gemini-2.0-flash`.  See [below](#llm-services) for details.
 
 Here is a table benchmark comparing marker, gemini flash alone, and marker with use_llm:
 
@@ -42,7 +42,7 @@ As you can see, the use_llm mode offers higher accuracy than marker or gemini al
 
 I want marker to be as widely accessible as possible, while still funding my development/training costs.  Research and personal usage is always okay, but there are some restrictions on commercial usage.
 
-The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. You also must not be competitive with the [Datalab API](https://www.datalab.to/).  If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
+The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under \$5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. You also must not be competitive with the [Datalab API](https://www.datalab.to/).  If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
 
 # Hosted API
 
@@ -105,6 +105,8 @@ Options:
 - `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "en,fr,de"` for English, French, and German.
 - `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
 - `--converter_cls`: One of `marker.converters.pdf.PdfConverter` (default) or `marker.converters.table.TableConverter`.  The `PdfConverter` will convert the whole PDF, the `TableConverter` will only extract and convert tables.
+- `--llm_service`: Which llm service to use if `--use_llm` is passed.  This defaults to `marker.services.gemini.GoogleGeminiService`.
+- `--help`: see all of the flags that can be passed into marker.  (it supports many more options then are listed above)
 
 The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/recognition/languages.py).  If you don't need OCR, marker can work with any language.
 
@@ -146,7 +148,7 @@ text, _, images = text_from_rendered(rendered)
 
 ### Custom configuration
 
-You can pass configuration using the `ConfigParser`:
+You can pass configuration using the `ConfigParser`.  To see all available options, do `marker_single --help`.
 
 ```python
 from marker.converters.pdf import PdfConverter
@@ -163,7 +165,8 @@ converter = PdfConverter(
     config=config_parser.generate_config_dict(),
     artifact_dict=create_model_dict(),
     processor_list=config_parser.get_processors(),
-    renderer=config_parser.get_renderer()
+    renderer=config_parser.get_renderer(),
+    llm_service=config_parser.get_llm_service()
 )
 rendered = converter("FILEPATH")
 ```
@@ -309,6 +312,16 @@ All output formats will return a metadata dictionary, with the following fields:
     ]
 }
 ```
+
+# LLM Services
+
+When running with the `--use_llm` flag, you have a choice of services you can use:
+
+- `Gemini` - this will use the Gemini developer API by default.  You'll need to pass `--gemini_api_key` to configuration.
+- `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
+- `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.ollama.OllamaService`.
+
+These services may have additional optional configuration as well - you can see it by viewing the classes.
 
 # Internals
 
@@ -472,8 +485,8 @@ It only uses models where necessary, which improves speed and accuracy.
 
 PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
 
-- Marker will only convert block equations
 - Very complex layouts, with nested tables and forms, may not work
+- Forms may not be rendered well
 
 Note: Passing the `--use_llm` flag will mostly solve these issues.
 

@@ -1,15 +1,15 @@
+from typing import List
+
 import markdown2
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import PromptData, BaseLLMSimpleBlockProcessor
 
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
 from marker.schema.document import Document
-from marker.schema.groups.page import PageGroup
 
 
-class LLMComplexRegionProcessor(BaseLLMProcessor):
+class LLMComplexRegionProcessor(BaseLLMSimpleBlockProcessor):
     block_types = (BlockTypes.ComplexRegion,)
     complex_region_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and the text that can be extracted from the image.
@@ -50,12 +50,24 @@ Output:
 ```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        text = block.raw_text(document)
-        prompt = self.complex_region_prompt.replace("{extracted_text}", text)
-        image = self.extract_image(document, block)
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block in self.inference_blocks(document):
+            text = block["block"].raw_text(document)
+            prompt = self.complex_region_prompt.replace("{extracted_text}", text)
+            image = self.extract_image(document, block["block"])
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": block["block"],
+                "schema": ComplexSchema,
+                "page": block["page"]
+            })
+        return prompt_data
 
-        response = self.model.generate_response(prompt, image, block, ComplexSchema)
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        block = prompt_data["block"]
+        text = block.raw_text(document)
 
         if not response or "corrected_markdown" not in response:
             block.update_metadata(llm_error_count=1)

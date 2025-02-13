@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import BaseLLMComplexBlockProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, TableCell, Table
 from marker.schema.document import Document
@@ -12,7 +12,7 @@ from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
 
 
-class LLMTableProcessor(BaseLLMProcessor):
+class LLMTableProcessor(BaseLLMComplexBlockProcessor):
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",
@@ -134,7 +134,7 @@ No corrections needed.
     def rewrite_single_chunk(self, page: PageGroup, block: Block, block_html: str, children: List[TableCell], image: Image.Image):
         prompt = self.table_rewriting_prompt.replace("{block_html}", block_html)
 
-        response = self.model.generate_response(prompt, image, block, TableSchema)
+        response = self.llm_service(prompt, image, block, TableSchema)
 
         if not response or "corrected_html" not in response:
             block.update_metadata(llm_error_count=1)

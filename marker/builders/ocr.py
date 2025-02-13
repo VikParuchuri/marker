@@ -1,20 +1,18 @@
+import copy
 from typing import Annotated, List, Optional
 
 from ftfy import fix_text
-from surya.detection import DetectionPredictor
 from surya.recognition import RecognitionPredictor
 
 from marker.builders import BaseBuilder
-from marker.providers import ProviderOutput, ProviderPageLines
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
+from marker.schema.blocks import BlockId
 from marker.schema.document import Document
-from marker.schema.polygon import PolygonBox
+from marker.schema.groups import PageGroup
 from marker.schema.registry import get_block_class
-from marker.schema.text.line import Line
 from marker.schema.text.span import Span
 from marker.settings import settings
-
 
 class OcrBuilder(BaseBuilder):
     """
@@ -25,30 +23,21 @@ class OcrBuilder(BaseBuilder):
         "The batch size to use for the recognition model.",
         "Default is None, which will use the default batch size for the model."
     ] = None
-    detection_batch_size: Annotated[
-        Optional[int],
-        "The batch size to use for the detection model.",
-        "Default is None, which will use the default batch size for the model."
-    ] = None
     languages: Annotated[
         Optional[List[str]],
         "A list of languages to use for OCR.",
         "Default is None."
     ] = None
-    enable_table_ocr: Annotated[
-        bool,
-        "Whether to skip OCR on tables.  The TableProcessor will re-OCR them.  Only enable if the TableProcessor is not running.",
-    ] = False
 
-    def __init__(self, detection_model: DetectionPredictor, recognition_model: RecognitionPredictor, config=None):
+    def __init__(self, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
 
-        self.detection_model = detection_model
         self.recognition_model = recognition_model
 
     def __call__(self, document: Document, provider: PdfProvider):
-        page_lines = self.ocr_extraction(document, provider)
-        self.merge_blocks(document, page_lines)
+        pages_to_ocr = [page for page in document.pages if page.text_extraction_method == 'surya']
+        images, line_boxes, line_ids = self.get_ocr_images_boxes_ids(document, pages_to_ocr, provider)
+        self.ocr_extraction(document, pages_to_ocr, provider, images, line_boxes, line_ids)
 
     def get_recognition_batch_size(self):
         if self.recognition_batch_size is not None:
@@ -59,64 +48,61 @@ class OcrBuilder(BaseBuilder):
             return 32
         return 32
 
-    def get_detection_batch_size(self):
-        if self.detection_batch_size is not None:
-            return self.detection_batch_size
-        elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 4
-        return 4
+    def get_ocr_images_boxes_ids(self, document: Document, pages: List[PageGroup], provider: PdfProvider):
+        highres_images, highres_boxes, line_ids = [], [], []
+        for document_page in pages:
+            page_highres_image = document_page.get_image(highres=True)
+            page_highres_boxes = []
+            page_line_ids = []
 
-    def ocr_extraction(self, document: Document, provider: PdfProvider) -> ProviderPageLines:
-        page_list = [page for page in document.pages if page.text_extraction_method == "surya"]
+            page_size = provider.get_page_bbox(document_page.page_id).size
+            image_size = page_highres_image.size
+            for block in document_page.contained_blocks(document):
+                block_lines = block.contained_blocks(document, [BlockTypes.Line])
+                block_detected_lines = [block_line for block_line in block_lines if block_line.text_extraction_method == 'surya']
+                
+                block.text_extraction_method = 'surya'
+                for line in block_detected_lines:
+                    line_polygon = copy.deepcopy(line.polygon)
+                    page_highres_boxes.append(line_polygon.rescale(page_size, image_size).bbox)
+                    page_line_ids.append(line.id)
 
-        # Remove tables because we re-OCR them later with the table processor
+            highres_images.append(page_highres_image)
+            highres_boxes.append(page_highres_boxes)
+            line_ids.append(page_line_ids)
+
+        return highres_images, highres_boxes, line_ids
+
+    def ocr_extraction(self, document: Document, pages: List[PageGroup], provider: PdfProvider, images: List[any], line_boxes: List[List[float]], line_ids: List[List[BlockId]]):
+        if sum(len(b) for b in line_boxes)==0:
+            return
+
         recognition_results = self.recognition_model(
-            images=[page.get_image(highres=False, remove_tables=not self.enable_table_ocr) for page in page_list],
-            langs=[self.languages] * len(page_list),
-            det_predictor=self.detection_model,
-            detection_batch_size=int(self.get_detection_batch_size()),
+            images=images,
+            bboxes=line_boxes,
+            langs=[self.languages] * len(pages),
             recognition_batch_size=int(self.get_recognition_batch_size()),
-            highres_images=[page.get_image(highres=True, remove_tables=not self.enable_table_ocr) for page in page_list]
+            sort_lines=False
         )
 
-        page_lines = {}
-
         SpanClass: Span = get_block_class(BlockTypes.Span)
-        LineClass: Line = get_block_class(BlockTypes.Line)
+        for document_page, page_recognition_result, page_line_ids in zip(pages, recognition_results, line_ids):
+            for line_id, ocr_line in zip(page_line_ids, page_recognition_result.text_lines):
+                if not fix_text(ocr_line.text):
+                    continue
 
-        for page_id, recognition_result in zip((page.page_id for page in page_list), recognition_results):
-            page_lines.setdefault(page_id, [])
-
-            page_size = provider.get_page_bbox(page_id).size
-
-            for ocr_line_idx, ocr_line in enumerate(recognition_result.text_lines):
-                image_polygon = PolygonBox.from_bbox(recognition_result.image_bbox)
-                polygon = PolygonBox.from_bbox(ocr_line.bbox).rescale(image_polygon.size, page_size)
-
-                line = LineClass(
-                    polygon=polygon,
-                    page_id=page_id,
+                line = document_page.get_block(line_id)
+                assert line.structure is None
+                new_span = SpanClass(
+                    text=fix_text(ocr_line.text) + '\n',
+                    formats=['plain'],
+                    page_id=document_page.page_id,
+                    polygon=copy.deepcopy(line.polygon),
+                    minimum_position=0,
+                    maximum_position=0,
+                    font='Unknown',
+                    font_weight=0,
+                    font_size=0,
                 )
-                spans = [
-                    SpanClass(
-                        text=fix_text(ocr_line.text) + "\n",
-                        formats=['plain'],
-                        page_id=page_id,
-                        polygon=polygon,
-                        minimum_position=0,
-                        maximum_position=0,
-                        font='Unknown',
-                        font_weight=0,
-                        font_size=0,
-                    )
-                ]
-
-                page_lines[page_id].append(ProviderOutput(line=line, spans=spans))
-
-        return page_lines
-
-    def merge_blocks(self, document: Document, page_lines: ProviderPageLines):
-        ocred_pages = [page for page in document.pages if page.text_extraction_method == "surya"]
-        for document_page in ocred_pages:
-            lines = page_lines[document_page.page_id]
-            document_page.merge_blocks(lines, text_extraction_method="surya")
+                document_page.add_full_block(new_span)
+                line.add_structure(new_span)

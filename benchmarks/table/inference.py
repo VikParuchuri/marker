@@ -27,6 +27,20 @@ def extract_tables(children: List[JSONBlockOutput]):
             tables.extend(extract_tables(child.children))
     return tables
 
+def fix_table_html(table_html: str) -> str:
+    marker_table_soup = BeautifulSoup(table_html, 'html.parser')
+    tbody = marker_table_soup.find('tbody')
+    if tbody:
+        tbody.unwrap()
+    for th_tag in marker_table_soup.find_all('th'):
+        th_tag.name = 'td'
+    for br_tag in marker_table_soup.find_all('br'):
+        br_tag.replace_with(marker_table_soup.new_string(''))
+
+    marker_table_html = str(marker_table_soup)
+    marker_table_html = marker_table_html.replace("\n", " ")  # Fintabnet uses spaces instead of newlines
+    return marker_table_html
+
 
 def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, max_rows: int, use_gemini: bool):
     models = create_model_dict()
@@ -154,18 +168,8 @@ def inference_tables(dataset, use_llm: bool, table_rec_batch_size: int | None, m
 
                 # marker wraps the table in <tbody> which fintabnet data doesn't
                 # Fintabnet doesn't use th tags, need to be replaced for fair comparison
-                marker_table_soup = BeautifulSoup(marker_table.html, 'html.parser')
-                tbody = marker_table_soup.find('tbody')
-                if tbody:
-                    tbody.unwrap()
-                for th_tag in marker_table_soup.find_all('th'):
-                    th_tag.name = 'td'
-                for br_tag in marker_table_soup.find_all('br'):
-                    br_tag.replace_with(marker_table_soup.new_string(''))
-
-                marker_table_html = str(marker_table_soup)
-                marker_table_html = marker_table_html.replace("\n", " ")  # Fintabnet uses spaces instead of newlines
-                gemini_table_html = gemini_table.replace("\n", " ")  # Fintabnet uses spaces instead of newlines
+                marker_table_html = fix_table_html(marker_table.html)
+                gemini_table_html = fix_table_html(gemini_table)
 
                 results.append({
                     "marker_table": marker_table_html,

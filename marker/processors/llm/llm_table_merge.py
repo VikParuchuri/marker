@@ -5,13 +5,13 @@ from pydantic import BaseModel
 from tqdm import tqdm
 from PIL import Image
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm import BaseLLMComplexBlockProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, TableCell
 from marker.schema.document import Document
 
 
-class LLMTableMergeProcessor(BaseLLMProcessor):
+class LLMTableMergeProcessor(BaseLLMComplexBlockProcessor):
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",
@@ -240,7 +240,7 @@ Table 2
 
             prompt = self.table_merge_prompt.replace("{{table1}}", start_html).replace("{{table2}}", curr_html)
 
-            response = self.model.generate_response(
+            response = self.llm_service(
                 prompt,
                 [start_image, curr_image],
                 curr_block,

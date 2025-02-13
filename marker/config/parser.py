@@ -39,9 +39,9 @@ class ConfigParser:
         fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
 
         # we put common options here
-        fn = click.option("--google_api_key", type=str, default=None, help="Google API key for using LLMs.")(fn)
         fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
         fn = click.option("--converter_cls", type=str, default=None, help="Converter class to use.  Defaults to PDF converter.")(fn)
+        fn = click.option("--llm_service", type=str, default=None, help="LLM service to use - should be full import path, like marker.services.gemini.GoogleGeminiService")(fn)
 
         # enum options
         fn = click.option("--force_layout_block", type=click.Choice(choices=[t.name for t in BlockTypes]), default=None,)(fn)
@@ -74,7 +74,22 @@ class ConfigParser:
                 case _:
                     if k in crawler.attr_set:
                         config[k] = v
+
+        # Backward compatibility for google_api_key
+        if settings.GOOGLE_API_KEY:
+            config["gemini_api_key"] = settings.GOOGLE_API_KEY
+
         return config
+
+    def get_llm_service(self):
+        # Only return an LLM service when use_llm is enabled
+        if not self.cli_options.get("use_llm", False):
+            return None
+
+        service_cls = self.cli_options["llm_service"]
+        if service_cls is None:
+            service_cls = "marker.services.gemini.GoogleGeminiService"
+        return service_cls
 
     def get_renderer(self):
         match self.cli_options["output_format"]:
@@ -122,3 +137,4 @@ class ConfigParser:
     def get_base_filename(self, filepath: str):
         basename = os.path.basename(filepath)
         return os.path.splitext(basename)[0]
+

@@ -2,6 +2,7 @@ from functools import cache
 from typing import Tuple, List
 
 from marker.builders.document import DocumentBuilder
+from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.converters.pdf import PdfConverter
 from marker.processors import BaseProcessor
@@ -28,17 +29,17 @@ class TableConverter(PdfConverter):
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
+        line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document_builder = DocumentBuilder(self.config)
         document_builder.disable_ocr = True
         with provider_cls(filepath, self.config) as provider:
-            document = document_builder(provider, layout_builder, ocr_builder)
+            document = document_builder(provider, layout_builder, line_builder, ocr_builder)
 
         for page in document.pages:
             page.structure = [p for p in page.structure if p.block_type in self.converter_block_types]
 
-        for processor_cls in self.processor_list:
-            processor = self.resolve_dependencies(processor_cls)
+        for processor in self.processor_list:
             processor(document)
 
         return document
