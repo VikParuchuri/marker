@@ -12,8 +12,6 @@ from surya.table_rec.schema import TableResult, TableCell as SuryaTableCell
 from pdftext.extraction import table_output
 
 from marker.processors import BaseProcessor
-from marker.providers.pdf import PdfProvider
-from marker.providers.registry import provider_from_filepath
 from marker.schema import BlockTypes
 from marker.schema.blocks.tablecell import TableCell
 from marker.schema.document import Document

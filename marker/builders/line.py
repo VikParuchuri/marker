@@ -126,7 +126,6 @@ class LineBuilder(BaseBuilder):
         return 4
 
     def get_detection_results(self, page_images: List[Image.Image], run_detection: List[bool], do_inline_math_detection: bool):
-        page_images = [p for p, good in zip(page_images, run_detection) if good]
         page_detection_results = self.detection_model(
             images=page_images,
             batch_size=self.get_detection_batch_size()
@@ -152,10 +151,12 @@ class LineBuilder(BaseBuilder):
                 inline_results.append(None)
         assert idx == len(page_images)
 
+        assert len(run_detection) == len(detection_results) == len(inline_results)
         return detection_results, inline_results
 
 
     def get_all_lines(self, document: Document, provider: PdfProvider, do_inline_math_detection: bool):
+        assert len(document.pages) == len(provider.page_lines)
         ocr_error_detection_results = self.ocr_error_detection(document.pages, provider.page_lines)
 
         boxes_to_ocr = {page.page_id: [] for page in document.pages}
@@ -179,6 +180,9 @@ class LineBuilder(BaseBuilder):
 
         run_detection = [not good or do_inline_math_detection for good in layout_good]
         page_images = [page.get_image(highres=False, remove_blocks=self.ocr_remove_blocks) for page, good in zip(document.pages, run_detection) if good]
+
+        # Note: run_detection is longer than page_images, since it has a value for each page, not just good ones
+        # Detection results and inline detection results are for every page (we use run_detection to make the list full length)
         detection_results, inline_detection_results = self.get_detection_results(page_images, run_detection, do_inline_math_detection)
 
         assert len(detection_results) == len(inline_detection_results) == len(layout_good) == len(document.pages)
