@@ -71,17 +71,19 @@ def config(request):
 
     return config
 
+@pytest.fixture(scope="session")
+def pdf_dataset():
+    return datasets.load_dataset("datalab-to/pdfs", split="train")
 
 @pytest.fixture(scope="function")
-def temp_pdf(request):
+def temp_pdf(request, pdf_dataset):
     filename_mark = request.node.get_closest_marker("filename")
     filename = filename_mark.args[0] if filename_mark else "adversarial.pdf"
 
-    dataset = datasets.load_dataset("datalab-to/pdfs", split="train")
-    idx = dataset['filename'].index(filename)
+    idx = pdf_dataset['filename'].index(filename)
 
     temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf")
-    temp_pdf.write(dataset['pdf'][idx])
+    temp_pdf.write(pdf_dataset['pdf'][idx])
     temp_pdf.flush()
     yield temp_pdf
 
@@ -93,7 +95,7 @@ def pdf_provider(request, config, temp_pdf):
 
 @pytest.fixture(scope="function")
 def pdf_document(request, config, pdf_provider, layout_model, ocr_error_model, recognition_model, detection_model, inline_detection_model):
-    layout_builder = LayoutBuilder(layout_model, ocr_error_model, config)
+    layout_builder = LayoutBuilder(layout_model, config)
     line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
     ocr_builder = OcrBuilder(recognition_model, config)
     builder = DocumentBuilder(config)

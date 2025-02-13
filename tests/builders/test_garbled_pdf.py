@@ -1,7 +1,7 @@
 import pytest
 
 from marker.builders.document import DocumentBuilder
-from marker.builders.layout import LayoutBuilder
+from marker.builders.line import LineBuilder
 from marker.processors.table import TableProcessor
 from marker.schema import BlockTypes
 
@@ -29,25 +29,25 @@ def test_garbled_pdf(pdf_document, detection_model, recognition_model, table_rec
 
 
 @pytest.mark.filename("hindi_judgement.pdf")
-@pytest.mark.config({"page_range": [2, 3]})
-def test_garbled_builder(config, pdf_provider, layout_model, ocr_error_model):
-    layout_builder = LayoutBuilder(layout_model, ocr_error_model, config)
+@pytest.mark.config({"page_range": [2, 3], "disable_ocr": True})
+def test_garbled_builder(config, pdf_provider, detection_model, inline_detection_model, ocr_error_model):
+    line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
     builder = DocumentBuilder(config)
     document = builder.build_document(pdf_provider)
 
-    bad_ocr_results = layout_builder.surya_ocr_error_detection(document.pages, pdf_provider.page_lines)
+    bad_ocr_results = line_builder.ocr_error_detection(document.pages, pdf_provider.page_lines)
     assert len(bad_ocr_results.labels) == 2
     assert any([l == "bad" for l in bad_ocr_results.labels])
 
 
 @pytest.mark.filename("adversarial.pdf")
-@pytest.mark.config({"page_range": [2, 3]})
-def test_nongarbled_builder(config, pdf_provider, layout_model, ocr_error_model):
-    layout_builder = LayoutBuilder(layout_model, ocr_error_model, config)
+@pytest.mark.config({"page_range": [2, 3], "disable_ocr": True})
+def test_nongarbled_builder(config, pdf_provider, detection_model, inline_detection_model, ocr_error_model):
+    line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
     builder = DocumentBuilder(config)
     document = builder.build_document(pdf_provider)
 
-    bad_ocr_results = layout_builder.surya_ocr_error_detection(document.pages, pdf_provider.page_lines)
+    bad_ocr_results = line_builder.ocr_error_detection(document.pages, pdf_provider.page_lines)
     assert len(bad_ocr_results.labels) == 2
     assert all([l == "good" for l in bad_ocr_results.labels])
 

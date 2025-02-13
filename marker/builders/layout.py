@@ -1,13 +1,11 @@
-from typing import Annotated, List, Optional, Tuple
+from typing import Annotated, List, Optional
 
-import numpy as np
 from surya.layout import LayoutPredictor
 from surya.layout.schema import LayoutResult, LayoutBox
-from surya.ocr_error import OCRErrorPredictor
 from surya.ocr_error.schema import OCRErrorDetectionResult
 
 from marker.builders import BaseBuilder
-from marker.providers import ProviderOutput, ProviderPageLines
+from marker.providers import ProviderPageLines
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.document import Document
@@ -15,7 +13,6 @@ from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
 from marker.schema.registry import get_block_class
 from marker.settings import settings
-from marker.util import matrix_intersection_area
 
 
 class LayoutBuilder(BaseBuilder):
@@ -32,9 +29,8 @@ class LayoutBuilder(BaseBuilder):
         "Skip layout and force every page to be treated as a specific block type.",
     ] = None
 
-    def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
+    def __init__(self, layout_model: LayoutPredictor, config=None):
         self.layout_model = layout_model
-        self.ocr_error_model = ocr_error_model
 
         super().__init__(config)
 
@@ -79,20 +75,6 @@ class LayoutBuilder(BaseBuilder):
             batch_size=int(self.get_batch_size())
         )
         return layout_results
-
-    def surya_ocr_error_detection(self, pages:List[PageGroup], provider_page_lines: ProviderPageLines) -> OCRErrorDetectionResult:
-        page_texts = []
-        for document_page in pages:
-            page_text = ''
-            provider_lines = provider_page_lines.get(document_page.page_id, [])
-            page_text = '\n'.join(' '.join(s.text for s in line.spans) for line in provider_lines)
-            page_texts.append(page_text)
-
-        ocr_error_detection_results = self.ocr_error_model(
-            page_texts,
-            batch_size=int(self.get_batch_size())       #TODO Better Multiplier
-        )
-        return ocr_error_detection_results
 
     def add_blocks_to_pages(self, pages: List[PageGroup], layout_results: List[LayoutResult]):
         for page, layout_result in zip(pages, layout_results):
