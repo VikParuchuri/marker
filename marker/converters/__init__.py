@@ -13,6 +13,7 @@ class BaseConverter:
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
         self.config = config
+        self.llm_service = None
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
@@ -52,7 +53,8 @@ class BaseConverter:
 
         meta_processor = LLMSimpleBlockMetaProcessor(
             processor_lst=simple_llm_processors,
-            config=self.config
+            llm_service=self.llm_service,
+            config=self.config,
         )
         other_processors.insert(insert_position, meta_processor)
         return other_processors

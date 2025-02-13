@@ -29,7 +29,8 @@ def convert_single_cli(fpath: str, **kwargs):
         config=config_parser.generate_config_dict(),
         artifact_dict=models,
         processor_list=config_parser.get_processors(),
-        renderer=config_parser.get_renderer()
+        renderer=config_parser.get_renderer(),
+        llm_service=config_parser.get_llm_service()
     )
     rendered = converter(fpath)
     out_folder = config_parser.get_output_folder(fpath)

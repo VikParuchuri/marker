@@ -17,12 +17,11 @@ def test_llm_text_processor(pdf_document, mocker):
     corrected_lines = ["<math>Text</math>"] * len(text_lines)
 
     mock_cls = Mock()
-    mock_cls.return_value.generate_response.return_value = {"corrected_lines": corrected_lines}
-    mocker.patch("marker.processors.llm.GoogleModel", mock_cls)
+    mock_cls.return_value = {"corrected_lines": corrected_lines}
 
-    config = {"use_llm": True, "google_api_key": "test"}
+    config = {"use_llm": True, "gemini_api_key": "test"}
     processor_lst = [LLMTextProcessor(config)]
-    processor = LLMSimpleBlockMetaProcessor(processor_lst, config)
+    processor = LLMSimpleBlockMetaProcessor(processor_lst, mock_cls, config)
     processor(pdf_document)
 
     contained_spans = text_lines[0].contained_blocks(pdf_document, (BlockTypes.Span,))

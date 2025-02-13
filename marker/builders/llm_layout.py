@@ -1,12 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Annotated
+from typing import Annotated, Type
 
 from surya.layout import LayoutPredictor
 from tqdm import tqdm
 from pydantic import BaseModel
 
 from marker.builders.layout import LayoutBuilder
-from marker.services.google import GoogleModel
+from marker.services import BaseService
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -97,10 +97,10 @@ Potential labels:
 Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form`.
 """
 
-    def __init__(self, layout_model: LayoutPredictor, config=None):
+    def __init__(self, layout_model: LayoutPredictor, llm_service: BaseService, config=None):
         super().__init__(layout_model, config)
 
-        self.model = GoogleModel(self.google_api_key, self.model_name)
+        self.llm_service = llm_service
 
     def __call__(self, document: Document, provider: PdfProvider):
         super().__call__(document, provider)
@@ -158,7 +158,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
     def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
         image = self.extract_image(document, block)
 
-        response = self.model.generate_response(
+        response = self.llm_service(
             prompt,
             image,
             block,

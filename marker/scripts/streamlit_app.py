@@ -56,7 +56,8 @@ def convert_pdf(fname: str, config_parser: ConfigParser) -> (str, Dict[str, Any]
         config=config_dict,
         artifact_dict=model_dict,
         processor_list=config_parser.get_processors(),
-        renderer=config_parser.get_renderer()
+        renderer=config_parser.get_renderer(),
+        llm_service=config_parser.get_llm_service()
     )
     return converter(fname)
 

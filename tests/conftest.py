@@ -18,6 +18,7 @@ from marker.schema.blocks import Block
 from marker.renderers.markdown import MarkdownRenderer
 from marker.renderers.json import JSONRenderer
 from marker.schema.registry import register_block_class
+from marker.services.gemini import GoogleGeminiService
 from marker.util import classes_to_strings
 
 @pytest.fixture(scope="session")
@@ -125,6 +126,17 @@ def renderer(request, config):
             raise ValueError(f"Unknown output format: {output_format}")
     else:
         return MarkdownRenderer
+
+
+@pytest.fixture(scope="function")
+def llm_service(request):
+    llm_service = GoogleGeminiService(
+        config={
+            "gemini_api_key": "test"
+        }
+    )
+    yield llm_service
+
 
 @pytest.fixture(scope="function")
 def temp_image():

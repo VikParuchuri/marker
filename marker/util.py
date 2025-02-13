@@ -1,7 +1,6 @@
 import inspect
-import re
 from importlib import import_module
-from typing import List
+from typing import List, Annotated
 
 import numpy as np
 from pydantic import BaseModel
@@ -22,6 +21,19 @@ def classes_to_strings(items: List[type]) -> List[str]:
             raise ValueError(f"Item {item} is not a class")
 
     return [f"{item.__module__}.{item.__name__}" for item in items]
+
+
+def verify_config_keys(obj):
+    annotations = inspect.get_annotations(obj.__class__)
+
+    none_vals = ""
+    for attr_name, annotation in annotations.items():
+        if isinstance(annotation, type(Annotated[str, ""])):
+            value = getattr(obj, attr_name)
+            if value is None:
+                none_vals += f"{attr_name}, "
+
+    assert len(none_vals) == 0, f"Missing values for {none_vals} are not allowed in {obj.__class__.__name__}."
 
 
 def assign_config(cls, config: BaseModel | dict | None):

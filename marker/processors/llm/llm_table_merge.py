@@ -240,7 +240,7 @@ Table 2
 
             prompt = self.table_merge_prompt.replace("{{table1}}", start_html).replace("{{table2}}", curr_html)
 
-            response = self.model.generate_response(
+            response = self.llm_service(
                 prompt,
                 [start_image, curr_image],
                 curr_block,
