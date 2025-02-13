@@ -20,6 +20,7 @@ class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
     ] = 10
 
     block_types = (BlockTypes.Line,)
+    image_remove_blocks = (BlockTypes.Equation,)
     text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
@@ -35,8 +36,8 @@ The number of output lines MUST match the number of input lines.  Stay as faithf
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
 5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.
-6. Ensure that inline math is properly with inline math tags.
-7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.
+6. Ensure that inline math is properly formatted with inline math tags.
+7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
 8. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.
 9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
@@ -119,9 +120,12 @@ Output:
             pages = [b["page"] for b in block_data]
             block_lines = [block.formatted_text(document) for block in blocks]
 
-            prompt = self.text_math_rewriting_prompt.replace("{extracted_lines}",
-                                                             json.dumps({"extracted_lines": block_lines}, indent=2))
-            images = [self.extract_image(document, block) for block in blocks]
+            prompt = (
+                self.text_math_rewriting_prompt
+                  .replace("{extracted_lines}",json.dumps({"extracted_lines": block_lines}, indent=2))
+                  .replace("{line_count}", str(len(block_lines)))
+            )
+            images = [self.extract_image(document, block, remove_blocks=self.image_remove_blocks) for block in blocks]
             image = self.combine_images(images)
 
             prompt_data.append({

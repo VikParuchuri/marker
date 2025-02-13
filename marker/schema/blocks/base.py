@@ -101,11 +101,11 @@ class Block(BaseModel):
         block_attrs = block.model_dump(exclude=["id", "block_id", "block_type"])
         return cls(**block_attrs)
 
-    def get_image(self, document: Document, highres: bool = False, expansion: Tuple[float, float] | None = None) -> Image.Image | None:
+    def get_image(self, document: Document, highres: bool = False, expansion: Tuple[float, float] | None = None, remove_blocks: Sequence[BlockTypes] | None = None) -> Image.Image | None:
         image = self.highres_image if highres else self.lowres_image
         if image is None:
             page = document.get_page(self.page_id)
-            page_image = page.highres_image if highres else page.lowres_image
+            page_image = page.get_image(highres=highres, remove_blocks=remove_blocks)
 
             # Scale to the image size
             bbox = self.polygon.rescale((page.polygon.width, page.polygon.height), page_image.size)

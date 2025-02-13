@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated
 
 from surya.layout import LayoutPredictor
-from surya.ocr_error import OCRErrorPredictor
 from tqdm import tqdm
 from pydantic import BaseModel
 
@@ -98,8 +97,8 @@ Potential labels:
 Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form`.
 """
 
-    def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
-        super().__init__(layout_model, ocr_error_model, config)
+    def __init__(self, layout_model: LayoutPredictor, config=None):
+        super().__init__(layout_model, config)
 
         self.model = GoogleModel(self.google_api_key, self.model_name)
 

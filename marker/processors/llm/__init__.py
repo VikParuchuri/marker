@@ -1,12 +1,13 @@
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Annotated, TypedDict, List
+from typing import Annotated, TypedDict, List, Sequence
 
 from pydantic import BaseModel
 from tqdm import tqdm
 from PIL import Image
 
 from marker.processors import BaseProcessor
+from marker.schema import BlockTypes
 from marker.services.google import GoogleModel
 from marker.schema.blocks import Block
 from marker.schema.document import Document
@@ -75,8 +76,13 @@ class BaseLLMProcessor(BaseProcessor):
 
         self.model = GoogleModel(self.google_api_key, self.model_name)
 
-    def extract_image(self, document: Document, image_block: Block):
-        return image_block.get_image(document, highres=True, expansion=(self.image_expansion_ratio, self.image_expansion_ratio))
+    def extract_image(self, document: Document, image_block: Block, remove_blocks: Sequence[BlockTypes] | None = None) -> Image.Image:
+        return image_block.get_image(
+            document,
+            highres=True,
+            expansion=(self.image_expansion_ratio, self.image_expansion_ratio),
+            remove_blocks=remove_blocks
+        )
 
 
 class BaseLLMComplexBlockProcessor(BaseLLMProcessor):

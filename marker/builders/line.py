@@ -3,7 +3,7 @@ from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
 from ftfy import fix_text
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from surya.detection import DetectionPredictor, InlineDetectionPredictor, TextDetectionResult
 from surya.ocr_error import OCRErrorPredictor
@@ -77,7 +77,7 @@ class LineBuilder(BaseBuilder):
     inline_math_line_vertical_merge_threshold: Annotated[
         int,
         "The maximum pixel distance between y1s for two lines to be merged"
-    ] = 5
+    ] = 8
     excluded_for_coverage: Annotated[
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
@@ -90,6 +90,7 @@ class LineBuilder(BaseBuilder):
         bool,
         "Whether to run texify on inline math spans."
     ] = False
+    ocr_remove_blocks: Tuple[BlockTypes, ...] = (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents, BlockTypes.Equation)
 
     def __init__(self, detection_model: DetectionPredictor, inline_detection_model: InlineDetectionPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         super().__init__(config)
@@ -168,7 +169,7 @@ class LineBuilder(BaseBuilder):
             layout_good.append(provider_lines_good)
 
         run_detection = [not good or do_inline_math_detection for good in layout_good]
-        page_images = [page.get_image(highres=False, remove_tables=not self.enable_table_ocr) for page, good in zip(document.pages, run_detection) if good]
+        page_images = [page.get_image(highres=False, remove_blocks=self.ocr_remove_blocks) for page, good in zip(document.pages, run_detection) if good]
         detection_results, inline_detection_results = self.get_detection_results(page_images, run_detection, do_inline_math_detection)
 
         assert len(detection_results) == len(inline_detection_results) == len(layout_good) == len(document.pages)
@@ -181,24 +182,6 @@ class LineBuilder(BaseBuilder):
             provider_lines: List[ProviderOutput] = provider.page_lines.get(document_page.page_id, [])
             page_size = provider.get_page_bbox(document_page.page_id).size
             image_size = PolygonBox.from_bbox(detection_result.image_bbox).size if detection_result else page_size
-
-            # Filter out detected equation blocks
-            inline_detection_result = self.filter_equation_overlaps(
-                document,
-                document_page,
-                inline_detection_result,
-                image_size,
-                page_size,
-                self.line_inline_math_overlap_threshold
-            )
-            detection_result = self.filter_equation_overlaps(
-                document,
-                document_page,
-                detection_result,
-                image_size,
-                page_size,
-                self.line_text_overlap_threshold
-            )
 
             # Merge text and inline math detection results
             merged_detection_boxes = self.determine_math_lines(text_result=detection_result, inline_result=inline_detection_result)
@@ -317,38 +300,11 @@ class LineBuilder(BaseBuilder):
             # Text extraction method is overridden later for OCRed documents
             document_page.merge_blocks(merged_lines, text_extraction_method='pdftext')
 
-    def filter_equation_overlaps(
-            self,
-            document,
-            page: PageGroup,
-            inline_boxes: TextDetectionResult,
-            image_size,
-            page_size,
-            threshold: float
-    ):
-        if inline_boxes is None:
-            return inline_boxes
-
-        equations = page.contained_blocks(document, (BlockTypes.Equation,))
-        equation_boxes = [eq.polygon.bbox for eq in equations]
-        inline_polys = [PolygonBox(polygon=box.polygon).rescale(image_size, page_size) for box in inline_boxes.bboxes]
-        inline_bboxes = [poly.bbox for poly in inline_polys]
-        inline_areas = [poly.area for poly in inline_polys]
-
-        if len(equation_boxes) == 0 or len(inline_bboxes) == 0:
-            return inline_boxes
-
-        overlaps = matrix_intersection_area(inline_bboxes, equation_boxes)
-        overlap_idxs = (np.max(overlaps, axis=-1) / np.array(inline_areas)) > threshold
-        inline_boxes.bboxes = [ib for i, ib in enumerate(inline_boxes.bboxes) if not overlap_idxs[i]]
-        return inline_boxes
-
 
     def determine_math_lines(
         self,
         text_result: TextDetectionResult,
         inline_result: TextDetectionResult,
-        math_box_padding: float = .05
     ) -> List[TextBox]:
         """
         Marks lines as math if they contain inline math boxes.
@@ -391,7 +347,7 @@ class LineBuilder(BaseBuilder):
                 continue
 
             # Ignore vertical lines
-            if max_overlap_box.height > max_overlap_box.width:
+            if max_overlap_box.height > max_overlap_box.width * 2:
                 continue
 
             max_overlap_box.math = True
@@ -406,11 +362,11 @@ class LineBuilder(BaseBuilder):
             provider_line.line.formats.append("math")
 
     def merge_provider_lines_inline_math(
-            self,
-            provider_lines: List[ProviderOutput],
-            inline_math_lines: List[TextBox],
-            image_size,
-            page_size
+        self,
+        provider_lines: List[ProviderOutput],
+        inline_math_lines: List[TextBox],
+        image_size,
+        page_size
     ):
         # When provider lines is empty or no inline math detected, return provider lines
         if not provider_lines or not inline_math_lines:
