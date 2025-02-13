@@ -165,7 +165,8 @@ converter = PdfConverter(
     config=config_parser.generate_config_dict(),
     artifact_dict=create_model_dict(),
     processor_list=config_parser.get_processors(),
-    renderer=config_parser.get_renderer()
+    renderer=config_parser.get_renderer(),
+    llm_service=config_parser.get_llm_service()
 )
 rendered = converter("FILEPATH")
 ```

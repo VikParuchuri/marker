@@ -83,7 +83,7 @@ class ConfigParser:
 
     def get_llm_service(self):
         # Only return an LLM service when use_llm is enabled
-        if not self.cli_options["use_llm"]:
+        if not self.cli_options.get("use_llm", False):
             return None
 
         service_cls = self.cli_options["llm_service"]

@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Annotated, Type
+from typing import Annotated
 
 from surya.layout import LayoutPredictor
 from tqdm import tqdm

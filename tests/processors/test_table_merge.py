@@ -21,7 +21,7 @@ def test_llm_table_processor_nomerge(pdf_document, detection_model, table_rec_mo
     tables = pdf_document.contained_blocks((BlockTypes.Table,))
     assert len(tables) == 3
 
-    processor = LLMTableMergeProcessor(mock_cls, {"use_llm": True, "google_api_key": "test"})
+    processor = LLMTableMergeProcessor(mock_cls, {"use_llm": True, "gemini_api_key": "test"})
     processor(pdf_document)
 
     tables = pdf_document.contained_blocks((BlockTypes.Table,))

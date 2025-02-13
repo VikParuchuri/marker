@@ -33,7 +33,7 @@ def verify_config_keys(obj):
             if value is None:
                 none_vals += f"{attr_name}, "
 
-    assert len(none_vals) == 0, f"Missing values for {none_vals} are not allowed in {obj.__class__.__name__}."
+    assert len(none_vals) == 0, f"In order to use {obj.__class__.__name__}, you must set the configuration values `{none_vals}`."
 
 
 def assign_config(cls, config: BaseModel | dict | None):

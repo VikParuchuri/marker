@@ -29,7 +29,7 @@ def test_llm_form_processor_no_config(pdf_document, llm_service):
 @pytest.mark.filename("form_1040.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_form_processor_no_cells(pdf_document, llm_service):
-    config = {"use_llm": True, "google_api_key": "test"}
+    config = {"use_llm": True, "gemini_api_key": "test"}
     processor_lst = [LLMFormProcessor(config)]
     processor = LLMSimpleBlockMetaProcessor(processor_lst, llm_service, config)
     processor(pdf_document)
@@ -50,7 +50,7 @@ def test_llm_form_processor(pdf_document, detection_model, table_rec_model, reco
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)
     cell_processor(pdf_document)
 
-    config = {"use_llm": True, "google_api_key": "test"}
+    config = {"use_llm": True, "gemini_api_key": "test"}
     processor_lst = [LLMFormProcessor(config)]
     processor = LLMSimpleBlockMetaProcessor(processor_lst, mock_cls, config)
     processor(pdf_document)
@@ -92,7 +92,7 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
     cell_processor = TableProcessor(detection_model, recognition_model, table_rec_model)
     cell_processor(pdf_document)
 
-    processor = LLMTableProcessor(mock_cls, {"use_llm": True, "google_api_key": "test"})
+    processor = LLMTableProcessor(mock_cls, {"use_llm": True, "gemini_api_key": "test"})
     processor(pdf_document)
 
     tables = pdf_document.contained_blocks((BlockTypes.Table,))
@@ -106,7 +106,7 @@ def test_llm_table_processor(pdf_document, detection_model, table_rec_model, rec
 @pytest.mark.filename("A17_FlightPlan.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_caption_processor_disabled(pdf_document):
-    config = {"use_llm": True, "google_api_key": "test"}
+    config = {"use_llm": True, "gemini_api_key": "test"}
     mock_cls = MagicMock()
     processor_lst = [LLMImageDescriptionProcessor(config)]
     processor = LLMSimpleBlockMetaProcessor(processor_lst, mock_cls, config)
@@ -122,7 +122,7 @@ def test_llm_caption_processor(pdf_document):
     mock_cls = Mock()
     mock_cls.return_value = {"image_description": description}
 
-    config = {"use_llm": True, "google_api_key": "test", "extract_images": False}
+    config = {"use_llm": True, "gemini_api_key": "test", "extract_images": False}
     processor_lst = [LLMImageDescriptionProcessor(config)]
     processor = LLMSimpleBlockMetaProcessor(processor_lst, mock_cls, config)
     processor(pdf_document)
@@ -152,7 +152,7 @@ def test_llm_complex_region_processor(pdf_document):
     pdf_document.pages[0].replace_block(old_block, new_block)
 
     # Test processor
-    config = {"use_llm": True, "google_api_key": "test"}
+    config = {"use_llm": True, "gemini_api_key": "test"}
     processor_lst = [LLMComplexRegionProcessor(config)]
     processor = LLMSimpleBlockMetaProcessor(processor_lst, mock_cls, config)
     processor(pdf_document)
@@ -170,7 +170,7 @@ def test_multi_llm_processors(pdf_document):
     mock_cls = Mock()
     mock_cls.return_value = {"image_description": description, "html_equation": description}
 
-    config = {"use_llm": True, "google_api_key": "test", "extract_images": False, "min_equation_height": .001}
+    config = {"use_llm": True, "gemini_api_key": "test", "extract_images": False, "min_equation_height": .001}
     processor_lst = [LLMImageDescriptionProcessor(config), LLMEquationProcessor(config)]
     processor = LLMSimpleBlockMetaProcessor(processor_lst, mock_cls, config)
     processor(pdf_document)

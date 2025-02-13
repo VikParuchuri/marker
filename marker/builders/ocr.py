@@ -5,7 +5,6 @@ from ftfy import fix_text
 from surya.recognition import RecognitionPredictor
 
 from marker.builders import BaseBuilder
-from marker.providers import ProviderPageLines
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.blocks import BlockId

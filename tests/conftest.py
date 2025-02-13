@@ -19,7 +19,8 @@ from marker.renderers.markdown import MarkdownRenderer
 from marker.renderers.json import JSONRenderer
 from marker.schema.registry import register_block_class
 from marker.services.gemini import GoogleGeminiService
-from marker.util import classes_to_strings
+from marker.util import classes_to_strings, strings_to_classes
+
 
 @pytest.fixture(scope="session")
 def model_dict():
@@ -105,12 +106,15 @@ def pdf_document(request, config, pdf_provider, layout_model, ocr_error_model, r
 
 
 @pytest.fixture(scope="function")
-def pdf_converter(request, config, model_dict, renderer):
+def pdf_converter(request, config, model_dict, renderer, llm_service):
+    if llm_service:
+        llm_service = classes_to_strings([llm_service])[0]
     yield PdfConverter(
         artifact_dict=model_dict,
         processor_list=None,
         renderer=classes_to_strings([renderer])[0],
-        config=config
+        config=config,
+        llm_service=llm_service
     )
 
 
@@ -129,13 +133,12 @@ def renderer(request, config):
 
 
 @pytest.fixture(scope="function")
-def llm_service(request):
-    llm_service = GoogleGeminiService(
-        config={
-            "gemini_api_key": "test"
-        }
-    )
-    yield llm_service
+def llm_service(request, config):
+    llm_service = config.get("llm_service")
+    if not llm_service:
+        yield None
+    else:
+        yield strings_to_classes([llm_service])[0]
 
 
 @pytest.fixture(scope="function")

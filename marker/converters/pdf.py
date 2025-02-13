@@ -115,6 +115,8 @@ class PdfConverter(BaseConverter):
         if llm_service:
             llm_service_cls = strings_to_classes([llm_service])[0]
             llm_service = self.resolve_dependencies(llm_service_cls)
+        elif config.get("use_llm", False):
+            llm_service = self.resolve_dependencies(GoogleGeminiService)
 
         # Inject llm service into artifact_dict so it can be picked up by processors, etc.
         artifact_dict["llm_service"] = llm_service

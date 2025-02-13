@@ -2,10 +2,8 @@ from typing import Annotated, List, Optional
 
 from surya.layout import LayoutPredictor
 from surya.layout.schema import LayoutResult, LayoutBox
-from surya.ocr_error.schema import OCRErrorDetectionResult
 
 from marker.builders import BaseBuilder
-from marker.providers import ProviderPageLines
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.document import Document
