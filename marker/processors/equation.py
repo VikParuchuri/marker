@@ -1,9 +1,10 @@
 from typing import Annotated, List, Optional, Tuple
-from tqdm import tqdm
 
 from marker.models import TexifyPredictor
 from marker.processors import BaseProcessor
+from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
+from marker.schema.blocks import Equation
 from marker.schema.document import Document
 from marker.settings import settings
 
@@ -33,6 +34,10 @@ class EquationProcessor(BaseProcessor):
         bool,
         "Whether to disable the tqdm progress bar.",
     ] = False
+    texify_inline_spans: Annotated[
+        bool,
+        "Whether to run texify on inline math spans."
+    ] = False
 
     def __init__(self, texify_model: TexifyPredictor, config=None):
         super().__init__(config)
@@ -43,7 +48,13 @@ class EquationProcessor(BaseProcessor):
         equation_data = []
 
         for page in document.pages:
-            for block in page.contained_blocks(document, self.block_types):
+            equation_blocks = page.contained_blocks(document, self.block_types)
+            math_blocks = []
+            if self.texify_inline_spans:
+                math_blocks = page.contained_blocks(document, (BlockTypes.Line,))
+                math_blocks = [m for m in math_blocks if m.formats and "math" in m.formats]
+
+            for block in equation_blocks + math_blocks:
                 image = block.get_image(document, highres=False).convert("RGB")
                 raw_text = block.raw_text(document)
                 token_count = self.get_total_texify_tokens(raw_text)
@@ -51,7 +62,8 @@ class EquationProcessor(BaseProcessor):
                 equation_data.append({
                     "image": image,
                     "block_id": block.id,
-                    "token_count": token_count
+                    "token_count": token_count,
+                    "page": page
                 })
 
         if len(equation_data) == 0:
@@ -67,7 +79,11 @@ class EquationProcessor(BaseProcessor):
                 continue
 
             block = document.get_block(equation_d["block_id"])
-            block.html = prediction
+            if isinstance(block, Equation):
+                block.html = prediction
+            else:
+                block.structure = []
+                add_math_spans_to_line(prediction, block, equation_d["page"])
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:

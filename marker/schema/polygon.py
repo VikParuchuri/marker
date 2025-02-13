@@ -90,6 +90,30 @@ class PolygonBox(BaseModel):
                 new_polygon.append([poly[0] - x_margin, poly[1] + y_margin])
         return PolygonBox(polygon=new_polygon)
 
+    def expand_y2(self, y_margin: float) -> PolygonBox:
+        new_polygon = []
+        y_margin = y_margin * self.height
+        for idx, poly in enumerate(self.polygon):
+            if idx == 2:
+                new_polygon.append([poly[0], poly[1] + y_margin])
+            elif idx == 3:
+                new_polygon.append([poly[0], poly[1] + y_margin])
+            else:
+                new_polygon.append(poly)
+        return PolygonBox(polygon=new_polygon)
+
+    def expand_y1(self, y_margin: float) -> PolygonBox:
+        new_polygon = []
+        y_margin = y_margin * self.height
+        for idx, poly in enumerate(self.polygon):
+            if idx == 0:
+                new_polygon.append([poly[0], poly[1] - y_margin])
+            elif idx == 1:
+                new_polygon.append([poly[0], poly[1] - y_margin])
+            else:
+                new_polygon.append(poly)
+        return PolygonBox(polygon=new_polygon)
+
     def minimum_gap(self, other: PolygonBox):
         if self.intersection_pct(other) > 0:
             return 0

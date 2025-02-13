@@ -12,6 +12,7 @@ from marker.providers.registry import provider_from_filepath
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.llm_layout import LLMLayoutBuilder
+from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
 from marker.converters import BaseConverter
@@ -115,10 +116,12 @@ class PdfConverter(BaseConverter):
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
+        line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         with provider_cls(filepath, self.config) as provider:
-            document = DocumentBuilder(self.config)(provider, layout_builder, ocr_builder)
-        StructureBuilder(self.config)(document)
+            document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
+        structure_builder_cls = self.resolve_dependencies(StructureBuilder)
+        structure_builder_cls(document)
 
         for processor in self.processor_list:
             processor(document)

@@ -38,16 +38,16 @@ class PageGroup(Group):
         else:
             self.children.append(block)
 
-    def get_image(self, *args, highres: bool = False, remove_tables: bool = False, **kwargs):
+    def get_image(self, *args, highres: bool = False, remove_blocks: Sequence[BlockTypes] | None = None, **kwargs):
         image = self.highres_image if highres else self.lowres_image
 
-        # Avoid double OCR for tables
-        if remove_tables:
+        # Avoid double OCR for certain elements
+        if remove_blocks:
             image = image.copy()
             draw = ImageDraw.Draw(image)
-            table_blocks = [block for block in self.children if block.block_type in (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents)]
-            for table_block in table_blocks:
-                poly = table_block.polygon.rescale(self.polygon.size, image.size).polygon
+            bad_blocks = [block for block in self.children if block.block_type in remove_blocks]
+            for bad_block in bad_blocks:
+                poly = bad_block.polygon.rescale(self.polygon.size, image.size).polygon
                 poly = [(int(p[0]), int(p[1])) for p in poly]
                 draw.polygon(poly, fill='white')
 
