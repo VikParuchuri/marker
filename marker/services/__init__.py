@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Annotated
 
 import PIL
 from pydantic import BaseModel
@@ -8,6 +8,15 @@ from marker.util import assign_config, verify_config_keys
 
 
 class BaseService:
+    timeout: Annotated[
+        int,
+        "The timeout to use for the service."
+    ] = 15
+    max_retries: Annotated[
+        int,
+        "The maximum number of retries to use for the service."
+    ] = 1
+
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
 
@@ -20,7 +29,7 @@ class BaseService:
         image: PIL.Image.Image | List[PIL.Image.Image],
         block: Block,
         response_schema: type[BaseModel],
-        max_retries: int = 1,
-        timeout: int = 15
+        max_retries: int | None = None,
+        timeout: int | None = None
      ):
         raise NotImplementedError

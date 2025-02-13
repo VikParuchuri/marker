@@ -32,8 +32,8 @@ class OllamaService(BaseService):
         image: PIL.Image.Image | List[PIL.Image.Image],
         block: Block,
         response_schema: type[BaseModel],
-        max_retries: int = 1,
-        timeout: int = 15
+        max_retries: int | None = None,
+        timeout: int | None = None
     ):
         url = f"{self.ollama_base_url}/api/generate"
         headers = {"Content-Type": "application/json"}
@@ -63,7 +63,6 @@ class OllamaService(BaseService):
             response.raise_for_status()
             response_data = response.json()
             data = response_data["response"]
-            print(data)
             return json.loads(data)
         except Exception as e:
             print(f"Ollama inference failed: {e}")

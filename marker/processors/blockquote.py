@@ -17,7 +17,7 @@ class BlockquoteProcessor(BaseProcessor):
         float,
         "The minimum horizontal indentation required to consider a block as part of a blockquote.",
         "Expressed as a percentage of the block width.",
-    ] = 0.05
+    ] = 0.1
     x_start_tolerance: Annotated[
         float,
         "The maximum allowable difference between the starting x-coordinates of consecutive blocks to consider them aligned.",

@@ -37,18 +37,10 @@ class LLMLayoutBuilder(LayoutBuilder):
         str,
         "The name of the Gemini model to use.",
     ] = "gemini-2.0-flash"
-    max_retries: Annotated[
-        int,
-        "The maximum number of retries to use for the Gemini model.",
-    ] = 2
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
     ] = 3
-    timeout: Annotated[
-        int,
-        "The timeout for requests to the Gemini model.",
-    ] = 60
     disable_tqdm: Annotated[
         bool,
         "Whether to disable the tqdm progress bar.",
@@ -162,9 +154,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
             prompt,
             image,
             block,
-            LayoutSchema,
-            max_retries=self.max_retries,
-            timeout=self.timeout
+            LayoutSchema
         )
         generated_label = None
         if response and "label" in response:

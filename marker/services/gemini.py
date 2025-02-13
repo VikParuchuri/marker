@@ -23,7 +23,7 @@ class BaseGeminiService(BaseService):
         img.save(image_bytes, format="PNG")
         return image_bytes.getvalue()
 
-    def get_google_client(self, timeout: int = 60):
+    def get_google_client(self, timeout: int):
         raise NotImplementedError
 
     def __call__(
@@ -32,9 +32,15 @@ class BaseGeminiService(BaseService):
             image: PIL.Image.Image | List[PIL.Image.Image],
             block: Block,
             response_schema: type[BaseModel],
-            max_retries: int = 1,
-            timeout: int = 15
+            max_retries: int | None = None,
+            timeout: int | None = None
     ):
+        if max_retries is None:
+            max_retries = self.max_retries
+
+        if timeout is None:
+            timeout = self.timeout
+
         if not isinstance(image, list):
             image = [image]
 
@@ -80,7 +86,7 @@ class GoogleGeminiService(BaseGeminiService):
         "The Google API key to use for the service."
     ] = None
 
-    def get_google_client(self, timeout: int = 60):
+    def get_google_client(self, timeout: int):
         return genai.Client(
             api_key=self.gemini_api_key,
             http_options={"timeout": timeout * 1000} # Convert to milliseconds

@@ -18,7 +18,7 @@ class GoogleVertexService(BaseGeminiService):
         "The name of the Google model to use for the service."
     ] = "gemini-1.5-flash-002"
 
-    def get_google_client(self, timeout: int = 60):
+    def get_google_client(self, timeout: int):
         return genai.Client(
             vertexai=True,
             project=self.vertex_project_id,

@@ -81,7 +81,7 @@ class OcrBuilder(BaseBuilder):
         recognition_results = self.recognition_model(
             images=images,
             bboxes=line_boxes,
-            langs=[self.languages] * len(document.pages),
+            langs=[self.languages] * len(pages),
             recognition_batch_size=int(self.get_recognition_batch_size()),
             sort_lines=False
         )
