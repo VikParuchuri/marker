@@ -1,4 +1,7 @@
 import os
+
+from marker.services.gemini import GoogleGeminiService
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 import inspect
@@ -86,7 +89,14 @@ class PdfConverter(BaseConverter):
         DebugProcessor,
     )
 
-    def __init__(self, artifact_dict: Dict[str, Any], processor_list: Optional[List[str]] = None, renderer: str | None = None, config=None):
+    def __init__(
+        self,
+        artifact_dict: Dict[str, Any],
+        processor_list: Optional[List[str]] = None,
+        renderer: str | None = None,
+        llm_service: str | None = None,
+        config=None
+    ):
         super().__init__(config)
 
         for block_type, override_block_type in self.override_map.items():
@@ -101,6 +111,14 @@ class PdfConverter(BaseConverter):
             renderer = strings_to_classes([renderer])[0]
         else:
             renderer = MarkdownRenderer
+
+        if llm_service:
+            llm_service_cls = strings_to_classes([llm_service])[0]
+            llm_service = self.resolve_dependencies(llm_service_cls)
+
+        # Inject llm service into artifact_dict so it can be picked up by processors, etc.
+        artifact_dict["llm_service"] = llm_service
+        self.llm_service = llm_service
 
         self.artifact_dict = artifact_dict
         self.renderer = renderer

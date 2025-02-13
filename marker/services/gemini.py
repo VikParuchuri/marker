@@ -1,7 +1,7 @@
 import json
 import time
 from io import BytesIO
-from typing import List
+from typing import List, Annotated
 
 import PIL
 from google import genai
@@ -10,29 +10,23 @@ from google.genai.errors import APIError
 from pydantic import BaseModel
 
 from marker.schema.blocks import Block
-from marker.settings import settings
+from marker.services import BaseService
 
-
-class GoogleModel:
-    def __init__(self, api_key: str, model_name: str):
-        if api_key is None:
-            raise ValueError("Google API key is not set")
-
-        self.api_key = api_key
-        self.model_name = model_name
-
-    def get_google_client(self, timeout: int = 60):
-        return genai.Client(
-            api_key=settings.GOOGLE_API_KEY,
-            http_options={"timeout": timeout * 1000} # Convert to milliseconds
-        )
+class BaseGeminiService(BaseService):
+    gemini_model_name: Annotated[
+        str,
+        "The name of the Google model to use for the service."
+    ] = "gemini-2.0-flash"
 
     def img_to_bytes(self, img: PIL.Image.Image):
         image_bytes = BytesIO()
         img.save(image_bytes, format="PNG")
         return image_bytes.getvalue()
 
-    def generate_response(
+    def get_google_client(self, timeout: int = 60):
+        raise NotImplementedError
+
+    def __call__(
             self,
             prompt: str,
             image: PIL.Image.Image | List[PIL.Image.Image],
@@ -51,7 +45,7 @@ class GoogleModel:
         while tries < max_retries:
             try:
                 responses = client.models.generate_content(
-                    model="gemini-2.0-flash",
+                    model=self.gemini_model_name,
                     contents=image_parts + [prompt], # According to gemini docs, it performs better if the image is the first element
                     config={
                         "temperature": 0,
@@ -78,3 +72,16 @@ class GoogleModel:
                 break
 
         return {}
+
+
+class GoogleGeminiService(BaseGeminiService):
+    gemini_api_key: Annotated[
+        str,
+        "The Google API key to use for the service."
+    ] = None
+
+    def get_google_client(self, timeout: int = 60):
+        return genai.Client(
+            api_key=self.gemini_api_key,
+            http_options={"timeout": timeout * 1000} # Convert to milliseconds
+        )

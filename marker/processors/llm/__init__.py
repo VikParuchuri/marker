@@ -8,11 +8,12 @@ from PIL import Image
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
-from marker.services.google import GoogleModel
 from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.groups import PageGroup
+from marker.services import BaseService
 from marker.settings import settings
+from marker.util import assign_config
 
 
 class PromptData(TypedDict):
@@ -67,14 +68,14 @@ class BaseLLMProcessor(BaseProcessor):
     ] = False
     block_types = None
 
-    def __init__(self, config=None):
+    def __init__(self, llm_service: BaseService, config=None):
         super().__init__(config)
 
-        self.model = None
+        self.llm_service = None
         if not self.use_llm:
             return
 
-        self.model = GoogleModel(self.google_api_key, self.model_name)
+        self.llm_service = llm_service
 
     def extract_image(self, document: Document, image_block: Block, remove_blocks: Sequence[BlockTypes] | None = None) -> Image.Image:
         return image_block.get_image(
@@ -90,7 +91,7 @@ class BaseLLMComplexBlockProcessor(BaseLLMProcessor):
     A processor for using LLMs to convert blocks with more complex logic.
     """
     def __call__(self, document: Document):
-        if not self.use_llm or self.model is None:
+        if not self.use_llm or self.llm_service is None:
             return
 
         try:
@@ -124,6 +125,10 @@ class BaseLLMSimpleBlockProcessor(BaseLLMProcessor):
     """
     A processor for using LLMs to convert single blocks.
     """
+
+    # Override init since we don't need an llmservice here
+    def __init__(self, config=None):
+        assign_config(self, config)
 
     def __call__(self, result: dict, prompt_data: PromptData, document: Document):
         try:
