@@ -1,6 +1,6 @@
 import html
 import re
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -14,6 +14,7 @@ def cleanup_text(full_text):
 
 class Span(Block):
     block_type: BlockTypes = BlockTypes.Span
+    block_description: str = "A span of text inside a line."
 
     text: str
     font: str
@@ -22,6 +23,8 @@ class Span(Block):
     minimum_position: int
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
+    has_superscript: bool = False
+    url: Optional[str] = None
 
     @property
     def bold(self):
@@ -35,7 +38,7 @@ class Span(Block):
     def math(self):
         return 'math' in self.formats
 
-    def assemble_html(self, child_blocks, parent_structure):
+    def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
 
@@ -58,10 +61,17 @@ class Span(Block):
         text = html.escape(text)
         text = cleanup_text(text)
 
+        if self.has_superscript:
+            text = re.sub(r"^([0-9\W]+)(.*)", r"<sup>\1</sup>\2", text)
+
+        if self.url:
+            text = f"<a href='{self.url}'>{text}</a>"
+
         if self.italic:
-            return f"<i>{text}</i>"
+            text = f"<i>{text}</i>"
         elif self.bold:
-            return f"<b>{text}</b>"
+            text = f"<b>{text}</b>"
         elif self.math:
-            return f"<math display='inline'>{text}</math>"
+            text = f"<math display='inline'>{text}</math>"
+
         return text

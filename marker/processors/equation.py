@@ -1,11 +1,10 @@
-from typing import List
+from typing import Annotated, List, Optional, Tuple
 
-from texify.inference import batch_inference
-from texify.model.model import GenerateVisionEncoderDecoderModel
-from tqdm import tqdm
-
+from marker.models import TexifyPredictor
 from marker.processors import BaseProcessor
+from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
+from marker.schema.blocks import Equation
 from marker.schema.document import Document
 from marker.settings import settings
 
@@ -13,26 +12,34 @@ from marker.settings import settings
 class EquationProcessor(BaseProcessor):
     """
     A processor for recognizing equations in the document.
-
-    Attributes:
-        model_max_length (int):
-            The maximum number of tokens to allow for the Texify model.
-            Default is 384.
-
-        batch_size (int):
-            The batch size to use for the Texify model.
-            Default is None, which will use the default batch size for the model.
-
-        token_buffer (int):
-            The number of tokens to buffer above max for the Texify model.
-            Default is 256.
     """
-    block_types = (BlockTypes.Equation, )
-    model_max_length = 384
-    texify_batch_size = None
-    token_buffer = 256
+    block_types: Annotated[
+        Tuple[BlockTypes],
+        "The block types to process.",
+    ] = (BlockTypes.Equation,)
+    model_max_length: Annotated[
+        int,
+        "The maximum number of tokens to allow for the Texify model.",
+    ] = 768
+    texify_batch_size: Annotated[
+        Optional[int],
+        "The batch size to use for the Texify model.",
+        "Default is None, which will use the default batch size for the model."
+    ] = None
+    token_buffer: Annotated[
+        int,
+        "The number of tokens to buffer above max for the Texify model.",
+    ] = 256
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
+    texify_inline_spans: Annotated[
+        bool,
+        "Whether to run texify on inline math spans."
+    ] = False
 
-    def __init__(self, texify_model: GenerateVisionEncoderDecoderModel, config=None):
+    def __init__(self, texify_model: TexifyPredictor, config=None):
         super().__init__(config)
 
         self.texify_model = texify_model
@@ -41,23 +48,30 @@ class EquationProcessor(BaseProcessor):
         equation_data = []
 
         for page in document.pages:
-            for block in page.contained_blocks(document, self.block_types):
-                image_poly = block.polygon.rescale((page.polygon.width, page.polygon.height), page.lowres_image.size)
-                image = page.lowres_image.crop(image_poly.bbox).convert("RGB")
+            equation_blocks = page.contained_blocks(document, self.block_types)
+            math_blocks = []
+            if self.texify_inline_spans:
+                math_blocks = page.contained_blocks(document, (BlockTypes.Line,))
+                math_blocks = [m for m in math_blocks if m.formats and "math" in m.formats]
+
+            for block in equation_blocks + math_blocks:
+                image = block.get_image(document, highres=False).convert("RGB")
                 raw_text = block.raw_text(document)
                 token_count = self.get_total_texify_tokens(raw_text)
 
                 equation_data.append({
                     "image": image,
                     "block_id": block.id,
-                    "token_count": token_count
+                    "token_count": token_count,
+                    "page": page
                 })
+
+        if len(equation_data) == 0:
+            return
 
         predictions = self.get_latex_batched(equation_data)
         for prediction, equation_d in zip(predictions, equation_data):
             conditions = [
-                self.get_total_texify_tokens(prediction) < self.model_max_length,
-                # Make sure we didn't get to the overall token max, indicates run-on
                 len(prediction) > equation_d["token_count"] * .4,
                 len(prediction.strip()) > 0
             ]
@@ -65,7 +79,11 @@ class EquationProcessor(BaseProcessor):
                 continue
 
             block = document.get_block(equation_d["block_id"])
-            block.latex = prediction
+            if isinstance(block, Equation):
+                block.html = prediction
+            else:
+                block.structure = []
+                add_math_spans_to_line(prediction, block, equation_d["page"])
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:
@@ -77,35 +95,15 @@ class EquationProcessor(BaseProcessor):
         return 2
 
     def get_latex_batched(self, equation_data: List[dict]):
-        predictions = [""] * len(equation_data)
-        batch_size = self.get_batch_size()
+        inference_images = [eq["image"] for eq in equation_data]
+        model_output = self.texify_model(inference_images, batch_size=self.get_batch_size())
+        predictions = [output.text for output in model_output]
 
-        for i in tqdm(range(0, len(equation_data), batch_size), desc="Recognizing equations"):
-            # Dynamically set max length to save inference time
-            min_idx = i
-            max_idx = min(min_idx + batch_size, len(equation_data))
-
-            batch_equations = equation_data[min_idx:max_idx]
-            max_length = max([eq["token_count"] for eq in batch_equations])
-            max_length = min(max_length, self.model_max_length)
-            max_length += self.token_buffer
-
-            batch_images = [eq["image"] for eq in batch_equations]
-
-            model_output = batch_inference(
-                batch_images,
-                self.texify_model,
-                self.texify_model.processor,
-                max_tokens=max_length
-            )
-
-            for j, output in enumerate(model_output):
-                token_count = self.get_total_texify_tokens(output)
-                if token_count >= max_length - 1:
-                    output = ""
-
-                image_idx = i + j
-                predictions[image_idx] = output
+        for i, pred in enumerate(predictions):
+            token_count = self.get_total_texify_tokens(pred)
+            # If we're at the max token length, the prediction may be repetitive or invalid
+            if token_count >= self.model_max_length - 1:
+                predictions[i] = ""
         return predictions
 
     def get_total_texify_tokens(self, text):

@@ -1,4 +1,4 @@
-from typing import List
+from typing import Annotated, List, Tuple
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
@@ -11,8 +11,14 @@ class ListProcessor(BaseProcessor):
     A processor for merging lists across pages and columns
     """
     block_types = (BlockTypes.ListGroup,)
-    ignored_block_types = (BlockTypes.PageHeader, BlockTypes.PageFooter)
-    min_x_indent = 0.01  # % of page width
+    ignored_block_types: Annotated[
+        Tuple[BlockTypes],
+        "The list of block types to ignore when merging lists.",
+    ] = (BlockTypes.PageHeader, BlockTypes.PageFooter)
+    min_x_indent: Annotated[
+        float, "The minimum horizontal indentation required to consider a block as a nested list item.",
+        "This is expressed as a percentage of the page width and is used to determine hierarchical relationships within a list.",
+    ] = 0.01
 
     def __init__(self, config):
         super().__init__(config)
@@ -59,6 +65,10 @@ class ListProcessor(BaseProcessor):
                 stack: List[ListItem] = [block.get_next_block(page, None)]
                 for list_item_id in block.structure:
                     list_item_block: ListItem = page.get_block(list_item_id)
+
+                    # This can be a line sometimes
+                    if list_item_block.block_type != BlockTypes.ListItem:
+                        continue
 
                     while stack and list_item_block.polygon.x_start <= stack[-1].polygon.x_start + (self.min_x_indent * page.polygon.width):
                         stack.pop()

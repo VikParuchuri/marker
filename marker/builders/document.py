@@ -1,6 +1,8 @@
-from marker.settings import settings
+from typing import Annotated
+
 from marker.builders import BaseBuilder
 from marker.builders.layout import LayoutBuilder
+from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
@@ -12,23 +14,26 @@ from marker.schema.registry import get_block_class
 class DocumentBuilder(BaseBuilder):
     """
     Constructs a Document given a PdfProvider, LayoutBuilder, and OcrBuilder.
-
-    Attributes:
-        lowres_image_dpi (int): 
-            DPI setting for low-resolution page images used for Layout and Line Detection.
-            Default is 96.
-
-        highres_image_dpi (int): 
-            DPI setting for high-resolution page images used for OCR.
-            Default is 192.
     """
-    lowres_image_dpi: int = 96
-    highres_image_dpi: int = 192
+    lowres_image_dpi: Annotated[
+        int,
+        "DPI setting for low-resolution page images used for Layout and Line Detection.",
+    ] = 96
+    highres_image_dpi: Annotated[
+        int,
+        "DPI setting for high-resolution page images used for OCR.",
+    ] = 192
+    disable_ocr: Annotated[
+        bool,
+        "Disable OCR processing.",
+    ] = False
 
-    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, ocr_builder: OcrBuilder):
+    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, line_builder: LineBuilder, ocr_builder: OcrBuilder):
         document = self.build_document(provider)
         layout_builder(document, provider)
-        ocr_builder(document, provider)
+        line_builder(document, provider)
+        if not self.disable_ocr:
+            ocr_builder(document, provider)
         return document
 
     def build_document(self, provider: PdfProvider):
@@ -40,7 +45,8 @@ class DocumentBuilder(BaseBuilder):
                 page_id=p,
                 lowres_image=lowres_images[i],
                 highres_image=highres_images[i],
-                polygon=provider.get_page_bbox(p)
+                polygon=provider.get_page_bbox(p),
+                refs=provider.get_page_refs(p)
             ) for i, p in enumerate(provider.page_range)
         ]
         DocumentClass: Document = get_block_class(BlockTypes.Document)

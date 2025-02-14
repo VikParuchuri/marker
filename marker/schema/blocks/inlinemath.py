@@ -7,12 +7,13 @@ class InlineMath(Block):
     has_continuation: bool = False
     blockquote: bool = False
     blockquote_level: int = 0
+    block_description: str = "A text block that contains inline math.  This is not used for italic text or references - only for text that contains math."
 
-    def assemble_html(self, child_blocks, parent_structure):
+    def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
 
-        template = super().assemble_html(child_blocks, parent_structure)
+        template = super().assemble_html(document, child_blocks, parent_structure)
         template = template.replace("\n", " ")
 
         el_attr = f" block-type='{self.block_type}'"

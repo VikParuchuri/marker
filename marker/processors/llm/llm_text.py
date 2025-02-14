@@ -1,22 +1,30 @@
 import json
+from typing import List, Tuple, Annotated
 
-from marker.processors.llm import BaseLLMProcessor
-from bs4 import BeautifulSoup
-from google.ai.generativelanguage_v1beta.types import content
+from pydantic import BaseModel
+from PIL import Image
+
+from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData, BlockData
+
+from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.schema.document import Document
-from marker.schema.groups.page import PageGroup
-from marker.schema.registry import get_block_class
-from marker.schema.text.span import Span
+from marker.schema.text import Line
 
 
-class LLMTextProcessor(BaseLLMProcessor):
-    block_types = (BlockTypes.TextInlineMath, BlockTypes.Handwriting)
-    gemini_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
+class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
+    math_line_batch_size: Annotated[
+        int,
+        "The number of math lines to batch together.",
+    ] = 10
+
+    block_types = (BlockTypes.Line,)
+    image_remove_blocks = (BlockTypes.Equation,)
+    text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
-The number of output lines MUST match the number of input lines.
+The number of output lines MUST match the number of input lines.  Stay as faithful to the original text as possible.
 
 **Instructions:**
 
@@ -27,10 +35,11 @@ The number of output lines MUST match the number of input lines.
     * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
-5. Do not remove any formatting i.e bold, italics, etc from the extracted lines unless it is necessary to correct the error.
-6. Ensure that inline math is properly with inline math tags.
-7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.
+5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.
+6. Ensure that inline math is properly formatted with inline math tags.
+7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
 8. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.
+9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
 **Example:**
 
@@ -38,7 +47,7 @@ Input:
 ```
 {
  "extracted_lines": [
-  "Adversarial training (AT) [23], which aims to minimize\n",
+  "Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize\n",
   "the model's risk under the worst-case perturbations, is cur-\n",
   "rently the most effective approach for improving the robust-\n",
   "ness of deep neural networks. For a given neural network\n",
@@ -53,7 +62,7 @@ Output:
 ```json
 {
  "corrected_lines": [
-  "Adversarial training (AT) [23], which aims to minimize\n",
+  "Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize\n",
   "the model's risk under the worst-case perturbations, is cur-\n",
   "rently the most effective approach for improving the robust-\n",
   "ness of deep neural networks. For a given neural network\n",
@@ -64,87 +73,88 @@ Output:
 ```
 
 **Input:**
-
+```json
+{extracted_lines}
+```
 """
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        SpanClass: Span = get_block_class(BlockTypes.Span)
+    def inference_blocks(self, document: Document) -> List[List[BlockData]]:
+        blocks = []
+        for page in document.pages:
+            for block in page.contained_blocks(document, self.block_types):
+                if block.formats and "math" in block.formats:
+                    blocks.append({
+                        "page": page,
+                        "block": block
+                    })
 
+        out_blocks = []
+        for i in range(0, len(blocks), self.math_line_batch_size):
+            batch = blocks[i:i + self.math_line_batch_size]
+            out_blocks.append(batch)
+        return out_blocks
+
+    def get_block_lines(self, block: Block, document: Document) -> Tuple[list, list]:
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))
         extracted_lines = [line.formatted_text(document) for line in text_lines]
+        return text_lines, extracted_lines
 
-        prompt = self.gemini_rewriting_prompt + '```json\n`' + json.dumps({"extracted_lines": extracted_lines}, indent=2) + '`\n```\n'
-        image = self.extract_image(page, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["corrected_lines"],
-            properties={
-                "corrected_lines": content.Schema(
-                    type=content.Type.ARRAY,
-                    items=content.Schema(
-                        type=content.Type.STRING,
-                    ),
-                )
-            },
-        )
+    def combine_images(self, images: List[Image.Image]):
+        widths, heights = zip(*(i.size for i in images))
+        total_width = max(widths)
+        total_height = sum(heights) + 5 * len(images)
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        new_im = Image.new('RGB', (total_width, total_height), (255, 255, 255))
+
+        y_offset = 0
+        for im in images:
+            new_im.paste(im, (0, y_offset))
+            y_offset += im.size[1] + 5
+
+        return new_im
+
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block_data in self.inference_blocks(document):
+            blocks: List[Line] = [b["block"] for b in block_data]
+            pages = [b["page"] for b in block_data]
+            block_lines = [block.formatted_text(document) for block in blocks]
+
+            prompt = (
+                self.text_math_rewriting_prompt
+                  .replace("{extracted_lines}",json.dumps({"extracted_lines": block_lines}, indent=2))
+                  .replace("{line_count}", str(len(block_lines)))
+            )
+            images = [self.extract_image(document, block, remove_blocks=self.image_remove_blocks) for block in blocks]
+            image = self.combine_images(images)
+
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": blocks[0],
+                "schema": LLMTextSchema,
+                "page": pages[0],
+                "additional_data": {"blocks": blocks, "pages": pages}
+            })
+        return prompt_data
+
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        blocks = prompt_data["additional_data"]["blocks"]
+        pages = prompt_data["additional_data"]["pages"]
+
         if not response or "corrected_lines" not in response:
-            block.update_metadata(llm_error_count=1)
+            blocks[0].update_metadata(llm_error_count=1)
             return
 
         corrected_lines = response["corrected_lines"]
-        if not corrected_lines or len(corrected_lines) != len(extracted_lines):
-            block.update_metadata(llm_error_count=1)
+        if not corrected_lines or len(corrected_lines) != len(blocks):
+            blocks[0].update_metadata(llm_error_count=1)
             return
 
-        for text_line, corrected_text in zip(text_lines, corrected_lines):
+        for text_line, page, corrected_text in zip(blocks, pages, corrected_lines):
             text_line.structure = []
-            corrected_spans = self.text_to_spans(corrected_text)
+            add_math_spans_to_line(corrected_text, text_line, page)
 
-            for span_idx, span in enumerate(corrected_spans):
-                if span_idx == len(corrected_spans) - 1:
-                    span['content'] += "\n"
-
-                span_block = page.add_full_block(
-                    SpanClass(
-                        polygon=text_line.polygon,
-                        text=span['content'],
-                        font='Unknown',
-                        font_weight=0,
-                        font_size=0,
-                        minimum_position=0,
-                        maximum_position=0,
-                        formats=[span['type']],
-                        page_id=text_line.page_id,
-                        text_extraction_method="gemini",
-                    )
-                )
-                text_line.structure.append(span_block.id)
-
-    def text_to_spans(self, text):
-        soup = BeautifulSoup(text, 'html.parser')
-
-        tag_types = {
-            'b': 'bold',
-            'i': 'italic',
-            'math': 'math'
-        }
-        spans = []
-
-        for element in soup.descendants:
-            if not len(list(element.parents)) == 1:
-                continue
-            if element.name in tag_types:
-                spans.append({
-                    'type': tag_types[element.name],
-                    'content': element.get_text()
-                })
-            elif element.string:
-                spans.append({
-                    'type': 'plain',
-                    'content': element.string
-                })
-
-        return spans
+class LLMTextSchema(BaseModel):
+    corrected_lines: List[str]

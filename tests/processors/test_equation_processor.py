@@ -11,4 +11,4 @@ def test_equation_processor(pdf_document, texify_model):
 
     for block in pdf_document.pages[0].children:
         if block.block_type == BlockTypes.Equation:
-            assert block.latex is not None
+            assert block.html is not None

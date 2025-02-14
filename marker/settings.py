@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     OUTPUT_IMAGE_FORMAT: str = "JPEG"
 
     # LLM
-    GOOGLE_API_KEY: Optional[str] = None
+    GOOGLE_API_KEY: Optional[str] = ""
 
     # General models
     TORCH_DEVICE: Optional[str] = None  # Note: MPS device does not work for text detection, and will default to CPU
@@ -45,14 +45,6 @@ class Settings(BaseSettings):
             return torch.bfloat16
         else:
             return torch.float32
-
-    # Texify model
-    TEXIFY_MODEL_NAME: str = "vikp/texify"
-
-    @computed_field
-    @property
-    def TEXIFY_DTYPE(self) -> torch.dtype:
-        return torch.float32 if self.TORCH_DEVICE_MODEL == "cpu" else torch.float16
 
     class Config:
         env_file = find_dotenv("local.env")
