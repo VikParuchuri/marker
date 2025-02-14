@@ -156,7 +156,6 @@ class LineBuilder(BaseBuilder):
 
 
     def get_all_lines(self, document: Document, provider: PdfProvider, do_inline_math_detection: bool):
-        assert len(document.pages) == len(provider.page_lines)
         ocr_error_detection_results = self.ocr_error_detection(document.pages, provider.page_lines)
 
         boxes_to_ocr = {page.page_id: [] for page in document.pages}
