@@ -86,7 +86,7 @@ class ConfigParser:
         if not self.cli_options.get("use_llm", False):
             return None
 
-        service_cls = self.cli_options["llm_service"]
+        service_cls = self.cli_options.get("llm_service", None)
         if service_cls is None:
             service_cls = "marker.services.gemini.GoogleGeminiService"
         return service_cls

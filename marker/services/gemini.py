@@ -20,7 +20,7 @@ class BaseGeminiService(BaseService):
 
     def img_to_bytes(self, img: PIL.Image.Image):
         image_bytes = BytesIO()
-        img.save(image_bytes, format="PNG")
+        img.save(image_bytes, format="WEBP")
         return image_bytes.getvalue()
 
     def get_google_client(self, timeout: int):
@@ -45,7 +45,7 @@ class BaseGeminiService(BaseService):
             image = [image]
 
         client = self.get_google_client(timeout=timeout)
-        image_parts = [types.Part.from_bytes(data=self.img_to_bytes(img), mime_type="image/png") for img in image]
+        image_parts = [types.Part.from_bytes(data=self.img_to_bytes(img), mime_type="image/webp") for img in image]
 
         tries = 0
         while tries < max_retries:
@@ -57,7 +57,7 @@ class BaseGeminiService(BaseService):
                         "temperature": 0,
                         "response_schema": response_schema,
                         "response_mime_type": "application/json",
-                    }
+                    },
                 )
                 output = responses.candidates[0].content.parts[0].text
                 total_tokens = responses.usage_metadata.total_token_count
