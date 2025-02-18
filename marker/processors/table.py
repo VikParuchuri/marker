@@ -48,14 +48,14 @@ class TableProcessor(BaseProcessor):
         List[BlockTypes],
         "Block types to remove if they're contained inside the tables."
     ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    pdftext_workers: Annotated[
-        int,
-        "The number of workers to use for pdftext.",
-    ] = 4
     row_split_threshold: Annotated[
         float,
         "The percentage of rows that need to be split across the table before row splitting is active.",
     ] = 0.5
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+    ] = 1
 
     def __init__(
         self,

@@ -33,7 +33,7 @@ class PdfProvider(BaseProvider):
     pdftext_workers: Annotated[
         int,
         "The number of workers to use for pdftext.",
-    ] = 4
+    ] = 1
     flatten_pdf: Annotated[
         bool,
         "Whether to flatten the PDF structure.",
