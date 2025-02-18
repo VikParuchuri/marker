@@ -33,9 +33,6 @@ class ImageProvider(BaseProvider):
     def __len__(self):
         return self.image_count
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
-
     def get_images(self, idxs: List[int], dpi: int) -> List[Image.Image]:
         return [self.images[i] for i in idxs]
 

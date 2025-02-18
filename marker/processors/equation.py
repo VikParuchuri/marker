@@ -96,6 +96,7 @@ class EquationProcessor(BaseProcessor):
 
     def get_latex_batched(self, equation_data: List[dict]):
         inference_images = [eq["image"] for eq in equation_data]
+        self.texify_model.disable_tqdm = self.disable_tqdm
         model_output = self.texify_model(inference_images, batch_size=self.get_batch_size())
         predictions = [output.text for output in model_output]
 
