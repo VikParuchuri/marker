@@ -85,6 +85,7 @@ class Block(BaseModel):
     metadata: BlockMetadata | None = None
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
+    removed: bool = False # Has block been replaced by new block?
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
