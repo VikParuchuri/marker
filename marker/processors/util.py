@@ -8,6 +8,14 @@ from marker.schema.registry import get_block_class
 from marker.schema.text import Line
 
 
+def escape_latex_commands(text: str):
+    text = (text
+            .replace('\n', '\\n')
+            .replace('\t', '\\t')
+            .replace('\r', '\\r'))
+    return text
+
+
 def add_math_spans_to_line(corrected_text: str, text_line: Line, page: PageGroup):
     SpanClass = get_block_class(BlockTypes.Span)
     corrected_spans = text_to_spans(corrected_text)
@@ -53,10 +61,7 @@ def text_to_spans(text):
         if element.name in tag_types:
             text = element.get_text()
             if element.name == "math":
-                text = (text
-                        .replace('\n', '\\n')
-                        .replace('\t', '\\t')
-                        .replace('\r', '\\r'))
+                text = escape_latex_commands(text)
             spans.append({
                 'type': tag_types[element.name],
                 'content': text,

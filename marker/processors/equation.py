@@ -1,6 +1,6 @@
 from typing import Annotated, List, Optional, Tuple
 
-from marker.models import TexifyPredictor
+from surya.texify import TexifyPredictor
 from marker.processors import BaseProcessor
 from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
