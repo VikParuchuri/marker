@@ -47,7 +47,7 @@ class PageGroup(Group):
         if remove_blocks:
             image = image.copy()
             draw = ImageDraw.Draw(image)
-            bad_blocks = [block for block in self.children if block.block_type in remove_blocks]
+            bad_blocks = [block for block in self.current_children if block.block_type in remove_blocks]
             for bad_block in bad_blocks:
                 poly = bad_block.polygon.rescale(self.polygon.size, image.size).polygon
                 poly = [(int(p[0]), int(p[1])) for p in poly]
@@ -274,7 +274,7 @@ class PageGroup(Group):
         if self.metadata is None:
             self.metadata = BlockMetadata()
 
-        for block in self.children:
+        for block in self.current_children:
             if block.metadata is not None:
                 self.metadata = self.metadata.merge(block.metadata)
         return self.metadata
