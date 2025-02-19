@@ -25,7 +25,6 @@ class TableConverter(PdfConverter):
     )
     converter_block_types: List[BlockTypes] = (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents)
 
-    @cache
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)

@@ -88,6 +88,7 @@ def process_single_pdf(args):
 @click.option("--workers", type=int, default=5, help="Number of worker processes to use.")
 @click.option("--skip_existing", is_flag=True, default=False, help="Skip existing converted files.")
 @click.option("--debug_print", is_flag=True, default=False, help="Print debug information.")
+@click.option("--max_tasks_per_worker", type=int, default=10, help="Maximum number of tasks per worker process.")
 @ConfigParser.common_options
 def convert_cli(in_folder: str, **kwargs):
     in_folder = os.path.abspath(in_folder)
@@ -125,7 +126,7 @@ def convert_cli(in_folder: str, **kwargs):
     print(f"Converting {len(files_to_convert)} pdfs in chunk {kwargs['chunk_idx'] + 1}/{kwargs['num_chunks']} with {total_processes} processes and saving to {kwargs['output_dir']}")
     task_args = [(f, kwargs) for f in files_to_convert]
 
-    with mp.Pool(processes=total_processes, initializer=worker_init, initargs=(model_dict,), maxtasksperchild=1) as pool:
+    with mp.Pool(processes=total_processes, initializer=worker_init, initargs=(model_dict,), maxtasksperchild=kwargs["max_tasks_per_worker"]) as pool:
         pbar = tqdm(total=len(task_args), desc="Processing PDFs", unit="pdf")
         for _ in pool.imap_unordered(process_single_pdf, task_args):
             pbar.update(1)

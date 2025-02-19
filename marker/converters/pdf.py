@@ -135,7 +135,6 @@ class PdfConverter(BaseConverter):
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
 
-    @cache
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)

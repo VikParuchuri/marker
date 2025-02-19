@@ -21,7 +21,7 @@ class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
 
     block_types = (BlockTypes.Line,)
     image_remove_blocks = (BlockTypes.Equation,)
-    text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
+    text_math_rewriting_prompt = r"""You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
 The number of output lines MUST match the number of input lines.  Stay as faithful to the original text as possible.
