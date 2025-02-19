@@ -55,4 +55,4 @@ register_block_class(BlockTypes.Reference, Reference)
 register_block_class(BlockTypes.Document, Document)
 
 assert len(BLOCK_REGISTRY) == len(BlockTypes)
-assert all([get_block_class(k).model_fields['block_type'].default == k for k, _ in BLOCK_REGISTRY.items()])
+assert all([get_block_class(k).block_type == k for k, _ in BLOCK_REGISTRY.items()])

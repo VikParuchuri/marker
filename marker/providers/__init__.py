@@ -10,13 +10,16 @@ from marker.schema.polygon import PolygonBox
 from marker.schema.text import Span
 from marker.schema.text.line import Line
 from marker.util import assign_config
+from dataclasses import dataclass
 
-class Char(BaseModel):
+@dataclass
+class Char:
     char: str
     polygon: PolygonBox
     char_idx: int
 
-class ProviderOutput(BaseModel):
+@dataclass
+class ProviderOutput:
     line: Line
     spans: List[Span]
     chars: Optional[List[List[Char]]] = None

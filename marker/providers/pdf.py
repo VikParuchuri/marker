@@ -87,14 +87,11 @@ class PdfProvider(BaseProvider):
             assert max(self.page_range) < len(doc) and min(self.page_range) >= 0, \
                 f"Invalid page range, values must be between 0 and {len(doc) - 1}.  Min of provided page range is {min(self.page_range)} and max is {max(self.page_range)}."
 
-            self.page_bboxes = {i: doc[i].get_bbox() for i in self.page_range}
-            """
             if self.force_ocr:
                 # Manually assign page bboxes, since we can't get them from pdftext
                 self.page_bboxes = {i: doc[i].get_bbox() for i in self.page_range}
             else:
                 self.page_lines = self.pdftext_extraction(doc)
-            """
 
     @contextlib.contextmanager
     def get_doc(self):

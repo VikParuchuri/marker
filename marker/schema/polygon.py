@@ -2,16 +2,17 @@ from __future__ import annotations
 import copy
 from typing import List
 
-import numpy as np
 from pydantic import BaseModel, field_validator, computed_field
 
 
-class PolygonBox(BaseModel):
+class PolygonBox:
     polygon: List[List[float]]
 
-    @field_validator('polygon')
-    @classmethod
-    def check_elements(cls, v: List[List[float]]) -> List[List[float]]:
+    def __init__(self, polygon: List[List[float]]):
+        self.polygon = self.check_elements(polygon)
+
+
+    def check_elements(self, v: List[List[float]]) -> List[List[float]]:
         if len(v) != 4:
             raise ValueError('corner must have 4 elements')
 
@@ -66,7 +67,6 @@ class PolygonBox(BaseModel):
     def y_end(self):
         return self.bbox[3]
 
-    @computed_field
     @property
     def bbox(self) -> List[float]:
         min_x = min([corner[0] for corner in self.polygon])

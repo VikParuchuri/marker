@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import List, Sequence
 
 from pydantic import BaseModel
@@ -8,21 +9,23 @@ from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId, BlockOutput
 from marker.schema.groups.page import PageGroup
 
-
-class DocumentOutput(BaseModel):
+@dataclass
+class DocumentOutput:
     children: List[BlockOutput]
     html: str
     block_type: BlockTypes = BlockTypes.Document
 
 
-class TocItem(BaseModel):
+@dataclass
+class TocItem:
     title: str
     heading_level: int
     page_id: int
     polygon: List[List[float]]
 
 
-class Document(BaseModel):
+@dataclass
+class Document:
     filepath: str
     pages: List[PageGroup]
     block_type: BlockTypes = BlockTypes.Document

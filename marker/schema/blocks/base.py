@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, fields
 from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence, Tuple
 
-from pydantic import BaseModel, ConfigDict, field_validator
 from PIL import Image
 
 from marker.schema import BlockTypes
@@ -12,20 +12,25 @@ if TYPE_CHECKING:
     from marker.schema.document import Document
     from marker.schema.groups.page import PageGroup
 
-
-class BlockMetadata(BaseModel):
+@dataclass
+class BlockMetadata:
     llm_request_count: int = 0
     llm_error_count: int = 0
     llm_tokens_used: int = 0
 
-    def merge(self, model2):
-        return self.__class__(**{
-            field: getattr(self, field) + getattr(model2, field)
-            for field in self.model_fields
+    def merge(self, other: 'BlockMetadata') -> 'BlockMetadata':
+        return BlockMetadata(**{
+            field.name: getattr(self, field.name) + getattr(other, field.name)
+            for field in fields(self)
         })
 
+    def model_dump(self):
+        data = {fname.name: getattr(self, fname.name) for fname in fields(self)}
+        return data
 
-class BlockOutput(BaseModel):
+
+@dataclass
+class BlockOutput:
     html: str
     polygon: PolygonBox
     id: BlockId
@@ -33,10 +38,16 @@ class BlockOutput(BaseModel):
     section_hierarchy: Dict[int, BlockId] | None = None
 
 
-class BlockId(BaseModel):
+class BlockId:
     page_id: int
     block_id: Optional[int] = None
     block_type: BlockTypes | None = None
+
+    def __init__(self, page_id: int, block_id: Optional[int] = None, block_type: BlockTypes | None = None):
+        self.page_id = page_id
+        self.block_id = block_id
+        self.block_type = block_type
+        self.validate_block_type(block_type)
 
     def __str__(self):
         if self.block_type is None or self.block_id is None:
@@ -58,9 +69,7 @@ class BlockId(BaseModel):
         else:
             return self.page_id == other.page_id and self.block_id == other.block_id and self.block_type == other.block_type
 
-    @field_validator("block_type")
-    @classmethod
-    def validate_block_type(cls, v):
+    def validate_block_type(self, v):
         from marker.schema import BlockTypes
         if not v in BlockTypes:
             raise ValueError(f"Invalid block type: {v}")
@@ -70,7 +79,7 @@ class BlockId(BaseModel):
         return str(self).replace('/', '_')
 
 
-class Block(BaseModel):
+class Block:
     polygon: PolygonBox
     block_description: str
     block_type: Optional[BlockTypes] = None
@@ -86,7 +95,9 @@ class Block(BaseModel):
     lowres_image: Image.Image | None = None
     highres_image: Image.Image | None = None
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     @property
     def id(self) -> BlockId:
@@ -95,11 +106,6 @@ class Block(BaseModel):
             block_id=self.block_id,
             block_type=self.block_type
         )
-
-    @classmethod
-    def from_block(cls, block: Block) -> Block:
-        block_attrs = block.model_dump(exclude=["id", "block_id", "block_type"])
-        return cls(**block_attrs)
 
     def get_image(self, document: Document, highres: bool = False, expansion: Tuple[float, float] | None = None, remove_blocks: Sequence[BlockTypes] | None = None) -> Image.Image | None:
         image = self.highres_image if highres else self.lowres_image

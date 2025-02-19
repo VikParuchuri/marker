@@ -1,4 +1,3 @@
-import json
 import os
 from typing import Annotated
 
@@ -32,10 +31,6 @@ class DebugProcessor(BaseProcessor):
         bool,
         "Whether to dump PDF debug images.",
     ] = False
-    debug_json: Annotated[
-        bool,
-        "Whether to dump block debug data.",
-    ] = False
     render_font: Annotated[
         str,
         "The path to the font to use for rendering debug images.",
@@ -49,7 +44,7 @@ class DebugProcessor(BaseProcessor):
         # Remove extension from doc name
         doc_base = os.path.basename(document.filepath).rsplit(".", 1)[0]
         self.debug_folder = os.path.join(self.debug_data_folder, doc_base)
-        if any([self.debug_layout_images, self.debug_pdf_images, self.debug_json]):
+        if any([self.debug_layout_images, self.debug_pdf_images]):
             os.makedirs(self.debug_folder, exist_ok=True)
 
         document.debug_data_path = self.debug_folder
@@ -61,10 +56,6 @@ class DebugProcessor(BaseProcessor):
         if self.debug_pdf_images:
             self.draw_pdf_debug_images(document)
             print(f"Dumped PDF debug images to {self.debug_data_folder}")
-
-        if self.debug_json:
-            self.dump_block_debug_data(document)
-            print(f"Dumped block debug data to {self.debug_data_folder}")
 
     def draw_pdf_debug_images(self, document: Document):
         for page in document.pages:
@@ -135,16 +126,6 @@ class DebugProcessor(BaseProcessor):
             label_font_size=24
         )
         return png_image
-
-    def dump_block_debug_data(self, document: Document):
-        debug_file = os.path.join(self.debug_folder, f"blocks.json")
-        debug_data = []
-        for page in document.pages:
-            page_data = page.model_dump(exclude={"lowres_image": True, "highres_image": True, "children": {"__all__": {"lowres_image": True, "highres_image": True}}})
-            debug_data.append(page_data)
-
-        with open(debug_file, "w+") as f:
-            json.dump(debug_data, f)
 
     def get_font_path(self) -> str:
         if not os.path.exists(self.render_font):
