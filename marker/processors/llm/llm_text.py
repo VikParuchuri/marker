@@ -24,6 +24,7 @@ class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
     text_math_rewriting_prompt = r"""You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
+
 The number of output lines MUST match the number of input lines.  Stay as faithful to the original text as possible.
 
 **Instructions:**
@@ -32,14 +33,13 @@ The number of output lines MUST match the number of input lines.  Stay as faithf
 2. Analyze the extracted lines.
 3. For each extracted line, compare it to the corresponding line in the image.
 4. Correct any errors in the extracted line, including:
-    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.
+    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Use the `<math>` and `</math>` tags to surround inline math properly.  Make sure the opening and closing tags appear in pairs, on the same line.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
-5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.
-6. Ensure that inline math is properly formatted with inline math tags.
-7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
-8. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.
-9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
+5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.  The formatting 
+6. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
+7. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.  Each line should be in HTML format. Only use the math, br, a, i, b, sup, sub, and span tags.
+8. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
 **Example:**
 
@@ -148,7 +148,12 @@ Output:
             return
 
         corrected_lines = response["corrected_lines"]
-        if not corrected_lines or len(corrected_lines) != len(blocks):
+        balanced_math = all([line.count("<math") == line.count("</math>") for line in corrected_lines])
+        if any([
+            not corrected_lines,
+            len(corrected_lines) != len(blocks),
+            not balanced_math
+        ]):
             blocks[0].update_metadata(llm_error_count=1)
             return
 

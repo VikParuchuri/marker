@@ -1,3 +1,5 @@
+import re
+
 from bs4 import BeautifulSoup
 
 from marker.schema import BlockTypes
@@ -49,9 +51,15 @@ def text_to_spans(text):
         url = element.attrs.get('href') if hasattr(element, 'attrs') else None
 
         if element.name in tag_types:
+            text = element.get_text()
+            if element.name == "math":
+                text = (text
+                        .replace('\n', '\\n')
+                        .replace('\t', '\\t')
+                        .replace('\r', '\\r'))
             spans.append({
                 'type': tag_types[element.name],
-                'content': element.get_text(),
+                'content': text,
                 'url': url
             })
         elif element.string:
