@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "marker-pdf"
-version = "1.5.3"
+version = "1.5.4"
 description = "Convert PDF to markdown with high speed and accuracy."
 authors = ["Vik Paruchuri <github@vikas.sh>"]
 readme = "README.md"
@@ -26,7 +26,7 @@ torch = "^2.5.1"
 tqdm = "^4.66.1"
 ftfy = "^6.1.1"
 rapidfuzz = "^3.8.1"
-surya-ocr = "~0.11.1"
+surya-ocr = "~0.12.0"
 regex = "^2024.4.28"
 pdftext = "~0.6.0"
 markdownify = "^0.13.1"

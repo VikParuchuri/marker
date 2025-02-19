@@ -11,7 +11,7 @@ class BaseService:
     timeout: Annotated[
         int,
         "The timeout to use for the service."
-    ] = 15
+    ] = 30
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the service."

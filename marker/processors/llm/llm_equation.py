@@ -101,6 +101,7 @@ Output:
         if len(html_equation) < len(text) * .5:
             block.update_metadata(llm_error_count=1)
             return
+
         block.html = html_equation
 
 class EquationSchema(BaseModel):

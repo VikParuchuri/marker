@@ -1,12 +1,8 @@
 import os
 
-from marker.services.gemini import GoogleGeminiService
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
-import inspect
 from collections import defaultdict
-from functools import cache
 from typing import Annotated, Any, Dict, List, Optional, Type, Tuple
 
 from marker.processors import BaseProcessor
@@ -46,6 +42,7 @@ from marker.schema.registry import register_block_class
 from marker.util import strings_to_classes
 from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
 from marker.processors.order import OrderProcessor
+from marker.services.gemini import GoogleGeminiService
 
 
 class PdfConverter(BaseConverter):

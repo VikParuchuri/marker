@@ -1,9 +1,19 @@
+import re
+
 from bs4 import BeautifulSoup
 
 from marker.schema import BlockTypes
 from marker.schema.groups import PageGroup
 from marker.schema.registry import get_block_class
 from marker.schema.text import Line
+
+
+def escape_latex_commands(text: str):
+    text = (text
+            .replace('\n', '\\n')
+            .replace('\t', '\\t')
+            .replace('\r', '\\r'))
+    return text
 
 
 def add_math_spans_to_line(corrected_text: str, text_line: Line, page: PageGroup):
@@ -49,9 +59,12 @@ def text_to_spans(text):
         url = element.attrs.get('href') if hasattr(element, 'attrs') else None
 
         if element.name in tag_types:
+            text = element.get_text()
+            if element.name == "math":
+                text = escape_latex_commands(text)
             spans.append({
                 'type': tag_types[element.name],
-                'content': element.get_text(),
+                'content': text,
                 'url': url
             })
         elif element.string:

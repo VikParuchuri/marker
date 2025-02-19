@@ -1,6 +1,6 @@
 from typing import Annotated, List, Optional, Tuple
 
-from marker.models import TexifyPredictor
+from surya.texify import TexifyPredictor
 from marker.processors import BaseProcessor
 from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
@@ -80,10 +80,27 @@ class EquationProcessor(BaseProcessor):
 
             block = document.get_block(equation_d["block_id"])
             if isinstance(block, Equation):
+                prediction = self.inline_to_block(prediction)
                 block.html = prediction
             else:
                 block.structure = []
                 add_math_spans_to_line(prediction, block, equation_d["page"])
+
+    def inline_to_block(self, latex: str):
+        latex = latex.strip()
+        math_count = latex.count("<math")
+        math_start = latex.startswith("<math>")
+        math_end = latex.endswith("</math>")
+        if any([
+            math_count != 1,
+            not math_start,
+            not math_end
+        ]):
+            return latex
+
+        latex = latex.replace("<math>", '<math display="block">')
+        return latex
+
 
     def get_batch_size(self):
         if self.texify_batch_size is not None:
