@@ -1,3 +1,4 @@
+import atexit
 import os
 
 os.environ["GRPC_VERBOSITY"] = "ERROR"
@@ -11,6 +12,7 @@ import traceback
 import click
 import torch.multiprocessing as mp
 from tqdm import tqdm
+import gc
 
 from marker.config.parser import ConfigParser
 from marker.config.printer import CustomClickPrinter
@@ -29,10 +31,16 @@ def worker_init(model_dict):
     global model_refs
     model_refs = model_dict
 
+    # Ensure we clean up the model references on exit
+    atexit.register(worker_exit)
+
 
 def worker_exit():
     global model_refs
-    del model_refs
+    try:
+        del model_refs
+    except Exception:
+        pass
 
 
 def process_single_pdf(args):
@@ -45,10 +53,14 @@ def process_single_pdf(args):
         return
 
     converter_cls = config_parser.get_converter_cls()
+    config_dict = config_parser.generate_config_dict()
+    config_dict["disable_tqdm"] = True
 
     try:
+        if cli_options.get("debug_print"):
+            print(f"Converting {fpath}")
         converter = converter_cls(
-            config=config_parser.generate_config_dict(),
+            config=config_dict,
             artifact_dict=model_refs,
             processor_list=config_parser.get_processors(),
             renderer=config_parser.get_renderer(),
@@ -57,9 +69,15 @@ def process_single_pdf(args):
         rendered = converter(fpath)
         out_folder = config_parser.get_output_folder(fpath)
         save_output(rendered, out_folder, base_name)
+        if cli_options.get("debug_print"):
+            print(f"Converted {fpath}")
+        del rendered
+        del converter
     except Exception as e:
         print(f"Error converting {fpath}: {e}")
         print(traceback.format_exc())
+    finally:
+        gc.collect()
 
 
 @click.command(cls=CustomClickPrinter)
@@ -69,6 +87,8 @@ def process_single_pdf(args):
 @click.option("--max_files", type=int, default=None, help="Maximum number of pdfs to convert")
 @click.option("--workers", type=int, default=5, help="Number of worker processes to use.")
 @click.option("--skip_existing", is_flag=True, default=False, help="Skip existing converted files.")
+@click.option("--debug_print", is_flag=True, default=False, help="Print debug information.")
+@click.option("--max_tasks_per_worker", type=int, default=10, help="Maximum number of tasks per worker process.")
 @ConfigParser.common_options
 def convert_cli(in_folder: str, **kwargs):
     in_folder = os.path.abspath(in_folder)
@@ -106,10 +126,11 @@ def convert_cli(in_folder: str, **kwargs):
     print(f"Converting {len(files_to_convert)} pdfs in chunk {kwargs['chunk_idx'] + 1}/{kwargs['num_chunks']} with {total_processes} processes and saving to {kwargs['output_dir']}")
     task_args = [(f, kwargs) for f in files_to_convert]
 
-    with mp.Pool(processes=total_processes, initializer=worker_init, initargs=(model_dict,)) as pool:
-        list(tqdm(pool.imap(process_single_pdf, task_args), total=len(task_args), desc="Processing PDFs", unit="pdf"))
-
-        pool._worker_handler.terminate = worker_exit
+    with mp.Pool(processes=total_processes, initializer=worker_init, initargs=(model_dict,), maxtasksperchild=kwargs["max_tasks_per_worker"]) as pool:
+        pbar = tqdm(total=len(task_args), desc="Processing PDFs", unit="pdf")
+        for _ in pool.imap_unordered(process_single_pdf, task_args):
+            pbar.update(1)
+        pbar.close()
 
     # Delete all CUDA tensors
     del model_dict

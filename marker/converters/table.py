@@ -25,7 +25,6 @@ class TableConverter(PdfConverter):
     )
     converter_block_types: List[BlockTypes] = (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents)
 
-    @cache
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
@@ -33,8 +32,9 @@ class TableConverter(PdfConverter):
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         document_builder = DocumentBuilder(self.config)
         document_builder.disable_ocr = True
-        with provider_cls(filepath, self.config) as provider:
-            document = document_builder(provider, layout_builder, line_builder, ocr_builder)
+
+        provider = provider_cls(filepath, self.config)
+        document = document_builder(provider, layout_builder, line_builder, ocr_builder)
 
         for page in document.pages:
             page.structure = [p for p in page.structure if p.block_type in self.converter_block_types]

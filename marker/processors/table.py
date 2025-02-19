@@ -48,14 +48,18 @@ class TableProcessor(BaseProcessor):
         List[BlockTypes],
         "Block types to remove if they're contained inside the tables."
     ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    pdftext_workers: Annotated[
-        int,
-        "The number of workers to use for pdftext.",
-    ] = 4
     row_split_threshold: Annotated[
         float,
         "The percentage of rows that need to be split across the table before row splitting is active.",
     ] = 0.5
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+    ] = 1
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
 
     def __init__(
         self,
@@ -95,6 +99,7 @@ class TableProcessor(BaseProcessor):
         self.assign_ocr_lines(ocr_blocks)  # Handle tables where OCR is needed
         assert all("table_text_lines" in t for t in table_data), "All table data must have table cells"
 
+        self.table_rec_model.disable_tqdm = self.disable_tqdm
         tables: List[TableResult] = self.table_rec_model(
             [t["table_image"] for t in table_data],
             batch_size=self.get_table_rec_batch_size()
@@ -372,6 +377,8 @@ class TableProcessor(BaseProcessor):
 
     def assign_ocr_lines(self, ocr_blocks: list):
         det_images = [t["table_image"] for t in ocr_blocks]
+        self.recognition_model.disable_tqdm = self.disable_tqdm
+        self.detection_model.disable_tqdm = self.disable_tqdm
         ocr_results: List[OCRResult] = self.recognition_model(
             det_images,
             [None] * len(det_images),

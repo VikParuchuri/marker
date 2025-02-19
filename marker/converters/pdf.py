@@ -99,6 +99,9 @@ class PdfConverter(BaseConverter):
     ):
         super().__init__(config)
 
+        if config is None:
+            config = {}
+
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
 
@@ -132,14 +135,13 @@ class PdfConverter(BaseConverter):
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
 
-    @cache
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
-        with provider_cls(filepath, self.config) as provider:
-            document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
+        provider = provider_cls(filepath, self.config)
+        document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
         structure_builder_cls = self.resolve_dependencies(StructureBuilder)
         structure_builder_cls(document)
 

@@ -21,7 +21,7 @@ class LLMEquationProcessor(BaseLLMSimpleBlockProcessor):
         str,
         "The prompt to use for generating LaTeX from equations.",
         "Default is a string containing the Gemini prompt."
-    ] = """You're an expert mathematician who is good at writing LaTeX code and html for equations.
+    ] = r"""You're an expert mathematician who is good at writing LaTeX code and html for equations.
 You'll receive an image of a math block that may contain one or more equations. Your job is to write html that represents the content of the image, with the equations in LaTeX format, and fenced by delimiters.
 
 Some guidelines:

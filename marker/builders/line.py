@@ -96,6 +96,10 @@ class LineBuilder(BaseBuilder):
         "Whether to run texify on inline math spans."
     ] = False
     ocr_remove_blocks: Tuple[BlockTypes, ...] = (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents, BlockTypes.Equation)
+    disable_tqdm: Annotated[
+        bool,
+        "Disable tqdm progress bars.",
+    ] = False
 
     def __init__(self, detection_model: DetectionPredictor, inline_detection_model: InlineDetectionPredictor, ocr_error_model: OCRErrorPredictor, config=None):
         super().__init__(config)
@@ -126,12 +130,14 @@ class LineBuilder(BaseBuilder):
         return 4
 
     def get_detection_results(self, page_images: List[Image.Image], run_detection: List[bool], do_inline_math_detection: bool):
+        self.detection_model.disable_tqdm = self.disable_tqdm
         page_detection_results = self.detection_model(
             images=page_images,
             batch_size=self.get_detection_batch_size()
         )
         inline_detection_results = [None] * len(page_detection_results)
         if do_inline_math_detection:
+            self.inline_detection_model.disable_tqdm = self.disable_tqdm
             inline_detection_results = self.inline_detection_model(
                 images=page_images,
                 text_boxes=[[b.bbox for b in det_result.bboxes] for det_result in page_detection_results],
@@ -257,6 +263,7 @@ class LineBuilder(BaseBuilder):
             page_text = '\n'.join(' '.join(s.text for s in line.spans) for line in provider_lines)
             page_texts.append(page_text)
 
+        self.ocr_error_model.disable_tqdm = self.disable_tqdm
         ocr_error_detection_results = self.ocr_error_model(
             page_texts,
             batch_size=int(self.get_ocr_error_batch_size())

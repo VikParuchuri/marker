@@ -28,6 +28,10 @@ class OcrBuilder(BaseBuilder):
         "A list of languages to use for OCR.",
         "Default is None."
     ] = None
+    disable_tqdm: Annotated[
+        bool,
+        "Disable tqdm progress bars.",
+    ] = False
 
     def __init__(self, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
@@ -77,6 +81,7 @@ class OcrBuilder(BaseBuilder):
         if sum(len(b) for b in line_boxes)==0:
             return
 
+        self.recognition_model.disable_tqdm = self.disable_tqdm
         recognition_results = self.recognition_model(
             images=images,
             bboxes=line_boxes,

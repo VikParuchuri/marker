@@ -62,6 +62,10 @@ class OllamaService(BaseService):
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
             response_data = response.json()
+
+            total_tokens = response_data["prompt_eval_count"] + response_data["eval_count"]
+            block.update_metadata(llm_request_count=1, llm_tokens_used=total_tokens)
+
             data = response_data["response"]
             return json.loads(data)
         except Exception as e:
