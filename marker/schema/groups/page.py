@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from PIL import Image, ImageDraw
 
 from pdftext.schema import Reference
+from pydantic import computed_field
+
 from marker.providers import ProviderOutput
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockId, Text
@@ -53,6 +55,10 @@ class PageGroup(Group):
 
         return image
 
+    @computed_field
+    @property
+    def current_children(self) -> List[Block]:
+        return [child for child in self.children if not child.removed]
 
     def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
         if ignored_block_types is None:
@@ -102,13 +108,9 @@ class PageGroup(Group):
             template += f"<content-ref src='{c.id}'></content-ref>"
         return template
 
-    def compute_line_block_intersections(self, provider_outputs: List[ProviderOutput]):
+    def compute_line_block_intersections(self, blocks: List[Block], provider_outputs: List[ProviderOutput]):
         max_intersections = {}
 
-        blocks = [
-            block for block in self.children
-            if block.block_type not in self.excluded_block_types
-        ]
         block_bboxes = [block.polygon.bbox for block in blocks]
         line_bboxes = [provider_output.line.polygon.bbox for provider_output in provider_outputs]
 
@@ -136,6 +138,10 @@ class PageGroup(Group):
         # Replace block in structure of children
         for child in self.children:
             child.replace_block(block, new_block)
+
+        # Mark block as removed
+        block.removed = True
+
 
     def identify_missing_blocks(
             self,
@@ -224,7 +230,12 @@ class PageGroup(Group):
         text_extraction_method: str
     ):
         provider_line_idxs = list(range(len(provider_outputs)))
-        max_intersections = self.compute_line_block_intersections(provider_outputs)
+        valid_blocks = [
+            block for block in self.current_children # ensure we only look at children that haven't been replaced
+            if block.block_type not in self.excluded_block_types
+        ]
+
+        max_intersections = self.compute_line_block_intersections(valid_blocks, provider_outputs)
 
         # Try to assign lines by intersection
         assigned_line_idxs = set()
@@ -241,9 +252,7 @@ class PageGroup(Group):
             min_dist_idx = None
             provider_output: ProviderOutput = provider_outputs[line_idx]
             line = provider_output.line
-            for block in self.children:
-                if block.block_type in self.excluded_block_types:
-                    continue
+            for block in valid_blocks:
                 # We want to assign to blocks closer in y than x
                 dist = line.polygon.center_distance(block.polygon, x_weight=5)
                 if min_dist_idx is None or dist < min_dist:
