@@ -38,7 +38,7 @@ The number of output lines MUST match the number of input lines.  Stay as faithf
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
 5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.  The formatting 
 6. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
-7. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.  Each line should be in HTML format. Only use the math, br, a, i, b, sup, sub, and span tags.
+7. Output the corrected lines in JSON format, as shown in the example below.  Each line should be in HTML format. Only use the math, br, a, i, b, sup, sub, and span tags.
 8. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
 **Example:**
@@ -87,6 +87,7 @@ Output:
                         "page": page,
                         "block": block
                     })
+
 
         out_blocks = []
         for i in range(0, len(blocks), self.math_line_batch_size):

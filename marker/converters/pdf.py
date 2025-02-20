@@ -1,5 +1,7 @@
 import os
 
+from marker.processors.llm.llm_inlinemath import LLMInlineMathProcessor
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 from collections import defaultdict
@@ -82,6 +84,7 @@ class PdfConverter(BaseConverter):
         LLMImageDescriptionProcessor,
         LLMEquationProcessor,
         LLMHandwritingProcessor,
+        LLMInlineMathProcessor,
         ReferenceProcessor,
         DebugProcessor,
     )

@@ -1,4 +1,6 @@
+from collections import defaultdict
 from copy import deepcopy
+from itertools import chain
 from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
@@ -71,14 +73,14 @@ class LineBuilder(BaseBuilder):
         float,
         "The minimum overlap of a line with an inline math box to consider as a match"
     ] = 0.
+    line_inline_min_overlap_pct: Annotated[
+        float,
+        "The percentage of a provider line that has to be covered by a math line."
+    ] = .3
     line_text_overlap_threshold: Annotated[
         float,
         "The minimum overlap of an equation with a text line to consider as a match"
     ] = .5
-    inline_math_minimum_area: Annotated[
-        float,
-        "The minimum area for an inline math block, in pixels."
-    ] = 20
     inline_math_line_vertical_merge_threshold: Annotated[
         int,
         "The maximum pixel distance between y1s for two lines to be merged"
@@ -365,7 +367,7 @@ class LineBuilder(BaseBuilder):
             max_overlap = np.max(overlap_row) / inline_box.area
 
             # Avoid small or nonoverlapping inline math regions
-            if max_overlap <= self.line_inline_math_overlap_threshold or inline_box.area < self.inline_math_minimum_area:
+            if max_overlap <= self.line_inline_math_overlap_threshold:
                 continue
 
             # Ignore vertical lines
@@ -401,45 +403,25 @@ class LineBuilder(BaseBuilder):
         provider_line_boxes = [p.line.polygon.bbox for _, p in horizontal_provider_lines]
         math_line_boxes = [PolygonBox(polygon=m.polygon).rescale(image_size, page_size).bbox for m in inline_math_lines]
 
-        overlaps = matrix_intersection_area(math_line_boxes, provider_line_boxes)
+        overlaps = matrix_intersection_area(provider_line_boxes, math_line_boxes)
 
         # Find potential merges
-        merge_lines = []
-        for i in range(len(math_line_boxes)):
-            merge_line = []
-            math_line_polygon = PolygonBox(polygon=inline_math_lines[i].polygon).rescale(image_size, page_size)
-            max_overlap = np.max(overlaps[i])
-            if max_overlap <= self.line_inline_math_overlap_threshold:
+        merge_lines = defaultdict(list)
+        for i in range(len(provider_line_boxes)):
+            max_overlap_pct = np.max(overlaps[i]) / horizontal_provider_lines[i][1].line.polygon.area
+            if max_overlap_pct <= self.line_inline_min_overlap_pct:
                 continue
 
             best_overlap = np.argmax(overlaps[i])
             best_overlap_line = horizontal_provider_lines[best_overlap]
-            best_overlap_y1 = best_overlap_line[1].line.polygon.y_start
 
-            nonzero_idxs = np.nonzero(overlaps[i] > self.line_inline_math_overlap_threshold)[0]
-            for idx in nonzero_idxs:
-                provider_idx, provider_line = horizontal_provider_lines[idx]
-                provider_line_y1 = provider_line.line.polygon.y_start
-
-                should_merge_line = False
-                if abs(provider_line_y1 - best_overlap_y1) <= self.inline_math_line_vertical_merge_threshold:
-                    should_merge_line = True
-
-                line_overlaps = self.find_overlapping_math_chars(provider_line, math_line_polygon, remove_chars=not should_merge_line)
-
-                # Do not merge if too far above/below (but remove characters)
-                if line_overlaps and should_merge_line:
-                    # Add the index of the provider line to the merge line
-                    merge_line.append(provider_idx)
-
-            if len(merge_line) > 0:
-                merge_lines.append(merge_line)
+            merge_lines[best_overlap].append(i)
 
         # Handle the merging
         already_merged = set()
-        potential_merges = set([m for merge_line in merge_lines for m in merge_line])
+        potential_merges = set(chain.from_iterable(merge_lines.values()))
         out_provider_lines = [(i, p) for i, p in enumerate(provider_lines) if i not in potential_merges]
-        for merge_section in merge_lines:
+        for merge_section in merge_lines.values():
             merge_section = [m for m in merge_section if m not in already_merged]
             if len(merge_section) == 0:
                 continue
