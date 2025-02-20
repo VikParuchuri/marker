@@ -29,7 +29,7 @@ class TableProcessor(BaseProcessor):
         bool,
         "Whether to detect boxes for the table recognition model.",
     ] = False
-    detector_batch_size: Annotated[
+    detection_batch_size: Annotated[
         int,
         "The batch size to use for the table detection model.",
         "Default is None, which will use the default batch size for the model."
@@ -48,14 +48,18 @@ class TableProcessor(BaseProcessor):
         List[BlockTypes],
         "Block types to remove if they're contained inside the tables."
     ] = (BlockTypes.Text, BlockTypes.TextInlineMath)
-    pdftext_workers: Annotated[
-        int,
-        "The number of workers to use for pdftext.",
-    ] = 4
     row_split_threshold: Annotated[
         float,
         "The percentage of rows that need to be split across the table before row splitting is active.",
     ] = 0.5
+    pdftext_workers: Annotated[
+        int,
+        "The number of workers to use for pdftext.",
+    ] = 1
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
 
     def __init__(
         self,
@@ -95,12 +99,14 @@ class TableProcessor(BaseProcessor):
         self.assign_ocr_lines(ocr_blocks)  # Handle tables where OCR is needed
         assert all("table_text_lines" in t for t in table_data), "All table data must have table cells"
 
+        self.table_rec_model.disable_tqdm = self.disable_tqdm
         tables: List[TableResult] = self.table_rec_model(
             [t["table_image"] for t in table_data],
             batch_size=self.get_table_rec_batch_size()
         )
         self.assign_text_to_cells(tables, table_data)
         self.split_combined_rows(tables) # Split up rows that were combined
+        self.combine_dollar_column(tables) # Combine columns that are just dollar signs
 
         # Assign table cells to the table
         table_idx = 0
@@ -167,6 +173,64 @@ class TableProcessor(BaseProcessor):
         for space in space_chars:
             text = text.replace(space, ' ')
         return text
+
+
+    def combine_dollar_column(self, tables: List[TableResult]):
+        for table in tables:
+            if len(table.cells) == 0:
+                # Skip empty tables
+                continue
+            unique_cols = sorted(list(set([c.col_id for c in table.cells])))
+            max_col = max(unique_cols)
+            dollar_cols = []
+            for col in unique_cols:
+                # Cells in this col
+                col_cells = [c for c in table.cells if c.col_id == col]
+                col_text = ["\n".join(self.finalize_cell_text(c)).strip() for c in col_cells]
+                all_dollars = all([ct in ["", "$"] for ct in col_text])
+                colspans = [c.colspan for c in col_cells]
+                span_into_col = [c for c in table.cells if c.col_id != col and c.col_id + c.colspan > col > c.col_id]
+
+                # This is a column that is entirely dollar signs
+                if all([
+                    all_dollars,
+                    len(col_cells) > 1,
+                    len(span_into_col) == 0,
+                    all([c == 1 for c in colspans]),
+                    col < max_col
+                ]):
+                    next_col_cells = [c for c in table.cells if c.col_id == col + 1]
+                    next_col_rows = [c.row_id for c in next_col_cells]
+                    col_rows = [c.row_id for c in col_cells]
+                    if len(next_col_cells) == len(col_cells) and next_col_rows == col_rows:
+                        dollar_cols.append(col)
+
+
+            if len(dollar_cols) == 0:
+                continue
+
+            dollar_cols = sorted(dollar_cols)
+            col_offset = 0
+            for col in unique_cols:
+                col_cells = [c for c in table.cells if c.col_id == col]
+                if col_offset == 0 and col not in dollar_cols:
+                    continue
+
+                if col in dollar_cols:
+                    col_offset += 1
+                    for cell in col_cells:
+                        text_lines = cell.text_lines if cell.text_lines else []
+                        next_row_col = [c for c in table.cells if c.row_id == cell.row_id and c.col_id == col + 1]
+
+                        # Add dollar to start of the next column
+                        next_text_lines = next_row_col[0].text_lines if next_row_col[0].text_lines else []
+                        next_row_col[0].text_lines = deepcopy(text_lines) + deepcopy(next_text_lines)
+                        table.cells = [c for c in table.cells if c.cell_id != cell.cell_id] # Remove original cell
+                        next_row_col[0].col_id -= col_offset
+                else:
+                    for cell in col_cells:
+                        cell.col_id -= col_offset
+
 
     def split_combined_rows(self, tables: List[TableResult]):
         for table in tables:
@@ -313,12 +377,14 @@ class TableProcessor(BaseProcessor):
 
     def assign_ocr_lines(self, ocr_blocks: list):
         det_images = [t["table_image"] for t in ocr_blocks]
+        self.recognition_model.disable_tqdm = self.disable_tqdm
+        self.detection_model.disable_tqdm = self.disable_tqdm
         ocr_results: List[OCRResult] = self.recognition_model(
             det_images,
             [None] * len(det_images),
             self.detection_model,
             recognition_batch_size=self.get_recognition_batch_size(),
-            detection_batch_size=self.get_detector_batch_size()
+            detection_batch_size=self.get_detection_batch_size()
         )
 
         for block, ocr_res in zip(ocr_blocks, ocr_results):
@@ -333,9 +399,9 @@ class TableProcessor(BaseProcessor):
             block["table_text_lines"] = table_cells
 
 
-    def get_detector_batch_size(self):
-        if self.detector_batch_size is not None:
-            return self.detector_batch_size
+    def get_detection_batch_size(self):
+        if self.detection_batch_size is not None:
+            return self.detection_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 4
         return 4

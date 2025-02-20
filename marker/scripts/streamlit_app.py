@@ -56,7 +56,8 @@ def convert_pdf(fname: str, config_parser: ConfigParser) -> (str, Dict[str, Any]
         config=config_dict,
         artifact_dict=model_dict,
         processor_list=config_parser.get_processors(),
-        renderer=config_parser.get_renderer()
+        renderer=config_parser.get_renderer(),
+        llm_service=config_parser.get_llm_service()
     )
     return converter(fname)
 
@@ -115,7 +116,10 @@ def pillow_image_to_base64_string(img: Image) -> str:
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 
-def block_display(image: Image, blocks: dict = {}, dpi=96):
+def block_display(image: Image, blocks: dict | None = None, dpi=96):
+    if blocks is None:
+        blocks = {}
+
     image_data_url = (
         'data:image/jpeg;base64,' + pillow_image_to_base64_string(image)
     )
@@ -179,10 +183,11 @@ if not run_marker:
     st.stop()
 
 # Run Marker
-with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb+") as temp_pdf:
-    temp_pdf.write(in_file.getvalue())
-    temp_pdf.seek(0)
-    filename = temp_pdf.name
+with tempfile.TemporaryDirectory() as tmp_dir:
+    temp_pdf = os.path.join(tmp_dir, 'temp.pdf')
+    with open(temp_pdf, 'wb') as f:
+        f.write(in_file.getvalue())
+    
     cli_options = {
         "output_format": output_format,
         "page_range": page_range,
@@ -194,7 +199,7 @@ with tempfile.NamedTemporaryFile(suffix=".pdf", mode="wb+") as temp_pdf:
     }
     config_parser = ConfigParser(cli_options)
     rendered = convert_pdf(
-        filename,
+        temp_pdf,
         config_parser
     )
     page_range = config_parser.generate_config_dict()["page_range"]

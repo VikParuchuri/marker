@@ -1,13 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated
 
-from google.ai.generativelanguage_v1beta.types import content
 from surya.layout import LayoutPredictor
-from surya.ocr_error import OCRErrorPredictor
 from tqdm import tqdm
+from pydantic import BaseModel
 
 from marker.builders.layout import LayoutBuilder
-from marker.processors.llm import GoogleModel
+from marker.services import BaseService
 from marker.providers.pdf import PdfProvider
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
@@ -37,19 +36,15 @@ class LLMLayoutBuilder(LayoutBuilder):
     model_name: Annotated[
         str,
         "The name of the Gemini model to use.",
-    ] = "gemini-1.5-flash"
-    max_retries: Annotated[
-        int,
-        "The maximum number of retries to use for the Gemini model.",
-    ] = 3
+    ] = "gemini-2.0-flash"
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
     ] = 3
-    timeout: Annotated[
-        int,
-        "The timeout for requests to the Gemini model.",
-    ] = 60
+    disable_tqdm: Annotated[
+        bool,
+        "Whether to disable the tqdm progress bar.",
+    ] = False
     topk_relabelling_prompt: Annotated[
         str,
         "The prompt to use for relabelling blocks.",
@@ -94,10 +89,10 @@ Potential labels:
 Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form`.
 """
 
-    def __init__(self, layout_model: LayoutPredictor, ocr_error_model: OCRErrorPredictor, config=None):
-        super().__init__(layout_model, ocr_error_model, config)
+    def __init__(self, layout_model: LayoutPredictor, llm_service: BaseService, config=None):
+        super().__init__(layout_model, config)
 
-        self.model = GoogleModel(self.google_api_key, self.model_name)
+        self.llm_service = llm_service
 
     def __call__(self, document: Document, provider: PdfProvider):
         super().__call__(document, provider)
@@ -107,7 +102,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
             print(f"Error relabelling blocks: {e}")
 
     def relabel_blocks(self, document: Document):
-        pbar = tqdm(desc="LLM layout relabelling")
+        pbar = tqdm(desc="LLM layout relabelling", disable=self.disable_tqdm)
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             futures = []
             for page in document.pages:
@@ -154,21 +149,13 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 
     def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
         image = self.extract_image(document, block)
-        response_schema = content.Schema(
-            type=content.Type.OBJECT,
-            enum=[],
-            required=["image_description", "label"],
-            properties={
-                "image_description": content.Schema(
-                    type=content.Type.STRING,
-                ),
-                "label": content.Schema(
-                    type=content.Type.STRING,
-                ),
-            },
-        )
 
-        response = self.model.generate_response(prompt, image, block, response_schema)
+        response = self.llm_service(
+            prompt,
+            image,
+            block,
+            LayoutSchema
+        )
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]
@@ -184,3 +171,8 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 
     def extract_image(self, document: Document, image_block: Block, expand: float = 0.01):
         return image_block.get_image(document, highres=False, expansion=(expand, expand))
+
+
+class LayoutSchema(BaseModel):
+    image_description: str
+    label: str

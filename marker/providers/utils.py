@@ -1,6 +1,3 @@
-import re
-
-
 def alphanum_ratio(text):
     text = text.replace(" ", "")
     text = text.replace("\n", "")

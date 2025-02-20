@@ -1,5 +1,6 @@
 import html
 import re
+from typing import Literal, List
 
 import regex
 
@@ -36,16 +37,25 @@ def strip_trailing_hyphens(line_text, next_line_text, line_html) -> str:
 class Line(Block):
     block_type: BlockTypes = BlockTypes.Line
     block_description: str = "A line of text."
+    formats: List[Literal["math"]] | None = None # Sometimes we want to set math format at the line level, not span
 
     def formatted_text(self, document):
         text = ""
         for block in self.contained_blocks(document, (BlockTypes.Span,)):
             block_text = html.escape(block.text)
 
+            if block.has_superscript:
+                block_text = re.sub(r"^([0-9\W]+)(.*)", r"<sup>\1</sup>\2", block_text)
+
+            if block.url:
+                block_text = f"<a href='{block.url}'>{block_text}</a>"
+
             if block.italic:
                 text += f"<i>{block_text}</i>"
             elif block.bold:
                 text += f"<b>{block_text}</b>"
+            elif block.math:
+                text += f"<math display='inline'>{block_text}</math>"
             else:
                 text += block_text
 

@@ -95,7 +95,8 @@ async def _convert_pdf(params: CommonParams):
             config=config_dict,
             artifact_dict=app_data["models"],
             processor_list=config_parser.get_processors(),
-            renderer=config_parser.get_renderer()
+            renderer=config_parser.get_renderer(),
+            llm_service=config_parser.get_llm_service()
         )
         rendered = converter(params.filepath)
         text, _, images = text_from_rendered(rendered)

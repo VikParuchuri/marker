@@ -6,12 +6,21 @@ from marker.converters.pdf import PdfConverter
 from marker.renderers.markdown import MarkdownOutput
 from marker.schema import BlockTypes
 from marker.schema.document import Document
+from marker.util import classes_to_strings
 
 
 @pytest.mark.filename("arxiv_test.pdf")
 @pytest.mark.output_format("markdown")
-def test_pdf_links(pdf_document: Document, pdf_converter: PdfConverter, temp_pdf):
+def test_pdf_links(pdf_document: Document, config, renderer, model_dict, temp_doc):
     first_page = pdf_document.pages[1]
+
+    processors = ["marker.processors.reference.ReferenceProcessor"]
+    pdf_converter = PdfConverter(
+        artifact_dict=model_dict,
+        processor_list=processors,
+        renderer=classes_to_strings([renderer])[0],
+        config=config
+    )
 
     for section_header_span in first_page.contained_blocks(pdf_document, (BlockTypes.Span,)):
         if "II." in section_header_span.text:
@@ -25,7 +34,7 @@ def test_pdf_links(pdf_document: Document, pdf_converter: PdfConverter, temp_pdf
 
     assert first_page.refs[0].ref == "page-1-0"
 
-    markdown_output: MarkdownOutput = pdf_converter(temp_pdf.name)
+    markdown_output: MarkdownOutput = pdf_converter(temp_doc.name)
     markdown = markdown_output.markdown
 
     assert '[II.](#page-1-0)' in markdown

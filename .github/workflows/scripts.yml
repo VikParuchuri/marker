@@ -2,10 +2,6 @@ name: Test CLI scripts
 
 on: [push]
 
-env:
-  TORCH_DEVICE: "cpu"
-  OCR_ENGINE: "surya"
-
 jobs:
   tests:
     runs-on: ubuntu-latest

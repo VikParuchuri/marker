@@ -3,24 +3,32 @@
 Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
 
 - Supports a range of documents in all languages
-- Formats tables, forms, equations, links, references, and code blocks
-- Extracts and saves images along with the markdown
+- Formats tables, forms, equations, inline math, links, references, and code blocks
+- Extracts and saves images
 - Removes headers/footers/other artifacts
-- Easily extensible with your own formatting and logic
-- Optionally boost accuracy with an LLM
+- Extensible with your own formatting and logic
+- Optionally boost accuracy with LLMs
 - Works on GPU, CPU, or MPS
 
-## How it works
+## Performance
 
-Marker is a pipeline of deep learning models:
+<img src="data/images/overall.png" width="800px"/>
 
-- Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
-- Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
-- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify), [surya](https://github.com/VikParuchuri/surya))
-- Optionally use an LLM to improve quality
-- Combine blocks and postprocess complete text
+Marker benchmarks favorably compared to cloud services like Llamaparse and Mathpix, as well as other open source tools.
 
-It only uses models where necessary, which improves speed and accuracy.
+The above results are running single PDF pages serially.  Marker is significantly faster when running in batch mode, with a projected throughput of 122 pages/second on an H100 (.18 seconds per page across 22 processes).
+
+See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
+
+## Hybrid Mode
+
+For the highest accuracy, pass the `--use_llm` flag to use an LLM alongside marker.  This will do things like merge tables across pages, handle inline math, format tables properly, and extract values from forms.  It can use any gemini or ollama model.  By default, it uses `gemini-2.0-flash`.  See [below](#llm-services) for details.
+
+Here is a table benchmark comparing marker, gemini flash alone, and marker with use_llm:
+
+<img src="data/images/table.png" width="400px"/>
+
+As you can see, the use_llm mode offers higher accuracy than marker or gemini alone.
 
 ## Examples
 
@@ -30,19 +38,11 @@ It only uses models where necessary, which improves speed and accuracy.
 | [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/switch_transformers/switch_trans.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/switch_trans.json) |
 | [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/multicolcnn/multicolcnn.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/multicolcnn.json)         |
 
-## Performance
-
-![Benchmark overall](data/images/overall.png)
-
-The above results are with marker setup so it takes ~7GB of VRAM on an A10.
-
-See [below](#benchmarks) for detailed speed and accuracy benchmarks, and instructions on how to run your own benchmarks.
-
 # Commercial usage
 
 I want marker to be as widely accessible as possible, while still funding my development/training costs.  Research and personal usage is always okay, but there are some restrictions on commercial usage.
 
-The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under $5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. You also must not be competitive with the [Datalab API](https://www.datalab.to/).  If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
+The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under \$5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. You also must not be competitive with the [Datalab API](https://www.datalab.to/).  If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
 
 # Hosted API
 
@@ -55,17 +55,6 @@ There's a hosted API for marker available [here](https://www.datalab.to/):
 # Community
 
 [Discord](https://discord.gg//KuZwXNGnfH) is where we discuss future development.
-
-# Limitations
-
-PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
-
-- Marker will only convert block equations
-- Tables are not always formatted 100% correctly
-- Forms are not converted optimally
-- Very complex layouts, with nested tables and forms, may not work
-
-Note: Passing the `--use_llm` flag will mostly solve these issues.
 
 # Installation
 
@@ -82,7 +71,7 @@ pip install marker-pdf
 First, some configuration:
 
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag on the CLI or via configuration to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and only strip out any existing OCR text.
+- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and strip out any existing OCR text.
 
 ## Interactive App
 
@@ -116,6 +105,8 @@ Options:
 - `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "en,fr,de"` for English, French, and German.
 - `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
 - `--converter_cls`: One of `marker.converters.pdf.PdfConverter` (default) or `marker.converters.table.TableConverter`.  The `PdfConverter` will convert the whole PDF, the `TableConverter` will only extract and convert tables.
+- `--llm_service`: Which llm service to use if `--use_llm` is passed.  This defaults to `marker.services.gemini.GoogleGeminiService`.
+- `--help`: see all of the flags that can be passed into marker.  (it supports many more options then are listed above)
 
 The list of supported languages for surya OCR is [here](https://github.com/VikParuchuri/surya/blob/master/surya/recognition/languages.py).  If you don't need OCR, marker can work with any language.
 
@@ -157,7 +148,7 @@ text, _, images = text_from_rendered(rendered)
 
 ### Custom configuration
 
-You can pass configuration using the `ConfigParser`:
+You can pass configuration using the `ConfigParser`.  To see all available options, do `marker_single --help`.
 
 ```python
 from marker.converters.pdf import PdfConverter
@@ -174,7 +165,8 @@ converter = PdfConverter(
     config=config_parser.generate_config_dict(),
     artifact_dict=create_model_dict(),
     processor_list=config_parser.get_processors(),
-    renderer=config_parser.get_renderer()
+    renderer=config_parser.get_renderer(),
+    llm_service=config_parser.get_llm_service()
 )
 rendered = converter("FILEPATH")
 ```
@@ -219,11 +211,11 @@ rendered = converter("FILEPATH")
 text, _, images = text_from_rendered(rendered)
 ```
 
-This takes all the same configuration as the PdfConverter.  You can specify the configuration `--force_layout_block=Table` to avoid layout detection and instead assume every page is a table.
+This takes all the same configuration as the PdfConverter.  You can specify the configuration `force_layout_block=Table` to avoid layout detection and instead assume every page is a table.  Set `output_format=json` to also get cell bounding boxes.
 
 You can also run this via the CLI with 
 ```shell
-python convert_single.py FILENAME --use_llm --force_layout_block Table --converter_cls marker.converters.table.TableConverter
+marker_single FILENAME --use_llm --force_layout_block Table --converter_cls marker.converters.table.TableConverter --output_format json
 ```
 
 # Output Formats
@@ -321,6 +313,16 @@ All output formats will return a metadata dictionary, with the following fields:
 }
 ```
 
+# LLM Services
+
+When running with the `--use_llm` flag, you have a choice of services you can use:
+
+- `Gemini` - this will use the Gemini developer API by default.  You'll need to pass `--gemini_api_key` to configuration.
+- `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
+- `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.ollama.OllamaService`.
+
+These services may have additional optional configuration as well - you can see it by viewing the classes.
+
 # Internals
 
 Marker is easy to extend.  The core units of marker are:
@@ -377,36 +379,55 @@ There are some settings that you may find useful if things aren't working the wa
 Pass the `debug` option to activate debug mode.  This will save images of each page with detected layout and text, as well as output a json file with additional bounding box information.
 
 # Benchmarks
+
 ## Overall PDF Conversion
-Benchmarking PDF extraction quality is hard.  I've created a test set by finding books and scientific papers that have a pdf version and a latex source.  I convert the latex to text, and compare the reference to the output of text extraction methods.  It's noisy, but at least directionally correct.
 
-**Speed**
+We created a [benchmark set](https://huggingface.co/datasets/datalab-to/marker_benchmark) by extracting single PDF pages from common crawl.  We scored based on a heuristic that aligns text with ground truth text segments, and an LLM as a judge scoring method.
 
-| Method  | Average Score | Time per page | Time per document |
-|---------|----------------|---------------|------------------|
-| marker  | 0.625115       | 0.234184     | 21.545           |
+| Method     | Avg Time | Heuristic Score | LLM Score |
+|------------|----------|-----------------|-----------|
+| marker     | 2.83837  | 95.6709         | 4.23916   |
+| llamaparse | 23.348   | 84.2442         | 3.97619   |
+| mathpix    | 6.36223  | 86.4281         | 4.15626   |
+| docling    | 3.69949  | 86.7073         | 3.70429   |
 
-**Accuracy**
+Benchmarks were run on an H100 for markjer and docling - llamaparse and mathpix used their cloud services.  We can also look at it by document type:
 
-| Method  | thinkpython.pdf | switch_trans.pdf | thinkdsp.pdf | crowd.pdf | thinkos.pdf | multicolcnn.pdf |
-|---------|----------------|-----------------|--------------|------------|-------------|----------------|
-| marker  | 0.720347       | 0.592002       | 0.70468     | 0.515082   | 0.701394    | 0.517184      |
+<img src="data/images/per_doc.png" width="1000px"/>
 
-Peak GPU memory usage during the benchmark is `6GB` for marker.  Benchmarks were run on an A10.
+| Document Type        | Marker heuristic | Marker LLM | Llamaparse Heuristic | Llamaparse LLM | Mathpix Heuristic | Mathpix LLM | Docling Heuristic | Docling LLM |
+|----------------------|------------------|------------|----------------------|----------------|-------------------|-------------|-------------------|-------------|
+| Scientific paper     | 96.6737          | 4.34899    | 87.1651              | 3.96421        | 91.2267           | 4.46861     | 92.135            | 3.72422     |
+| Book page            | 97.1846          | 4.16168    | 90.9532              | 4.07186        | 93.8886           | 4.35329     | 90.0556           | 3.64671     |
+| Other                | 95.1632          | 4.25076    | 81.1385              | 4.01835        | 79.6231           | 4.00306     | 83.8223           | 3.76147     |
+| Form                 | 88.0147          | 3.84663    | 66.3081              | 3.68712        | 64.7512           | 3.33129     | 68.3857           | 3.40491     |
+| Presentation         | 95.1562          | 4.13669    | 81.2261              | 4              | 83.6737           | 3.95683     | 84.8405           | 3.86331     |
+| Financial document   | 95.3697          | 4.39106    | 82.5812              | 4.16111        | 81.3115           | 4.05556     | 86.3882           | 3.8         |
+| Letter               | 98.4021          | 4.5        | 93.4477              | 4.28125        | 96.0383           | 4.45312     | 92.0952           | 4.09375     |
+| Engineering document | 93.9244          | 4.04412    | 77.4854              | 3.72059        | 80.3319           | 3.88235     | 79.6807           | 3.42647     |
+| Legal document       | 96.689           | 4.27759    | 86.9769              | 3.87584        | 91.601            | 4.20805     | 87.8383           | 3.65552     |
+| Newspaper page       | 98.8733          | 4.25806    | 84.7492              | 3.90323        | 96.9963           | 4.45161     | 92.6496           | 3.51613     |
+| Magazine page        | 98.2145          | 4.38776    | 87.2902              | 3.97959        | 93.5934           | 4.16327     | 93.0892           | 4.02041     |
 
-**Throughput**
+## Throughput
 
-Marker takes about 6GB of VRAM on average per task, so you can convert 8 documents in parallel on an A6000.
+We benchmarked throughput using a [single long PDF](https://www.greenteapress.com/thinkpython/thinkpython.pdf).
 
-![Benchmark results](data/images/per_doc.png)
+| Method  | Time per page | Time per document | VRAM used |
+|---------|---------------|-------------------|---------- |
+| marker  | 0.18          | 43.42             |  3.17GB   |
+
+The projected throughput is 122 pages per second on an H100 - we can run 22 individual processes given the VRAM used.
 
 ## Table Conversion
+
 Marker can extract tables from PDFs using `marker.converters.table.TableConverter`. The table extraction performance is measured by comparing the extracted HTML representation of tables against the original HTML representations using the test split of [FinTabNet](https://developer.ibm.com/exchanges/data/all/fintabnet/). The HTML representations are compared using a tree edit distance based metric to judge both structure and content. Marker detects and identifies the structure of all tables in a PDF page and achieves these scores:
 
-| Avg score | Total tables | use_llm |
-|-----------|--------------|---------|
-| 0.822     | 54           | False   |
-| 0.887     | 54           | True    |
+| Method           | Avg score | Total tables |
+|------------------|-----------|--------------|
+| marker           | 0.816     | 99           |
+| marker w/use_llm | 0.907     | 99           |
+| gemini           | 0.829     | 99           |
 
 The `--use_llm` flag can significantly improve table recognition performance, as you can see.
 
@@ -426,15 +447,48 @@ poetry install
 Download the benchmark data [here](https://drive.google.com/file/d/1ZSeWDo2g1y0BRLT7KnbmytV2bjWARWba/view?usp=sharing) and unzip. Then run the overall benchmark like this:
 
 ```shell
-python benchmarks/overall.py data/pdfs data/references report.json
+python benchmarks/overall.py --methods marker --scores heuristic,llm
 ```
+
+Options:
+
+- `--use_llm` use an llm to improve the marker results.
+- `--max_rows` how many rows to process for the benchmark.
+- `--methods` can be `llamaparse`, `mathpix`, `docling`, `marker`.  Comma separated.
+- `--scores` which scoring functions to use, can be `llm`, `heuristic`.  Comma separated.
 
 ### Table Conversion
 The processed FinTabNet dataset is hosted [here](https://huggingface.co/datasets/datalab-to/fintabnet-test) and is automatically downloaded. Run the benchmark with:
 
 ```shell
-python benchmarks/table/table.py table_report.json --max_rows 1000
+python benchmarks/table/table.py --max_rows 100
 ```
+
+Options:
+
+- `--use_llm` uses an llm with marker to improve accuracy.
+- `--use_gemini` also benchmarks gemini 2.0 flash.
+
+# How it works
+
+Marker is a pipeline of deep learning models:
+
+- Extract text, OCR if necessary (heuristics, [surya](https://github.com/VikParuchuri/surya))
+- Detect page layout and find reading order ([surya](https://github.com/VikParuchuri/surya))
+- Clean and format each block (heuristics, [texify](https://github.com/VikParuchuri/texify), [surya](https://github.com/VikParuchuri/surya))
+- Optionally use an LLM to improve quality
+- Combine blocks and postprocess complete text
+
+It only uses models where necessary, which improves speed and accuracy.
+
+# Limitations
+
+PDF is a tricky format, so marker will not always work perfectly.  Here are some known limitations that are on the roadmap to address:
+
+- Very complex layouts, with nested tables and forms, may not work
+- Forms may not be rendered well
+
+Note: Passing the `--use_llm` flag will mostly solve these issues.
 
 # Thanks
 

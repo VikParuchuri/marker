@@ -1,5 +1,4 @@
 import base64
-import logging
 import os
 import tempfile
 
@@ -9,10 +8,6 @@ from ebooklib import epub
 from weasyprint import CSS, HTML
 
 from marker.providers.pdf import PdfProvider
-
-logging.getLogger('fontTools.subset').setLevel(logging.ERROR)
-logging.getLogger('fontTools.ttLib.ttFont').setLevel(logging.ERROR)
-logging.getLogger('weasyprint').setLevel(logging.ERROR)
 
 css = '''
 @page {
@@ -69,7 +64,6 @@ class EpubProvider(PdfProvider):
 
     def __del__(self):
         if os.path.exists(self.temp_pdf_path):
-            print(f"Deleting temporary PDF file: {self.temp_pdf_path}")
             os.remove(self.temp_pdf_path)
 
     def convert_epub_to_pdf(self, filepath):

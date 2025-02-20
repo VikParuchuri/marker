@@ -1,7 +1,10 @@
 import json
 from PIL import Image
-import google.generativeai as genai
-from google.ai.generativelanguage_v1beta.types import content
+from google import genai
+from google.genai import types
+from io import BytesIO
+from pydantic import BaseModel
+
 from marker.settings import settings
 
 prompt = """
@@ -19,30 +22,26 @@ Guidelines:
 3. Output only the HTML for the table, starting with the <table> tag and ending with the </table> tag.
 """.strip()
 
-genai.configure(api_key=settings.GOOGLE_API_KEY)
+class TableSchema(BaseModel):
+    table_html: str
 
 def gemini_table_rec(image: Image.Image):
-    schema = content.Schema(
-        type=content.Type.OBJECT,
-        required=["table_html"],
-        properties={
-            "table_html": content.Schema(
-                type=content.Type.STRING,
-            )
-        }
+    client = genai.Client(
+        api_key=settings.GOOGLE_API_KEY,
+        http_options={"timeout": 60000}
     )
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    image_bytes = BytesIO()
+    image.save(image_bytes, format="PNG")
 
-    responses = model.generate_content(
-        [image, prompt],  # According to gemini docs, it performs better if the image is the first element
-        stream=False,
-        generation_config={
+    responses = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=[types.Part.from_bytes(data=image_bytes.getvalue(), mime_type="image/png"), prompt],  # According to gemini docs, it performs better if the image is the first element
+        config={
             "temperature": 0,
-            "response_schema": schema,
+            "response_schema": TableSchema,
             "response_mime_type": "application/json",
         },
-        request_options={'timeout': 60}
     )
 
     output = responses.candidates[0].content.parts[0].text

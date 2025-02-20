@@ -1,9 +1,8 @@
 import os
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
-import inspect
 from collections import defaultdict
-from functools import cache
 from typing import Annotated, Any, Dict, List, Optional, Type, Tuple
 
 from marker.processors import BaseProcessor
@@ -12,6 +11,7 @@ from marker.providers.registry import provider_from_filepath
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.llm_layout import LLMLayoutBuilder
+from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
 from marker.converters import BaseConverter
@@ -41,6 +41,8 @@ from marker.schema.blocks import Block
 from marker.schema.registry import register_block_class
 from marker.util import strings_to_classes
 from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
+from marker.processors.order import OrderProcessor
+from marker.services.gemini import GoogleGeminiService
 
 
 class PdfConverter(BaseConverter):
@@ -59,6 +61,7 @@ class PdfConverter(BaseConverter):
         "Enable higher quality processing with LLMs.",
     ] = False
     default_processors: Tuple[BaseProcessor, ...] = (
+        OrderProcessor,
         BlockquoteProcessor,
         CodeProcessor,
         DocumentTOCProcessor,
@@ -83,8 +86,18 @@ class PdfConverter(BaseConverter):
         DebugProcessor,
     )
 
-    def __init__(self, artifact_dict: Dict[str, Any], processor_list: Optional[List[str]] = None, renderer: str | None = None, config=None):
+    def __init__(
+        self,
+        artifact_dict: Dict[str, Any],
+        processor_list: Optional[List[str]] = None,
+        renderer: str | None = None,
+        llm_service: str | None = None,
+        config=None
+    ):
         super().__init__(config)
+
+        if config is None:
+            config = {}
 
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
@@ -99,44 +112,37 @@ class PdfConverter(BaseConverter):
         else:
             renderer = MarkdownRenderer
 
+        if llm_service:
+            llm_service_cls = strings_to_classes([llm_service])[0]
+            llm_service = self.resolve_dependencies(llm_service_cls)
+        elif config.get("use_llm", False):
+            llm_service = self.resolve_dependencies(GoogleGeminiService)
+
+        # Inject llm service into artifact_dict so it can be picked up by processors, etc.
+        artifact_dict["llm_service"] = llm_service
+        self.llm_service = llm_service
+
         self.artifact_dict = artifact_dict
-        self.processor_list = processor_list
         self.renderer = renderer
+
+        processor_list = self.initialize_processors(processor_list)
+        self.processor_list = processor_list
 
         self.layout_builder_class = LayoutBuilder
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
 
-    def resolve_dependencies(self, cls):
-        init_signature = inspect.signature(cls.__init__)
-        parameters = init_signature.parameters
-
-        resolved_kwargs = {}
-        for param_name, param in parameters.items():
-            if param_name == 'self':
-                continue
-            elif param_name == 'config':
-                resolved_kwargs[param_name] = self.config
-            elif param.name in self.artifact_dict:
-                resolved_kwargs[param_name] = self.artifact_dict[param_name]
-            elif param.default != inspect.Parameter.empty:
-                resolved_kwargs[param_name] = param.default
-            else:
-                raise ValueError(f"Cannot resolve dependency for parameter: {param_name}")
-
-        return cls(**resolved_kwargs)
-
-    @cache
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
+        line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
-        with provider_cls(filepath, self.config) as provider:
-            document = DocumentBuilder(self.config)(provider, layout_builder, ocr_builder)
-        StructureBuilder(self.config)(document)
+        provider = provider_cls(filepath, self.config)
+        document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
+        structure_builder_cls = self.resolve_dependencies(StructureBuilder)
+        structure_builder_cls(document)
 
-        for processor_cls in self.processor_list:
-            processor = self.resolve_dependencies(processor_cls)
+        for processor in self.processor_list:
             processor(document)
 
         return document

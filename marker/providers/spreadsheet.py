@@ -49,7 +49,6 @@ class SpreadSheetProvider(PdfProvider):
 
     def __del__(self):
         if os.path.exists(self.temp_pdf_path):
-            print(f"Deleting temporary PDF file: {self.temp_pdf_path}")
             os.remove(self.temp_pdf_path)
 
     def convert_xlsx_to_pdf(self, filepath: str):
