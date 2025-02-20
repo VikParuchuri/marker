@@ -6,10 +6,13 @@ from pydantic import BaseModel
 
 from pdftext.schema import Reference
 
+from marker.logger import configure_logging
 from marker.schema.polygon import PolygonBox
 from marker.schema.text import Span
 from marker.schema.text.line import Line
 from marker.util import assign_config
+
+configure_logging()
 
 class Char(BaseModel):
     char: str

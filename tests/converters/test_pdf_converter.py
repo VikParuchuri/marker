@@ -5,8 +5,8 @@ from marker.renderers.markdown import MarkdownOutput
 
 @pytest.mark.output_format("markdown")
 @pytest.mark.config({"page_range": [0, 1, 2, 3, 7]})
-def test_pdf_converter(pdf_converter: PdfConverter, temp_pdf):
-    markdown_output: MarkdownOutput = pdf_converter(temp_pdf.name)
+def test_pdf_converter(pdf_converter: PdfConverter, temp_doc):
+    markdown_output: MarkdownOutput = pdf_converter(temp_doc.name)
     markdown = markdown_output.markdown
 
     # Basic assertions
