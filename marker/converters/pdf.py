@@ -1,5 +1,6 @@
 import os
 
+from marker.processors.line_merge import LineMergeProcessor
 from marker.processors.llm.llm_inlinemath import LLMInlineMathProcessor
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
@@ -64,6 +65,7 @@ class PdfConverter(BaseConverter):
     ] = False
     default_processors: Tuple[BaseProcessor, ...] = (
         OrderProcessor,
+        LineMergeProcessor,
         BlockquoteProcessor,
         CodeProcessor,
         DocumentTOCProcessor,

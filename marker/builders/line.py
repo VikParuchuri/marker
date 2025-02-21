@@ -113,7 +113,7 @@ class LineBuilder(BaseBuilder):
     def __call__(self, document: Document, provider: PdfProvider):
         # Disable Inline Detection for documents where layout model doesn't detect any equations
         # Also disable if we won't use the inline detections (if we aren't using the LLM or texify)
-        do_inline_math_detection = document.contained_blocks([BlockTypes.Equation]) and (self.texify_inline_spans or self.use_llm)
+        do_inline_math_detection = document.contained_blocks([BlockTypes.Equation, BlockTypes.TextInlineMath]) and (self.texify_inline_spans or self.use_llm)
         provider_lines, ocr_lines = self.get_all_lines(document, provider, do_inline_math_detection)
         self.merge_blocks(document, provider_lines, ocr_lines)
 
@@ -146,6 +146,7 @@ class LineBuilder(BaseBuilder):
                 batch_size=self.get_detection_batch_size()
             )
 
+        assert len(page_detection_results) == len(inline_detection_results) == sum(run_detection)
         detection_results = []
         inline_results = []
         idx = 0
@@ -220,7 +221,7 @@ class LineBuilder(BaseBuilder):
                 page_lines[document_page.page_id].extend(
                     self.merge_provider_lines_inline_math(
                         provider_lines,
-                        [b for _,b in math_detection_boxes],
+                        merged_detection_boxes,
                         image_size,
                         page_size
                     )
@@ -388,47 +389,49 @@ class LineBuilder(BaseBuilder):
     def merge_provider_lines_inline_math(
         self,
         provider_lines: List[ProviderOutput],
-        inline_math_lines: List[TextBox],
+        text_lines: List[TextBox],
         image_size,
         page_size
     ):
         # When provider lines is empty or no inline math detected, return provider lines
-        if not provider_lines or not inline_math_lines:
+        if not provider_lines or not text_lines:
             return provider_lines
 
         horizontal_provider_lines = [
             (j, provider_line) for j, provider_line in enumerate(provider_lines)
-            if provider_line.line.polygon.height < provider_line.line.polygon.width * 3 # Multiply to account for small blocks inside equations, but filter out big vertical lines
+            if provider_line.line.polygon.height < provider_line.line.polygon.width * 5 # Multiply to account for small blocks inside equations, but filter out big vertical lines
         ]
         provider_line_boxes = [p.line.polygon.bbox for _, p in horizontal_provider_lines]
-        math_line_boxes = [PolygonBox(polygon=m.polygon).rescale(image_size, page_size).bbox for m in inline_math_lines]
+        math_line_boxes = [PolygonBox(polygon=m.polygon).rescale(image_size, page_size).bbox for m in text_lines]
 
         overlaps = matrix_intersection_area(provider_line_boxes, math_line_boxes)
 
         # Find potential merges
         merge_lines = defaultdict(list)
         for i in range(len(provider_line_boxes)):
-            max_overlap_pct = np.max(overlaps[i]) / horizontal_provider_lines[i][1].line.polygon.area
+            max_overlap_pct = np.max(overlaps[i]) / max(1, horizontal_provider_lines[i][1].line.polygon.area)
             if max_overlap_pct <= self.line_inline_min_overlap_pct:
                 continue
 
             best_overlap = np.argmax(overlaps[i])
-            best_overlap_line = horizontal_provider_lines[best_overlap]
-
             merge_lines[best_overlap].append(i)
 
         # Handle the merging
         already_merged = set()
         potential_merges = set(chain.from_iterable(merge_lines.values()))
         out_provider_lines = [(i, p) for i, p in enumerate(provider_lines) if i not in potential_merges]
-        for merge_section in merge_lines.values():
+        for line_idx in merge_lines:
+            text_line = text_lines[line_idx]
+            merge_section = merge_lines[line_idx]
             merge_section = [m for m in merge_section if m not in already_merged]
             if len(merge_section) == 0:
                 continue
             elif len(merge_section) == 1:
                 line_idx = merge_section[0]
                 merged_line = provider_lines[line_idx]
-                self.add_math_span_format(merged_line)
+                # Only add math format to single lines if the detected line is math
+                if text_line.math:
+                    self.add_math_span_format(merged_line)
                 out_provider_lines.append((line_idx, merged_line))
                 already_merged.add(merge_section[0])
                 continue
@@ -443,6 +446,7 @@ class LineBuilder(BaseBuilder):
                 else:
                     # Combine the spans of the provider line with the merged line
                     merged_line = merged_line.merge(provider_line)
+                    # Add math regardless, since we assume heavily broken lines are math lines
                     self.add_math_span_format(merged_line)
                 already_merged.add(idx) # Prevent double merging
             out_provider_lines.append((min_idx, merged_line))

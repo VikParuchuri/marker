@@ -81,7 +81,7 @@ class DebugProcessor(BaseProcessor):
                     span_bboxes.append(bbox)
 
             self.render_on_image(line_bboxes, png_image, color="blue", draw_bbox=True, label_font_size=24)
-            self.render_on_image(span_bboxes, png_image, color="green", draw_bbox=True, label_font_size=24)
+            #self.render_on_image(span_bboxes, png_image, color="green", draw_bbox=True, label_font_size=24)
 
             png_image = self.render_layout_boxes(page, png_image)
 
