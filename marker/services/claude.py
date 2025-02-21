@@ -99,7 +99,7 @@ Follow the instructions given by the user prompt.  You must provide your respons
 
 {json.dumps(schema_example, indent=2)}
 
-Respond only with the JSON schema, nothing else.  Do not include ```json``` or any other formatting.
+Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  or any other formatting.
 """.strip()
 
         client = self.get_client()
