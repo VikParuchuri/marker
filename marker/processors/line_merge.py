@@ -23,7 +23,7 @@ class LineMergeProcessor(BaseProcessor):
     intersection_pct_threshold: Annotated[
         float,
         "The total amount of intersection area concentrated in the max intersection block."
-    ] = .9
+    ] = .7
 
     def __init__(self, config):
         super().__init__(config)
@@ -38,7 +38,8 @@ class LineMergeProcessor(BaseProcessor):
                     continue
 
                 lines = block.contained_blocks(document, (BlockTypes.Line,))
-                line_bboxes = [l.polygon.bbox for l in lines]
+                lines = [l for l in lines if l.polygon.width * 5 > l.polygon.height]  # Skip vertical lines
+                line_bboxes = [l.polygon.expand(self.min_merge_pct, 0).bbox for l in lines] # Expand horizontally
                 intersections = matrix_intersection_area(line_bboxes, line_bboxes)
 
                 merges = []
@@ -49,6 +50,10 @@ class LineMergeProcessor(BaseProcessor):
                     intersection_pct = intersection_val / max(1, lines[i].polygon.area)
                     intersection_row = intersections[i]
                     intersection_row[i] = 0 # Zero out the current idx
+
+                    # Zero out previous merge segments
+                    for m in merge:
+                        intersection_row[m] = 0
                     max_intersection_idx = intersection_row.argmax()
                     total_intersection = max(1, sum(intersection_row))
                     max_intersection = intersection_row[max_intersection_idx]
@@ -61,7 +66,9 @@ class LineMergeProcessor(BaseProcessor):
                         abs(lines[i].polygon.y_end - lines[next_idx].polygon.y_end) <= self.min_merge_ydist,
                         max_intersection / total_intersection >= self.intersection_pct_threshold
                     ]):
-                        merge.append(i)
+                        if not merge:
+                            merge.append(i)
+                        merge.append(next_idx)
                     else:
                         merges.append(merge)
                         merge = []
@@ -82,6 +89,7 @@ class LineMergeProcessor(BaseProcessor):
                         other_line: Line = lines[idx]
                         line.merge(other_line)
                         block.structure.remove(other_line.id)
+                        other_line.removed = True # Mark line as removed
                         merged.add(idx)
 
                     # It is probably math if we are merging provider lines like this

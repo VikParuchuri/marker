@@ -113,7 +113,11 @@ class LineBuilder(BaseBuilder):
     def __call__(self, document: Document, provider: PdfProvider):
         # Disable Inline Detection for documents where layout model doesn't detect any equations
         # Also disable if we won't use the inline detections (if we aren't using the LLM or texify)
-        do_inline_math_detection = document.contained_blocks([BlockTypes.Equation, BlockTypes.TextInlineMath]) and (self.texify_inline_spans or self.use_llm)
+        do_inline_math_detection = all([
+            len(document.contained_blocks([BlockTypes.Equation, BlockTypes.TextInlineMath])) > 0,
+            (self.texify_inline_spans or self.use_llm)
+        ])
+
         provider_lines, ocr_lines = self.get_all_lines(document, provider, do_inline_math_detection)
         self.merge_blocks(document, provider_lines, ocr_lines)
 
@@ -186,7 +190,7 @@ class LineBuilder(BaseBuilder):
         if sum(layout_good) > len(document.pages) * self.min_document_ocr_threshold:
             layout_good = [True] * len(document.pages)
 
-        run_detection = [not good or do_inline_math_detection for good in layout_good]
+        run_detection = [(not good or do_inline_math_detection) for good in layout_good]
         page_images = [page.get_image(highres=False, remove_blocks=self.ocr_remove_blocks) for page, good in zip(document.pages, run_detection) if good]
 
         # Note: run_detection is longer than page_images, since it has a value for each page, not just good ones
@@ -416,13 +420,29 @@ class LineBuilder(BaseBuilder):
             best_overlap = np.argmax(overlaps[i])
             merge_lines[best_overlap].append(i)
 
+        # Filter to get rid of detected lines that include multiple provider lines
+        filtered_merge_lines = {}
+        for line_idx in merge_lines:
+            first_line = horizontal_provider_lines[merge_lines[line_idx][0]][1].line.polygon
+            all_close = all([
+                (
+                    abs(horizontal_provider_lines[ml][1].line.polygon.y_start - first_line.y_start) < self.inline_math_line_vertical_merge_threshold
+                    or
+                    abs(horizontal_provider_lines[ml][1].line.polygon.y_end - first_line.y_end) < self.inline_math_line_vertical_merge_threshold
+                )
+                for ml in
+                merge_lines[line_idx]
+            ])
+            if all_close:
+                filtered_merge_lines[line_idx] = merge_lines[line_idx]
+
         # Handle the merging
         already_merged = set()
-        potential_merges = set(chain.from_iterable(merge_lines.values()))
+        potential_merges = set(chain.from_iterable(filtered_merge_lines.values()))
         out_provider_lines = [(i, p) for i, p in enumerate(provider_lines) if i not in potential_merges]
-        for line_idx in merge_lines:
+        for line_idx in filtered_merge_lines:
             text_line = text_lines[line_idx]
-            merge_section = merge_lines[line_idx]
+            merge_section = filtered_merge_lines[line_idx]
             merge_section = [m for m in merge_section if m not in already_merged]
             if len(merge_section) == 0:
                 continue

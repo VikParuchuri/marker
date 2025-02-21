@@ -83,11 +83,14 @@ Output:
         if not self.redo_inline_math:
             return
 
+        # Get inline math blocks
         inline_blocks = [
             (page, block)
             for page in document.pages
             for block in page.contained_blocks(document, self.block_types)
         ]
+
+        # Get other blocks with detected math in them
         detected_blocks = [
             (page, block)
             for page in document.pages
@@ -95,6 +98,7 @@ Output:
             if any([b.formats and "math" in b.formats for b in block.contained_blocks(document, (BlockTypes.Line,))])
         ]
         inference_blocks = inline_blocks + detected_blocks
+
         # Don't show progress if there are no blocks to process
         total_blocks = len(inference_blocks)
         if total_blocks == 0:
