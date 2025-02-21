@@ -55,15 +55,20 @@ class ClaudeService(BaseService):
             response_text = response_text[7:]
         if response_text.endswith("```"):
             response_text = response_text[:-3]
+
         try:
             # Try to parse as JSON first
             out_schema = schema.model_validate_json(response_text)
             out_json = out_schema.model_dump()
             return out_json
-        except json.JSONDecodeError:
-            # If not JSON, try to parse the raw text into the schema
-            out_schema = schema.model_validate_strings(response_text)
-            return out_schema.model_dump()
+        except Exception as e:
+            try:
+                # Re-parse with fixed escapes
+                escaped_str = response_text.replace('\\', '\\\\')
+                out_schema = schema.model_validate_json(escaped_str)
+                return out_schema.model_dump()
+            except Exception as e:
+                return
 
     def get_client(self):
         return anthropic.Anthropic(
