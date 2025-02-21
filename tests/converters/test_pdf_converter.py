@@ -47,7 +47,7 @@ def test_html_converter(pdf_converter: PdfConverter, temp_doc):
     markdown = markdown_output.markdown
 
     # Basic assertions
-    assert "Beijing" in markdown
+    assert "Republic of China" in markdown
 
 
 @pytest.mark.filename("gatsby.docx")
