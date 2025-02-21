@@ -35,6 +35,7 @@ markdown2 = "^2.5.2"
 filetype = "^1.2.0"
 scikit-learn = "^1.6.1"
 google-genai = "^1.0.0"
+anthropic = "^0.46.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
