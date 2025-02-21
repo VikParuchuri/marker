@@ -32,12 +32,12 @@ The number of output lines MUST match the number of input lines.  There are {inp
 1. Carefully examine the provided text block image .
 2. Analyze the extracted lines.
 3. For each extracted line, compare it to the corresponding line in the image.
-4. Correct any errors in the extracted line, including:
+4. If there are no errors in any of the extracted lines, output "No corrections needed".
+5. For each extracted line, correct any errors, including:
     * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
-5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.
-6. Ensure that inline math is properly with inline math tags, like <math>...</math>.
+6. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.
 7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.
 8. Output the corrected lines in JSON format, as shown in the example below.  Each line should be in HTML format. Only use the math, br, a, i, b, sup, sub, and span tags.
 9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
@@ -94,7 +94,7 @@ Output:
         detected_blocks = [
             (page, block)
             for page in document.pages
-            for block in page.contained_blocks(document, (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader))
+            for block in page.contained_blocks(document, (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote))
             if any([b.formats and "math" in b.formats for b in block.contained_blocks(document, (BlockTypes.Line,))])
         ]
         inference_blocks = inline_blocks + detected_blocks
@@ -137,7 +137,15 @@ Output:
             return
 
         corrected_lines = response["corrected_lines"]
-        if not corrected_lines or len(corrected_lines) != len(extracted_lines):
+        if not corrected_lines:
+            block.update_metadata(llm_error_count=1)
+            return
+
+        # Block is fine
+        if "no corrections needed" in str(corrected_lines).lower():
+            return
+
+        if len(corrected_lines) != len(extracted_lines):
             block.update_metadata(llm_error_count=1)
             return
 

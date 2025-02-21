@@ -7,7 +7,7 @@ from typing import List, Annotated, Union, T
 import PIL
 from PIL import Image
 import anthropic
-from anthropic import APIError, APIConnectionError, APITimeoutError, RateLimitError
+from anthropic import RateLimitError
 from pydantic import BaseModel
 
 from marker.schema.blocks import Block
@@ -50,13 +50,20 @@ class ClaudeService(BaseService):
         ]
 
     def validate_response(self, response_text: str, schema: type[T]) -> T:
+        response_text = response_text.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
         try:
             # Try to parse as JSON first
-            data = json.loads(response_text)
-            return schema.parse_obj(data)
+            out_schema = schema.model_validate_json(response_text)
+            out_json = out_schema.model_dump()
+            return out_json
         except json.JSONDecodeError:
             # If not JSON, try to parse the raw text into the schema
-            return schema.parse_raw(response_text)
+            out_schema = schema.model_validate_strings(response_text)
+            return out_schema.model_dump()
 
     def get_client(self):
         return anthropic.Anthropic(
@@ -86,6 +93,8 @@ class ClaudeService(BaseService):
 Follow the instructions given by the user prompt.  You must provide your response in JSON format matching this schema:
 
 {json.dumps(schema_example, indent=2)}
+
+Respond only with the JSON schema, nothing else.  Do not include ```json``` or any other formatting.
 """.strip()
 
         client = self.get_client()
@@ -93,17 +102,13 @@ Follow the instructions given by the user prompt.  You must provide your respons
 
         messages = [
             {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
                 "role": "user",
                 "content": [
+                    *image_data,
                     {
                         "type": "text",
                         "text": prompt
                     },
-                    *image_data
                 ]
             }
         ]
@@ -112,6 +117,7 @@ Follow the instructions given by the user prompt.  You must provide your respons
         while tries < max_retries:
             try:
                 response = client.messages.create(
+                    system=system_prompt,
                     model=self.claude_model_name,
                     max_tokens=self.max_claude_tokens,
                     messages=messages,

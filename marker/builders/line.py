@@ -111,7 +111,7 @@ class LineBuilder(BaseBuilder):
         self.ocr_error_model = ocr_error_model
 
     def __call__(self, document: Document, provider: PdfProvider):
-        # Disable Inline Detection for documents where layout model doesn't detect any equations
+        # Disable inline detection for documents where layout model doesn't detect any equations
         # Also disable if we won't use the inline detections (if we aren't using the LLM or texify)
         do_inline_math_detection = all([
             len(document.contained_blocks([BlockTypes.Equation, BlockTypes.TextInlineMath])) > 0,
