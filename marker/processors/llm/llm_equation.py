@@ -12,7 +12,7 @@ class LLMEquationProcessor(BaseLLMSimpleBlockProcessor):
     min_equation_height: Annotated[
         float,
         "The minimum ratio between equation height and page height to consider for processing.",
-     ] = 0.08
+     ] = 0.06
     image_expansion_ratio: Annotated[
         float,
         "The ratio to expand the image by when cropping.",

@@ -91,3 +91,11 @@ class Line(Block):
             children=[],
             section_hierarchy=section_hierarchy
         )
+
+    def merge(self, other: "Line"):
+        self.polygon = self.polygon.merge([other.polygon])
+        self.structure = self.structure + other.structure
+        if self.formats is None:
+            self.formats = other.formats
+        elif other.formats is not None:
+            self.formats.extend(other.formats)
