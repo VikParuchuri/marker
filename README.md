@@ -1,8 +1,8 @@
 # Marker
 
-Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
+Marker converts documents to markdown, JSON, and HTML quickly and accurately.
 
-- Supports a range of documents in all languages
+- Converts PDF, image, PPTX, DOCX, XLSX, HTML, EPUB in all languages
 - Formats tables, forms, equations, inline math, links, references, and code blocks
 - Extracts and saves images
 - Removes headers/footers/other artifacts
@@ -320,6 +320,7 @@ When running with the `--use_llm` flag, you have a choice of services you can us
 - `Gemini` - this will use the Gemini developer API by default.  You'll need to pass `--gemini_api_key` to configuration.
 - `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
 - `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.ollama.OllamaService`.
+- `Claude` - this will use the anthropic API.  You can configure `--claude_api_key`, and `--claude_model_name`.  To use it, set `--llm_service=marker.services.claude.ClaudeService`.
 
 These services may have additional optional configuration as well - you can see it by viewing the classes.
 
