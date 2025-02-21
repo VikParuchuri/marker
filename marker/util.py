@@ -1,11 +1,14 @@
 import inspect
+import os
 from importlib import import_module
 from typing import List, Annotated
 
 import numpy as np
+import requests
 from pydantic import BaseModel
 
 from marker.schema.polygon import PolygonBox
+from marker.settings import settings
 
 
 def strings_to_classes(items: List[str]) -> List[type]:
@@ -132,3 +135,12 @@ def sort_text_lines(lines: List[PolygonBox], tolerance=1.25):
         sorted_lines.extend(sorted_group)
 
     return sorted_lines
+
+def download_font():
+    if not os.path.exists(settings.FONT_PATH):
+        os.makedirs(os.path.dirname(settings.FONT_PATH), exist_ok=True)
+        font_dl_path = f"{settings.ARTIFACT_URL}/{settings.FONT_NAME}"
+        with requests.get(font_dl_path, stream=True) as r, open(settings.FONT_PATH, 'wb') as f:
+            r.raise_for_status()
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)

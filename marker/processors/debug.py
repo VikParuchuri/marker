@@ -2,7 +2,6 @@ import json
 import os
 from typing import Annotated
 
-import requests
 from PIL import Image, ImageDraw, ImageFont
 
 from marker.processors import BaseProcessor
@@ -36,14 +35,7 @@ class DebugProcessor(BaseProcessor):
         bool,
         "Whether to dump block debug data.",
     ] = False
-    render_font: Annotated[
-        str,
-        "The path to the font to use for rendering debug images.",
-    ] = os.path.join(settings.FONT_DIR, "GoNotoCurrent-Regular.ttf")
-    font_dl_path: Annotated[
-        str,
-        "The path to download the font from.",
-    ] = "https://github.com/satbyy/go-noto-universal/releases/download/v7.0"
+
 
     def __call__(self, document: Document):
         # Remove extension from doc name
@@ -146,17 +138,6 @@ class DebugProcessor(BaseProcessor):
         with open(debug_file, "w+") as f:
             json.dump(debug_data, f)
 
-    def get_font_path(self) -> str:
-        if not os.path.exists(self.render_font):
-            os.makedirs(os.path.dirname(self.render_font), exist_ok=True)
-            font_dl_path = f"{self.font_dl_path}/{os.path.basename(self.render_font)}"
-            with requests.get(font_dl_path, stream=True) as r, open(self.render_font, 'wb') as f:
-                r.raise_for_status()
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-
-        return self.render_font
-
     def get_text_size(self, text, font):
         im = Image.new(mode="P", size=(0, 0))
         draw = ImageDraw.Draw(im)
@@ -165,7 +146,7 @@ class DebugProcessor(BaseProcessor):
 
     def render_on_image(self, bboxes, image, labels=None, label_offset=1, label_font_size=10, color: str | list = 'red', draw_bbox=True):
         draw = ImageDraw.Draw(image)
-        font_path = self.get_font_path()
+        font_path = settings.FONT_PATH
         label_font = ImageFont.truetype(font_path, label_font_size)
 
         for i, bbox in enumerate(bboxes):

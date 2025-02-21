@@ -104,7 +104,7 @@ class PowerPointProvider(PdfProvider):
         # We convert the HTML into a PDF
         HTML(string=html).write_pdf(
             self.temp_pdf_path,
-            stylesheets=[CSS(string=css)]
+            stylesheets=[CSS(string=css), self.get_font_css()]
         )
 
     def _handle_group(self, group_shape) -> str:

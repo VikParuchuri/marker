@@ -105,5 +105,5 @@ class EpubProvider(PdfProvider):
         # we convert the epub to HTML
         result = HTML(string=html_content, base_url=filepath).write_pdf(
             self.temp_pdf_path,
-            stylesheets=[CSS(string=full_style)]
+            stylesheets=[CSS(string=full_style), self.get_font_css()]
         )

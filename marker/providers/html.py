@@ -18,6 +18,7 @@ class HTMLProvider(PdfProvider):
             raise RuntimeError(f"Failed to convert {filepath} to PDF: {e}")
 
         # Initialize the PDF provider with the temp pdf path
+        print(self.temp_pdf_path)
         super().__init__(self.temp_pdf_path, config)
 
     def __del__(self):
@@ -25,6 +26,8 @@ class HTMLProvider(PdfProvider):
             os.remove(self.temp_pdf_path)
 
     def convert_html_to_pdf(self, filepath: str):
+        font_css = self.get_font_css()
         HTML(filename=filepath, encoding="utf-8").write_pdf(
             self.temp_pdf_path,
+            stylesheets=[font_css]
         )

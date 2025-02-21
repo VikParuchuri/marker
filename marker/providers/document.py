@@ -77,7 +77,7 @@ class DocumentProvider(PdfProvider):
             # We convert the HTML into a PDF
             HTML(string=self._preprocess_base64_images(html)).write_pdf(
                 self.temp_pdf_path,
-                stylesheets=[CSS(string=css)]
+                stylesheets=[CSS(string=css), self.get_font_css()]
             )
 
     @staticmethod
