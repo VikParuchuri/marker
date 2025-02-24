@@ -93,6 +93,9 @@ class DebugProcessor(BaseProcessor):
             line_bboxes = []
             line_text = []
             for child in page.children:
+                if child.removed:
+                    continue
+
                 if child.block_type != BlockTypes.Line:
                     continue
 
