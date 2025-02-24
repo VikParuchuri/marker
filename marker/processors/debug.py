@@ -69,6 +69,7 @@ class DebugProcessor(BaseProcessor):
                 # Skip any blocks that have been removed
                 if child.removed:
                     continue
+
                 if child.block_type == BlockTypes.Line:
                     bbox = child.polygon.rescale(page.polygon.size, png_image.size).bbox
                     line_bboxes.append(bbox)
@@ -78,7 +79,6 @@ class DebugProcessor(BaseProcessor):
                     span_bboxes.append(bbox)
 
             self.render_on_image(line_bboxes, png_image, color="blue", draw_bbox=True, label_font_size=24, labels=[str(i) for i in line_ids])
-            #self.render_on_image(span_bboxes, png_image, color="green", draw_bbox=True, label_font_size=24)
 
             png_image = self.render_layout_boxes(page, png_image)
 
