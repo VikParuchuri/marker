@@ -171,6 +171,8 @@ No corrections needed.
     def parse_html_table(self, html_text: str, block: Block, page: PageGroup) -> List[TableCell]:
         soup = BeautifulSoup(html_text, 'html.parser')
         table = soup.find('table')
+        if not table:
+            return []
 
         # Initialize grid
         rows = table.find_all('tr')

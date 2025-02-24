@@ -1,5 +1,4 @@
 import os
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 from collections import defaultdict
@@ -43,6 +42,8 @@ from marker.util import strings_to_classes
 from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
 from marker.processors.order import OrderProcessor
 from marker.services.gemini import GoogleGeminiService
+from marker.processors.line_merge import LineMergeProcessor
+from marker.processors.llm.llm_inlinemath import LLMInlineMathProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -62,6 +63,7 @@ class PdfConverter(BaseConverter):
     ] = False
     default_processors: Tuple[BaseProcessor, ...] = (
         OrderProcessor,
+        LineMergeProcessor,
         BlockquoteProcessor,
         CodeProcessor,
         DocumentTOCProcessor,
@@ -82,6 +84,7 @@ class PdfConverter(BaseConverter):
         LLMImageDescriptionProcessor,
         LLMEquationProcessor,
         LLMHandwritingProcessor,
+        LLMInlineMathProcessor,
         ReferenceProcessor,
         DebugProcessor,
     )

@@ -11,7 +11,7 @@ from marker.util import classes_to_strings
 
 @pytest.mark.filename("arxiv_test.pdf")
 @pytest.mark.output_format("markdown")
-def test_pdf_links(pdf_document: Document, config, renderer, model_dict, temp_pdf):
+def test_pdf_links(pdf_document: Document, config, renderer, model_dict, temp_doc):
     first_page = pdf_document.pages[1]
 
     processors = ["marker.processors.reference.ReferenceProcessor"]
@@ -34,7 +34,7 @@ def test_pdf_links(pdf_document: Document, config, renderer, model_dict, temp_pd
 
     assert first_page.refs[0].ref == "page-1-0"
 
-    markdown_output: MarkdownOutput = pdf_converter(temp_pdf.name)
+    markdown_output: MarkdownOutput = pdf_converter(temp_doc.name)
     markdown = markdown_output.markdown
 
     assert '[II.](#page-1-0)' in markdown

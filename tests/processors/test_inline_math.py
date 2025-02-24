@@ -13,7 +13,7 @@ def test_llm_text_processor(pdf_document, mocker):
     # Get all inline math lines
     text_lines = pdf_document.contained_blocks((BlockTypes.Line,))
     text_lines = [line for line in text_lines if line.formats and "math" in line.formats]
-    assert len(text_lines) == 3
+    assert len(text_lines) == 8
     corrected_lines = ["<math>Text</math>"] * len(text_lines)
 
     mock_cls = Mock()
@@ -44,4 +44,4 @@ def test_llm_text_processor_texify(pdf_document):
     # Get all inline math lines
     text_lines = pdf_document.contained_blocks((BlockTypes.Line,))
     text_lines = [line for line in text_lines if line.formats and "math" in line.formats]
-    assert len(text_lines) == 3
+    assert len(text_lines) == 8
