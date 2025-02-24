@@ -2,7 +2,7 @@
 
 Marker converts documents to markdown, JSON, and HTML quickly and accurately.
 
-- Converts PDF, image, PPTX, DOCX, XLSX, HTML, EPUB in all languages
+- Converts PDF, image, PPTX, DOCX, XLSX, HTML, EPUB files in all languages
 - Formats tables, forms, equations, inline math, links, references, and code blocks
 - Extracts and saves images
 - Removes headers/footers/other artifacts
