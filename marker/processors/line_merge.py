@@ -28,7 +28,7 @@ class LineMergeProcessor(BaseProcessor):
     intersection_pct_threshold: Annotated[
         float,
         "The total amount of intersection area concentrated in the max intersection block."
-    ] = .6
+    ] = .5
     vertical_overlap_pct_threshold: Annotated[
         float,
         "The minimum percentage of vertical overlap to consider merging."
@@ -80,7 +80,7 @@ class LineMergeProcessor(BaseProcessor):
                 # Within same line
                 vertical_overlap_pct > self.vertical_overlap_pct_threshold,
                 # doesn't overlap with anything else
-                merge_intersection / total_intersection >= self.intersection_pct_threshold
+                merge_intersection / total_intersection > self.intersection_pct_threshold
             ]):
                 merge.append(i)
             else:
