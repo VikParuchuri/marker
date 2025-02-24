@@ -421,55 +421,66 @@ class LineBuilder(BaseBuilder):
             merge_lines[best_overlap].append(i)
 
         # Filter to get rid of detected lines that include multiple provider lines
-        filtered_merge_lines = {}
+        filtered_merge_lines = defaultdict(list)
         for line_idx in merge_lines:
-            first_line = horizontal_provider_lines[merge_lines[line_idx][0]][1].line.polygon
-            all_close = all([
-                (
-                    abs(horizontal_provider_lines[ml][1].line.polygon.y_start - first_line.y_start) < self.inline_math_line_vertical_merge_threshold
-                    or
-                    abs(horizontal_provider_lines[ml][1].line.polygon.y_end - first_line.y_end) < self.inline_math_line_vertical_merge_threshold
-                )
-                for ml in
-                merge_lines[line_idx]
-            ])
-            if all_close:
-                filtered_merge_lines[line_idx] = merge_lines[line_idx]
+            merge_segment = []
+            prev_line = None
+            for ml in merge_lines[line_idx]:
+                line = horizontal_provider_lines[ml][1].line.polygon
+                if prev_line:
+                    close = (
+                        abs(line.y_start - prev_line.y_start) < self.inline_math_line_vertical_merge_threshold
+                        or
+                        abs(line.y_end - prev_line.y_end) < self.inline_math_line_vertical_merge_threshold
+                    )
+                else:
+                    # First line
+                    close = True
+
+                prev_line = line
+                if close:
+                    merge_segment.append(ml)
+                else:
+                    if merge_segment:
+                        filtered_merge_lines[line_idx].append(merge_segment)
+                    merge_segment = [ml]
 
         # Handle the merging
         already_merged = set()
-        potential_merges = set(chain.from_iterable(filtered_merge_lines.values()))
+        potential_merges = []
+        for line_idx in filtered_merge_lines:
+            potential_merges.extend(chain.from_iterable(filtered_merge_lines[line_idx]))
+        potential_merges = set(potential_merges)
         out_provider_lines = [(i, p) for i, p in enumerate(provider_lines) if i not in potential_merges]
         for line_idx in filtered_merge_lines:
             text_line = text_lines[line_idx]
-            merge_section = filtered_merge_lines[line_idx]
-            merge_section = [m for m in merge_section if m not in already_merged]
-            if len(merge_section) == 0:
-                continue
-            elif len(merge_section) == 1:
-                line_idx = merge_section[0]
-                merged_line = provider_lines[line_idx]
-                # Only add math format to single lines if the detected line is math
-                if text_line.math:
-                    self.add_math_span_format(merged_line)
-                out_provider_lines.append((line_idx, merged_line))
-                already_merged.add(merge_section[0])
-                continue
-
-            merge_section = sorted(merge_section)
-            merged_line = None
-            min_idx = min(merge_section)
-            for idx in merge_section:
-                provider_line = deepcopy(provider_lines[idx])
-                if merged_line is None:
-                    merged_line = provider_line
+            for merge_section in filtered_merge_lines[line_idx]:
+                merge_section = [m for m in merge_section if m not in already_merged]
+                if len(merge_section) == 0:
+                    continue
+                elif len(merge_section) == 1:
+                    provider_idx = merge_section[0]
+                    merged_line = provider_lines[provider_idx]
+                    # Only add math format to single lines if the detected line is math
+                    if text_line.math:
+                        self.add_math_span_format(merged_line)
+                    out_provider_lines.append((provider_idx, merged_line))
+                    already_merged.add(merge_section[0])
                 else:
-                    # Combine the spans of the provider line with the merged line
-                    merged_line = merged_line.merge(provider_line)
-                    # Add math regardless, since we assume heavily broken lines are math lines
-                    self.add_math_span_format(merged_line)
-                already_merged.add(idx) # Prevent double merging
-            out_provider_lines.append((min_idx, merged_line))
+                    merge_section = sorted(merge_section)
+                    merged_line = None
+                    min_idx = min(merge_section)
+                    for idx in merge_section:
+                        provider_line = deepcopy(provider_lines[idx])
+                        if merged_line is None:
+                            merged_line = provider_line
+                        else:
+                            # Combine the spans of the provider line with the merged line
+                            merged_line = merged_line.merge(provider_line)
+                            # Add math regardless, since we assume heavily broken lines are math lines
+                            self.add_math_span_format(merged_line)
+                        already_merged.add(idx) # Prevent double merging
+                    out_provider_lines.append((min_idx, merged_line))
 
         # Sort to preserve original order
         out_provider_lines = sorted(out_provider_lines, key=lambda x: x[0])

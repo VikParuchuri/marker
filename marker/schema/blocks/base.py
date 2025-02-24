@@ -215,6 +215,8 @@ class Block(BaseModel):
         blocks = []
         for block_id in self.structure:
             block = document.get_block(block_id)
+            if block.removed:
+                continue
             if (block_types is None or block.block_type in block_types) and not block.removed:
                 blocks.append(block)
             blocks += block.contained_blocks(document, block_types)
