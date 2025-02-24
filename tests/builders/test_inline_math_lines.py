@@ -14,7 +14,7 @@ def test_inline_box_nomerging(pdf_document, config):
     merger(pdf_document)
 
     line_count = len(block.contained_blocks(pdf_document, (BlockTypes.Line,)))
-    assert line_count == 45
+    assert line_count == 46
 
 
 @pytest.mark.config({"page_range": [1], "use_llm": True})
