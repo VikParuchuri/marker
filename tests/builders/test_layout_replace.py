@@ -9,13 +9,13 @@ from marker.schema.registry import get_block_class
 
 
 @pytest.mark.config({"page_range": [0]})
-def test_layout_replace(request, config, pdf_provider, layout_model, ocr_error_model, detection_model, inline_detection_model):
+def test_layout_replace(request, config, doc_provider, layout_model, ocr_error_model, detection_model, inline_detection_model):
     # The llm layout builder replaces blocks - this makes sure text is still merged properly
     layout_builder = LayoutBuilder(layout_model, config)
     line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
     builder = DocumentBuilder(config)
-    document = builder.build_document(pdf_provider)
-    layout_builder(document, pdf_provider)
+    document = builder.build_document(doc_provider)
+    layout_builder(document, doc_provider)
     page = document.pages[0]
     new_blocks = []
     for block in page.contained_blocks(document, (BlockTypes.Text,)):
@@ -27,7 +27,7 @@ def test_layout_replace(request, config, pdf_provider, layout_model, ocr_error_m
         )
         page.replace_block(block, generated_block)
         new_blocks.append(generated_block)
-    line_builder(document, pdf_provider)
+    line_builder(document, doc_provider)
 
     for block in new_blocks:
         assert block.raw_text(document).strip()

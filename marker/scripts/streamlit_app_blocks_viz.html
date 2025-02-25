@@ -7,21 +7,26 @@
         body {
             font-family: "Source Sans Pro",sans-serif;
             font-weight: 400;
-            -moz-osx-font-smoothing: auto
+            -moz-osx-font-smoothing: auto;
+            margin: 0;
+            padding: 0;
         }
 
         .tippy-box {
-            font-size: 10px
+            font-size: clamp(8px, 2vw, 10px);
         }
 
         .image-container {
             position: relative;
-            width: 90%
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .image-container img {
             width: 100%;
-            height: auto
+            height: auto;
+            display: block;
         }
 
         .blocks-overlay {
@@ -29,72 +34,90 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%
+            height: 100%;
+            pointer-events: none; /* This ensures clicks go through to SVG elements */
         }
 
         .blocks-overlay rect.block {
             fill-opacity: .2;
-            stroke-opacity: .5
+            stroke-opacity: .5;
+            pointer-events: auto; /* This ensures clicks are captured by rectangles */
         }
 
         .blocks-overlay rect.block:hover {
             stroke-opacity: 1;
-            cursor: pointer
+            cursor: pointer;
         }
 
         #block-info-dialog {
-            width: 65%
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            padding: 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         #block-info-dialog button.close-button {
-            font-size: 20px;
+            font-size: clamp(16px, 3vw, 20px);
             position: absolute;
-            top: 0;
-            right: 0;
+            top: 8px;
+            right: 8px;
             margin: 0;
             border: 0;
             background: 0 0;
-            padding: 0 4px 0 0;
-            cursor: pointer
+            padding: 0 4px;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #block-info-dialog button.close-button:focus {
-            outline: 0
+            outline: 0;
         }
 
         #block-info-dialog button.close-button::after {
-            content: "╳"
+            content: "╳";
         }
 
         #block-info-dialog button.copy-json-button {
-            font-size: 10px;
+            font-size: clamp(8px, 2vw, 10px);
             color: #bababa;
             cursor: pointer;
             position: absolute;
-            bottom: 3px;
-            right: 3px;
+            bottom: 8px;
+            right: 8px;
             border: 0;
-            background: 0 0
+            background: 0 0;
+            padding: 4px 8px;
         }
 
         #block-info-dialog button.copy-json-button:hover {
-            color: #666
+            color: #666;
         }
 
         #block-info-dialog button.copy-json-button:active {
-            color: #000
+            color: #000;
         }
 
         #block-info-dialog h1 {
-            margin: 0 0 10px;
+            margin: 0 0 16px;
             text-align: left;
-            font-size: 1em
+            font-size: clamp(14px, 3vw, 18px);
+            padding-right: 24px; /* Space for close button */
         }
 
         #block-info-dialog .text-content {
             overflow-y: auto;
             font-family: monospace;
-            white-space: pre
+            white-space: pre-wrap;
+            font-size: clamp(10px, 2vw, 14px);
+            max-height: 40vh;
+            margin-bottom: 16px;
         }
 
         #block-info-dialog .images {
@@ -102,17 +125,34 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
-            margin-top: 10px
+            margin-top: 10px;
+            margin-bottom: 24px; /* Space for copy button */
         }
 
         #block-info-dialog .images img {
-            max-width: 40%;
-            height: auto
+            max-width: 45%;
+            height: auto;
+        }
+
+        @media screen and (max-width: 768px) {
+            #block-info-dialog {
+                width: 90%;
+            }
+
+            #block-info-dialog .images img {
+                max-width: 100%;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            #block-info-dialog .text-content {
+                max-height: 30vh;
+            }
         }
     </style>
   </head>
   <body>
-    <div style="text-align: center" class="image-container">
+    <div class="image-container">
       <dialog id="block-info-dialog">
         <button
           class="close-button"
@@ -129,13 +169,11 @@
       </dialog>
       <img
         src="$image_data_url"
-        style="max-width: 100%; height: auto"
         alt="Image"
       />
       <svg
         class="blocks-overlay"
-        width="$image_width"
-        height="$image_height"
+        preserveAspectRatio="xMidYMid meet"
       ></svg>
     </div>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
@@ -147,6 +185,20 @@
         const BLOCK_TYPES = $block_types_json;
         const blocksById = {};
         const blockInfoDialog = document.querySelector("dialog#block-info-dialog");
+
+        // Handle resizing for responsive SVG
+        function updateSVGSize() {
+          const image = document.querySelector('.image-container img');
+          const svg = document.querySelector('.blocks-overlay');
+
+          // Set SVG dimensions to match the displayed image size
+          svg.setAttribute('width', image.clientWidth);
+          svg.setAttribute('height', image.clientHeight);
+        }
+
+        // Initialize and update on resize
+        window.addEventListener('resize', updateSVGSize);
+        window.addEventListener('load', updateSVGSize);
 
         function blockTypeColor(blockType) {
           return COLORS[BLOCK_TYPES[blockType] % COLORS.length];
@@ -197,11 +249,13 @@
         const blocksOverlay = document.querySelector(".blocks-overlay");
         blocksOverlay.innerHTML = traverseAndGenerateSVG(BLOCKS.children[0]);
 
+        // Initialize tippy with responsive settings
         tippy("rect.block", {
             content: (block) => block.getAttribute("data-type"),
             placement: "top-start",
             arrow: false,
             offset: [0, 5],
+            maxWidth: 200,
         });
 
         blocksOverlay.addEventListener("click", (event) => {
@@ -228,7 +282,17 @@
             }
             blockInfoDialog.showModal();
         });
-      }; f();
+
+        // Initial sizing
+        updateSVGSize();
+      };
+
+      // Run the function when DOM is loaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', f);
+      } else {
+        f();
+      }
     </script>
   </body>
 </html>

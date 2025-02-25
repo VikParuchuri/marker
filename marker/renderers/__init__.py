@@ -41,6 +41,17 @@ class BaseRenderer:
         return cropped
 
     @staticmethod
+    def merge_consecutive_math(html, tag="math"):
+        if not html:
+            return html
+        pattern = fr'-</{tag}>(\s*)<{tag}>'
+        html = re.sub(pattern, " ", html)
+
+        pattern = fr'-</{tag}>(\s*)<{tag} display="inline">'
+        html = re.sub(pattern, " ", html)
+        return html
+
+    @staticmethod
     def merge_consecutive_tags(html, tag):
         if not html:
             return html

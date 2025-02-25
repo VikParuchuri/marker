@@ -20,11 +20,11 @@ def _table_converter(config, model_dict, renderer, temp_pdf):
 
 @pytest.mark.output_format("markdown")
 @pytest.mark.config({"page_range": [5]})
-def test_table_converter(config, model_dict, renderer, temp_pdf):
-    _table_converter(config, model_dict, renderer, temp_pdf)
+def test_table_converter(config, model_dict, renderer, temp_doc):
+    _table_converter(config, model_dict, renderer, temp_doc)
 
 @pytest.mark.output_format("markdown")
 @pytest.mark.config({"page_range": [5], "force_ocr": True})
-def test_table_converter_ocr(config, model_dict, renderer, temp_pdf):
-    _table_converter(config, model_dict, renderer, temp_pdf)
+def test_table_converter_ocr(config, model_dict, renderer, temp_doc):
+    _table_converter(config, model_dict, renderer, temp_doc)
 

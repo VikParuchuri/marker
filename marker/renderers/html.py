@@ -82,6 +82,7 @@ class HTMLRenderer(BaseRenderer):
         if level == 0:
             output = self.merge_consecutive_tags(output, 'b')
             output = self.merge_consecutive_tags(output, 'i')
+            output = self.merge_consecutive_math(output) # Merge consecutive inline math tags
             output = textwrap.dedent(f"""
             <!DOCTYPE html>
             <html>

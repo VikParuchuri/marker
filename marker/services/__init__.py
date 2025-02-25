@@ -11,11 +11,11 @@ class BaseService:
     timeout: Annotated[
         int,
         "The timeout to use for the service."
-    ] = 30
+    ] = 60
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the service."
-    ] = 1
+    ] = 3
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)

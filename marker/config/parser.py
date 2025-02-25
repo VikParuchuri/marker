@@ -65,7 +65,7 @@ class ConfigParser:
                 case "languages":
                     config["languages"] = v.split(",")
                 case "config_json":
-                    with open(v, "r") as f:
+                    with open(v, "r", encoding="utf-8") as f:
                         config.update(json.load(f))
                 case "disable_multiprocessing":
                     config["pdftext_workers"] = 1

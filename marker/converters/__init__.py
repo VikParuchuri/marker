@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from marker.processors import BaseProcessor
 from marker.processors.llm import BaseLLMSimpleBlockProcessor
 from marker.processors.llm.llm_meta import LLMSimpleBlockMetaProcessor
-from marker.util import assign_config
+from marker.util import assign_config, download_font
 
 
 class BaseConverter:
@@ -14,6 +14,9 @@ class BaseConverter:
         assign_config(self, config)
         self.config = config
         self.llm_service = None
+
+        # Download render font, needed for some providers
+        download_font()
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
