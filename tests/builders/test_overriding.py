@@ -32,17 +32,29 @@ def get_lines(pdf: str, config=None):
     for block_type, block_cls in config["override_map"].items():
         register_block_class(block_type, block_cls)
 
-    provider: PdfProvider = setup_pdf_provider(pdf, config)
+    # provider: PdfProvider = setup_pdf_provider(pdf, config)
+    provider = PdfProvider(pdf, config)
     return provider.get_page_lines(0)
 
+@pytest.fixture(scope="function")
+@pytest.mark.filename("adversarial.pdf")
+def adversarial(temp_pdf):
+    return temp_pdf
 
-def test_overriding_mp():
+@pytest.fixture(scope="function")
+@pytest.mark.filename("adversarial_rot.pdf")
+def adversarial_rot(temp_pdf):
+    return temp_pdf
+
+
+def test_overriding_mp(adversarial, adversarial_rot):
     config = {
         "page_range": [0],
         "override_map": {BlockTypes.Line: NewLine}
     }
 
-    pdf_list = ["adversarial.pdf", "adversarial_rot.pdf"]
+    # use temp files managed by pytest fixtures
+    pdf_list = [adversarial.name, adversarial_rot.name]
 
     with mp.Pool(processes=2) as pool:
         results = pool.starmap(get_lines, [(pdf, config) for pdf in pdf_list])
