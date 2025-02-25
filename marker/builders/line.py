@@ -444,6 +444,8 @@ class LineBuilder(BaseBuilder):
                     if merge_segment:
                         filtered_merge_lines[line_idx].append(merge_segment)
                     merge_segment = [ml]
+            if merge_segment:
+                filtered_merge_lines[line_idx].append(merge_segment)
 
         # Handle the merging
         already_merged = set()
