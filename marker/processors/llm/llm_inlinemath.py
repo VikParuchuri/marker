@@ -9,7 +9,7 @@ from marker.processors.llm import BaseLLMComplexBlockProcessor
 
 from marker.processors.util import text_to_spans
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block
+from marker.schema.blocks import Block, InlineMath
 from marker.schema.document import Document
 from marker.schema.groups import PageGroup
 from marker.schema.registry import get_block_class
@@ -20,8 +20,14 @@ class LLMInlineMathProcessor(BaseLLMComplexBlockProcessor):
         bool,
         "If True, the inline math will be re-done, otherwise it will be left as is."
     ] = False
+    inlinemath_min_ratio: Annotated[
+        float,
+        "If more than this ratio of blocks are inlinemath blocks, assume everything has math."
+    ] = 0.4
 
-    block_types = (BlockTypes.TextInlineMath,)
+    block_types = (BlockTypes.TextInlineMath,) # Primary block type
+    additional_block_types = (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote) # Seconday, can also contain math
+
     text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
 Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
@@ -84,7 +90,7 @@ Output:
             return
 
         # Get inline math blocks
-        inline_blocks = [
+        inline_blocks: List[InlineMath] = [
             (page, block)
             for page in document.pages
             for block in page.contained_blocks(document, self.block_types)
@@ -97,7 +103,27 @@ Output:
             for block in page.contained_blocks(document, (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote))
             if any([b.formats and "math" in b.formats for b in block.contained_blocks(document, (BlockTypes.Line,))])
         ]
-        inference_blocks = inline_blocks + detected_blocks
+
+        # If a page has enough math blocks, assume all blocks can contain math
+        additional_text_blocks = []
+        for page in document.pages:
+            # Check for inline math blocks
+            page_inlinemath_blocks = [im for im in inline_blocks if im[0].page_id == page.page_id]
+            page_detected_blocks = [db for db in detected_blocks if db[0].page_id == page.page_id]
+            math_block_count = len(page_inlinemath_blocks) + len(page_detected_blocks)
+
+            # Find all potential blocks
+            additional_blocks = page.contained_blocks(document, self.additional_block_types + self.block_types)
+
+            # Check if the ratio of math blocks to additional blocks is high enough
+            if math_block_count / len(additional_blocks) < self.inlinemath_min_ratio:
+                continue
+
+            for b in additional_blocks:
+                if b not in detected_blocks and b not in inline_blocks:
+                    additional_text_blocks.append((page, b))
+
+        inference_blocks = inline_blocks + detected_blocks + additional_text_blocks
 
         # Don't show progress if there are no blocks to process
         total_blocks = len(inference_blocks)
