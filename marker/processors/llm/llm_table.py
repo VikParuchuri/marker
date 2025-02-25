@@ -29,16 +29,21 @@ class LLMTableProcessor(BaseLLMComplexBlockProcessor):
         float,
         "The ratio to expand the image by when cropping.",
     ] = 0
+    rotation_max_wh_ratio: Annotated[
+        float,
+        "The maximum width/height ratio for table cells for a table to be considered rotated.",
+    ] = 0.6
     table_rewriting_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt."
     ] = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image and an html representation of the table in the image.
-Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table as possible.
+Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table as possible.  The table may be rotated, but ensure the html representation is not rotated.  Make sure to include HTML for the full table, including the opening and closing table tags.
 
 Some guidelines:
 - Make sure to reproduce the original values as faithfully as possible.
+- Ensure column headers match the correct column values.
 - If you see any math in a table cell, fence it with the <math> tag.  Block math should be fenced with <math display="block">.
 - Replace any images with a description, like "Image: [description]".
 - Only use the tags th, td, tr, br, span, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
@@ -47,7 +52,7 @@ Some guidelines:
 **Instructions:**
 1. Carefully examine the provided text block image.
 2. Analyze the html representation of the table.
-3. Write a comparison of the image and the html representation.
+3. Write a comparison of the image and the html representation, paying special attention to the column headers matching the correct column values.
 4. If the html representation is completely correct, or you cannot read the image properly, then write "No corrections needed."  If the html representation has errors, generate the corrected html representation.  Output only either the corrected html representation or "No corrections needed."
 **Example:**
 Input:
@@ -67,7 +72,7 @@ Input:
 ```
 Output:
 ```html
-Comparison: The image shows a table with 2 rows and 3 columns.  The text and formatting of the html table matches the image.
+Comparison: The image shows a table with 2 rows and 3 columns.  The text and formatting of the html table matches the image.  The column headers match the correct column values.
 No corrections needed.
 ```
 **Input:**
@@ -75,6 +80,35 @@ No corrections needed.
 {block_html}
 ```
 """
+
+    def handle_image_rotation(self, children: List[TableCell], image: Image.Image):
+        ratios = [c.polygon.width / c.polygon.height for c in children]
+        if len(ratios) < 2:
+            return image
+
+        is_rotated = all([r < self.rotation_max_wh_ratio for r in ratios])
+        if not is_rotated:
+            return image
+
+        first_col_id = min([c.col_id for c in children])
+        first_col = [c for c in children if c.col_id == first_col_id]
+        first_col_cell = first_col[0]
+
+        last_col_id = max([c.col_id for c in children])
+        if last_col_id == first_col_id:
+            return image
+
+        last_col_cell = [c for c in children if c.col_id == last_col_id][0]
+        cell_diff = first_col_cell.polygon.y_start - last_col_cell.polygon.y_start
+        if cell_diff == 0:
+            return image
+
+        if cell_diff > 0:
+            return image.rotate(270, expand=True)
+        else:
+            return image.rotate(90, expand=True)
+
+
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Table):
         children: List[TableCell] = block.contained_blocks(document, (BlockTypes.TableCell,))
@@ -117,6 +151,7 @@ No corrections needed.
 
             batch_image = block_image.crop(batch_bbox)
             block_html = block.format_cells(document, [], batch_cells)
+            batch_image = self.handle_image_rotation(batch_cells, batch_image)
             batch_parsed_cells = self.rewrite_single_chunk(page, block, block_html, batch_cells, batch_image)
             if batch_parsed_cells is None:
                 return # Error occurred or no corrections needed
@@ -149,6 +184,10 @@ No corrections needed.
         corrected_html = corrected_html.strip().lstrip("```html").rstrip("```").strip()
         parsed_cells = self.parse_html_table(corrected_html, block, page)
         if len(parsed_cells) <= 1:
+            block.update_metadata(llm_error_count=1)
+            return
+
+        if not corrected_html.endswith("</table>"):
             block.update_metadata(llm_error_count=1)
             return
 

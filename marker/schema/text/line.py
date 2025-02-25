@@ -98,4 +98,4 @@ class Line(Block):
         if self.formats is None:
             self.formats = other.formats
         elif other.formats is not None:
-            self.formats.extend(other.formats)
+            self.formats = list(set(self.formats + other.formats))

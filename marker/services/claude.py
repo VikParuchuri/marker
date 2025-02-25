@@ -7,7 +7,7 @@ from typing import List, Annotated, Union, T
 import PIL
 from PIL import Image
 import anthropic
-from anthropic import RateLimitError
+from anthropic import RateLimitError, APITimeoutError
 from pydantic import BaseModel
 
 from marker.schema.blocks import Block
@@ -17,7 +17,7 @@ class ClaudeService(BaseService):
     claude_model_name: Annotated[
         str,
         "The name of the Google model to use for the service."
-    ] = "claude-3-5-sonnet-20241022"
+    ] = "claude-3-7-sonnet-20250219"
     claude_api_key: Annotated[
         str,
         "The Claude API key to use for the service."
@@ -25,7 +25,7 @@ class ClaudeService(BaseService):
     max_claude_tokens: Annotated[
         int,
         "The maximum number of tokens to use for a single Claude request."
-    ] = 4096
+    ] = 8192
 
 
     def img_to_base64(self, img: PIL.Image.Image):
@@ -131,7 +131,7 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
                 # Extract and validate response
                 response_text = response.content[0].text
                 return self.validate_response(response_text, response_schema)
-            except RateLimitError as e:
+            except (RateLimitError, APITimeoutError) as e:
                 # Rate limit exceeded
                 tries += 1
                 wait_time = tries * 3
