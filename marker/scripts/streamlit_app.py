@@ -134,7 +134,7 @@ def block_display(image: Image, blocks: dict | None = None, dpi=96):
     }
     return components.html(
         BLOCKS_VIZ_TMPL.substitute(**template_values),
-        height=image.height, width=image.width
+        height=image.height
     )
 
 
