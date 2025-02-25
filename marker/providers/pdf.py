@@ -218,6 +218,7 @@ class PdfProvider(BaseProvider):
                                 page_id=page_id,
                                 text_extraction_method="pdftext",
                                 url=span.get("url"),
+                                has_superscript=span.get("superscript", False),
                             )
                         )
                         chars.append(span_chars)

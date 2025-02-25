@@ -64,6 +64,10 @@ class Span(Block):
         if self.has_superscript:
             text = re.sub(r"^([0-9\W]+)(.*)", r"<sup>\1</sup>\2", text)
 
+            # Handle full block superscript
+            if "<sup>" not in text:
+                text = f"<sup>{text}</sup>"
+
         if self.url:
             text = f"<a href='{self.url}'>{text}</a>"
 

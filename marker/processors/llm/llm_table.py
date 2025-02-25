@@ -46,7 +46,7 @@ Some guidelines:
 - Ensure column headers match the correct column values.
 - If you see any math in a table cell, fence it with the <math> tag.  Block math should be fenced with <math display="block">.
 - Replace any images with a description, like "Image: [description]".
-- Only use the tags th, td, tr, br, span, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
+- Only use the tags th, td, tr, br, span, sup, sub, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
 - Make sure the columns and rows match the image faithfully, and are easily readable and interpretable by a human.
 
 **Instructions:**
