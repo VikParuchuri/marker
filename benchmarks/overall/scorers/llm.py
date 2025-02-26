@@ -48,6 +48,8 @@ Notes on scoring:
 - A 1/5 will have major missing text segments from the markdown or completely unreadable formatting.
 - Use 0/5 if a field isn't applicable, like if the image doesn't contain a table.
 
+If text that is important to the meaning of the document is missing, do not score higher than 3/5.
+
 Output json, like in the example below.
 
 **Example**

@@ -116,7 +116,7 @@ Output:
             additional_blocks = page.contained_blocks(document, self.additional_block_types + self.block_types)
 
             # Check if the ratio of math blocks to additional blocks is high enough
-            if math_block_count / len(additional_blocks) < self.inlinemath_min_ratio:
+            if math_block_count / max(1, len(additional_blocks)) < self.inlinemath_min_ratio:
                 continue
 
             for b in additional_blocks:
