@@ -83,7 +83,7 @@ class Markdownify(MarkdownConverter):
     def convert_math(self, el, text, convert_as_inline):
         inline = el.has_attr('display') and el['display'] == 'inline'
         if inline:
-            return self.inline_math_delimiters[0] + text + self.inline_math_delimiters[1]
+            return " " + self.inline_math_delimiters[0] + text + self.inline_math_delimiters[1] + " "
         else:
             return "\n" + self.block_math_delimiters[0] + text + self.block_math_delimiters[1] + "\n"
 
@@ -172,7 +172,8 @@ class Markdownify(MarkdownConverter):
 
     def convert_a(self, el, text, convert_as_inline):
         text = self.escape(text)
-        text = re.sub(r"([\[\]])", r"\\\1", text)
+        # Escape brackets and parentheses in text
+        text = re.sub(r"([\[\]()])", r"\\\1", text)
         return super().convert_a(el, text, convert_as_inline)
 
     def convert_span(self, el, text, convert_as_inline):
@@ -206,8 +207,8 @@ class MarkdownRenderer(HTMLRenderer):
             heading_style="ATX",
             bullets="-",
             escape_misc=False,
-            escape_underscores=False,
-            escape_asterisks=False,
+            escape_underscores=True,
+            escape_asterisks=True,
             escape_dollars=True,
             sub_symbol="<sub>",
             sup_symbol="<sup>",

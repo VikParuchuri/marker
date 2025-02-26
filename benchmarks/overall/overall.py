@@ -1,11 +1,13 @@
 import json
 import os
+import traceback
 from collections import defaultdict
 from pathlib import Path
 from typing import List
 
 import click
 import datasets
+import torch
 from tqdm import tqdm
 
 from benchmarks.overall.display.dataset import build_dataset
@@ -63,6 +65,7 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
                             averages_by_block_type[method][score_type][gt_block["block_type"]].append(score)
         except Exception as e:
             print(f"Failed to process {idx}: {e}")
+            traceback.print_exc()
             if idx in markdown_by_method:
                 del markdown_by_method[idx]
             continue
@@ -85,6 +88,7 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
 @click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "overall"), help="Output path for results.")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of rows to process.")
 @click.option("--use_llm", is_flag=True, help="Use the LLM model for better marker quality.")
+@click.option("--languages", type=str, help="Comma separated list of languages to use for LLM", default=None)
 def main(
         dataset: str,
         out_dataset: str,
@@ -92,7 +96,8 @@ def main(
         scores: str,
         result_path: str,
         max_rows: int,
-        use_llm: bool
+        use_llm: bool,
+        languages: str
 ):
     out_path = Path(result_path)
     out_path.mkdir(parents=True, exist_ok=True)
@@ -112,7 +117,15 @@ def main(
         if score_type not in SCORE_REGISTRY:
             raise ValueError(f"Score type {score_type} not allowed.  Allowed types are {SCORE_REGISTRY.keys()}")
 
+    if languages:
+        languages = languages.split(",")
+    else:
+        languages = None
+
     benchmark_dataset = datasets.load_dataset(dataset, split="train")
+    if languages:
+        benchmark_dataset = benchmark_dataset.filter(lambda x: x["language"] in languages)
+
     artifacts = {
         "model_dict": create_model_dict(),
         "use_llm": use_llm,
@@ -125,6 +138,14 @@ def main(
 
     if "llamaparse" in methods:
         artifacts["llamaparse_ds"] = datasets.load_dataset("datalab-to/marker_benchmark_llamaparse", split="train")
+
+    if "olmocr" in methods:
+        from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+        model = Qwen2VLForConditionalGeneration.from_pretrained("allenai/olmOCR-7B-0225-preview",
+                                                                torch_dtype=torch.bfloat16).eval()
+        processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-7B-Instruct")
+        model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        artifacts["olmocr_model"] = {"model": model, "processor": processor}
 
     print(f"Running benchmark with methods: {methods} and scores: {score_types}")
     result = get_method_scores(benchmark_dataset, methods, score_types, artifacts, max_rows=max_rows)

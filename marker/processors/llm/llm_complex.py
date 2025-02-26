@@ -17,6 +17,7 @@ Your task is to generate markdown to properly represent the content of the image
 
 Formatting should be in markdown, with the following rules:
 - * for italics, ** for bold, and ` for inline code.
+- Use <sup>...</sup> for superscripts.
 - Headers should be formatted with #, with one # for the largest header, and up to 6 for the smallest.
 - Lists should be formatted with either - or 1. for unordered and ordered lists, respectively.
 - Links should be formatted with [text](url).

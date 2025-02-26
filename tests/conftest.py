@@ -15,6 +15,7 @@ from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
+from marker.providers.registry import provider_from_filepath
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 from marker.renderers.markdown import MarkdownRenderer
@@ -80,14 +81,15 @@ def pdf_dataset():
     return datasets.load_dataset("datalab-to/pdfs", split="train")
 
 @pytest.fixture(scope="function")
-def temp_pdf(request, pdf_dataset):
+def temp_doc(request, pdf_dataset):
     filename_mark = request.node.get_closest_marker("filename")
     filename = filename_mark.args[0] if filename_mark else "adversarial.pdf"
 
     idx = pdf_dataset['filename'].index(filename)
+    suffix = filename.split(".")[-1]
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_pdf_path = os.path.join(temp_dir, f"temp.pdf")  # Randomized filename
+        temp_pdf_path = os.path.join(temp_dir, f"temp.{suffix}")  # Randomized filename
         
         with open(temp_pdf_path, "wb") as temp_pdf:
             temp_pdf.write(pdf_dataset['pdf'][idx])
@@ -96,17 +98,17 @@ def temp_pdf(request, pdf_dataset):
 
 
 @pytest.fixture(scope="function")
-def pdf_provider(request, config, temp_pdf):
-    yield PdfProvider(temp_pdf.name, config)
-
+def doc_provider(request, config, temp_doc):
+    provider_cls = provider_from_filepath(temp_doc.name)
+    yield provider_cls(temp_doc.name, config)
 
 @pytest.fixture(scope="function")
-def pdf_document(request, config, pdf_provider, layout_model, ocr_error_model, recognition_model, detection_model, inline_detection_model):
+def pdf_document(request, config, doc_provider, layout_model, ocr_error_model, recognition_model, detection_model, inline_detection_model):
     layout_builder = LayoutBuilder(layout_model, config)
     line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
     ocr_builder = OcrBuilder(recognition_model, config)
     builder = DocumentBuilder(config)
-    document = builder(pdf_provider, layout_builder, line_builder, ocr_builder)
+    document = builder(doc_provider, layout_builder, line_builder, ocr_builder)
     yield document
 
 

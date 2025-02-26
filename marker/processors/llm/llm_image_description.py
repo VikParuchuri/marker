@@ -23,7 +23,7 @@ You will receive an image of a picture or figure.  Your job will be to create a 
 **Instructions:**
 1. Carefully examine the provided image.
 2. Analyze any text that was extracted from within the image.
-3. Output a 3-4 sentence description of the image.  Make sure there is enough specific detail to accurately describe the image.  If there are numbers included, try to be specific.
+3. Output a faithful description of the image.  Make sure there is enough specific detail to accurately reconstruct the image.  If the image is a figure or contains numeric data, include the numeric data in the output.
 **Example:**
 Input:
 ```text
