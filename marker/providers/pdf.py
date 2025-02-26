@@ -206,9 +206,11 @@ class PdfProvider(BaseProvider):
                         polygon = PolygonBox.from_bbox(span["bbox"], ensure_nonzero_area=True)
                         span_chars = [Char(char=c['char'], polygon=PolygonBox.from_bbox(c['bbox'], ensure_nonzero_area=True), char_idx=c['char_idx']) for c in span["chars"]]
                         superscript = span.get("superscript", False)
+                        subscript = span.get("subscript", False)
                         text = self.normalize_spaces(fix_text(span["text"]))
-                        if superscript:
+                        if superscript or superscript:
                             text = text.strip()
+
                         spans.append(
                             SpanClass(
                                 polygon=polygon,
@@ -223,6 +225,7 @@ class PdfProvider(BaseProvider):
                                 text_extraction_method="pdftext",
                                 url=span.get("url"),
                                 has_superscript=superscript,
+                                has_subscript=subscript
                             )
                         )
                         chars.append(span_chars)

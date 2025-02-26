@@ -41,7 +41,7 @@ The number of output lines MUST match the number of input lines.  There are {inp
 4. If there are no errors in any of the extracted lines, output "No corrections needed".
 5. For each extracted line, correct any errors, including:
     * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.
-    * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.  Use the <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
+    * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
 6. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.
 7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.

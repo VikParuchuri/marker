@@ -24,6 +24,7 @@ class Span(Block):
     maximum_position: int
     formats: List[Literal['plain', 'math', 'chemical', 'bold', 'italic']]
     has_superscript: bool = False
+    has_subscript: bool = False
     url: Optional[str] = None
 
     @property
