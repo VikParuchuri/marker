@@ -17,6 +17,7 @@ class MarkerMethod(BaseMethod):
                 "page_range": "0",
                 "disable_tqdm": True,
                 "use_llm": self.use_llm,
+                "redo_inline_math": self.use_llm
             })
 
         block_converter = PdfConverter(
