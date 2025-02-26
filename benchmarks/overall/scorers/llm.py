@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import time
 from typing import List
@@ -126,8 +127,10 @@ class LLMScorer(BaseScorer):
 
     def llm_response_wrapper(self, prompt, response_schema, depth=0):
         client = genai.Client(
-            api_key=settings.GOOGLE_API_KEY,
-            http_options={"timeout": 60000}
+            http_options={"timeout": 60000},
+            vertexai=True,
+            project=os.getenv("VERTEX_PROJECT_ID"),
+            location=os.getenv("VERTEX_LOCATION"),
         )
         try:
             responses = client.models.generate_content(
