@@ -14,7 +14,7 @@ def test_block_assignment():
     page_bbox = [0, 0, 500, 500]
     blocks = [
         (100, 0, 200, 500, marker.schema.blocks.Figure),
-        (200, 0, 300, 500, marker.schema.blocks.Text)
+        (200, 0, 300, 500, marker.schema.blocks.Text),
     ]
     words = [
         (110, 0, 120, 10, "fig"),
@@ -38,29 +38,36 @@ def test_block_assignment():
         (120, 110, 220, 120, "mostfig"),
     ]
     block_ctr = 0
+
     def get_counter():
         nonlocal block_ctr
         o = block_ctr
         block_ctr += 1
         return o
-    page_group = PageGroup(polygon=PolygonBox.from_bbox(page_bbox),
-                           children=[
-                               block_cls(polygon=PolygonBox.from_bbox([xmin, ymin, xmax, ymax]),
-                                   page_id=0,
-                                   block_id=get_counter())
-                               for xmin, ymin, xmax, ymax, block_cls in blocks
-                           ])
+
+    page_group = PageGroup(
+        polygon=PolygonBox.from_bbox(page_bbox),
+        children=[
+            block_cls(
+                polygon=PolygonBox.from_bbox([xmin, ymin, xmax, ymax]),
+                page_id=0,
+                block_id=get_counter(),
+            )
+            for xmin, ymin, xmax, ymax, block_cls in blocks
+        ],
+    )
 
     provider_outputs = [
-        convert_to_provider_output([word], page_bbox=[0, 0, 500, 500], get_counter=get_counter) for word in words
+        convert_to_provider_output(
+            [word], page_bbox=[0, 0, 500, 500], get_counter=get_counter
+        )
+        for word in words
     ]
-
 
     assert not page_group.children[0].structure, "figure's structure should begin with nothing in it"
     assert not page_group.children[1].structure, "text's structure should begin with nothing in it"
 
-    page_group.merge_blocks(provider_outputs, text_extraction_method='custom')
+    page_group.merge_blocks(provider_outputs, text_extraction_method="custom")
 
     assert len(page_group.children[0].structure) == 3, "figure should have just 3 words"
     assert len(page_group.children[1].structure) == 12, "text should have the remaining 12 words"
-
