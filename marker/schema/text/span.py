@@ -66,6 +66,7 @@ class Span(Block):
 
             # Handle full block superscript
             if "<sup>" not in text:
+                print(text)
                 text = f"<sup>{text}</sup>"
 
         if self.url:
