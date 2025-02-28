@@ -8,7 +8,7 @@ from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.llm.llm_meta import LLMSimpleBlockMetaProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
-from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.llm.llm_inlinemath import LLMInlineMathLinesProcessor
 from marker.processors.table import TableProcessor
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes

@@ -1,164 +1,168 @@
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Annotated
 
 from pydantic import BaseModel
-from tqdm import tqdm
+from PIL import Image
 
-from marker.processors.llm import BaseLLMComplexBlockProcessor
+from marker.processors.llm import BaseLLMSimpleBlockProcessor, PromptData, BlockData
 
+from marker.processors.util import add_math_spans_to_line
 from marker.schema import BlockTypes
-from marker.schema.blocks import Block, InlineMath
+from marker.schema.blocks import Block
 from marker.schema.document import Document
-from marker.schema.groups import PageGroup
+from marker.schema.text import Line
 
 
-class LLMInlineMathProcessor(BaseLLMComplexBlockProcessor):
-    redo_inline_math: Annotated[
-        bool,
-        "If True, the inline math will be re-done, otherwise it will be left as is."
-    ] = False
-    inlinemath_min_ratio: Annotated[
-        float,
-        "If more than this ratio of blocks are inlinemath blocks, assume everything has math."
-    ] = 0.4
+class LLMInlineMathLinesProcessor(BaseLLMSimpleBlockProcessor):
+    math_line_batch_size: Annotated[
+        int,
+        "The number of math lines to batch together.",
+    ] = 10
 
-    block_types = (BlockTypes.TextInlineMath,) # Primary block type
-    additional_block_types = (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote) # Seconday, can also contain math
-
-    text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
+    block_types = (BlockTypes.Line,)
+    image_remove_blocks = (BlockTypes.Equation,)
+    text_math_rewriting_prompt = r"""You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
-Your task is to correct any errors in the extracted block, including math, formatting, and other inaccuracies, and output the corrected block in html format.  Stay as faithful to the original text as possible.
+Your task is to correct any errors in the extracted lines, including math, formatting, and other inaccuracies, and output the corrected lines in a JSON format.
+
+The number of output lines MUST match the number of input lines.  Stay as faithful to the original text as possible.
 
 **Instructions:**
 
 1. Carefully examine the provided text block image .
-2. Analyze the text that has been extracted from the block.
-3. Compare the extracted text to the corresponding text in the image.
-4. Write a short analysis of the text block, including any errors you see in the extracted text.
-5. If there are no errors in any of the extracted text, output "No corrections needed".
-6. Correct any errors in the extracted text, including:
-    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
-      * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
-    * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <h1>, <h2>, <h3>, <h4>, <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
+2. Analyze the extracted lines.
+3. Write a short analysis comparing the extracted lines to the image.
+4. For each extracted line, compare it to the corresponding line in the image.
+5. Correct any errors in the extracted line, including:
+    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Use the `<math>` and `</math>` tags to surround inline math properly.  Make sure the opening and closing tags appear in pairs, on the same line.  The math should be written in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
+    * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the `<i>`, `<b>`, `<sup>`, `<sub>`, and `<span>` tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
-    * Ensure lines wrap properly, and that newlines are not in the middle of sentences.
-7. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted text unless it is necessary to correct an error.
-8. Output the corrected text in html format, as shown in the example below.  Only use the h1, h2, h3, h4, p, math, br, a, i, b, sup, sub, and span tags.
+6. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.  The formatting 
+7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
+8. Output the corrected lines in JSON format, as shown in the example below.  Each line should be in HTML format. Only use the math, br, a, i, b, sup, sub, and span tags.
 9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
 **Example:**
 
 Input:
-```html
-Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize the model's risk under the worst-case perturbations, 
-is currently the most effective approach for improving the robustness of deep neural networks. For a given neural network f(x, w) 
-with parameters w, the optimization objective of AT can be formulated as follows:
+```
+{
+ "extracted_lines": [
+  "Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize\n",
+  "the model's risk under the worst-case perturbations, is cur-\n",
+  "rently the most effective approach for improving the robust-\n",
+  "ness of deep neural networks. For a given neural network\n",
+  "f(x, w) with parameters w, the optimization objective of\n",
+  "AT can be formulated as follows:\n"
+ ]
+}
 ```
 
 Output:
-analysis: The inline math is not in LaTeX format and is not surrounded by <math>...</math> tags.
-```html
-Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to minimize the model's risk under the worst-case perturbations, is currently the most effective approach for improving the robustness of deep neural networks. For a given neural network <math>f(x, w)</math> with parameters <math>w</math>, the optimization objective of AT can be formulated as follows:
+analysis: The inline math in the lines is not in LaTeX format and is not surrounded by <math>...</math> tags.
+```json
+{
+ "corrected_lines": [
+  "Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize\n",
+  "the model's risk under the worst-case perturbations, is cur-\n",
+  "rently the most effective approach for improving the robust-\n",
+  "ness of deep neural networks. For a given neural network\n",
+  "<math>f(x, w)</math> with parameters <math>w</math>, the optimization objective of\n",
+  "AT can be formulated as follows:\n"
+ ]
+}
 ```
 
 **Input:**
-```html
-{extracted_html}
+```json
+{extracted_lines}
 ```
 """
 
-    def rewrite_blocks(self, document: Document):
-        if not self.redo_inline_math:
-            return
-
-        # Get inline math blocks
-        inline_blocks: List[InlineMath] = [
-            (page, block)
-            for page in document.pages
-            for block in page.contained_blocks(document, self.block_types)
-        ]
-
-        # Get other blocks with detected math in them
-        detected_blocks = [
-            (page, block)
-            for page in document.pages
-            for block in page.contained_blocks(document, (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote, BlockTypes.ListItem))
-            if any([b.formats and "math" in b.formats for b in block.contained_blocks(document, (BlockTypes.Line,))])
-        ]
-
-        # If a page has enough math blocks, assume all blocks can contain math
-        additional_text_blocks = []
+    def inference_blocks(self, document: Document) -> List[List[BlockData]]:
+        blocks = []
         for page in document.pages:
-            # Check for inline math blocks
-            page_inlinemath_blocks = [im for im in inline_blocks if im[0].page_id == page.page_id]
-            page_detected_blocks = [db for db in detected_blocks if db[0].page_id == page.page_id]
-            math_block_count = len(page_inlinemath_blocks) + len(page_detected_blocks)
+            for block in page.contained_blocks(document, self.block_types):
+                if block.formats and "math" in block.formats:
+                    blocks.append({
+                        "page": page,
+                        "block": block
+                    })
 
-            # Find all potential blocks
-            additional_blocks = page.contained_blocks(document, self.additional_block_types + self.block_types)
 
-            # Check if the ratio of math blocks to additional blocks is high enough
-            if math_block_count / max(1, len(additional_blocks)) < self.inlinemath_min_ratio:
-                continue
-
-            for b in additional_blocks:
-                if b not in detected_blocks and b not in inline_blocks:
-                    additional_text_blocks.append((page, b))
-
-        inference_blocks = inline_blocks + detected_blocks + additional_text_blocks
-
-        # Don't show progress if there are no blocks to process
-        total_blocks = len(inference_blocks)
-        if total_blocks == 0:
-            return
-
-        pbar = tqdm(desc=f"{self.__class__.__name__} running", disable=self.disable_tqdm)
-        with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
-            for future in as_completed([
-                executor.submit(self.process_rewriting, document, b[0], b[1])
-                for b in inference_blocks
-            ]):
-                future.result()  # Raise exceptions if any occurred
-                pbar.update(1)
-
-        pbar.close()
-
-    def get_block_text(self, block: Block, document: Document) -> str:
-        html = block.render(document).html
-        return html
+        out_blocks = []
+        for i in range(0, len(blocks), self.math_line_batch_size):
+            batch = blocks[i:i + self.math_line_batch_size]
+            out_blocks.append(batch)
+        return out_blocks
 
     def get_block_lines(self, block: Block, document: Document) -> Tuple[list, list]:
         text_lines = block.contained_blocks(document, (BlockTypes.Line,))
         extracted_lines = [line.formatted_text(document) for line in text_lines]
         return text_lines, extracted_lines
 
-    def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        block_text = self.get_block_text(block, document)
-        prompt = self.text_math_rewriting_prompt.replace("{extracted_html}", block_text)
+    def combine_images(self, images: List[Image.Image]):
+        widths, heights = zip(*(i.size for i in images))
+        total_width = max(widths)
+        total_height = sum(heights) + 5 * len(images)
 
-        image = self.extract_image(document, block)
-        response = self.llm_service(prompt, image, block, LLMTextSchema)
+        new_im = Image.new('RGB', (total_width, total_height), (255, 255, 255))
 
-        if not response or "corrected_html" not in response:
-            block.update_metadata(llm_error_count=1)
+        y_offset = 0
+        for im in images:
+            new_im.paste(im, (0, y_offset))
+            y_offset += im.size[1] + 5
+
+        return new_im
+
+    def block_prompts(self, document: Document) -> List[PromptData]:
+        prompt_data = []
+        for block_data in self.inference_blocks(document):
+            blocks: List[Line] = [b["block"] for b in block_data]
+            pages = [b["page"] for b in block_data]
+            block_lines = [block.formatted_text(document) for block in blocks]
+
+            prompt = (
+                self.text_math_rewriting_prompt
+                  .replace("{extracted_lines}",json.dumps({"extracted_lines": block_lines}, indent=2))
+                  .replace("{line_count}", str(len(block_lines)))
+            )
+            images = [self.extract_image(document, block, remove_blocks=self.image_remove_blocks) for block in blocks]
+            image = self.combine_images(images)
+
+            prompt_data.append({
+                "prompt": prompt,
+                "image": image,
+                "block": blocks[0],
+                "schema": LLMTextSchema,
+                "page": pages[0],
+                "additional_data": {"blocks": blocks, "pages": pages}
+            })
+        return prompt_data
+
+
+    def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
+        blocks = prompt_data["additional_data"]["blocks"]
+        pages = prompt_data["additional_data"]["pages"]
+
+        if not response or "corrected_lines" not in response:
+            blocks[0].update_metadata(llm_error_count=1)
             return
 
-        corrected_html = response["corrected_html"]
-        if not corrected_html:
-            block.update_metadata(llm_error_count=1)
+        corrected_lines = response["corrected_lines"]
+        balanced_math = all([line.count("<math") == line.count("</math>") for line in corrected_lines])
+        if any([
+            not corrected_lines,
+            len(corrected_lines) != len(blocks),
+            not balanced_math
+        ]):
+            blocks[0].update_metadata(llm_error_count=1)
             return
 
-        # Block is fine
-        if "no corrections needed" in corrected_html.lower():
-            return
-
-        if len(corrected_html) < len(block_text) * 0.6:
-            block.update_metadata(llm_error_count=1)
-            return
-
-        block.html = corrected_html
+        for text_line, page, corrected_text in zip(blocks, pages, corrected_lines):
+            text_line.structure = []
+            add_math_spans_to_line(corrected_text, text_line, page)
 
 class LLMTextSchema(BaseModel):
     analysis: str
-    corrected_html: str
+    corrected_lines: List[str]

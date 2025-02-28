@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from marker.processors.llm.llm_meta import LLMSimpleBlockMetaProcessor
-from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.llm.llm_inlinemath import LLMInlineMathLinesProcessor
 from marker.schema import BlockTypes
 
 
@@ -20,7 +20,7 @@ def test_llm_text_processor(pdf_document, mocker):
     mock_cls.return_value = {"corrected_lines": corrected_lines}
 
     config = {"use_llm": True, "gemini_api_key": "test"}
-    processor_lst = [LLMTextProcessor(config)]
+    processor_lst = [LLMInlineMathLinesProcessor(config)]
     processor = LLMSimpleBlockMetaProcessor(processor_lst, mock_cls, config)
     processor(pdf_document)
 

@@ -256,3 +256,5 @@ if debug:
             layout_image_path = os.path.join(debug_data_path, f"layout_page_{first_page}.png")
             img = Image.open(layout_image_path)
             st.image(img, caption="Layout debug image", use_container_width=True)
+        st.write("Raw output:")
+        st.code(text, language=output_format)
