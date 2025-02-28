@@ -26,7 +26,7 @@ class LLMEquationProcessor(BaseLLMSimpleBlockProcessor):
         "The prompt to use for generating LaTeX from equations.",
         "Default is a string containing the Gemini prompt."
     ] = r"""You're an expert mathematician who is good at writing LaTeX code and html for equations.
-You'll receive an image of a math block that may contain one or more equations. Your job is to write html that represents the content of the image, with the equations in LaTeX format, and fenced by delimiters.
+You'll receive an image of a math block, along with the text extracted from the block.  It may contain one or more equations. Your job is to write html that represents the content of the image, with the equations in LaTeX format.
 
 Some guidelines:
 - Output valid html, where all the equations can render properly.
@@ -35,26 +35,31 @@ Some guidelines:
 - Enclose all equations in the correct math tags. Use multiple math tags inside the html to represent multiple equations.
 - Only use the html tags math, i, b, p, and br.
 - Make sure to include all the equations in the image in the html output.
+- Make sure to include other text in the image in the correct positions along with the equations.
 
 **Instructions:**
 1. Carefully examine the provided image.
 2. Analyze the existing html, which may include LaTeX code.
-3. If the html and LaTeX are correct, write "No corrections needed."
-4. If the html and LaTeX are incorrect, generate the corrected html.
-5. Output only the corrected html or "No corrections needed."
+3. Write a short analysis of how the html should be corrected to represent the image.
+4. If the html and LaTeX are correct, write "No corrections needed."
+5. If the html and LaTeX are incorrect, generate the corrected html.
+6. Output only the analysis, then the corrected html or "No corrections needed."
 **Example:**
 Input:
 ```html
-Equation 1: 
-<math display="block">x2 + y2 = z2</math>
-Equation 2:
-<math display="block">\frac{ab \cdot x^5 + x^2 + 2 \cdot x + 123}{t}</math>
+The following equation illustrates the Pythagorean theorem:
+x2 + y2 = z2
+
+And this equation is a bit more complex:
+(ab * x5 + x2 + 2 * x + 123)/t
 ```
 Output:
+analysis: The equations are not formatted as LaTeX, or enclosed in math tags.
 ```html
-<p>Equation 1:</p> 
+<p>The following equation illustrates the Pythagorean theorem:</p> 
 <math display="block">x^{2} + y^{2} = z^{2}</math>
-<p>Equation 2:</p>
+
+<p>And this equation is a bit more complex, and contains <math>ab \cdot x^{5}</math>:</p>
 <math display="block">\frac{ab \cdot x^{5} + x^{2} + 2 \cdot x + 123}{t}</math>
 ```
 **Input:**
@@ -98,11 +103,11 @@ Output:
         block = prompt_data["block"]
         text = block.html if block.html else block.raw_text(document)
 
-        if not response or "html_equation" not in response:
+        if not response or "corrected_equation" not in response:
             block.update_metadata(llm_error_count=1)
             return
 
-        html_equation = response["html_equation"]
+        html_equation = response["corrected_equation"]
         balanced_tags = html_equation.count("<math") == html_equation.count("</math>")
         if not all([
             html_equation,
@@ -115,4 +120,5 @@ Output:
         block.html = html_equation
 
 class EquationSchema(BaseModel):
-    html_equation: str
+    analysis: str
+    corrected_equation: str

@@ -7,13 +7,10 @@ from tqdm import tqdm
 
 from marker.processors.llm import BaseLLMComplexBlockProcessor
 
-from marker.processors.util import text_to_spans
-from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, InlineMath
 from marker.schema.document import Document
 from marker.schema.groups import PageGroup
-from marker.schema.registry import get_block_class
 
 
 class LLMInlineMathProcessor(BaseLLMComplexBlockProcessor):
@@ -38,25 +35,29 @@ Your task is to correct any errors in the extracted block, including math, forma
 1. Carefully examine the provided text block image .
 2. Analyze the text that has been extracted from the block.
 3. Compare the extracted text to the corresponding text in the image.
-4. If there are no errors in any of the extracted text, output "No corrections needed".
-5. Correct any errors in the extracted text, including:
+4. Write a short analysis of the text block, including any errors you see in the extracted text.
+5. If there are no errors in any of the extracted text, output "No corrections needed".
+6. Correct any errors in the extracted text, including:
     * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
       * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <h1>, <h2>, <h3>, <h4>, <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
-6. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted text unless it is necessary to correct an error.
-7. Output the corrected text in html format, as shown in the example below.  Only use the h1, h2, h3, h4, p, math, br, a, i, b, sup, sub, and span tags.
+    * Ensure lines wrap properly, and that newlines are not in the middle of sentences.
+7. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted text unless it is necessary to correct an error.
+8. Output the corrected text in html format, as shown in the example below.  Only use the h1, h2, h3, h4, p, math, br, a, i, b, sup, sub, and span tags.
 9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
 **Example:**
 
 Input:
 ```html
-Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize the model's risk under the worst-case perturbations, is currently the most effective approach for improving the robustness of deep neural networks. For a given neural network f(x, w) with parameters w, the optimization objective of AT can be formulated as follows:
+Adversarial training (AT) <a href='#page-9-1'>[23]</a>, which aims to minimize the model's risk under the worst-case perturbations, 
+is currently the most effective approach for improving the robustness of deep neural networks. For a given neural network f(x, w) 
+with parameters w, the optimization objective of AT can be formulated as follows:
 ```
 
 Output:
-
+analysis: The inline math is not in LaTeX format and is not surrounded by <math>...</math> tags.
 ```html
 Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to minimize the model's risk under the worst-case perturbations, is currently the most effective approach for improving the robustness of deep neural networks. For a given neural network <math>f(x, w)</math> with parameters <math>w</math>, the optimization objective of AT can be formulated as follows:
 ```
@@ -159,4 +160,5 @@ Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to min
         block.html = corrected_html
 
 class LLMTextSchema(BaseModel):
+    analysis: str
     corrected_html: str

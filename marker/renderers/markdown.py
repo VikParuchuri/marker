@@ -81,11 +81,12 @@ class Markdownify(MarkdownConverter):
         return f"{text}\n\n" if text else ""  # default convert_p behavior
 
     def convert_math(self, el, text, convert_as_inline):
-        inline = el.has_attr('display') and el['display'] == 'inline'
-        if inline:
-            return " " + self.inline_math_delimiters[0] + text + self.inline_math_delimiters[1] + " "
-        else:
+        block = (el.has_attr('display') and el['display'] == 'block')
+        if block:
             return "\n" + self.block_math_delimiters[0] + text + self.block_math_delimiters[1] + "\n"
+        else:
+            return " " + self.inline_math_delimiters[0] + text + self.inline_math_delimiters[1] + " "
+
 
     def convert_table(self, el, text, convert_as_inline):
         total_rows = len(el.find_all('tr'))
