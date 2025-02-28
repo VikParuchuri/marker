@@ -17,6 +17,10 @@ class LLMEquationProcessor(BaseLLMSimpleBlockProcessor):
         float,
         "The ratio to expand the image by when cropping.",
     ] = 0.05 # Equations sometimes get bboxes that are too tight
+    redo_inline_math: Annotated[
+        bool,
+        "Whether to redo inline math blocks.",
+    ] = False
     equation_latex_prompt: Annotated[
         str,
         "The prompt to use for generating LaTeX from equations.",
@@ -65,7 +69,8 @@ Output:
         for block_data in blocks:
             block = block_data["block"]
             page = block_data["page"]
-            if block.polygon.height / page.polygon.height < self.min_equation_height:
+            # If we redo inline math, we redo all equations
+            if block.polygon.height / page.polygon.height < self.min_equation_height and not self.redo_inline_math:
                 continue
             out_blocks.append(block_data)
         return out_blocks

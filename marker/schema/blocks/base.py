@@ -266,3 +266,8 @@ class Block(BaseModel):
                 setattr(self.metadata, key, metadata_attr + value)
             else:
                 raise ValueError(f"Metadata attribute {key} is not an integer")
+
+    def handle_html_output(self, document, child_blocks, parent_structure):
+        child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
+        html = Block.assemble_html(self, document, child_ref_blocks, parent_structure)
+        return html + self.html
