@@ -2,6 +2,7 @@ from typing import Annotated
 
 from marker.builders import BaseBuilder
 from marker.schema import BlockTypes
+from marker.schema.blocks import Text
 from marker.schema.document import Document
 from marker.schema.groups import ListGroup
 from marker.schema.groups.page import PageGroup
@@ -28,6 +29,7 @@ class StructureBuilder(BaseBuilder):
         for page in document.pages:
             self.group_caption_blocks(page)
             self.group_lists(page)
+            self.unmark_lists(page)
 
     def group_caption_blocks(self, page: PageGroup):
         gap_threshold_px = self.gap_threshold * page.polygon.height
@@ -110,3 +112,15 @@ class StructureBuilder(BaseBuilder):
                 remove_ids.extend(block_structure)
 
         page.remove_structure_items(remove_ids)
+
+    def unmark_lists(self, page: PageGroup):
+        # If lists aren't grouped, unmark them as list items
+        for block_id in page.structure:
+            block = page.get_block(block_id)
+            if block.block_type == BlockTypes.ListItem:
+                generated_block = Text(
+                    polygon=block.polygon,
+                    page_id=block.page_id,
+                    structure=block.structure,
+                )
+                page.replace_block(block, generated_block)

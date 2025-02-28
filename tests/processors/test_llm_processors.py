@@ -8,7 +8,7 @@ from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.llm.llm_meta import LLMSimpleBlockMetaProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
-from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.llm.llm_inlinemath import LLMInlineMathLinesProcessor
 from marker.processors.table import TableProcessor
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
@@ -168,7 +168,7 @@ def test_llm_complex_region_processor(pdf_document):
 def test_multi_llm_processors(pdf_document):
     description = "<math>This is an image description.  And here is a lot of writing about it.</math>" * 10
     mock_cls = Mock()
-    mock_cls.return_value = {"image_description": description, "html_equation": description}
+    mock_cls.return_value = {"image_description": description, "corrected_equation": description}
 
     config = {"use_llm": True, "gemini_api_key": "test", "extract_images": False, "min_equation_height": .001}
     processor_lst = [LLMImageDescriptionProcessor(config), LLMEquationProcessor(config)]

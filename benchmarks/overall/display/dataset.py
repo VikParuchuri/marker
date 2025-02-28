@@ -29,7 +29,12 @@ def build_dataset(bench_dataset: datasets.Dataset, result: FullResult, score_typ
 
             method_cls = METHOD_REGISTRY[method]()
             md = result["markdown"][idx][method]
-            method_img = method_cls.render(result["markdown"][idx][method])
+            try:
+                method_img = method_cls.render(result["markdown"][idx][method])
+            except Exception as e:
+                # This can happen when the markdown is None
+                method_img = PIL.Image.new("RGB", (200, 200))
+
             row[f"{method}_md"] = md
             row[f"{method}_img"] = method_img
 

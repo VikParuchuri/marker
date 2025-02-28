@@ -50,11 +50,11 @@ In this paper, however, we aim to apply the dilated convolution method of [\[25\
 
 ### <span id="page-2-0"></span>3.1. Dilated Convolutions for Multicolumn Networks
 
-We propose the use of dilated convolutions as an attractive alternative to the architecture of the HydraCNN [\[18\]](#page-8-4), which seems to saturate in performance at 3 or more columns. We refer to our proposed network as the aggregated multicolumn dilated convolution network[1](#page-2-1) , henceforth shortened as the AMDCN. The architecture of the AMDCN is inspired by the multicolumn counting network of [\[28\]](#page-9-0). Extracting features from multiple scales is a good idea when attempting to perform perspective-free counting and increasing the convolution kernel size across columns is an efficient method of doing so. However, the number of parameters increases exponentially as larger kernels are used in these columns to extract features at larger scales. Therefore, we propose using dilated convolutions rather than larger kernels.
+We propose the use of dilated convolutions as an attractive alternative to the architecture of the HydraCNN [\[18\]](#page-8-4), which seems to saturate in performance at 3 or more columns. We refer to our proposed network as the aggregated multicolumn dilated convolution network1, henceforth shortened as the AMDCN. The architecture of the AMDCN is inspired by the multicolumn counting network of [\[28\]](#page-9-0). Extracting features from multiple scales is a good idea when attempting to perform perspective-free counting and increasing the convolution kernel size across columns is an efficient method of doing so. However, the number of parameters increases exponentially as larger kernels are used in these columns to extract features at larger scales. Therefore, we propose using dilated convolutions rather than larger kernels.
 
 Dilated convolutions, as discussed in [\[25\]](#page-8-5), allow for the exponential increase of the receptive field with a linear increase in the number of parameters with respect to each hidden layer.
 
-In a traditional 2D convolution, we define a real valued function $F: \mathbb{Z}^2 \rightarrow \mathbb{R}$, an input $\Omega_r = [-r, r]^2 \in \mathbb{Z}^2$, and a filter function $k: \Omega_r \rightarrow \mathbb{R}$. In this case, a convolution operation as defined in [\[25\]](#page-8-5) is given by
+In a traditional 2D convolution, we define a real valued function $F : \mathbb{Z}^2 \rightarrow \mathbb{R}$, an input $\Omega_r = [-r, r]^2 \in \mathbb{Z}^2$, and a filter function $k : \Omega_r \rightarrow \mathbb{R}$. In this case, a convolution operation as defined in [\[25\]](#page-8-5) is given by
 
 $$(F*k)(\mathbf{p}) = \sum_{\mathbf{s}+\mathbf{t}=\mathbf{p}} F(\mathbf{s})k(\mathbf{t}).\tag{1}$$
 
@@ -66,17 +66,17 @@ where l is the index of the current layer of the convolution.
 
 Using dilations to construct the aggregator in combination with the multicolumn idea will allow for the construction of a network with more than just 3 or 4 columns as in [\[28\]](#page-9-0) and [\[8\]](#page-8-13), because the aggregator should prevent the saturation of performance with increasing numbers of columns. Therefore the network will be able to extract useful features from more scales. We take advantage of dilations within the columns as well to provide large receptive fields with fewer parameters.
 
-Looking at more scales should allow for more accurate regression of the density map. However, because not all scales will be relevant, we extend the network beyond a simple $1 \times 1$ convolution after the merged columns. Instead, we construct a second part of the network, the aggregator, which sets our method apart from [\[28\]](#page-9-0), [\[8\]](#page-8-13), and other multicolumn networks. This aggregator is another series of dilated convolutions that should appropriately consolidate the multiscale information collected by the columns. This is a capability of dilated convolutions observed by [\[25\]](#page-8-5). While papers such as [\[28\]](#page-9-0) and [\[8\]](#page-8-13) have shown that multiple columns and dilated columns are useful in extracting multiscale information, we argue in this paper that the simple aggregator module built using dilated convolutions is able to effectively make use multiscale information from multiple columns. We show compelling evidence for these claims in Section [4.5.](#page-5-0)
+Looking at more scales should allow for more accurate regression of the density map. However, because not all scales will be relevant, we extend the network beyond a simple 1 × 1 convolution after the merged columns. Instead, we construct a second part of the network, the aggregator, which sets our method apart from [\[28\]](#page-9-0), [\[8\]](#page-8-13), and other multicolumn networks. This aggregator is another series of dilated convolutions that should appropriately consolidate the multiscale information collected by the columns. This is a capability of dilated convolutions observed by [\[25\]](#page-8-5). While papers such as [\[28\]](#page-9-0) and [\[8\]](#page-8-13) have shown that multiple columns and dilated columns are useful in extracting multiscale information, we argue in this paper that the simple aggregator module built using dilated convolutions is able to effectively make use multiscale information from multiple columns. We show compelling evidence for these claims in Section 4.5.
 
-The network as shown in Figure [1](#page-1-0) contains 5 columns. Note that dilations allow us to use more columns for counting than [\[28\]](#page-9-0) or [\[8\]](#page-8-13). Each column looks at a larger scale than the previous (the exact dilations can also be seen in Figure [1)](#page-1-0). There are 32 feature maps for each convolution, and all inputs are zero padded prior to each convolution in order to maintain the same data shape from input to output. That is, an image input to this network will result in a density map of the same dimensions. All activations in the specified network are ReLUs. Our input pixel values are floating point 32 bit values from 0 to 1. We center our inputs at 0 by subtracting the per channel mean from each channel. When
+The network as shown in Figure [1](#page-1-0) contains 5 columns. Note that dilations allow us to use more columns for counting than [\[28\]](#page-9-0) or [\[8\]](#page-8-13). Each column looks at a larger scale than the previous (the exact dilations can also be seen in Figure [1](#page-1-0)). There are 32 feature maps for each convolution, and all inputs are zero padded prior to each convolution in order to maintain the same data shape from input to output. That is, an image input to this network will result in a density map of the same dimensions. All activations in the specified network are ReLUs. Our input pixel values are floating point 32 bit values from 0 to 1. We center our inputs at 0 by subtracting the per channel mean from each channel. When
 
-<span id="page-2-1"></span><sup>1</sup> Implementation available on [https://github.com/](https://github.com/diptodip/counting) [diptodip/counting](https://github.com/diptodip/counting).
+<span id="page-2-1"></span>1 Implementation available on [https://github.com/](https://github.com/diptodip/counting) [diptodip/counting](https://github.com/diptodip/counting).
 
 training, we use a scaled mean absolute error for our loss function:
 
 $$L = \frac{1}{n} \sum_{i=1}^{n} |\hat{y}_i - \gamma y_i| \tag{3}$$
 
-where γ is the scale factor, yˆi is the prediction, yi is the true value, and n is the number of pixels. We use a scaled mean absolute error because the target values are so small that it is numerically unstable to regress to these values. At testing time, when retrieving the output density map from the network, we scale the pixel values by $\gamma^{-1}$ to obtain the correct value. This approach is more numerically stable and avoids having the network learn to output only zeros by weighting the nonzero values highly. For all our datasets, we set $\gamma = 255$.
+where $\n \gamma\n $ is the scale factor, $\n \hat{y}_i\n $ is the prediction, $\n y_i\n $ is the true value, and $n$ is the number of pixels. We use a scaled mean absolute error because the target values are so small that it is numerically unstable to regress to these values. At testing time, when retrieving the output density map from the network, we scale the pixel values by $\gamma^{-1}$ to obtain the correct value. This approach is more numerically stable and avoids having the network learn to output only zeros by weighting the nonzero values highly. For all our datasets, we set $\gamma = 255$.
 
 #### 3.2. Experiments
 
@@ -84,7 +84,7 @@ We evaluated the performance of dilated convolutions against various counting me
 
 We have observed that multicolumn dilations produce density maps (and therefore counts) that often have lower loss than those of HydraCNN [\[18\]](#page-8-4) and [\[28\]](#page-9-0). We measure density map regression loss via a scaled mean absolute error loss during training. We compare accuracy of the counts via mean absolute error for the crowd datasets and the GAME metric in the TRANCOS dataset as explained in Section [3.2.2.](#page-3-0) Beyond the comparison to HydraCNN, we will also compare to other recent convolutional counting methods, especially those of [\[21\]](#page-8-14), [\[24\]](#page-8-15), and [\[4\]](#page-8-16) where possible.
 
-For all datasets, we generally use patched input images and ground truth density maps produced by summing a Gaussian of a fixed size ($\sigma$) for each object for training. This size varies from dataset to dataset, but remains constant within a dataset with the exception of cases in which a perspective map is used. This is explained per dataset. All experiments were performed using Keras with the Adam optimizer [\[10\]](#page-8-18). The learning rates used are detailed per dataset. For testing, we also use patches that can either be directly pieced together or overlapped and averaged except in the case of UCF, for which we run our network on the full image.
+For all datasets, we generally use patched input images and ground truth density maps produced by summing a Gaussian of a fixed size ($σ$) for each object for training. This size varies from dataset to dataset, but remains constant within a dataset with the exception of cases in which a perspective map is used. This is explained per dataset. All experiments were performed using Keras with the Adam optimizer [\[10\]](#page-8-18). The learning rates used are detailed per dataset. For testing, we also use patches that can either be directly pieced together or overlapped and averaged except in the case of UCF, for which we run our network on the full image.
 
 Furthermore, we performed a set of experiments in which we varied the number of columns from 1 to 5 (simply by including or not including the columns as specified in Figure [1,](#page-1-0) starting with the smallest filter column and adding larger filter columns one by one). Essentially, the network is allowed to extract information at larger and larger scales in addition to the smaller scales as we include each column. We then performed the same set of experiments, varying the number of columns, but with the aggregator module removed. We perform these experiments on the original split of UCSD as specified in Section [3.2.3](#page-4-0) and [\[5\]](#page-8-17), the TRAN-COS dataset, and the WorldExpo dataset because these are relatively large and well defined datasets. We limit the number of epochs to 10 for all of these sets of experiments in order to control for the effect of learning time, and also compare all results using MAE for consistency. These experiments are key to determining the efficacy of the aggregator in effectively combining multiscale information and in providing evidence to support the use of multiple columns to extract multiscale information from images. We report the results of these ablation studies in Section [4.5.](#page-5-0)
 
@@ -92,23 +92,23 @@ Furthermore, we performed a set of experiments in which we varied the number of 
 
 UCF is a particularly challenging crowd counting dataset. There are only 50 images in the whole dataset and they are all of varying sizes and from different scenes. The number of people also varies between images from less than 100 to the thousands. The average image has on the order of 1000 people. The difficulty is due to the combination of the very low number of images in the dataset and the fact that the images are all of varying scenes, making high quality generalization crucial. Furthermore, perspective effects are particularly noticeable for many images in this dataset. Despite this, there is no perspective information available for this dataset.
 
-We take 1600 random patches of size $150 \times 150$ for the training. For testing, we do not densely scan the image as in [\[18\]](#page-8-4) but instead test on the whole image. In order to standardize the image sizes, we pad each image out with zeros until all images are $1024 \times 1024$. We then suppress output in the regions where we added padding when testing. This provides a cleaner resulting density map for these large crowds. The ground truth density maps are produced by annotating each object with a Gaussian of $\sigma = 15$.
+We take 1600 random patches of size $150 \,\times\, 150$ for the training. For testing, we do not densely scan the image as in [\[18\]](#page-8-4) but instead test on the whole image. In order to standardize the image sizes, we pad each image out with zeros until all images are $1024 \times 1024$. We then suppress output in the regions where we added padding when testing. This provides a cleaner resulting density map for these large crowds. The ground truth density maps are produced by annotating each object with a Gaussian of $\sigma = 15$.
 
 #### <span id="page-3-0"></span>3.2.2 TRANCOS Traffic Counting
 
-TRANCOS is a traffic counting dataset that comes with its own metric [\[14\]](#page-8-1). This metric is known as $GAME$, which stands for Grid Average Mean absolute Error. $GAME$ splits a given density map into 4 L grids, or subarrays, and obtains a mean absolute error within each grid separately. The value of L is a parameter chosen by the user. These individual errors are summed to obtain the final error for a particular image. The intuition behind this metric is that it is desirable to penalize a density map whose overall count might match the ground truth, but whose shape does not match the ground truth [\[14\]](#page-8-1). More formally, we define
+TRANCOS is a traffic counting dataset that comes with its own metric [\[14\]](#page-8-1). This metric is known as $GAME$, which stands for Grid Average Mean absolute Error. $GAME $splits a given density map into $4^{L}$ grids, or subarrays, and obtains a mean absolute error within each grid separately. The value of $L$ is a parameter chosen by the user. These individual errors are summed to obtain the final error for a particular image. The intuition behind this metric is that it is desirable to penalize a density map whose overall count might match the ground truth, but whose shape does not match the ground truth [\[14\]](#page-8-1). More formally, we define
 
 $$GAME(L) = \frac{1}{N} \cdot \sum_{n=1}^{N} \left( \sum_{l=1}^{4^L} |e_n^l - t_n^l| \right) \qquad (4)$$
 
-where N refers to the number of images, L is the level parameter for $GAME$, $e_n^l$ is the predicted or estimated count in region l of image n and t l n is the ground truth count in region l of image n [\[14\]](#page-8-1).
+where $N$ refers to the number of images, $L$ is the level parameter for $GAME$, $e_{n}^{l}$ is the predicted or estimated count in region $l$ of image $n$ and $t_{n}^{l}$ is the ground truth count in region $l$ of image $n$ [\[14\]](#page-8-1).
 
-For training this dataset, we take 1600 randomly sampled patches of size 80 × 80. For testing this dataset, we take 80 × 80 non-overlapping patches which we can stitch back together into the full-sized 640 × 480 images. We trained the AMDCN network with density maps produced with a Gaussian of $\sigma$ = 15 as specified in [\[18\]](#page-8-4).
+For training this dataset, we take 1600 randomly sampled patches of size 80 × 80. For testing this dataset, we take 80 × 80 non-overlapping patches which we can stitch back together into the full-sized 640 × 480 images. We trained the AMDCN network with density maps produced with a Gaussian of $σ$ = 15 as specified in [\[18\]](#page-8-4).
 
 #### <span id="page-4-0"></span>3.2.3 UCSD Crowd Counting
 
 The UCSD crowd counting dataset consists of frames of video of a sidewalk. There are relatively few people in view at any given time (approximately 25 on average). Furthermore, because the dataset comes from a video, there are many nearly identical images in the dataset. For this dataset, there have been two different ways to split the data into train and test sets. Therefore, we report results using both methods of splitting the data. The first method consists of four different splits: maximal, downscale, upscale, and minimal. Minimal is particularly challenging as the train set contains only 10 images. Moreover, upscale appears to be the easiest for the majority of methods [\[18\]](#page-8-4). The second method of splitting this data is much more succinct, leaving 1200 images in the testing set and 800 images in the training set [\[28\]](#page-9-0). This split comes from the original paper, so we call it the original split [\[5\]](#page-8-17).
 
-For this dataset, each object is annotated with a 2D Gaussian of covariance $\Sigma = 8 \cdot 1_{2\times2}$. The ground truth map is produced by summing these. When we make use of the perspective maps provided, we divide Σ by the perspective map value at that pixel $\mathbf{x}$, represented by $M(\mathbf{x})$. The provided perspective map for UCSD contains both a horizontal and vertical direction so we take the square root of the provided combined value. For training, we take 1600 random 79 × 119 pixel patches and for testing, we split each test image up into quadrants (which have dimension 79 × 119). There are two different ways to split the dataset into training and testing sets. We have experimented on the split that gave [\[18\]](#page-8-4) the best results as well as the split used in [\[28\]](#page-9-0).
+For this dataset, each object is annotated with a 2D Gaussian of covariance $\Sigma = 8 \cdot 1_{2\times2}$. The ground truth map is produced by summing these. When we make use of the perspective maps provided, we divide $\Sigma$ by the perspective map value at that pixel x, represented by $M(x)$. The provided perspective map for UCSD contains both a horizontal and vertical direction so we take the square root of the provided combined value. For training, we take 1600 random 79 × 119 pixel patches and for testing, we split each test image up into quadrants (which have dimension 79 × 119). There are two different ways to split the dataset into training and testing sets. We have experimented on the split that gave [\[18\]](#page-8-4) the best results as well as the split used in [\[28\]](#page-9-0).
 
 First, we split the dataset into four separate groups of training and testing sets as used in [\[18\]](#page-8-4) and originally defined by [\[20\]](#page-8-0). These groups are "upscale," "maximal," "minimal," and "downscale." We see in Table [3](#page-6-0) that the "upscale" split and "downscale" split give us state of the art results on counting for this dataset. For this experiment, we sampled 1600 random patches of size 119 × 79 pixels (width and height respectively) for the training set and split the test set images into 119 × 79 quadrants that could be reconstructed by piecing them together without overlap. We also added left-right flips of each image to our training data.
 
@@ -118,26 +118,26 @@ We then evaluate the original split. For this experiment, we similarly sampled 1
 
 The WorldExpo dataset [\[27\]](#page-8-7) contains a larger number of people (approximately 50 on average, which is double that of UCSD) and contains images from multiple locations. Perspective effects are also much more noticeable in this dataset as compared to UCSD. These qualities of the dataset serve to increase the difficulty of counting. Like UCSD, the WorldExpo dataset was constructed from frames of video recordings of crowds. This means that, unlike UCF, this dataset contains a relatively large number of training and testing images. We experiment on this dataset with and without perspective information.
 
-Without perspective maps, we generate label density maps for this dataset in the same manner as previously described: a 2D Gaussian with $\sigma$ = 15. We take 16000 150 × 150 randomly sampled patches for training. For testing, we densely scan the image, producing 150 × 150 patches at a stride of 100.
+Without perspective maps, we generate label density maps for this dataset in the same manner as previously described: a 2D Gaussian with $\sigma = 15$. We take 16000 150 × 150 randomly sampled patches for training. For testing, we densely scan the image, producing 150 × 150 patches at a stride of 100.
 
-When perspective maps are used, however, we follow the procedure as described in [\[27\]](#page-8-7), which involves estimating a "crowd density distribution kernel" as the sum of two 2D Gaussians: a symmetric Gaussian for the head and an ellipsoid Gaussian for the body. These are scaled by the perspective map $M$ provided, where $M(x)$ gives the number of pixels that represents a meter at pixel x [\[27\]](#page-8-7). Note that the meaning of this perspective map is distinct from the meaning of the perspective map provided for the UCSD dataset. Using this information, the density contribution from a person with head pixel x is given by the following sum of normalized Gaussians:
+When perspective maps are used, however, we follow the procedure as described in [\[27\]](#page-8-7), which involves estimating a “crowd density distribution kernel” as the sum of two 2D Gaussians: a symmetric Gaussian for the head and an ellipsoid Gaussian for the body. These are scaled by the perspective map $M$ provided, where $M(x)$ gives the number of pixels that represents a meter at pixel $x$ [\[27\]](#page-8-7). Note that the meaning of this perspective map is distinct from the meaning of the perspective map provided for the UCSD dataset. Using this information, the density contribution from a person with head pixel $x$ is given by the following sum of normalized Gaussians:
 
 $$D_{\mathbf{x}} = \frac{1}{||Z||} (\mathcal{N}_h(\mathbf{x}, \sigma_h) + \mathcal{N}_b(\mathbf{x}_b, \Sigma_b)) \qquad (5)$$
 
-where $x_b$ is the center of the body, which is 0.875 meters down from the head on average, and can be determined from the perspective map M and the head center x [\[27\]](#page-8-7). We sum these Gaussians for each person to pro-
+where $x_b$ is the center of the body, which is 0.875 meters down from the head on average, and can be determined from the perspective map $M$ and the head center $x$ [\[27\]](#page-8-7). We sum these Gaussians for each person to pro-
 
-| Method       | MAE           |
-|--------------|---------------|
-| AMDCN        | <b>290.82</b> |
-| Hydra2s [18] | 333.73        |
-| MCNN [28]    | 377.60        |
-| [27]         | 467.00        |
-| [23]         | 295.80        |
-| [3]          | 318.10        |
+| Method       | MAE    |
+|--------------|--------|
+| AMDCN        | 290.82 |
+| Hydra2s [18] | 333.73 |
+| MCNN [28]    | 377.60 |
+| [27]         | 467.00 |
+| [23]         | 295.80 |
+| [3]          | 318.10 |
 
 <span id="page-5-1"></span>Table 1. Mean absolute error of various methods on UCF crowds
 
-duce the final density map. We set $\sigma = 0.2M(x)$ for $N_h$ and $\sigma_x = 0.2M(x), \sigma_y = 0.5M(x)$ for $\Sigma_b$ in $N_b$.
+duce the final density map. We set $\sigma = 0.2M(\mathbf{x})$ for $N_h $and $\sigma_x = 0.2M(\mathbf{x}), \sigma_y = 0.5M(\mathbf{x})$ for $\Sigma_b$ in $N_b$.
 
 # 4. Results
 
@@ -149,19 +149,19 @@ We report a state of the art result on this dataset in Table [1,](#page-5-1) fol
 
 #### 4.2. TRANCOS Traffic Counting
 
-Our network performs very well on the TRANCOS dataset. Indeed, as confirmed by the GAME score, AMDCN produces the most accurate count and shape combined as compared to other methods. Table [2](#page-5-2) shows that we achieve state of the art results as measured by the [GAME](#GAME) metric [\[14\]](#page-8-1) across all levels.
+Our network performs very well on the TRANCOS dataset. Indeed, as confirmed by the GAME score, AMDCN produces the most accurate count and shape combined as compared to other methods. Table 2 shows that we achieve state of the art results as measured by the GAME metric [\[14\]](#page-8-1) across all levels.
 
 #### 4.3. UCSD Crowd Counting
 
 Results are shown in Table [3](#page-6-0) and Figure [3.](#page-6-1) We see that the "original" split as defined by the creators of the dataset in [\[5\]](#page-8-17) and used in [\[28\]](#page-9-0) gives us somewhat worse results for counting on this dataset. Results were consistent over multiple trainings. Again, including the perspective map does not seem to increase performance on this dataset. Despite this, we see in Table [3](#page-6-0) and Figure [3](#page-6-1) that the results are comparable to the state of the art. In fact, for two of the splits, our proposed network beats the state of the art. For the upscale split, the AMDCN is the state of the art by a large relative margin. This is compelling because it shows that accurate perspective-free counting can be achieved without
 
-| Method                   | GAME<br>(L=0)                             | GAME<br>(L=1) | GAME<br>(L=2) | GAME<br>(L=3) |       |
-|--------------------------|-------------------------------------------|---------------|---------------|---------------|-------|
-| AMDCN                    | 9.77                                      | 13.16         | 15.00         | 15.87         |       |
-| [18]                     | 10.99                                     | 13.75         | 16.69         | 19.32         |       |
-| [15] + SIFT<br>from [14] | 13.76                                     | 16.72         | 20.72         | 24.36         |       |
-|                          | [13] + RGB<br>Norm + Filters<br>from [14] | 17.68         | 19.97         | 23.54         | 25.84 |
-| HOG-2<br>from [14]       |                                           | 13.29         | 18.05         | 23.65         | 28.41 |
+| Method                                    | GAME<br>(L=0) | GAME<br>(L=1) | GAME<br>(L=2) | GAME<br>(L=3) |
+|-------------------------------------------|---------------|---------------|---------------|---------------|
+| AMDCN                                     | <b>9.77</b>   | <b>13.16</b>  | <b>15.00</b>  | <b>15.87</b>  |
+| [18]                                      | 10.99         | 13.75         | 16.69         | 19.32         |
+| [15] + SIFT<br>from [14]                  | 13.76         | 16.72         | 20.72         | 24.36         |
+| [13] + RGB<br>Norm + Filters<br>from [14] | 17.68         | 19.97         | 23.54         | 25.84         |
+| HOG-2<br>from [14]                        | 13.29         | 18.05         | 23.65         | 28.41         |
 
 <span id="page-5-2"></span>Table 2. Mean absolute error of various methods on TRANCOS traffic
 
@@ -181,22 +181,22 @@ We report the results of the ablation studies in Figure [4.](#page-7-2) We note 
 
 <span id="page-6-1"></span>Figure 3. UCSD crowd counting dataset. Both plots show comparisons of predicted and ground truth counts over time. While AMDCN does not beat the state of the art on the original split, the predictions still follow the true counts reasonably. The jump in the original split is due to that testing set including multiple scenes of highly varying counts.
 
-| Method                                  | maximal     | downscale   | upscale     | minimal     | original    |
-|-----------------------------------------|-------------|-------------|-------------|-------------|-------------|
-| AMDCN (without perspective information) | 1.63        | 1.43        | <b>0.63</b> | 1.71        | 1.74        |
-| AMDCN (with perspective information)    | 1.60        | <b>1.24</b> | 1.37        | 1.59        | 1.72        |
-| [18] (with perspective information)     | 1.65        | 1.79        | 1.11        | 1.50        | -           |
-| [18] (without perspective information)  | 2.22        | 1.93        | 1.37        | 2.38        | -           |
-| [15]                                    | 1.70        | 1.28        | 1.59        | 2.02        | -           |
-| [13]                                    | 1.70        | 2.16        | 1.61        | 2.20        | -           |
-| [19]                                    | 1.43        | 1.30        | 1.59        | 1.62        | -           |
-| [2]                                     | <b>1.24</b> | 1.31        | 1.69        | <b>1.49</b> | -           |
-| [27]                                    | 1.70        | 1.26        | 1.59        | 1.52        | 1.60        |
-| [28]                                    | -           | -           | -           | -           | <b>1.07</b> |
-| [1, 28]                                 | -           | -           | -           | -           | 2.16        |
-| [7]                                     | -           | -           | -           | -           | 2.25        |
-| [5]                                     | -           | -           | -           | -           | 2.24        |
-| [6]                                     | -           | -           | -           | -           | 2.07        |
+| Method                                  | maximal | downscale | upscale | minimal | original |
+|-----------------------------------------|---------|-----------|---------|---------|----------|
+| AMDCN (without perspective information) | 1.63    | 1.43      | 0.63    | 1.71    | 1.74     |
+| AMDCN (with perspective information)    | 1.60    | 1.24      | 1.37    | 1.59    | 1.72     |
+| [18] (with perspective information)     | 1.65    | 1.79      | 1.11    | 1.50    | -        |
+| [18] (without perspective information)  | 2.22    | 1.93      | 1.37    | 2.38    | -        |
+| [15]                                    | 1.70    | 1.28      | 1.59    | 2.02    | -        |
+| [13]                                    | 1.70    | 2.16      | 1.61    | 2.20    | -        |
+| [19]                                    | 1.43    | 1.30      | 1.59    | 1.62    | -        |
+| [2]                                     | 1.24    | 1.31      | 1.69    | 1.49    | -        |
+| [27]                                    | 1.70    | 1.26      | 1.59    | 1.52    | 1.60     |
+| [28]                                    | -       | -         | -       | -       | 1.07     |
+| [1, 28]                                 | -       | -         | -       | -       | 2.16     |
+| [7]                                     | -       | -         | -       | -       | 2.25     |
+| [5]                                     | -       | -         | -       | -       | 2.24     |
+| [6]                                     | -       | -         | -       | -       | 2.07     |
 
 <span id="page-6-0"></span>Table 3. Mean absolute error of various methods on UCSD crowds
 
@@ -267,4 +267,4 @@ counting. In *Proceedings of the IEEE Conference on Computer Vision and Pattern 
 
 *Computer Vision and Pattern Recognition*, pages 833– 841, 2015.
 
-- <span id="page-9-0"></span>[28] Y. Zhang, D. Zhou, S. Chen, S. Gao, and Y. Ma. Single-image crowd counting via multi-column convolutional neural network. In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recogni tion*, pages 589–597, 2016.
+- <span id="page-9-0"></span>[\[28\]](#page-8-8) Y. Zhang, D. Zhou, S. Chen, S. Gao, and Y. Ma. Single-image crowd counting via multi-column convolutional neural network. In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recogni tion*, pages 589–597, 2016.

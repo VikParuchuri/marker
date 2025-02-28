@@ -1,8 +1,8 @@
 # Marker
 
-Marker converts PDFs and images to markdown, JSON, and HTML quickly and accurately.
+Marker converts documents to markdown, JSON, and HTML quickly and accurately.
 
-- Supports a range of documents in all languages
+- Converts PDF, image, PPTX, DOCX, XLSX, HTML, EPUB files in all languages
 - Formats tables, forms, equations, inline math, links, references, and code blocks
 - Extracts and saves images
 - Removes headers/footers/other artifacts
@@ -66,6 +66,12 @@ Install with:
 pip install marker-pdf
 ```
 
+If you want to use marker on documents other than PDFs, you will need to install additional dependencies with:
+
+```shell
+pip install marker-pdf[full]
+```
+
 # Usage
 
 First, some configuration:
@@ -95,6 +101,7 @@ Options:
 - `--output_format [markdown|json|html]`: Specify the format for the output results.
 - `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n` 
 - `--use_llm`: Uses an LLM to improve accuracy.  You must set your Gemini API key using the `GOOGLE_API_KEY` env var.
+- `--redo_inline_math`: If you want the highest quality inline math conversion, use this along with `--use_llm`.
 - `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
 - `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
@@ -320,6 +327,7 @@ When running with the `--use_llm` flag, you have a choice of services you can us
 - `Gemini` - this will use the Gemini developer API by default.  You'll need to pass `--gemini_api_key` to configuration.
 - `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
 - `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.ollama.OllamaService`.
+- `Claude` - this will use the anthropic API.  You can configure `--claude_api_key`, and `--claude_model_name`.  To use it, set `--llm_service=marker.services.claude.ClaudeService`.
 
 These services may have additional optional configuration as well - you can see it by viewing the classes.
 

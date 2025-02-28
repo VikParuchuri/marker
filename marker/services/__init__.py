@@ -15,7 +15,7 @@ class BaseService:
     max_retries: Annotated[
         int,
         "The maximum number of retries to use for the service."
-    ] = 1
+    ] = 2
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)

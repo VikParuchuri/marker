@@ -39,7 +39,7 @@ class ConfigParser:
         fn = click.option("--languages", type=str, default=None, help="Comma separated list of languages to use for OCR.")(fn)
 
         # we put common options here
-        fn = click.option("--use_llm", is_flag=True, default=False, help="Enable higher quality processing with LLMs.")(fn)
+        fn = click.option("--use_llm", default=False, help="Enable higher quality processing with LLMs.")(fn)
         fn = click.option("--converter_cls", type=str, default=None, help="Converter class to use.  Defaults to PDF converter.")(fn)
         fn = click.option("--llm_service", type=str, default=None, help="LLM service to use - should be full import path, like marker.services.gemini.GoogleGeminiService")(fn)
 
@@ -65,7 +65,7 @@ class ConfigParser:
                 case "languages":
                     config["languages"] = v.split(",")
                 case "config_json":
-                    with open(v, "r") as f:
+                    with open(v, "r", encoding="utf-8") as f:
                         config.update(json.load(f))
                 case "disable_multiprocessing":
                     config["pdftext_workers"] = 1

@@ -13,7 +13,7 @@ from marker.schema.document import Document
 from marker.schema.text import Line
 
 
-class LLMTextProcessor(BaseLLMSimpleBlockProcessor):
+class LLMInlineMathLinesProcessor(BaseLLMSimpleBlockProcessor):
     math_line_batch_size: Annotated[
         int,
         "The number of math lines to batch together.",
@@ -31,15 +31,16 @@ The number of output lines MUST match the number of input lines.  Stay as faithf
 
 1. Carefully examine the provided text block image .
 2. Analyze the extracted lines.
-3. For each extracted line, compare it to the corresponding line in the image.
-4. Correct any errors in the extracted line, including:
-    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Use the `<math>` and `</math>` tags to surround inline math properly.  Make sure the opening and closing tags appear in pairs, on the same line.
-    * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, and special characters.
+3. Write a short analysis comparing the extracted lines to the image.
+4. For each extracted line, compare it to the corresponding line in the image.
+5. Correct any errors in the extracted line, including:
+    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Use the `<math>` and `</math>` tags to surround inline math properly.  Make sure the opening and closing tags appear in pairs, on the same line.  The math should be written in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
+    * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the `<i>`, `<b>`, `<sup>`, `<sub>`, and `<span>` tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
-5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.  The formatting 
-6. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
-7. Output the corrected lines in JSON format with a "lines" field, as shown in the example below.  Each line should be in HTML format. Only use the math, br, a, i, b, sup, sub, and span tags.
-8. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
+6. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.  The formatting 
+7. The number of corrected lines in the output MUST equal the number of extracted lines provided in the input. Do not add or remove lines.  There are exactly {line_count} input lines.
+8. Output the corrected lines in JSON format, as shown in the example below.  Each line should be in HTML format. Only use the math, br, a, i, b, sup, sub, and span tags.
+9. You absolutely cannot remove any <a href='#...'>...</a> tags, those are extremely important for references and are coming directly from the document, you MUST always preserve them.
 
 **Example:**
 
@@ -58,7 +59,7 @@ Input:
 ```
 
 Output:
-
+analysis: The inline math in the lines is not in LaTeX format and is not surrounded by <math>...</math> tags.
 ```json
 {
  "corrected_lines": [
@@ -81,12 +82,23 @@ Output:
     def inference_blocks(self, document: Document) -> List[List[BlockData]]:
         blocks = []
         for page in document.pages:
+            page_children = [p for p in page.children if p.structure]
             for block in page.contained_blocks(document, self.block_types):
-                if block.formats and "math" in block.formats:
+                # Ensure the line isn't an orphan, and that the parent hasn't already been inferenced (assigned html)
+                has_parent = any([
+                    (
+                        block.id in parent.structure
+                        and not getattr(parent, "html", None)
+                    )
+                    for parent in page_children
+                ])
+
+                if block.formats and "math" in block.formats and has_parent:
                     blocks.append({
                         "page": page,
                         "block": block
                     })
+
 
         out_blocks = []
         for i in range(0, len(blocks), self.math_line_batch_size):
@@ -162,4 +174,5 @@ Output:
             add_math_spans_to_line(corrected_text, text_line, page)
 
 class LLMTextSchema(BaseModel):
+    analysis: str
     corrected_lines: List[str]

@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import time
 from typing import List
@@ -47,6 +48,8 @@ Notes on scoring:
 - A 3/5 may have small missing text elements from the markdown and/or moderate formatting issues.
 - A 1/5 will have major missing text segments from the markdown or completely unreadable formatting.
 - Use 0/5 if a field isn't applicable, like if the image doesn't contain a table.
+
+If text that is important to the meaning of the document is missing, do not score higher than 3/5.
 
 Output json, like in the example below.
 
@@ -103,6 +106,14 @@ class LLMScorer(BaseScorer):
 
 
     def llm_rater(self, img: Image.Image, markdown: str) -> BlockScores:
+        if not markdown:
+            null_scores = {k: 1 for k in score_keys}
+            text_scores = {k: "" for k in text_keys}
+            null_scores.update(text_scores)
+            return {
+                "score": 1,
+                "specific_scores": null_scores
+            }
         req_keys = text_keys + score_keys
         properties = {}
         for key in req_keys:
@@ -124,12 +135,14 @@ class LLMScorer(BaseScorer):
 
     def llm_response_wrapper(self, prompt, response_schema, depth=0):
         client = genai.Client(
-            api_key=settings.GOOGLE_API_KEY,
-            http_options={"timeout": 60000}
+            http_options={"timeout": 60000},
+            vertexai=True,
+            project=os.getenv("VERTEX_PROJECT_ID"),
+            location=os.getenv("VERTEX_LOCATION"),
         )
         try:
             responses = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.0-flash-001",
                 contents=prompt,
                 config={
                     "temperature": 0,

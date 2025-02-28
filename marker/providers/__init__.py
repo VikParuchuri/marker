@@ -6,10 +6,14 @@ from pydantic import BaseModel
 
 from pdftext.schema import Reference
 
+from marker.logger import configure_logging
 from marker.schema.polygon import PolygonBox
 from marker.schema.text import Span
 from marker.schema.text.line import Line
+from marker.settings import settings
 from marker.util import assign_config
+
+configure_logging()
 
 class Char(BaseModel):
     char: str
@@ -66,3 +70,24 @@ class BaseProvider:
 
     def __enter__(self):
         return self
+
+    @staticmethod
+    def get_font_css():
+        from weasyprint import CSS
+        from weasyprint.text.fonts import FontConfiguration
+
+        font_config = FontConfiguration()
+        css = CSS(string=f'''
+            @font-face {{
+                font-family: GoNotoCurrent-Regular;
+                src: url({settings.FONT_PATH});
+                font-display: swap;
+            }}
+            body {{
+                font-family: {settings.FONT_NAME.split(".")[0]}, sans-serif;
+                font-variant-ligatures: none;
+                font-feature-settings: "liga" 0;
+                text-rendering: optimizeLegibility;
+            }}
+            ''', font_config=font_config)
+        return css

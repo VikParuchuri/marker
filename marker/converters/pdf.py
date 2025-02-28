@@ -1,5 +1,4 @@
 import os
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 from collections import defaultdict
@@ -28,7 +27,7 @@ from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
-from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.llm.llm_inlinemath import LLMInlineMathLinesProcessor
 from marker.processors.page_header import PageHeaderProcessor
 from marker.processors.reference import ReferenceProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
@@ -43,6 +42,8 @@ from marker.util import strings_to_classes
 from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
 from marker.processors.order import OrderProcessor
 from marker.services.gemini import GoogleGeminiService
+from marker.processors.line_merge import LineMergeProcessor
+from marker.processors.llm.llm_mathblock import LLMMathBlockProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -62,6 +63,7 @@ class PdfConverter(BaseConverter):
     ] = False
     default_processors: Tuple[BaseProcessor, ...] = (
         OrderProcessor,
+        LineMergeProcessor,
         BlockquoteProcessor,
         CodeProcessor,
         DocumentTOCProcessor,
@@ -77,11 +79,12 @@ class PdfConverter(BaseConverter):
         LLMTableMergeProcessor,
         LLMFormProcessor,
         TextProcessor,
-        LLMTextProcessor,
+        LLMInlineMathLinesProcessor,
         LLMComplexRegionProcessor,
         LLMImageDescriptionProcessor,
         LLMEquationProcessor,
         LLMHandwritingProcessor,
+        LLMMathBlockProcessor,
         ReferenceProcessor,
         DebugProcessor,
     )

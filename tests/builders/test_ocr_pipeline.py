@@ -23,7 +23,7 @@ def _ocr_pipeline_test(pdf_document):
     # Makes sure the OCR bbox is being scaled to the same scale as the layout boxes
     text_lines = first_page.contained_blocks(pdf_document, (BlockTypes.Line,))
     text_blocks = first_page.contained_blocks(pdf_document, (BlockTypes.Text, BlockTypes.TextInlineMath))
-    assert len(text_lines) == 71
+    assert len(text_lines) == 84
 
     # Ensure the bbox sizes match up
     max_line_position = max([line.polygon.y_end for line in text_lines])

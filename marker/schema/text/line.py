@@ -46,6 +46,8 @@ class Line(Block):
 
             if block.has_superscript:
                 block_text = re.sub(r"^([0-9\W]+)(.*)", r"<sup>\1</sup>\2", block_text)
+                if "<sup>" not in block_text:
+                    block_text = f"<sup>{block_text}</sup>"
 
             if block.url:
                 block_text = f"<a href='{block.url}'>{block_text}</a>"
@@ -91,3 +93,11 @@ class Line(Block):
             children=[],
             section_hierarchy=section_hierarchy
         )
+
+    def merge(self, other: "Line"):
+        self.polygon = self.polygon.merge([other.polygon])
+        self.structure = self.structure + other.structure
+        if self.formats is None:
+            self.formats = other.formats
+        elif other.formats is not None:
+            self.formats = list(set(self.formats + other.formats))
