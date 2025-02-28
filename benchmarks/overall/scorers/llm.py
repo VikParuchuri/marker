@@ -106,6 +106,14 @@ class LLMScorer(BaseScorer):
 
 
     def llm_rater(self, img: Image.Image, markdown: str) -> BlockScores:
+        if not markdown:
+            null_scores = {k: 1 for k in score_keys}
+            text_scores = {k: "" for k in text_keys}
+            null_scores.update(text_scores)
+            return {
+                "score": 1,
+                "specific_scores": null_scores
+            }
         req_keys = text_keys + score_keys
         properties = {}
         for key in req_keys:
@@ -134,7 +142,7 @@ class LLMScorer(BaseScorer):
         )
         try:
             responses = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.0-flash-001",
                 contents=prompt,
                 config={
                     "temperature": 0,

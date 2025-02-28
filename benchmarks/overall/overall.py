@@ -27,7 +27,10 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
     averages_by_block_type = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     average_times = defaultdict(list)
     markdown_by_method = defaultdict(dict)
-    for idx, sample in tqdm(enumerate(benchmark_dataset), desc="Running benchmark", total=len(benchmark_dataset)):
+    total_rows = len(benchmark_dataset)
+    if max_rows:
+        total_rows = min(max_rows, total_rows)
+    for idx, sample in tqdm(enumerate(benchmark_dataset), desc="Running benchmark", total=total_rows):
         if max_rows is not None and idx >= max_rows:
             break
 
@@ -44,6 +47,9 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
                 method_cls = METHOD_REGISTRY[method](**artifacts)
                 method_info = method_cls(sample)
                 method_md = method_info["markdown"]
+                if method_md is None:
+                    method_md = "" # Avoid None values
+
                 average_times[method].append(method_info["time"])
                 markdown_by_method[idx][method] = method_md
 

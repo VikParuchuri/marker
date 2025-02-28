@@ -64,7 +64,10 @@ def convert_single_page(filename: str, model, processor, device):
         text_output = json.loads(text_output)
         text = text_output["natural_text"]
     except Exception:
-        text = text_output.split("natural_text")[1].strip()
+        try:
+            text = text_output.split("natural_text")[1].strip()
+        except Exception:
+            text = ""
 
     return text
 

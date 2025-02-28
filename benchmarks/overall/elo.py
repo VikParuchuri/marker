@@ -1,9 +1,12 @@
 import json
 import random
 import time
+import os
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Literal
 from PIL import Image
+from collections import defaultdict
+import tabulate
 
 import click
 import datasets
@@ -48,7 +51,7 @@ Use these criteria when judging the markdown:
 
 Notes on scoring:
 - Perfect markdown will include all of the important text from the image, and the formatting will be correct (minor mistakes okay).  It's okay to omit some text that isn't important to the meaning, like page numbers and chapter headings.  If the entire page is an image, it's okay if the markdown is just a link to the image, unless the image would be better represented as text.
-- Bad markdown will have major missing text segments from the markdown or completely unreadable formatting.
+- Bad markdown will have major missing text segments from the markdown or completely unreadable formatting.  It may also have key values that are different from the values in the image.
 
 Output json, like in the example below.
 
@@ -63,15 +66,15 @@ Version B
 ```markdown
 # Section 1
 This is some markdown extracted from a document.  Here is a block equation:
-$$\frac{ab \cdot x^5 + x^2 + 2 \cdot x + 123}{t}$$
+$$\frac{ab \cdot x^5 + x^2 + 2 \cdot x + 124}{t}$$
 ```
 Output
 ```json
 {
     "image_description": "In the image, there is a section header 'Section 1', followed by some text and a block equation.",
     "version_a_description": "In the markdown, there is a section header 'Section 1', followed by some text and a block equation.",
-    "version_b_description": "In the markdown, there is a section header 'Section 1', followed by some text and a block equation.  The formatting in version b is slightly different from the image.",
-    "comparison": "Version A is better than version B.  The text and formatting in version A matches the image better than version B.",
+    "version_b_description": "In the markdown, there is a section header 'Section 1', followed by some text and a block equation.  The formatting in version b is slightly different from the image.  The value 124 is also different from the image.",
+    "comparison": "Version A is better than version B.  The text and formatting in version A matches the image better than version B.  Version B also has an incorrect value.",
     "winner": "version_a",
 }
 ```
@@ -105,6 +108,11 @@ class Comparer:
         version_a: str,
         version_b: str
     ) -> str | None:
+        if version_a is None and version_b is not None:
+            return "version_b"
+        elif version_b is None and version_a is not None:
+            return "version_a"
+
         hydrated_prompt = rating_prompt.replace("{{version_a}}", version_a).replace("{{version_b}}", version_b)
         try:
             rating = self.llm_rater(img, hydrated_prompt)
@@ -128,12 +136,14 @@ class Comparer:
         response_schema,
     ):
         client = genai.Client(
-            api_key=settings.GOOGLE_API_KEY,
-            http_options={"timeout": 60000}
+            http_options={"timeout": 60000},
+            vertexai=True,
+            project=os.getenv("VERTEX_PROJECT_ID"),
+            location=os.getenv("VERTEX_LOCATION"),
         )
         try:
             responses = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.0-flash-001",
                 contents=prompt,
                 config={
                     "temperature": 0,
@@ -150,35 +160,19 @@ class Comparer:
             print(f"Error: {e}")
             return
 
-@dataclass
-class Method:
-    name: str
-    rating: float = 1500
-    k_factor: float = 32
+
+def display_win_rates_table(win_rates: dict):
+    table = []
+    headers = ["Method A", "Method B", "Wins", "Losses", "Win %"]
+    for method_a, method_b_dict in win_rates.items():
+        row = [method_a]
+        for method_b, results in method_b_dict.items():
+            row = [method_a, method_b, results["win"], results["loss"], (results["win"] / (results["win"] + results["loss"])) * 100]
+            table.append(row)
+    print(tabulate.tabulate(table, headers=headers, tablefmt="pretty"))
 
 
-class EloSystem:
-    def __init__(self, player_names: List[str]):
-        self.methods = {name: Method(name) for name in player_names}
-
-    def expected_score(self, rating_a: float, rating_b: float) -> float:
-        return 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
-
-    def update_ratings(self, winner: str, loser: str) -> Tuple[float, float]:
-        method_a = self.methods[winner]
-        method_b = self.methods[loser]
-
-        expected_a = self.expected_score(method_a.rating, method_b.rating)
-        expected_b = self.expected_score(method_b.rating, method_a.rating)
-
-        # Winner gets score of 1, loser gets 0
-        method_a.rating += method_a.k_factor * (1 - expected_a)
-        method_b.rating += method_b.k_factor * (0 - expected_b)
-
-        return method_a.rating, method_b.rating
-
-
-@click.command("Calculate ELO scores for document conversion methods")
+@click.command("Calculate win rates for document conversion methods")
 @click.argument("dataset", type=str)
 @click.option("--methods", type=str, help="List of methods to compare: comma separated like marker,mathpix")
 @click.option("--row_samples", type=int, default=2, help="Number of samples per row")
@@ -191,10 +185,10 @@ def main(
 ):
     ds = datasets.load_dataset(dataset, split="train")
     method_lst = methods.split(",")
-    elo = EloSystem(method_lst)
+    win_rates = {m: defaultdict(lambda: defaultdict(int)) for m in method_lst}
     comparer = Comparer()
 
-    for i in tqdm(range(min(len(ds), max_rows)), desc="Calculating ELO"):
+    for i in tqdm(range(min(len(ds), max_rows)), desc="Calculating win rates..."):
         row = ds[i]
         # Avoid any bias in ordering
         random.shuffle(method_lst)
@@ -211,14 +205,15 @@ def main(
                     continue
 
                 if winner == "version_a":
-                    elo.update_ratings(method_a, method_b)
+                    win_rates[method_a][method_b]["win"] += 1
+                    win_rates[method_b][method_a]["loss"] += 1
                 else:
-                    elo.update_ratings(method_b, method_a)
+                    win_rates[method_b][method_a]["win"] += 1
+                    win_rates[method_a][method_b]["loss"] += 1
         if i % 10 == 0:
-            print(elo.methods)
+            display_win_rates_table(win_rates)
 
-    # Print out ratings
-    print(elo.methods)
+    display_win_rates_table(win_rates)
 
 
 if __name__ == "__main__":
