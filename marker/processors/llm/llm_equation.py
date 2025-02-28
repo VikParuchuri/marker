@@ -74,8 +74,12 @@ analysis: The equations are not formatted as LaTeX, or enclosed in math tags.
         for block_data in blocks:
             block = block_data["block"]
             page = block_data["page"]
+
             # If we redo inline math, we redo all equations
-            if block.polygon.height / page.polygon.height < self.min_equation_height and not self.redo_inline_math:
+            if all([
+                block.polygon.height / page.polygon.height < self.min_equation_height,
+                not self.redo_inline_math
+            ]):
                 continue
             out_blocks.append(block_data)
         return out_blocks

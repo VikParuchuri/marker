@@ -147,7 +147,7 @@ def llm_service(request, config):
 def temp_image():
     img = Image.new("RGB", (512, 512), color="white")
     draw = ImageDraw.Draw(img)
-    draw.text((10, 10), "Hello, World!", fill="black")
+    draw.text((10, 10), "Hello, World!", fill="black", font_size=24)
     with tempfile.NamedTemporaryFile(suffix=".png") as f:
         img.save(f.name)
         f.flush()

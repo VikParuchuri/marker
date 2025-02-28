@@ -66,7 +66,7 @@ Install with:
 pip install marker-pdf
 ```
 
-By default, marker will work on PDFs and images.  If you also want to use marker on XLSX, DOCX, HTML, etc, you will need to run:
+If you want to use marker on documents other than PDFs, you will need to install additional dependencies with:
 
 ```shell
 pip install marker-pdf[full]

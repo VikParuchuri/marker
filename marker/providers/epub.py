@@ -2,9 +2,7 @@ import base64
 import os
 import tempfile
 
-import ebooklib
 from bs4 import BeautifulSoup
-from ebooklib import epub
 
 from marker.providers.pdf import PdfProvider
 
@@ -67,6 +65,8 @@ class EpubProvider(PdfProvider):
 
     def convert_epub_to_pdf(self, filepath):
         from weasyprint import CSS, HTML
+        from ebooklib import epub
+        import ebooklib
 
         ebook = epub.read_epub(filepath)
 
@@ -104,7 +104,7 @@ class EpubProvider(PdfProvider):
         full_style = ''.join([css])  # + styles)
 
         # we convert the epub to HTML
-        result = HTML(string=html_content, base_url=filepath).write_pdf(
+        HTML(string=html_content, base_url=filepath).write_pdf(
             self.temp_pdf_path,
             stylesheets=[CSS(string=full_style), self.get_font_css()]
         )

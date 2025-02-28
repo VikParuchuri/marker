@@ -3,9 +3,6 @@ import os
 import tempfile
 import traceback
 
-from pptx import Presentation
-from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
-
 from marker.providers.pdf import PdfProvider
 
 css = '''
@@ -63,6 +60,8 @@ class PowerPointProvider(PdfProvider):
 
     def convert_pptx_to_pdf(self, filepath):
         from weasyprint import CSS, HTML
+        from pptx import Presentation
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
 
         pptx = Presentation(filepath)
 
@@ -112,6 +111,7 @@ class PowerPointProvider(PdfProvider):
         """
         Recursively handle shapes in a group. Returns HTML string for the entire group.
         """
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
 
         group_parts = []
         for shape in group_shape.shapes:
@@ -140,6 +140,7 @@ class PowerPointProvider(PdfProvider):
         Processes shape text, including bullet/numbered list detection and placeholders
         (title, subtitle, etc.). Returns HTML for the text block(s).
         """
+        from pptx.enum.shapes import PP_PLACEHOLDER
 
         # Distinguish placeholders to see if it's a title or subtitle
         label_html_tag = "p"

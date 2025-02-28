@@ -3289,13 +3289,13 @@ testing = ["docopt", "pytest"]
 
 [[package]]
 name = "pdftext"
-version = "0.6.1"
+version = "0.6.2"
 description = "Extract structured text from pdfs quickly"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pdftext-0.6.1-py3-none-any.whl", hash = "sha256:9c437a05262277dede2f6953eebc7b46d7393bb11ee373267814af2aa5e02e4d"},
-    {file = "pdftext-0.6.1.tar.gz", hash = "sha256:ffec41064804e157b48b76c834051ed7a5aa456257b78d9b87a5e8f54cebe307"},
+    {file = "pdftext-0.6.2-py3-none-any.whl", hash = "sha256:905d11e62d548e307933c25865a69c8e993947bb5b40b1535b0a2aa8f07a71d4"},
+    {file = "pdftext-0.6.2.tar.gz", hash = "sha256:ff5b92462ac03ae63a23429384ae123d45c162dcda30e7bf2c5c92a6b208c9de"},
 ]
 
 [package.dependencies]
@@ -6112,4 +6112,4 @@ full = ["ebooklib", "mammoth", "openpyxl", "python-pptx", "weasyprint"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e03ee53a4be2afc3661be448bc16a102b47273a57125b37e54184f88030b233b"
+content-hash = "4609798f8e0c4bc0c7a9ab4bcb6f92289ea03bdd902a1c35c12699f874f67298"
