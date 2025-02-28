@@ -82,8 +82,18 @@ analysis: The inline math in the lines is not in LaTeX format and is not surroun
     def inference_blocks(self, document: Document) -> List[List[BlockData]]:
         blocks = []
         for page in document.pages:
+            page_children = [p for p in page.children if p.structure]
             for block in page.contained_blocks(document, self.block_types):
-                if block.formats and "math" in block.formats:
+                # Ensure the line isn't an orphan, and that the parent hasn't already been inferenced (assigned html)
+                has_parent = any([
+                    (
+                        block.id in parent.structure
+                        and not getattr(parent, "html", None)
+                    )
+                    for parent in page_children
+                ])
+
+                if block.formats and "math" in block.formats and has_parent:
                     blocks.append({
                         "page": page,
                         "block": block
