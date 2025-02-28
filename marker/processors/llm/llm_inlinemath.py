@@ -40,7 +40,7 @@ Your task is to correct any errors in the extracted block, including math, forma
 3. Compare the extracted text to the corresponding text in the image.
 4. If there are no errors in any of the extracted text, output "No corrections needed".
 5. Correct any errors in the extracted text, including:
-    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.
+    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
       * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <h1>, <h2>, <h3>, <h4>, <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
@@ -133,8 +133,6 @@ Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to min
         return text_lines, extracted_lines
 
     def process_rewriting(self, document: Document, page: PageGroup, block: Block):
-        SpanClass = get_block_class(BlockTypes.Span)
-
         block_text = self.get_block_text(block, document)
         prompt = self.text_math_rewriting_prompt.replace("{extracted_html}", block_text)
 

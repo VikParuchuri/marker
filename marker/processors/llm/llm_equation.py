@@ -30,7 +30,7 @@ You'll receive an image of a math block that may contain one or more equations. 
 
 Some guidelines:
 - Output valid html, where all the equations can render properly.
-- Use <math display="block"> as a block equation delimiter and <math> for inline equations.
+- Use <math display="block"> as a block equation delimiter and <math> for inline equations.  Do not use $ or $$ as delimiters.
 - Keep the LaTeX code inside the math tags simple, concise, and KaTeX compatible.
 - Enclose all equations in the correct math tags. Use multiple math tags inside the html to represent multiple equations.
 - Only use the html tags math, i, b, p, and br.
@@ -103,7 +103,12 @@ Output:
             return
 
         html_equation = response["html_equation"]
-        if len(html_equation) < len(text) * .5:
+        balanced_tags = html_equation.count("<math") == html_equation.count("</math>")
+        if not all([
+            html_equation,
+            balanced_tags,
+            len(html_equation) > len(text) * .3,
+        ]):
             block.update_metadata(llm_error_count=1)
             return
 

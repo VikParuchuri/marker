@@ -33,7 +33,7 @@ The number of output lines MUST match the number of input lines.  Stay as faithf
 2. Analyze the extracted lines.
 3. For each extracted line, compare it to the corresponding line in the image.
 4. Correct any errors in the extracted line, including:
-    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Use the `<math>` and `</math>` tags to surround inline math properly.  Make sure the opening and closing tags appear in pairs, on the same line.  The math should be written in simple, concise, KaTeX-compatible LaTeX.
+    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Use the `<math>` and `</math>` tags to surround inline math properly.  Make sure the opening and closing tags appear in pairs, on the same line.  The math should be written in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the `<i>`, `<b>`, `<sup>`, `<sub>`, and `<span>` tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
 5. Do not remove any formatting i.e bold, italics, math, superscripts, subscripts, etc from the extracted lines unless it is necessary to correct an error.  The formatting 

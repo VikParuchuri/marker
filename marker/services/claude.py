@@ -17,7 +17,7 @@ class ClaudeService(BaseService):
     claude_model_name: Annotated[
         str,
         "The name of the Google model to use for the service."
-    ] = "claude-3-7-sonnet-20250219"
+    ] = "claude-3-5-haiku-20241022"
     claude_api_key: Annotated[
         str,
         "The Claude API key to use for the service."
