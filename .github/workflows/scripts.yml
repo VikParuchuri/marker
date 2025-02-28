@@ -14,7 +14,7 @@ jobs:
       - name: Install python dependencies
         run: |
           pip install poetry
-          poetry install
+          poetry install --extras "full"
       - name: Download benchmark data
         run: |
           wget -O benchmark_data.zip "https://drive.google.com/uc?export=download&id=1NHrdYatR1rtqs2gPVfdvO0BAvocH8CJi"

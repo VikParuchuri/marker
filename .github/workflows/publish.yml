@@ -15,7 +15,7 @@ jobs:
       - name: Install python dependencies
         run: |
           pip install poetry
-          poetry install
+          poetry install --extras "full"
       - name: Build package
         run: |
           poetry build

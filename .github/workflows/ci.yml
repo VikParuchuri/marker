@@ -14,7 +14,7 @@ jobs:
       - name: Install python dependencies
         run: |
           pip install poetry
-          poetry install
+          poetry install --extras "full"
       - name: Run tests
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}

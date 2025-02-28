@@ -5,7 +5,6 @@ import tempfile
 import ebooklib
 from bs4 import BeautifulSoup
 from ebooklib import epub
-from weasyprint import CSS, HTML
 
 from marker.providers.pdf import PdfProvider
 
@@ -67,6 +66,8 @@ class EpubProvider(PdfProvider):
             os.remove(self.temp_pdf_path)
 
     def convert_epub_to_pdf(self, filepath):
+        from weasyprint import CSS, HTML
+
         ebook = epub.read_epub(filepath)
 
         styles = []

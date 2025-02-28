@@ -5,8 +5,6 @@ from PIL import Image
 from pydantic import BaseModel
 
 from pdftext.schema import Reference
-from weasyprint import CSS
-from weasyprint.text.fonts import FontConfiguration
 
 from marker.logger import configure_logging
 from marker.schema.polygon import PolygonBox
@@ -75,6 +73,9 @@ class BaseProvider:
 
     @staticmethod
     def get_font_css():
+        from weasyprint import CSS
+        from weasyprint.text.fonts import FontConfiguration
+
         font_config = FontConfiguration()
         css = CSS(string=f'''
             @font-face {{

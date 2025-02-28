@@ -5,7 +5,6 @@ import traceback
 
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
-from weasyprint import CSS, HTML
 
 from marker.providers.pdf import PdfProvider
 
@@ -63,6 +62,8 @@ class PowerPointProvider(PdfProvider):
             os.remove(self.temp_pdf_path)
 
     def convert_pptx_to_pdf(self, filepath):
+        from weasyprint import CSS, HTML
+
         pptx = Presentation(filepath)
 
         html_parts = []

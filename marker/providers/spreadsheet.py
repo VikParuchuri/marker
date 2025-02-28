@@ -3,7 +3,6 @@ import tempfile
 
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
-from weasyprint import CSS, HTML
 
 from marker.providers.pdf import PdfProvider
 
@@ -52,6 +51,8 @@ class SpreadSheetProvider(PdfProvider):
             os.remove(self.temp_pdf_path)
 
     def convert_xlsx_to_pdf(self, filepath: str):
+        from weasyprint import CSS, HTML
+
         html = ""
         workbook = load_workbook(filepath)
         if workbook is not None:
