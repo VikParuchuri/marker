@@ -39,13 +39,14 @@ class LLMTableProcessor(BaseLLMComplexBlockProcessor):
         "Default is a string containing the Gemini rewriting prompt."
     ] = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image and an html representation of the table in the image.
-Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table as possible.  The table may be rotated, but ensure the html representation is not rotated.  Make sure to include HTML for the full table, including the opening and closing table tags.
+Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table image as possible.  The table image may be rotated, but ensure the html representation is not rotated.  Make sure to include HTML for the full table, including the opening and closing table tags.
 
 Some guidelines:
-- Make sure to reproduce the original values as faithfully as possible.
+- Reproduce the original values from the image as faithfully as possible.  
+- There may be stray characters in the html representation that don't match the image - fix these.
 - Ensure column headers match the correct column values.
-- If you see any math in a table cell, fence it with the <math> tag.  Block math should be fenced with <math display="block">.
-- Replace any images with a description, like "Image: [description]".
+- If you see any inline math in a table cell, fence it with the <math> tag.  Block math should be fenced with <math display="block">.
+- Replace any images in table cells with a description, like "Image: [description]".
 - Only use the tags th, td, tr, br, span, sup, sub, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
 - Make sure the columns and rows match the image faithfully, and are easily readable and interpretable by a human.
 
@@ -71,8 +72,8 @@ Input:
 </table>
 ```
 Output:
+comparison: The image shows a table with 2 rows and 3 columns.  The text and formatting of the html table matches the image.  The column headers match the correct column values.
 ```html
-Comparison: The image shows a table with 2 rows and 3 columns.  The text and formatting of the html table matches the image.  The column headers match the correct column values.
 No corrections needed.
 ```
 **Input:**
