@@ -28,8 +28,8 @@ from surya.recognition import RecognitionPredictor
 from surya.table_rec import TableRecPredictor
 
 from marker.providers.registry import provider_from_filepath
+from marker.renderers.json import JSONBlockOutput
 from tests.utils import convert_to_pdftext
-
 
 
 class GroundTruthPagesForcer:
@@ -50,7 +50,12 @@ class ChangedTableProcessor(TableProcessor):
         config=None,
         _gt_forcer: GroundTruthPagesForcer=None,
     ):
-        super().__init__(detection_model=detection_model, recognition_model=recognition_model, table_rec_model=table_rec_model, config=config)
+        super().__init__(
+            detection_model=detection_model, 
+            recognition_model=recognition_model, 
+            table_rec_model=table_rec_model, 
+            config=config
+        )
         self.detection_model = detection_model
         self.recognition_model = recognition_model
         self.table_rec_model = table_rec_model
@@ -141,9 +146,9 @@ class ChangedTableConverter(TableConverter):
 
 class SynthTabNetBenchmark(FinTabNetBenchmark):
     gt_forcer: GroundTruthPagesForcer
+
     def get_converter(self, models, config_parser, **kwargs):
         config_parser.cli_options['force_layout_block'] = 'Table'
-        # config_parser.cli_options['GoogleGeminiService_minimum_delay'] = 15.0
         config_parser.cli_options['disable_tqdm'] = True
         config_parser.cli_options['disable_ocr'] = True
         config_parser.cli_options['document_ocr_threshold'] = 0.0
@@ -152,7 +157,8 @@ class SynthTabNetBenchmark(FinTabNetBenchmark):
         return ChangedTableConverter(
             config={
                 **config_parser.generate_config_dict(),
-                "document_ocr_threshold": 0 # never perform OCR for evaluation: we know the ground truth
+                "document_ocr_threshold": 0 
+                # never perform OCR for evaluation: we know the ground truth
             },
             artifact_dict={
                 '_gt_forcer': self.gt_forcer,
@@ -181,15 +187,16 @@ class SynthTabNetBenchmark(FinTabNetBenchmark):
             return original_tqdm(*args, **kwargs)
 
         # https://stackoverflow.com/a/23212515
-        manual_management = os.name == 'nt' 
-        with tempfile.NamedTemporaryFile(suffix=".png", mode="wb", delete=not manual_management) as temp_png_file:
+        with tempfile.TemporaryDirectory() as temp_dir:
 
             bytesio = io.BytesIO()
             page_image = row['image'] # PIL.Image.Image
             page_image.save(bytesio, format="PNG")
 
-            temp_png_file.write(bytesio.getvalue())
-            temp_png_file.seek(0)
+            temp_filepath = os.path.join(temp_dir, 'temp.png')
+            with open(temp_filepath, 'wb') as temp_png_file:
+                temp_png_file.write(bytesio.getvalue())
+                temp_png_file.flush()
 
             self.gt_forcer.forced_pages = [
                 self.synthtabnet_page_with_gt_words(row, page_image)
@@ -199,9 +206,6 @@ class SynthTabNetBenchmark(FinTabNetBenchmark):
             marker_json = converter(temp_png_file.name).children # word bboxes are ingested by way of "gt_forcer"
             tqdm.__init__ = original_tqdm # enable
 
-            if manual_management:
-                temp_png_file.close()
-                os.remove(temp_png_file.name)
         return marker_json, page_image
 
     def extract_gt_tables(self, row, **kwargs):
@@ -211,10 +215,7 @@ class SynthTabNetBenchmark(FinTabNetBenchmark):
         }]
 
     def extract_gemini_tables(self, row, image, **kwargs):
-        gemini_table = gemini_table_rec(image, prompt=prompt_with_header)
-        # gemini_table_html = self.postprocess_marker_to_html(gemini_table) # put through same th --> thead/tbody pipeline
-        return gemini_table
-
+        return gemini_table_rec(image, prompt=prompt_with_header)
 
     def fix_table_html(self, marker_table: str, author='marker'):
         if author == 'gemini':

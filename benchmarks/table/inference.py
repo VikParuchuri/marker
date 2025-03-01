@@ -20,7 +20,7 @@ from marker.schema.polygon import PolygonBox
 from marker.util import matrix_intersection_area
 
 class FinTabNetBenchmark:
-    def extract_tables_from_json(self, children: List[JSONBlockOutput]):
+    def extract_tables_from_json(self, children: List[JSONBlockOutput]) -> List[JSONBlockOutput]:
         tables = []
         for child in children:
             if child.block_type == 'Table':
@@ -45,7 +45,6 @@ class FinTabNetBenchmark:
     def extract_tables_from_doc(self, converter, row):
         """Extract table and images from pdf; produce marker_json and page_image"""
 
-        original_tqdm = tqdm.__init__
         pdf_binary = base64.b64decode(row['pdf'])
 
         # https://stackoverflow.com/a/23212515
@@ -55,9 +54,7 @@ class FinTabNetBenchmark:
                 temp_pdf_file.write(pdf_binary)
                 temp_pdf_file.flush()
 
-            tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
             marker_json = converter(temp_pdf_file.name).children
-            tqdm.__init__ = original_tqdm
 
             doc = pdfium.PdfDocument(temp_pdf_file.name)
             page_image = doc[0].render(scale=96/72).to_pil()
@@ -93,6 +90,14 @@ class FinTabNetBenchmark:
             "gemini_table": gemini_table
         }
 
+    def _load_marker_output(self, i, row):
+        """Opportunity to load marker output from a previous run"""
+        return None, None
+
+    def _cache_marker_output(self, i, row, marker_json, page_image):
+        """Opportunity to save marker output, to allow resuming if interrupted"""
+        pass
+
     def inference_tables(self, dataset, use_llm: bool, table_rec_batch_size: int | None, max_rows: int, use_gemini: bool):
         
         total_unaligned = 0
@@ -110,7 +115,12 @@ class FinTabNetBenchmark:
             try:
                 row = dataset[i]
 
-                marker_json, page_image = self.extract_tables_from_doc(converter, row)
+                # save progress while running
+                marker_json, page_image = self._load_marker_output(i, row)
+                if marker_json is None:
+                    marker_json, page_image = self.extract_tables_from_doc(converter, row)
+                    self._cache_marker_output(i, row, marker_json, page_image)
+
                 gt_tables = self.extract_gt_tables(row)  # Already sorted by reading order, which is what marker returns
 
                 if len(marker_json) == 0 or len(gt_tables) == 0:
