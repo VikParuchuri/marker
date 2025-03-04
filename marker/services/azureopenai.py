@@ -5,6 +5,7 @@ from io import BytesIO
 from typing import Annotated, List, Union
 
 import openai
+import PIL
 from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion
 from openai import RateLimitError, OpenAIError
