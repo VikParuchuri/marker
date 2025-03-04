@@ -1,10 +1,6 @@
 import os
 import tempfile
 
-from openpyxl import load_workbook
-from openpyxl.worksheet.worksheet import Worksheet
-from weasyprint import CSS, HTML
-
 from marker.providers.pdf import PdfProvider
 
 css = '''
@@ -52,6 +48,9 @@ class SpreadSheetProvider(PdfProvider):
             os.remove(self.temp_pdf_path)
 
     def convert_xlsx_to_pdf(self, filepath: str):
+        from weasyprint import CSS, HTML
+        from openpyxl import load_workbook
+
         html = ""
         workbook = load_workbook(filepath)
         if workbook is not None:
@@ -68,7 +67,7 @@ class SpreadSheetProvider(PdfProvider):
         )
 
     @staticmethod
-    def _get_merged_cell_ranges(sheet: Worksheet):
+    def _get_merged_cell_ranges(sheet):
         merged_info = {}
         for merged_range in sheet.merged_cells.ranges:
             min_col, min_row, max_col, max_row = merged_range.bounds
@@ -79,7 +78,7 @@ class SpreadSheetProvider(PdfProvider):
             }
         return merged_info
 
-    def _excel_to_html_table(self, sheet: Worksheet):
+    def _excel_to_html_table(self, sheet):
         merged_cells = self._get_merged_cell_ranges(sheet)
 
         html = f'<table>'

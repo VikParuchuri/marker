@@ -1,13 +1,10 @@
 import base64
-import logging
 import os
 import re
 import tempfile
 from io import BytesIO
 
-import mammoth
 from PIL import Image
-from weasyprint import CSS, HTML
 
 from marker.providers.pdf import PdfProvider
 
@@ -69,6 +66,9 @@ class DocumentProvider(PdfProvider):
             os.remove(self.temp_pdf_path)
 
     def convert_docx_to_pdf(self, filepath: str):
+        from weasyprint import CSS, HTML
+        import mammoth
+
         with open(filepath, "rb") as docx_file:
             # we convert the docx to HTML
             result = mammoth.convert_to_html(docx_file)

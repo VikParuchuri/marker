@@ -152,7 +152,7 @@ def llm_service(request, config):
 def temp_image():
     img = Image.new("RGB", (512, 512), color="white")
     draw = ImageDraw.Draw(img)
-    draw.text((10, 10), "Hello, World!", fill="black")
+    draw.text((10, 10), "Hello, World!", fill="black", font_size=24)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_png_path = os.path.join(temp_dir, f"{uuid.uuid4()}.png")  # Randomized filename

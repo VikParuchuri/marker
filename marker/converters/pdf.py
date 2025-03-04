@@ -27,7 +27,7 @@ from marker.processors.llm.llm_complex import LLMComplexRegionProcessor
 from marker.processors.llm.llm_form import LLMFormProcessor
 from marker.processors.llm.llm_image_description import LLMImageDescriptionProcessor
 from marker.processors.llm.llm_table import LLMTableProcessor
-from marker.processors.llm.llm_text import LLMTextProcessor
+from marker.processors.llm.llm_inlinemath import LLMInlineMathLinesProcessor
 from marker.processors.page_header import PageHeaderProcessor
 from marker.processors.reference import ReferenceProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
@@ -43,7 +43,7 @@ from marker.processors.llm.llm_handwriting import LLMHandwritingProcessor
 from marker.processors.order import OrderProcessor
 from marker.services.gemini import GoogleGeminiService
 from marker.processors.line_merge import LineMergeProcessor
-from marker.processors.llm.llm_inlinemath import LLMInlineMathProcessor
+from marker.processors.llm.llm_mathblock import LLMMathBlockProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -79,12 +79,12 @@ class PdfConverter(BaseConverter):
         LLMTableMergeProcessor,
         LLMFormProcessor,
         TextProcessor,
-        LLMTextProcessor,
+        LLMInlineMathLinesProcessor,
         LLMComplexRegionProcessor,
         LLMImageDescriptionProcessor,
         LLMEquationProcessor,
         LLMHandwritingProcessor,
-        LLMInlineMathProcessor,
+        LLMMathBlockProcessor,
         ReferenceProcessor,
         DebugProcessor,
     )

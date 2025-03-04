@@ -3,6 +3,7 @@ import torch
 
 import click
 import pypdfium2 as pdfium
+from tqdm import tqdm
 
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
@@ -19,7 +20,7 @@ def main(pdf_path):
     torch.cuda.reset_peak_memory_stats()
 
     times = []
-    for i in range(10):
+    for i in tqdm(range(10), desc="Benchmarking"):
         block_converter = PdfConverter(
             artifact_dict=model_dict,
             config={"disable_tqdm": True}

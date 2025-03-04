@@ -8,10 +8,14 @@ class InlineMath(Block):
     blockquote: bool = False
     blockquote_level: int = 0
     block_description: str = "A text block that contains inline math.  This is not used for italic text or references - only for text that contains math."
+    html: str | None = None
 
     def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
+
+        if self.html:
+            return super().handle_html_output(document, child_blocks, parent_structure)
 
         template = super().assemble_html(document, child_blocks, parent_structure)
         template = template.replace("\n", " ")

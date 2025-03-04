@@ -16,9 +16,7 @@ class Text(Block):
 
         # This happens when we used an llm processor
         if self.html:
-            child_ref_blocks = [block for block in child_blocks if block.id.block_type == BlockTypes.Reference]
-            html = super().assemble_html(document, child_ref_blocks, parent_structure)
-            return html + self.html
+            return super().handle_html_output(document, child_blocks, parent_structure)
 
         template = super().assemble_html(document, child_blocks, parent_structure)
         template = template.replace("\n", " ")

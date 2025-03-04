@@ -1,8 +1,6 @@
 import os
 import tempfile
 
-from weasyprint import HTML
-
 from marker.providers.pdf import PdfProvider
 
 class HTMLProvider(PdfProvider):
@@ -26,6 +24,8 @@ class HTMLProvider(PdfProvider):
             os.remove(self.temp_pdf_path)
 
     def convert_html_to_pdf(self, filepath: str):
+        from weasyprint import HTML
+
         font_css = self.get_font_css()
         HTML(filename=filepath, encoding="utf-8").write_pdf(
             self.temp_pdf_path,

@@ -9,6 +9,15 @@ from benchmarks.overall.scorers import BaseScorer
 
 class HeuristicScorer(BaseScorer):
     def __call__(self, sample, gt_markdown: List[str], method_markdown: str) -> BlockScores:
+        if not method_markdown:
+            return {
+                "score": 0,
+                "specific_scores": {
+                    "order": 0,
+                    "by_block": [0] * len(gt_markdown)
+                }
+            }
+
         # Standardize inputs
         gt_markdown = [self.clean_input(block) for block in gt_markdown]
         method_markdown = self.clean_input(method_markdown)

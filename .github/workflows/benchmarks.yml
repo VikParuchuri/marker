@@ -21,7 +21,7 @@ jobs:
       - name: Install python dependencies
         run: |
           pip install poetry
-          poetry install
+          poetry install --extras "full"
       - name: Run benchmark test
         run: |
           poetry run python benchmarks/overall/overall.py --max_rows 5

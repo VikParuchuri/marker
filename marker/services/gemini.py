@@ -64,7 +64,7 @@ class BaseGeminiService(BaseService):
                 block.update_metadata(llm_tokens_used=total_tokens, llm_request_count=1)
                 return json.loads(output)
             except APIError as e:
-                if e.code == 429:
+                if e.code in [429, 443, 503]:
                     # Rate limit exceeded
                     tries += 1
                     wait_time = tries * 3
