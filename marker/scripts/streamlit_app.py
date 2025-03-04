@@ -41,7 +41,7 @@ COLORS = [
 ]
 
 with open(
-    os.path.join(os.path.dirname(__file__), "streamlit_app_blocks_viz.html")
+    os.path.join(os.path.dirname(__file__), "streamlit_app_blocks_viz.html"), encoding="utf-8"
 ) as f:
     BLOCKS_VIZ_TMPL = string.Template(f.read())
 
@@ -179,7 +179,7 @@ This app will let you try marker, a PDF or image -> Markdown, HTML, JSON convert
 Find the project [here](https://github.com/VikParuchuri/marker).
 """)
 
-in_file: UploadedFile = st.sidebar.file_uploader("PDF or image file:", type=["pdf", "png", "jpg", "jpeg", "gif"])
+in_file: UploadedFile = st.sidebar.file_uploader("PDF, document, or image file:", type=["pdf", "png", "jpg", "jpeg", "gif", "pptx", "docx", "xlsx", "html", "epub"])
 
 if in_file is None:
     st.stop()
