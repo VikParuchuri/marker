@@ -287,7 +287,7 @@ class PdfProvider(BaseProvider):
 
                 # we also skip pages without embedded fonts and fonts without names
                 non_embedded_fonts.append(pdfium_c.FPDFFont_GetIsEmbedded(font) == 0)
-                empty_fonts.append(not font_name or font_name == "GlyphLessFont")
+                empty_fonts.append("glyphless" in font_name.lower()) # Add font name check back in when we bump pypdfium2
                 if font_name not in font_map:
                     font_map[font_name or 'Unknown'] = font
 
@@ -363,7 +363,7 @@ class PdfProvider(BaseProvider):
                 font_name_buffer = ctypes.create_string_buffer(length)
                 pdfium_c.FPDFFont_GetBaseFontName(font, font_name_buffer, length)
                 font_name = font_name_buffer.value.decode("utf-8")
-        except:
+        except Exception as e:
             pass
 
         return font_name
