@@ -5,7 +5,10 @@ from io import BytesIO
 from typing import Annotated, List, Union
 
 import openai
+from openai import OpenAI
+from openai.types.chat import ChatCompletion
 from openai import RateLimitError, OpenAIError
+
 from PIL import Image
 from pydantic import BaseModel
 
@@ -16,6 +19,7 @@ from marker.schema.blocks import Block
 class AzureOpenAIService(BaseService):
     """
     A service that calls Azure OpenAI for ChatCompletion with images + text prompts.
+    Uses the new `openai.Client()` format for compatibility with openai>=1.0.0.
     """
 
     # Azure OpenAI configuration
@@ -52,15 +56,16 @@ class AzureOpenAIService(BaseService):
             for img in images
         ]
 
-    def get_client(self) -> openai:
+    def get_client(self) -> OpenAI:
         """
-        Configures and returns the openai module as an Azure OpenAI client.
+        Returns an OpenAI client configured for Azure OpenAI.
         """
-        openai.api_type = "azure"
-        openai.api_base = self.azure_base_url
-        openai.api_version = self.azure_api_version
-        openai.api_key = self.azure_api_key
-        return openai
+        return OpenAI(
+            api_key=self.azure_api_key,
+            base_url=f"{self.azure_base_url}/openai/deployments/{self.azure_deployment_name}/",
+            default_headers={"api-key": self.azure_api_key},
+            timeout=self.timeout,
+        )
 
     def __call__(
         self,
@@ -101,15 +106,14 @@ class AzureOpenAIService(BaseService):
         tries = 0
         while tries < max_retries:
             try:
-                response = client.ChatCompletion.create(
-                    engine=self.azure_deployment_name,
+                response: ChatCompletion = client.chat.completions.create(
+                    model=self.azure_deployment_name,
                     messages=messages,
-                    timeout=timeout,
                 )
 
-                response_text = response.choices[0].message["content"]
-                usage = response.get("usage", {})
-                total_tokens = usage.get("total_tokens", 0)
+                response_text = response.choices[0].message.content
+                usage = response.usage
+                total_tokens = usage.total_tokens if usage else 0
                 block.update_metadata(llm_tokens_used=total_tokens, llm_request_count=1)
 
                 parsed_json = json.loads(response_text)
