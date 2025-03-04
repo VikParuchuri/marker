@@ -71,8 +71,8 @@ class PdfProvider(BaseProvider):
         "Whether to disable links.",
     ] = False
 
-    def __init__(self, filepath: str, config=None):
-        super().__init__(filepath, config)
+    def __init__(self, file: str | bytes, config=None):
+        super().__init__(file, config)
 
         self.filepath = filepath
 
