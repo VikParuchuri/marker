@@ -4,8 +4,7 @@ import base64
 from io import BytesIO
 from typing import Annotated, List, Union
 
-import openai
-from openai import OpenAI
+from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion
 from openai import RateLimitError, OpenAIError
 
@@ -16,11 +15,30 @@ from marker.services import BaseService
 from marker.schema.blocks import Block
 
 
-class AzureOpenAIService(BaseService):
+class MyAzureOpenAIService(BaseService):
     """
     A service that calls Azure OpenAI for ChatCompletion with images + text prompts.
-    Uses the new `openai.Client()` format for compatibility with openai>=1.0.0.
+    Uses the new openai.Client() format for compatibility with openai>=1.0.0.
     """
+
+    def __init__(
+        self,
+        azure_api_key: str,
+        azure_base_url: str,
+        azure_api_version: str = "2023-03-15-preview",
+        azure_deployment_name: str = "gpt-4o",
+        max_retries: int = 3,
+        timeout: int = 60,
+    ):
+        self.azure_api_key = azure_api_key
+        self.azure_base_url = azure_base_url
+        self.azure_api_version = azure_api_version
+        self.azure_deployment_name = azure_deployment_name
+        self.max_retries = max_retries
+        self.timeout = timeout
+
+        # Call parent class's constructor if needed
+        super().__init__()
 
     # Azure OpenAI configuration
     azure_base_url: Annotated[
@@ -56,14 +74,14 @@ class AzureOpenAIService(BaseService):
             for img in images
         ]
 
-    def get_client(self) -> OpenAI:
+    def get_client(self) -> AzureOpenAI:
         """
         Returns an OpenAI client configured for Azure OpenAI.
         """
-        return OpenAI(
+        return AzureOpenAI(
             api_key=self.azure_api_key,
-            base_url=f"{self.azure_base_url}",
-            default_headers={"api-key": self.azure_api_key},
+            azure_endpoint=f"{self.azure_base_url}",
+            api_version=self.azure_api_version,
             timeout=self.timeout,
         )
 
@@ -117,7 +135,7 @@ class AzureOpenAIService(BaseService):
                 block.update_metadata(llm_tokens_used=total_tokens, llm_request_count=1)
 
                 parsed_json = json.loads(response_text)
-                return response_schema.parse_obj(parsed_json).dict()
+                return response_schema.model_validate(parsed_json)
 
             except (OpenAIError, RateLimitError) as e:
                 tries += 1
