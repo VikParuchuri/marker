@@ -214,7 +214,7 @@ class FinTabNetBenchmark:
                     marker_table_html = self.fix_table_html(marker_table.html, author='marker')
                     gemini_table_html = self.fix_table_html(gemini_table, author='gemini')
 
-                    results.append(self.construct_row_result(row, marker_table_html, gt_table_html, gemini_table_html))
+                    results.append(self.construct_row_result(row, gt_table_html, marker_table_html, gemini_table_html))
             except pdfium.PdfiumError:
                 print('Broken PDF, Skipping...')
                 continue

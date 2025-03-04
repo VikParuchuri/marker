@@ -164,7 +164,10 @@ class SynthTabNetBenchmark(FinTabNetBenchmark):
                 '_gt_forcer': self.gt_forcer,
                 **models
             },
-            processor_list=config_parser.get_processors(),
+            processor_list=[
+                "marker.processors.table.TableProcessor",
+                "marker.processors.llm.llm_table.LLMTableProcessor",
+            ],
             renderer=config_parser.get_renderer()
         )
 
