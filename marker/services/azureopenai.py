@@ -62,7 +62,7 @@ class AzureOpenAIService(BaseService):
         """
         return OpenAI(
             api_key=self.azure_api_key,
-            base_url=f"{self.azure_base_url}/openai/deployments/{self.azure_deployment_name}/",
+            base_url=f"{self.azure_base_url}",
             default_headers={"api-key": self.azure_api_key},
             timeout=self.timeout,
         )
