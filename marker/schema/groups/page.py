@@ -235,16 +235,32 @@ class PageGroup(Group):
             if block.block_type not in self.excluded_block_types
         ]
 
-        max_intersections = self.compute_line_block_intersections(valid_blocks, provider_outputs)
+        # Process Figures and FigureGroup in the 2nd pass, so that text is preferentially assigned to text blocks
+        figures_pass = [
+            i for i, block in enumerate(valid_blocks)
+            if block.block_type in [BlockTypes.Figure, BlockTypes.FigureGroup]
+        ]
+        main_pass = [
+            i for i in range(len(valid_blocks))
+            if i not in figures_pass
+        ]
 
         # Try to assign lines by intersection
-        assigned_line_idxs = set()
+        total_max_intersections = {} # provider_line_idx -> (intersection_area: np.float64, block_id)
         block_lines = defaultdict(list)
-        for line_idx, provider_output in enumerate(provider_outputs):
-            if line_idx in max_intersections:
-                block_id = max_intersections[line_idx][1]
-                block_lines[block_id].append((line_idx, provider_output))
-                assigned_line_idxs.add(line_idx)
+        for block_subset_indices in [main_pass, figures_pass]:
+            block_subset = [valid_blocks[i] for i in block_subset_indices]
+            max_intersections = self.compute_line_block_intersections(block_subset, provider_outputs)
+
+            # remove already assigned in previous passes
+            max_intersections = {k: v for k, v in max_intersections.items() if k not in total_max_intersections}
+            for line_idx, provider_output in enumerate(provider_outputs):
+                if line_idx in max_intersections:
+                    block_id = max_intersections[line_idx][1]
+                    block_lines[block_id].append((line_idx, provider_output))
+            total_max_intersections.update(max_intersections)
+        assigned_line_idxs = set(total_max_intersections.keys())
+
 
         # If no intersection, assign by distance
         for line_idx in set(provider_line_idxs).difference(assigned_line_idxs):
