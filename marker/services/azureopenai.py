@@ -15,7 +15,7 @@ from marker.services import BaseService
 from marker.schema.blocks import Block
 
 
-class MyAzureOpenAIService(BaseService):
+class AzureOpenAIService(BaseService):
     """
     A service that calls Azure OpenAI for ChatCompletion with images + text prompts.
     Uses the new openai.Client() format for compatibility with openai>=1.0.0.
