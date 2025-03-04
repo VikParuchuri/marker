@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import Annotated, List, Union
 
 import openai
-from openai.error import RateLimitError, Timeout as OpenAITimeoutError
+from openai import RateLimitError, OpenAIError
 from PIL import Image
 from pydantic import BaseModel
 
@@ -115,7 +115,7 @@ class AzureOpenAIService(BaseService):
                 parsed_json = json.loads(response_text)
                 return response_schema.parse_obj(parsed_json).dict()
 
-            except (OpenAITimeoutError, RateLimitError) as e:
+            except (OpenAIError, RateLimitError) as e:
                 tries += 1
                 wait_time = tries * 3
                 print(
