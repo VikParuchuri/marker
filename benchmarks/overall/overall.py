@@ -89,7 +89,7 @@ def get_method_scores(benchmark_dataset: datasets.Dataset, methods: List[str], s
 @click.command(help="Benchmark PDF to MD conversion.")
 @click.option("--dataset", type=str, help="Path to the benchmark dataset", default="datalab-to/marker_benchmark")
 @click.option("--out_dataset", type=str, help="Path to the output dataset", default=None)
-@click.option("--methods", type=str, help="Comma separated list of other methods to compare against.  Possible values: marker,mathpix,llamaparse,docling", default="marker")
+@click.option("--methods", type=str, help="Comma separated list of other methods to compare against.  Possible values: marker,mathpix,llamaparse,docling,mistral", default="marker")
 @click.option("--scores", type=str, help="Comma separated list of scoring functions to use.  Possible values: heuristic,llm", default="heuristic")
 @click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "overall"), help="Output path for results.")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of rows to process.")
@@ -145,6 +145,9 @@ def main(
     if "llamaparse" in methods:
         artifacts["llamaparse_ds"] = datasets.load_dataset("datalab-to/marker_benchmark_llamaparse", split="train")
 
+    if "mistral" in methods:
+        artifacts["mistral_ds"] = datasets.load_dataset("datalab-to/marker_benchmark_mistral", split="train")
+
     if "olmocr" in methods:
         from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
         model = Qwen2VLForConditionalGeneration.from_pretrained("allenai/olmOCR-7B-0225-preview",
@@ -167,7 +170,7 @@ def main(
         if use_llm:
             out_dataset += "_llm"
         dataset = build_dataset(benchmark_dataset, result, score_types, max_rows=max_rows)
-        dataset.push_to_hub(out_dataset)
+        dataset.push_to_hub(out_dataset, private=True)
 
 
 if __name__ == "__main__":

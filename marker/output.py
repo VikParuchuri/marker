@@ -7,9 +7,12 @@ from pydantic import BaseModel
 from marker.renderers.html import HTMLOutput
 from marker.renderers.json import JSONOutput, JSONBlockOutput
 from marker.renderers.markdown import MarkdownOutput
+from marker.schema.blocks import Block, BlockOutput
+from marker.schema.document import Document
 from marker.settings import settings
 
-def json_to_html(block: JSONBlockOutput):
+
+def json_to_html(block: JSONBlockOutput | BlockOutput):
     # Utility function to take in json block output and give html for the block.
     if not getattr(block, "children", None):
         return block.html

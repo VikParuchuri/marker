@@ -5,6 +5,7 @@ from typing import List, Tuple, Annotated
 from pydantic import BaseModel
 from tqdm import tqdm
 
+from marker.output import json_to_html
 from marker.processors.llm import BaseLLMComplexBlockProcessor
 
 from marker.schema import BlockTypes
@@ -27,8 +28,8 @@ class LLMMathBlockProcessor(BaseLLMComplexBlockProcessor):
     additional_block_types = (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote) # Seconday, can also contain math
 
     text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
-You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
-Your task is to correct any errors in the extracted block, including math, formatting, and other inaccuracies, and output the corrected block in html format.  Stay as faithful to the original text as possible.
+You will receive an image of a text block and extracted text corresponding to the text in the image.
+Your task is to correct any errors in the extracted text, including math, formatting, and other inaccuracies, and output the corrected block in html format.  Stay as faithful to the text in the image as possible.
 
 **Instructions:**
 
@@ -39,7 +40,7 @@ Your task is to correct any errors in the extracted block, including math, forma
 5. If there are no errors in any of the extracted text, output "No corrections needed".
 6. Correct any errors in the extracted text, including:
     * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
-      * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
+    * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
     * Ensure lines wrap properly, and that newlines are not in the middle of sentences.
@@ -125,7 +126,7 @@ Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to min
         pbar.close()
 
     def get_block_text(self, block: Block, document: Document) -> str:
-        html = block.render(document).html
+        html = json_to_html(block.render(document))
         return html
 
     def get_block_lines(self, block: Block, document: Document) -> Tuple[list, list]:
