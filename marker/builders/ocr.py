@@ -165,4 +165,8 @@ class OcrBuilder(BaseBuilder):
         if current_span:
             spans.append(current_span)
 
+        # Add newline after all spans finish
+        if not spans[-1].html:
+            spans[-1].text += '\n'
+
         return spans
