@@ -26,6 +26,7 @@ class Span(Block):
     has_superscript: bool = False
     has_subscript: bool = False
     url: Optional[str] = None
+    html: Optional[str] = None
 
     @property
     def bold(self):
@@ -42,6 +43,9 @@ class Span(Block):
     def assemble_html(self, document, child_blocks, parent_structure):
         if self.ignore_for_output:
             return ""
+
+        if self.html:
+            return self.html
 
         text = self.text
 
