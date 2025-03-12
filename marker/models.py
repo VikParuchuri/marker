@@ -12,7 +12,6 @@ from surya.texify import TexifyPredictor
 def create_model_dict(device=None, dtype=None) -> dict:
     return {
         "layout_model": LayoutPredictor(device=device, dtype=dtype),
-        "texify_model": TexifyPredictor(device=device, dtype=dtype),
         "recognition_model": RecognitionPredictor(device=device, dtype=dtype),
         "table_rec_model": TableRecPredictor(device=device, dtype=dtype),
         "detection_model": DetectionPredictor(device=device, dtype=dtype),
