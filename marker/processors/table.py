@@ -380,9 +380,9 @@ class TableProcessor(BaseProcessor):
         self.recognition_model.disable_tqdm = self.disable_tqdm
         self.detection_model.disable_tqdm = self.disable_tqdm
         ocr_results: List[OCRResult] = self.recognition_model(
-            det_images,
-            [None] * len(det_images),
-            self.detection_model,
+            images=det_images,
+            task_names=['ocr_with_boxes'] * len(det_images),
+            det_predictor=self.detection_model,
             recognition_batch_size=self.get_recognition_batch_size(),
             detection_batch_size=self.get_detection_batch_size()
         )

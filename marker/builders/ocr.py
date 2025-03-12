@@ -1,8 +1,9 @@
 import copy
 from typing import Annotated, List, Optional
+import re
 
 from ftfy import fix_text
-from surya.recognition import RecognitionPredictor
+from surya.recognition import RecognitionPredictor, OCRResult, TextChar
 
 from marker.builders import BaseBuilder
 from marker.providers.pdf import PdfProvider
@@ -13,6 +14,8 @@ from marker.schema.groups import PageGroup
 from marker.schema.registry import get_block_class
 from marker.schema.text.span import Span
 from marker.settings import settings
+from marker.schema.polygon import PolygonBox
+from marker.util import get_opening_tag_type, get_closing_tag_type
 
 class OcrBuilder(BaseBuilder):
     """
@@ -82,32 +85,85 @@ class OcrBuilder(BaseBuilder):
             return
 
         self.recognition_model.disable_tqdm = self.disable_tqdm
-        recognition_results = self.recognition_model(
+        recognition_results: OCRResult = self.recognition_model(
             images=images,
+            task_names=['ocr_with_boxes'] * len(images),
             bboxes=line_boxes,
-            langs=[self.languages] * len(pages),
             recognition_batch_size=int(self.get_recognition_batch_size()),
             sort_lines=False
         )
 
-        SpanClass: Span = get_block_class(BlockTypes.Span)
         for document_page, page_recognition_result, page_line_ids in zip(pages, recognition_results, line_ids):
             for line_id, ocr_line in zip(page_line_ids, page_recognition_result.text_lines):
                 if not fix_text(ocr_line.text):
                     continue
+                new_spans = self.spans_from_html_chars(ocr_line.chars, document_page.page_id)
 
                 line = document_page.get_block(line_id)
                 assert line.structure is None
-                new_span = SpanClass(
-                    text=fix_text(ocr_line.text) + '\n',
-                    formats=['plain'],
-                    page_id=document_page.page_id,
-                    polygon=copy.deepcopy(line.polygon),
+                for span in new_spans:
+                    document_page.add_full_block(span)
+                    line.add_structure(span)
+
+    def spans_from_html_chars(self, chars: List[TextChar], page_id: int):
+        SpanClass: Span = get_block_class(BlockTypes.Span)
+        spans = []
+        formats = {'plain'}
+
+        current_span = None
+        for char in chars:
+            is_opening_tag, format = get_opening_tag_type(char.text)
+            if is_opening_tag and format not in formats:
+                formats.add(format)
+                if current_span:
+                    spans.append(current_span)
+                    current_span = None
+                if format == 'math':
+                    current_span = SpanClass(
+                        text='',
+                        formats=list(formats),
+                        page_id=page_id,
+                        polygon=PolygonBox(polygon=char.polygon),
+                        minimum_position=0,
+                        maximum_position=0,
+                        font='Unknown',
+                        font_weight=0,
+                        font_size=0,
+                    ) 
+                    print(current_span)
+                    print('-'*100)
+                continue
+
+            is_closing_tag, format = get_closing_tag_type(char.text)
+            if is_closing_tag:
+                formats.remove(format)
+                if current_span:
+                    spans.append(current_span)
+                    current_span = None
+                continue
+
+            if not current_span:
+                current_span = SpanClass(
+                    text=char.text,
+                    formats=list(formats),
+                    page_id=page_id,
+                    polygon=PolygonBox(polygon=char.polygon),
                     minimum_position=0,
                     maximum_position=0,
                     font='Unknown',
                     font_weight=0,
                     font_size=0,
                 )
-                document_page.add_full_block(new_span)
-                line.add_structure(new_span)
+                continue
+            
+
+            current_span.text += char.text
+            # Tokens inside a math span don't have valid boxes, so we skip the merging
+            if 'math' not in formats:
+                current_span.polygon = current_span.polygon.merge([PolygonBox(polygon=char.polygon)])
+            
+        # Add the last span to the list
+        if current_span:
+            spans.append(current_span)
+
+        return spans
