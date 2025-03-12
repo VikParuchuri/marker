@@ -38,6 +38,7 @@ def test_llm_text_processor_disabled(pdf_document):
     assert len(text_lines) == 0
 
 
+@pytest.mark.skip("We do not support this method of inline math anymore")
 @pytest.mark.filename("adversarial.pdf")
 @pytest.mark.config({"page_range": [0], "texify_inline_spans": True})
 def test_llm_text_processor_texify(pdf_document):

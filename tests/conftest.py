@@ -41,11 +41,6 @@ def detection_model(model_dict):
 
 
 @pytest.fixture(scope="session")
-def texify_model(model_dict):
-    yield model_dict["texify_model"]
-
-
-@pytest.fixture(scope="session")
 def recognition_model(model_dict):
     yield model_dict["recognition_model"]
 

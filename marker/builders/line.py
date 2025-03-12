@@ -93,10 +93,6 @@ class LineBuilder(BaseBuilder):
         bool,
         "Whether to use the LLM model for advanced processing."
     ] = False
-    texify_inline_spans: Annotated[
-        bool,
-        "Whether to run texify on inline math spans."
-    ] = False
     ocr_remove_blocks: Tuple[BlockTypes, ...] = (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents, BlockTypes.Equation)
     disable_tqdm: Annotated[
         bool,
@@ -112,10 +108,10 @@ class LineBuilder(BaseBuilder):
 
     def __call__(self, document: Document, provider: PdfProvider):
         # Disable inline detection for documents where layout model doesn't detect any equations
-        # Also disable if we won't use the inline detections (if we aren't using the LLM or texify)
+        # Also disable if we won't use the inline detections (if we aren't using the LLM)
         do_inline_math_detection = all([
             len(document.contained_blocks([BlockTypes.Equation, BlockTypes.TextInlineMath])) > 0,
-            (self.texify_inline_spans or self.use_llm)
+            (self.use_llm)
         ])
 
         provider_lines, ocr_lines = self.get_all_lines(document, provider, do_inline_math_detection)

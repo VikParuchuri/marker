@@ -6,8 +6,6 @@ from surya.layout import LayoutPredictor
 from surya.ocr_error import OCRErrorPredictor
 from surya.recognition import RecognitionPredictor
 from surya.table_rec import TableRecPredictor
-from surya.texify import TexifyPredictor
-
 
 def create_model_dict(device=None, dtype=None) -> dict:
     return {

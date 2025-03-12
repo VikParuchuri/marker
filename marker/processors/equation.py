@@ -24,7 +24,7 @@ class EquationProcessor(BaseProcessor):
     ] = 1024
     equation_batch_size: Annotated[
         Optional[int],
-        "The batch size to use for the Texify model.",
+        "The batch size to use for the recognition model while processing equations.",
         "Default is None, which will use the default batch size for the model."
     ] = None
     disable_tqdm: Annotated[
@@ -40,7 +40,7 @@ class EquationProcessor(BaseProcessor):
     # TODO Find optimal values
     def get_batch_size(self):
         if self.equation_batch_size is not None:
-            return self.texify_batch_size
+            return self.equation_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
             return 8
         elif settings.TORCH_DEVICE_MODEL == "mps":
