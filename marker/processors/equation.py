@@ -1,11 +1,11 @@
 from typing import Annotated, List, Optional, Tuple
 from PIL import Image
+from bs4 import BeautifulSoup
 
 from surya.recognition import RecognitionPredictor, OCRResult
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
-from marker.schema.blocks import Equation
 from marker.schema.document import Document
 from marker.settings import settings
 
@@ -42,7 +42,7 @@ class EquationProcessor(BaseProcessor):
         if self.equation_batch_size is not None:
             return self.texify_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 6
+            return 8
         elif settings.TORCH_DEVICE_MODEL == "mps":
             return 6
         return 2
@@ -75,10 +75,28 @@ class EquationProcessor(BaseProcessor):
 
         predictions = self.get_mathml_batched(images, equation_boxes)
         for page_predictions, page_equation_block_ids in zip(predictions, equation_block_ids):
+            assert len(page_predictions) == len(page_equation_block_ids), "Every equation block should have a corresponding prediction"
             for block_prediction, block_id in zip(page_predictions, page_equation_block_ids):
-                print(block_prediction)
                 block = document.get_block(block_id)
-                block.html = block_prediction
+                block.html = self.fix_mathml(block_prediction)
+
+    # Parse MathML, insert dummy prediction for broken math
+    def fix_mathml(
+        self,
+        math_html: str
+    ):
+        soup = BeautifulSoup(math_html, 'html.parser')
+        opening_math_tag = soup.find('math')
+        
+        # No MathML block found
+        if not opening_math_tag:
+            return ""
+    
+        # Force block format
+        opening_math_tag['display'] = 'block'
+
+        return str(soup)
+
 
     def get_mathml_batched(
         self, 
