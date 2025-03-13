@@ -135,7 +135,7 @@ class OcrBuilder(BaseBuilder):
             is_closing_tag, format = get_closing_tag_type(char.text)
             if is_closing_tag:
                 formats.remove(format)
-                if current_span and format=='math':
+                if current_span:
                     if format == 'math':
                         current_span.html = f'<math display="inline">{current_span.text}</math>'
                     spans.append(current_span)
