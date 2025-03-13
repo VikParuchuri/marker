@@ -3,6 +3,7 @@ import pytest
 from marker.processors.line_merge import LineMergeProcessor
 from marker.schema import BlockTypes
 
+@pytest.mark.skip("We do not support this functionality anymore")
 @pytest.mark.config({"page_range": [1]})
 def test_inline_box_nomerging(pdf_document, config):
     first_page = pdf_document.pages[0]
@@ -17,6 +18,7 @@ def test_inline_box_nomerging(pdf_document, config):
     assert line_count == 46
 
 
+@pytest.mark.skip("We do not support this functionality anymore")
 @pytest.mark.config({"page_range": [1], "use_llm": True})
 def test_inline_box_merging(pdf_document, config):
     first_page = pdf_document.pages[0]
