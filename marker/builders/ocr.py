@@ -145,7 +145,9 @@ class OcrBuilder(BaseBuilder):
 
             is_closing_tag, format = get_closing_tag_type(char.text)
             if is_closing_tag:
-                formats.remove(format)
+                # Same as .remove(), but does not raise an error if the element is not in the set
+                # Useful since the OCR model sometimes returns closing tags without an opening tag
+                formats.discard(format)
                 if current_span:
                     if format == 'math':
                         current_span.html = f'<math display="inline">{current_span.text}</math>'
