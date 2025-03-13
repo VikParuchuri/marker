@@ -13,6 +13,5 @@ def create_model_dict(device=None, dtype=None) -> dict:
         "recognition_model": RecognitionPredictor(device=device, dtype=dtype),
         "table_rec_model": TableRecPredictor(device=device, dtype=dtype),
         "detection_model": DetectionPredictor(device=device, dtype=dtype),
-        "inline_detection_model": InlineDetectionPredictor(device=device, dtype=dtype),
         "ocr_error_model": OCRErrorPredictor(device=device, dtype=dtype)
     }

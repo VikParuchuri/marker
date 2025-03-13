@@ -12,6 +12,7 @@ from marker.schema.blocks import BlockId
 from marker.schema.document import Document
 from marker.schema.groups import PageGroup
 from marker.schema.registry import get_block_class
+from marker.schema.text.line import Line
 from marker.schema.text.span import Span
 from marker.settings import settings
 from marker.schema.polygon import PolygonBox
@@ -42,9 +43,10 @@ class OcrBuilder(BaseBuilder):
         self.recognition_model = recognition_model
 
     def __call__(self, document: Document, provider: PdfProvider):
-        pages_to_ocr = [page for page in document.pages if page.text_extraction_method == 'surya']
-        images, line_boxes, line_ids = self.get_ocr_images_boxes_ids(document, pages_to_ocr, provider)
-        self.ocr_extraction(document, pages_to_ocr, provider, images, line_boxes, line_ids)
+        # pages_to_ocr = [page for page in document.pages if page.text_extraction_method == 'surya']
+        pages_to_ocr = [page for page in document.pages]
+        images, line_boxes, line_ids, line_original_texts = self.get_ocr_images_boxes_ids(document, pages_to_ocr, provider)
+        self.ocr_extraction(document, pages_to_ocr, provider, images, line_boxes, line_ids, line_original_texts)
 
     def get_recognition_batch_size(self):
         if self.recognition_batch_size is not None:
@@ -56,11 +58,12 @@ class OcrBuilder(BaseBuilder):
         return 32
 
     def get_ocr_images_boxes_ids(self, document: Document, pages: List[PageGroup], provider: PdfProvider):
-        highres_images, highres_boxes, line_ids = [], [], []
+        highres_images, highres_boxes, line_ids, line_original_texts = [], [], [], []
         for document_page in pages:
             page_highres_image = document_page.get_image(highres=True)
             page_highres_boxes = []
             page_line_ids = []
+            page_line_original_texts = []
 
             page_size = provider.get_page_bbox(document_page.page_id).size
             image_size = page_highres_image.size
@@ -73,14 +76,17 @@ class OcrBuilder(BaseBuilder):
                     line_polygon = copy.deepcopy(line.polygon)
                     page_highres_boxes.append(line_polygon.rescale(page_size, image_size).bbox)
                     page_line_ids.append(line.id)
+                    # For OCRed pages, this text will be blank
+                    page_line_original_texts.append(line.formatted_text(document))
 
             highres_images.append(page_highres_image)
             highres_boxes.append(page_highres_boxes)
             line_ids.append(page_line_ids)
+            line_original_texts.append(page_line_original_texts)
 
-        return highres_images, highres_boxes, line_ids
+        return highres_images, highres_boxes, line_ids, line_original_texts
 
-    def ocr_extraction(self, document: Document, pages: List[PageGroup], provider: PdfProvider, images: List[any], line_boxes: List[List[float]], line_ids: List[List[BlockId]]):
+    def ocr_extraction(self, document: Document, pages: List[PageGroup], provider: PdfProvider, images: List[any], line_boxes: List[List[List[float]]], line_ids: List[List[BlockId]], line_original_texts: List[List[str]]):
         if sum(len(b) for b in line_boxes)==0:
             return
 
@@ -89,6 +95,7 @@ class OcrBuilder(BaseBuilder):
             images=images,
             task_names=['ocr_with_boxes'] * len(images),
             bboxes=line_boxes,
+            input_text=line_original_texts,
             recognition_batch_size=int(self.get_recognition_batch_size()),
             sort_lines=False
         )
@@ -100,10 +107,14 @@ class OcrBuilder(BaseBuilder):
                 new_spans = self.spans_from_html_chars(ocr_line.chars, document_page.page_id)
 
                 line = document_page.get_block(line_id)
-                assert line.structure is None
-                for span in new_spans:
-                    document_page.add_full_block(span)
-                    line.add_structure(span)
+                self.replace_line_spans(document_page, line, new_spans)
+
+    def replace_line_spans(self, page: PageGroup, line: Line, new_spans: List[Span]):
+        line.structure = []
+        for span in new_spans:
+            page.add_full_block(span)
+            line.structure.append(span)
+
 
     def spans_from_html_chars(self, chars: List[TextChar], page_id: int):
         SpanClass: Span = get_block_class(BlockTypes.Span)
