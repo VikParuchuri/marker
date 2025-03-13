@@ -3,10 +3,10 @@ from unittest.mock import Mock
 import pytest
 
 from marker.processors.llm.llm_meta import LLMSimpleBlockMetaProcessor
-from marker.processors.llm.llm_inlinemath import LLMInlineMathLinesProcessor
 from marker.schema import BlockTypes
 
 
+@pytest.mark.skip("We do not support this method of inline math anymore")
 @pytest.mark.filename("adversarial.pdf")
 @pytest.mark.config({"page_range": [0], "use_llm": True})
 def test_llm_text_processor(pdf_document, mocker):
@@ -29,6 +29,7 @@ def test_llm_text_processor(pdf_document, mocker):
     assert contained_spans[0].formats == ["math"]
 
 
+@pytest.mark.skip("We do not support this method of inline math anymore")
 @pytest.mark.filename("adversarial.pdf")
 @pytest.mark.config({"page_range": [0]})
 def test_llm_text_processor_disabled(pdf_document):
