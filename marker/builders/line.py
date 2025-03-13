@@ -182,9 +182,8 @@ class LineBuilder(BaseBuilder):
                 )
                 
                 # If fixing lines, mark every line to be passed to the OCR model
-                if self.fix_lines:
-                    for provider_line in merged_provider_lines:
-                        provider_line.line.text_extraction_method = 'surya'
+                for provider_line in merged_provider_lines:
+                    provider_line.line.text_extraction_method = 'surya' if self.fix_lines else 'pdftext'
                 page_lines[document_page.page_id] = merged_provider_lines
             else:
                 document_page.text_extraction_method = 'surya'
