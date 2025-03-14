@@ -160,7 +160,7 @@ class OcrBuilder(BaseBuilder):
 
             if not current_span:
                 current_span = SpanClass(
-                    text=char.text,
+                    text=fix_text(char.text),
                     formats=list(formats),
                     page_id=page_id,
                     polygon=PolygonBox(polygon=char.polygon),
@@ -173,7 +173,7 @@ class OcrBuilder(BaseBuilder):
                 continue
             
 
-            current_span.text += char.text
+            current_span.text = fix_text(current_span.text + char.text)
             # Tokens inside a math span don't have valid boxes, so we skip the merging
             if 'math' not in formats:
                 current_span.polygon = current_span.polygon.merge([PolygonBox(polygon=char.polygon)])

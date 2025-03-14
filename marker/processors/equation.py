@@ -1,13 +1,17 @@
 from typing import Annotated, List, Optional, Tuple
 from PIL import Image
+import re
 from bs4 import BeautifulSoup
 
+from ftfy import fix_text, TextFixerConfig
 from surya.recognition import RecognitionPredictor, OCRResult
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
 from marker.settings import settings
+
+MATH_TAG_PATTERN = re.compile(r'<math[^>]*>(.*?)</math>')
 
 
 class EquationProcessor(BaseProcessor):
@@ -95,8 +99,10 @@ class EquationProcessor(BaseProcessor):
         # Force block format
         opening_math_tag['display'] = 'block'
 
-        return str(soup)
+        fixed_math_html = str(soup)
+        fixed_math_html = fix_text(fixed_math_html, config=TextFixerConfig(unescape_html=True))
 
+        return fixed_math_html
 
     def get_mathml_batched(
         self, 
