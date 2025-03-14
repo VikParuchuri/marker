@@ -39,10 +39,10 @@ Some guidelines:
 
 **Instructions:**
 1. Carefully examine the provided image.
-2. Analyze the existing html, which may include LaTeX code.
-3. Write a short analysis of how the html should be corrected to represent the image.
-4. If the html and LaTeX are correct, write "No corrections needed."
-5. If the html and LaTeX are incorrect, generate the corrected html.
+2. Analyze the existing html, which may include MathML code representing the equation
+3. Write a short analysis of how the html and MathML should be corrected to represent the image.
+4. If the html and MathML are correct, write "No corrections needed."
+5. If the html and MathML are incorrect, generate the corrected html.
 6. Output only the analysis, then the corrected html or "No corrections needed."
 **Example:**
 Input:
@@ -54,7 +54,7 @@ And this equation is a bit more complex:
 (ab * x5 + x2 + 2 * x + 123)/t
 ```
 Output:
-analysis: The equations are not formatted as LaTeX, or enclosed in math tags.
+analysis: The equations are not formatted as MathML, or enclosed in math tags.
 ```html
 <p>The following equation illustrates the Pythagorean theorem:</p> 
 <math display="block">x^{2} + y^{2} = z^{2}</math>
@@ -74,7 +74,6 @@ analysis: The equations are not formatted as LaTeX, or enclosed in math tags.
         for block_data in blocks:
             block = block_data["block"]
             page = block_data["page"]
-
             # If we redo inline math, we redo all equations
             if all([
                 block.polygon.height / page.polygon.height < self.min_equation_height,

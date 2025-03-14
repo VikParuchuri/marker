@@ -81,7 +81,8 @@ class Markdownify(MarkdownConverter):
         return f"{text}\n\n" if text else ""  # default convert_p behavior
 
     def convert_math(self, el, text, convert_as_inline):
-        # Passthough MathML as HTML without escaping any tags
+        # Passthough MathML/Latex as HTML without escaping any tags
+        # Latex will already be enclosed in <math> tags, so that can pass through too
         return str(el)
 
     def convert_table(self, el, text, convert_as_inline):
