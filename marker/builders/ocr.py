@@ -105,6 +105,8 @@ class OcrBuilder(BaseBuilder):
 
         for document_page, page_recognition_result, page_line_ids in zip(pages, recognition_results, line_ids):
             for line_id, ocr_line in zip(page_line_ids, page_recognition_result.text_lines):
+                if ocr_line.original_text_good:
+                    continue
                 if not fix_text(ocr_line.text):
                     continue
                 new_spans = self.spans_from_html_chars(ocr_line.chars, document_page.page_id)
@@ -148,9 +150,11 @@ class OcrBuilder(BaseBuilder):
 
             is_closing_tag, format = get_closing_tag_type(char.text)
             if is_closing_tag:
-                # Same as .remove(), but does not raise an error if the element is not in the set
                 # Useful since the OCR model sometimes returns closing tags without an opening tag
-                formats.discard(format)
+                try:
+                    formats.remove(format)
+                except:
+                    continue
                 if current_span:
                     if format == 'math':
                         current_span.html = f'<math display="inline">{current_span.text}</math>'
