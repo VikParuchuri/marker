@@ -36,6 +36,11 @@ class OcrBuilder(BaseBuilder):
         bool,
         "Disable tqdm progress bars.",
     ] = False
+    skip_ocr_blocks: Annotated[
+        List[BlockTypes],
+        "Blocktypes for which contained lines are not processed by the OCR model"
+        "By default, this avoids recognizing lines inside equations"
+    ] = (BlockTypes.Equation)
 
     def __init__(self, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
@@ -67,7 +72,10 @@ class OcrBuilder(BaseBuilder):
 
             page_size = provider.get_page_bbox(document_page.page_id).size
             image_size = page_highres_image.size
+            # Search by block, and the lines, so that we can filter based on containing block type
             for block in document_page.contained_blocks(document):
+                if block.block_type in self.skip_ocr_blocks:
+                    continue
                 block_lines = block.contained_blocks(document, [BlockTypes.Line])
                 block_detected_lines = [block_line for block_line in block_lines if block_line.text_extraction_method == 'surya']
                 
