@@ -61,7 +61,7 @@ class LineBuilder(BaseBuilder):
     provider_line_detected_line_min_overlap_pct: Annotated[
         float,
         "The percentage of a provider line that has to be covered by a detected line"
-    ] = .3
+    ] = .1
     line_vertical_merge_threshold: Annotated[
         int,
         "The maximum pixel distance between y1s for two lines to be merged"
@@ -349,6 +349,9 @@ class LineBuilder(BaseBuilder):
                 elif len(merge_section) == 1:
                     provider_idx = merge_section[0]
                     merged_line = provider_lines[provider_idx]
+                    # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
+                    # TODO Add metadata for this
+                    merged_line.line.polygon = text_line.rescale(image_size, page_size)
                     out_provider_lines.append((provider_idx, merged_line))
                     already_merged.add(merge_section[0])
                 else:
@@ -363,6 +366,9 @@ class LineBuilder(BaseBuilder):
                             # Combine the spans of the provider line with the merged line
                             merged_line = merged_line.merge(provider_line)
                         already_merged.add(idx) # Prevent double merging
+                    # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
+                    # TODO Add metadata for this
+                    merged_line.line.polygon = text_line.rescale(image_size, page_size)
                     out_provider_lines.append((min_idx, merged_line))
 
         # Sort to preserve original order
