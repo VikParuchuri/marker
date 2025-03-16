@@ -16,7 +16,13 @@ CLOSING_TAG_REGEX = re.compile(r"</((?:math|i|b))>")
 TAG_MAPPING = {
     'i': 'italic',
     'b': 'bold',
-    'math': 'math'
+    'math': 'math',
+    'mark': 'highlight',
+    'sub': 'subscript',
+    'sup': 'superscript',
+    'small': 'small',
+    'u': 'underline',
+    'code': 'code'
 }
 
 def strings_to_classes(items: List[str]) -> List[type]:
