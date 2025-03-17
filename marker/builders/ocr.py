@@ -120,14 +120,57 @@ class OcrBuilder(BaseBuilder):
                 new_spans = self.spans_from_html_chars(ocr_line.chars, document_page.page_id)
 
                 line = document_page.get_block(line_id)
-                self.replace_line_spans(document_page, line, new_spans)
+                self.replace_line_spans(document, document_page, line, new_spans)
 
-    def replace_line_spans(self, page: PageGroup, line: Line, new_spans: List[Span]):
-        line.structure = []
+    # TODO Fix polygons when we cut the span into multiple spans
+    def link_and_break_span(self, span: Span, match_text: str, url: str):
+        before_text, match_text, after_text = span.text.partition(match_text)
+        before_span, after_span = None, None
+        if before_text:
+            before_span = copy.deepcopy(span)
+            before_span.text = before_text
+        if after_text:
+            after_span = copy.deepcopy(span)
+            after_span.text = after_text
+
+        span.text = match_text
+        span.url = url
+
+        return before_span, span, after_span
+
+    # Pull all refs from old spans, match them to the text inside them
+    # Add this to a dict, regex and insert back in whenever text inside a new span matches it
+    def replace_line_spans(self, document: Document, page: PageGroup, line: Line, new_spans: List[Span]):
+        old_spans = line.contained_blocks(document, [BlockTypes.Span])
+        text_ref_matching = {span.text: span.url for span in old_spans if span.url}
+        print(text_ref_matching)
+        
+        # Insert refs into new spans, since the OCR model does not (cannot) generate these
+        final_new_spans = []
         for span in new_spans:
+            matched = False
+            for old_text, url in text_ref_matching.items():
+                if old_text in span.text:
+                    matched = True
+                    before, current, after = self.link_and_break_span(span, old_text, url)
+                    if before:
+                        final_new_spans.append(before)
+                    final_new_spans.append(current)
+                    if after:
+                        final_new_spans.append(after)
+                    
+                    # Prevent repeat matches
+                    del text_ref_matching[old_text]
+                    break
+            if not matched:
+                # Do not modify
+                final_new_spans.append(span)
+        
+        # Clear the old spans from the line
+        line.structure = []
+        for span in final_new_spans:
             page.add_full_block(span)
             line.structure.append(span)
-
 
     def spans_from_html_chars(self, chars: List[TextChar], page_id: int):
         SpanClass: Span = get_block_class(BlockTypes.Span)
