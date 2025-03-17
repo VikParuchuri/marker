@@ -88,7 +88,7 @@ class OcrBuilder(BaseBuilder):
                     page_highres_boxes.append(line_polygon.rescale(page_size, image_size).bbox)
                     page_line_ids.append(line.id)
                     # For OCRed pages, this text will be blank
-                    page_line_original_texts.append(line.formatted_text(document))
+                    page_line_original_texts.append(line.formatted_text(document).rstrip())
 
             highres_images.append(page_highres_image)
             highres_boxes.append(page_highres_boxes)
