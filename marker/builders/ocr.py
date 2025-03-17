@@ -123,8 +123,8 @@ class OcrBuilder(BaseBuilder):
                 self.replace_line_spans(document, document_page, line, new_spans)
 
     # TODO Fix polygons when we cut the span into multiple spans
-    def link_and_break_span(self, span: Span, match_text: str, url: str):
-        before_text, match_text, after_text = span.text.partition(match_text)
+    def link_and_break_span(self, span: Span, text: str, match_text, url: str):
+        before_text, _, after_text = text.partition(match_text)
         before_span, after_span = None, None
         if before_text:
             before_span = copy.deepcopy(span)
@@ -133,38 +133,42 @@ class OcrBuilder(BaseBuilder):
             after_span = copy.deepcopy(span)
             after_span.text = after_text
 
-        span.text = match_text
-        span.url = url
+        match_span = copy.deepcopy(span)
+        match_span.text = match_text
+        match_span.url = url
 
-        return before_span, span, after_span
+        return before_span, match_span, after_span
 
-    # Pull all refs from old spans, match them to the text inside them
-    # Add this to a dict, regex and insert back in whenever text inside a new span matches it
+    # Pull all refs from old spans and attempt to insert back into appropriate place in new spans
     def replace_line_spans(self, document: Document, page: PageGroup, line: Line, new_spans: List[Span]):
         old_spans = line.contained_blocks(document, [BlockTypes.Span])
         text_ref_matching = {span.text: span.url for span in old_spans if span.url}
-        print(text_ref_matching)
         
         # Insert refs into new spans, since the OCR model does not (cannot) generate these
         final_new_spans = []
         for span in new_spans:
-            matched = False
-            for old_text, url in text_ref_matching.items():
-                if old_text in span.text:
-                    matched = True
-                    before, current, after = self.link_and_break_span(span, old_text, url)
-                    if before:
-                        final_new_spans.append(before)
-                    final_new_spans.append(current)
-                    if after:
-                        final_new_spans.append(after)
-                    
-                    # Prevent repeat matches
-                    del text_ref_matching[old_text]
+            # Use for copying attributes into new spans
+            original_span = copy.deepcopy(span)
+            remaining_text = span.text
+            while remaining_text:
+                matched = False
+                for match_text, url in text_ref_matching.items():
+                    if match_text in remaining_text:
+                        matched = True
+                        before, current, after = self.link_and_break_span(original_span, remaining_text, match_text, url)
+                        if before:
+                            final_new_spans.append(before)
+                        final_new_spans.append(current)
+                        if after:
+                            remaining_text = after.text
+                        # Prevent repeat matches
+                        del text_ref_matching[match_text]
+                        break
+                if not matched:
+                    remaining_span = copy.deepcopy(original_span)
+                    remaining_span.text = remaining_text
+                    final_new_spans.append(remaining_span)
                     break
-            if not matched:
-                # Do not modify
-                final_new_spans.append(span)
         
         # Clear the old spans from the line
         line.structure = []
