@@ -1,7 +1,7 @@
 import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1" # Transformers uses .isin for an op, which is not supported on MPS
 
-from surya.detection import DetectionPredictor, InlineDetectionPredictor
+from surya.detection import DetectionPredictor
 from surya.layout import LayoutPredictor
 from surya.ocr_error import OCRErrorPredictor
 from surya.recognition import RecognitionPredictor
