@@ -205,6 +205,7 @@ show_blocks = st.sidebar.checkbox("Show Blocks", help="Display detected blocks, 
 force_ocr = st.sidebar.checkbox("Force OCR", help="Force OCR on all pages", value=False)
 strip_existing_ocr = st.sidebar.checkbox("Strip existing OCR", help="Strip existing OCR text from the PDF and re-OCR.", value=False)
 debug = st.sidebar.checkbox("Debug", help="Show debug information", value=False)
+fix_lines = st.sidebar.checkbox("Fix lines", help="Fix line formats and math in the document", value=False)
 
 if not run_marker:
     st.stop()
@@ -222,7 +223,8 @@ with tempfile.TemporaryDirectory() as tmp_dir:
         "debug": debug,
         "output_dir": settings.DEBUG_DATA_FOLDER if debug else None,
         "use_llm": use_llm,
-        "strip_existing_ocr": strip_existing_ocr
+        "strip_existing_ocr": strip_existing_ocr,
+        "fix_lines": fix_lines
     })
     config_parser = ConfigParser(cli_options)
     rendered = convert_pdf(
