@@ -8,6 +8,8 @@ import pypdfium2.raw as pdfium_c
 from ftfy import fix_text
 from pdftext.extraction import dictionary_output
 from pdftext.schema import Reference
+from pdftext.pdf.utils import flatten as flatten_pdf_page
+
 from PIL import Image
 from pypdfium2 import PdfiumError, PdfDocument
 
@@ -98,6 +100,11 @@ class PdfProvider(BaseProvider):
         doc = None
         try:
             doc = pdfium.PdfDocument(self.filepath)
+
+            # Must be called on the parent pdf, before retrieving pages to render correctly
+            if self.flatten_pdf:
+                doc.init_forms()
+
             yield doc
         finally:
             if doc:
@@ -327,15 +334,18 @@ class PdfProvider(BaseProvider):
         return False
 
     @staticmethod
-    def _render_image(pdf: pdfium.PdfDocument, idx: int, dpi: int) -> Image.Image:
+    def _render_image(pdf: pdfium.PdfDocument, idx: int, dpi: int, flatten_page: bool) -> Image.Image:
         page = pdf[idx]
+        if flatten_page:
+            flatten_pdf_page(page)
+            page = pdf[idx]
         image = page.render(scale=dpi / 72, draw_annots=False).to_pil()
         image = image.convert("RGB")
         return image
 
     def get_images(self, idxs: List[int], dpi: int) -> List[Image.Image]:
         with self.get_doc() as doc:
-            images = [self._render_image(doc, idx, dpi) for idx in idxs]
+            images = [self._render_image(doc, idx, dpi, self.flatten_pdf) for idx in idxs]
         return images
 
     def get_page_bbox(self, idx: int) -> PolygonBox | None:
