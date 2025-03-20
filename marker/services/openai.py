@@ -16,12 +16,17 @@ from marker.services import BaseService
 
 class OpenAIService(BaseService):
     openai_base_url: Annotated[
-        str, "The base url to use for OpenAI-like models.  No trailing slash."
-    ] = "https://openrouter.ai/api/v1"
-    openai_model: Annotated[str, "The model name to use for OpenAI-like model."] = (
-        "openai/gpt-4o-mini"
-    )
-    openai_api_key: Annotated[str, "The API key to use for the OpenAI-like service."] = None
+        str,
+        "The base url to use for OpenAI-like models.  No trailing slash."
+    ] = "https://api.openai.com/v1"
+    openai_model: Annotated[
+        str,
+        "The model name to use for OpenAI-like model."
+    ] = "gpt-4o-mini"
+    openai_api_key: Annotated[
+        str,
+        "The API key to use for the OpenAI-like service."
+    ] = None
 
     def image_to_base64(self, image: PIL.Image.Image):
         image_bytes = BytesIO()
@@ -90,10 +95,7 @@ class OpenAIService(BaseService):
                     timeout=timeout,
                     response_format=response_schema,
                 )
-                response_text = (
-                    response.choices[0].message.content
-                )  # json string. In message.parsed you can find Pydantic object
-                # by default openai-like models respond with response.usage field
+                response_text = response.choices[0].message.content
                 total_tokens = response.usage.total_tokens
                 block.update_metadata(llm_tokens_used=total_tokens, llm_request_count=1)
                 return json.loads(response_text)
@@ -112,4 +114,4 @@ class OpenAIService(BaseService):
         return {}
 
     def get_client(self) -> openai.OpenAI:
-        return openai.OpenAI(api_key=self.openai_key, base_url=self.openai_base_url)
+        return openai.OpenAI(api_key=self.openai_api_key, base_url=self.openai_base_url)
