@@ -21,7 +21,7 @@ class OpenAIService(BaseService):
     openai_model: Annotated[str, "The model name to use for OpenAI-like model."] = (
         "openai/gpt-4o-mini"
     )
-    openai_key: Annotated[str, "The API key to use for the OpenAI-like service."] = None
+    openai_api_key: Annotated[str, "The API key to use for the OpenAI-like service."] = None
 
     def image_to_base64(self, image: PIL.Image.Image):
         image_bytes = BytesIO()
@@ -37,9 +37,11 @@ class OpenAIService(BaseService):
         return [
             {
                 "type": "image_url",
-                "image_url": "data:image/webp;base64,{}".format(
-                    self.image_to_base64(img)
-                ),
+                "image_url": {
+                    "url": "data:image/webp;base64,{}".format(
+                        self.image_to_base64(img)
+                    ),
+                }
             }
             for img in images
         ]
