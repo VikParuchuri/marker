@@ -2,11 +2,11 @@
 name = "marker-pdf"
 version = "1.6.1"
 description = "Convert documents to markdown with high speed and accuracy."
-authors = ["Vik Paruchuri <github@vikas.sh>"]
+authors = ["SNOOD <github@vikas.sh>"]
 readme = "README.md"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/VikParuchuri/marker"
-keywords = ["pdf", "markdown", "ocr", "nlp"]
+repository = "https://github.com/snodeplannen/marker-snood"
+keywords = ["pdf", "markdown", "ocr", "nlp", "xpu"]
 packages = [
     {include = "marker"}
 ]
@@ -22,7 +22,7 @@ pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
 transformers = "^4.45.2"
 python-dotenv = "^1.0.0"
-torch = "^2.5.1"
+torch = ">=2.6.0"
 tqdm = "^4.66.1"
 ftfy = "^6.1.1"
 rapidfuzz = "^3.8.1"
@@ -41,7 +41,7 @@ anthropic = "^0.46.0"
 mammoth = {version = "^1.9.0", optional = true}
 openpyxl = {version = "^3.1.5", optional = true}
 python-pptx = {version = "^1.0.2", optional = true}
-ebooklib = {version = "^0.18", optional = true}
+ebooklib = {version = "^0.18", optional = false}
 weasyprint = {version = "^63.1", optional = true}
 
 [tool.poetry.group.dev.dependencies]
