@@ -47,3 +47,6 @@ class ImageProvider(BaseProvider):
 
     def get_page_refs(self, idx: int) -> List[Reference]:
         return []
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass # images need to survive

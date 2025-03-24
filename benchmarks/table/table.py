@@ -14,7 +14,8 @@ import json
 from concurrent.futures import ProcessPoolExecutor
 
 from marker.settings import settings
-from benchmarks.table.inference import inference_tables
+from benchmarks.table.inference import FinTabNetBenchmark
+from benchmarks.table.synthtabnet import SynthTabNetBenchmark
 
 from scoring import wrap_table_html, similarity_eval_html
 
@@ -28,14 +29,16 @@ def update_teds_score(result, prefix: str = "marker"):
 
 @click.command(help="Benchmark Table to HTML Conversion")
 @click.option("--result_path", type=str, default=os.path.join(settings.OUTPUT_DIR, "benchmark", "table"), help="Output path for results.")
-@click.option("--dataset", type=str, default="datalab-to/fintabnet_bench_marker", help="Dataset to use")
+@click.option("--against", type=str, default="fintabnet", help="Dataset to use. Options: fintabnet, synthtabnet")
+@click.option("--dataset", type=str, default=None, help="Huggingface dataset to use")
 @click.option("--max_rows", type=int, default=None, help="Maximum number of PDFs to process")
 @click.option("--max_workers", type=int, default=16, help="Maximum number of workers to use")
 @click.option("--use_llm", is_flag=True, help="Use LLM for improving table recognition.")
 @click.option("--table_rec_batch_size", type=int, default=None, help="Batch size for table recognition.")
-@click.option("--use_gemini", is_flag=True, help="Evaluate Gemini for table recognition.")
+@click.option("--use_gemini", is_flag=True, help="Evaluate Gemini alone for table recognition.")
 def main(
         result_path: str,
+        against: str,
         dataset: str,
         max_rows: int,
         max_workers: int,
@@ -43,16 +46,47 @@ def main(
         table_rec_batch_size: int | None,
         use_gemini: bool = False
 ):
+    return _process(
+        result_path,
+        against,
+        dataset,
+        max_rows,
+        max_workers,
+        use_llm,
+        table_rec_batch_size,
+        use_gemini
+    )
+
+def _process(
+        result_path: str,
+        against: str,
+        dataset: str,
+        max_rows: int,
+        max_workers: int,
+        use_llm: bool,
+        table_rec_batch_size: int | None,
+        use_gemini: bool = False
+):
+    """Permit the benchmark to be started from python."""
     start = time.time()
 
-
+    if dataset is None:
+        if against == 'synthtabnet':
+            dataset = 'datalab-to/synthtabnet_bench_marker'
+        else:
+            dataset = 'datalab-to/fintabnet_bench_marker'
     dataset = datasets.load_dataset(dataset, split='train')
     dataset = dataset.shuffle(seed=0)
 
-    results, total_unaligned = inference_tables(dataset, use_llm, table_rec_batch_size, max_rows, use_gemini)
+    if against == 'synthtabnet':
+        benchmark = SynthTabNetBenchmark()
+    else:
+        benchmark = FinTabNetBenchmark()
+
+    results, total_unaligned = benchmark.inference_tables(dataset, use_llm, table_rec_batch_size, max_rows, use_gemini)
 
     print(f"Total time: {time.time() - start}.")
-    print(f"Could not align {total_unaligned} tables from fintabnet.")
+    print(f"Could not align {total_unaligned} tables from {against}.")
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         marker_results = list(
@@ -69,7 +103,7 @@ def main(
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             gemini_results = list(
                 tqdm(
-                    executor.map(update_teds_score, results, repeat("gemini")), desc='Computing Gemini scores',
+                    executor.map(update_teds_score, marker_results, repeat("gemini")), desc='Computing Gemini scores', # append gemini results
                     total=len(results)
                 )
             )
@@ -81,9 +115,10 @@ def main(
     print(table)
     print("Avg score computed by comparing marker predicted HTML with original HTML")
 
+    # gemini_results will contain both marker and gemini scores
+    final_results = gemini_results if use_gemini else marker_results
     results = {
-        "marker": marker_results,
-        "gemini": gemini_results
+        "marker": final_results,
     }
 
     out_path = Path(result_path)
