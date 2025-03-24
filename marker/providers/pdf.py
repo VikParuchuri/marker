@@ -247,7 +247,10 @@ class PdfProvider(BaseProvider):
                     )
             if self.check_line_spans(lines):
                 page_lines[page_id] = lines
-            self.page_refs[page_id] = page["refs"]
+            
+            self.page_refs[page_id] = []
+            if page_refs:= page.get('refs', None):
+                self.page_refs[page_id] = page_refs
 
         return page_lines
 
