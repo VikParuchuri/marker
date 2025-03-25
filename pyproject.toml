@@ -2,18 +2,21 @@
 name = "marker-pdf"
 version = "1.6.1"
 description = "Convert documents to markdown with high speed and accuracy."
-authors = ["Vik Paruchuri <github@vikas.sh>"]
+authors = ["SNOOD <github@vikas.sh>"]
 readme = "README.md"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/VikParuchuri/marker"
-keywords = ["pdf", "markdown", "ocr", "nlp"]
-packages = [
-    {include = "marker"}
-]
+repository = "https://github.com/snodeplannen/marker-snood"
+keywords = ["pdf", "markdown", "ocr", "nlp", "xpu"]
+packages = [{include = "marker"}]
 include = [
     "marker/scripts/*.sh",
     "marker/scripts/*.html",
 ]
+
+[[tool.poetry.source]]
+name = "pytorch-nightly"
+url = "https://download.pytorch.org/whl/nightly/xpu/"
+priority = "explicit"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -22,7 +25,7 @@ pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
 transformers = "^4.45.2"
 python-dotenv = "^1.0.0"
-torch = "^2.5.1"
+torch = {url = "https://download.pytorch.org/whl/nightly/xpu/torch-2.7.0.dev20250312%2Bxpu-cp311-cp311-win_amd64.whl"}
 tqdm = "^4.66.1"
 ftfy = "^6.1.1"
 rapidfuzz = "^3.8.1"
@@ -36,13 +39,14 @@ filetype = "^1.2.0"
 scikit-learn = "^1.6.1"
 google-genai = "^1.0.0"
 anthropic = "^0.46.0"
+ebooklib = "^0.18"
 
-# Optional dependencies for documents
+# Optional dependencies
 mammoth = {version = "^1.9.0", optional = true}
 openpyxl = {version = "^3.1.5", optional = true}
 python-pptx = {version = "^1.0.2", optional = true}
-ebooklib = {version = "^0.18", optional = true}
 weasyprint = {version = "^63.1", optional = true}
+pytorch-triton-xpu = {url = "https://download.pytorch.org/whl/nightly/pytorch_triton_xpu-3.3.0%2Bgit83111ab2-cp311-cp311-win_amd64.whl"}
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
@@ -61,7 +65,7 @@ latex2mathml = "^3.77.0"
 playwright = "^1.49.1"
 
 [tool.poetry.extras]
-full = ["mammoth", "openpyxl", "python-pptx", "ebooklib", "weasyprint"]
+full = ["mammoth", "openpyxl", "python-pptx", "weasyprint"]
 
 [tool.poetry.scripts]
 marker = "marker.scripts.convert:convert_cli"
@@ -71,5 +75,5 @@ marker_gui = "marker.scripts.run_streamlit_app:streamlit_app_cli"
 marker_server = "marker.scripts.server:server_cli"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
