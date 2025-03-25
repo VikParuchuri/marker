@@ -242,7 +242,7 @@ with col2:
     elif output_format == "json":
         st.json(text)
     elif output_format == "html":
-        st.html(text)
+        st.markdown(text, unsafe_allow_html=True)
 
 if output_format == "json" and show_blocks:
     with image_placeholder:

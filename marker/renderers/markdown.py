@@ -83,7 +83,8 @@ class Markdownify(MarkdownConverter):
     def convert_math(self, el, text, convert_as_inline):
         block = (el.has_attr('display') and el['display'] == 'block')
         if block:
-            return "\n" + self.block_math_delimiters[0] + text + self.block_math_delimiters[1] + "\n"
+
+            return "\n" + self.block_math_delimiters[0] + "\n" + text + "\n" + self.block_math_delimiters[1] + "\n"
         else:
             return " " + self.inline_math_delimiters[0] + text + self.inline_math_delimiters[1] + " "
 

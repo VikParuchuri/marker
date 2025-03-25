@@ -77,34 +77,31 @@ class EquationProcessor(BaseProcessor):
         if total_equation_blocks == 0:
             return
 
-        predictions = self.get_mathml_batched(images, equation_boxes)
+        predictions = self.get_latex_batched(images, equation_boxes)
         for page_predictions, page_equation_block_ids in zip(predictions, equation_block_ids):
             assert len(page_predictions) == len(page_equation_block_ids), "Every equation block should have a corresponding prediction"
             for block_prediction, block_id in zip(page_predictions, page_equation_block_ids):
                 block = document.get_block(block_id)
-                block.html = self.fix_mathml(block_prediction)
+                block.html = self.fix_latex(block_prediction)
 
-    # Parse MathML, insert dummy prediction for broken math
-    def fix_mathml(
+    def fix_latex(
         self,
         math_html: str
     ):
         soup = BeautifulSoup(math_html, 'html.parser')
         opening_math_tag = soup.find('math')
         
-        # No MathML block found
+        # No math block found
         if not opening_math_tag:
             return ""
     
         # Force block format
-        opening_math_tag['display'] = 'block'
-
+        opening_math_tag.attrs['display'] = 'block'
         fixed_math_html = str(soup)
         fixed_math_html = fix_text(fixed_math_html, config=TextFixerConfig(unescape_html=True))
-
         return fixed_math_html
 
-    def get_mathml_batched(
+    def get_latex_batched(
         self, 
         page_images: List[Image.Image],
         bboxes: List[List[List[float]]],
