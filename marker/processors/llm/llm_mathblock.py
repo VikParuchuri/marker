@@ -39,7 +39,8 @@ Your task is to correct any errors in the extracted text, including math, format
 4. Write a short analysis of the text block, including any errors you see in the extracted text.
 5. If there are no errors in any of the extracted text, output "No corrections needed".
 6. Correct any errors in the extracted text, including:
-    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  Outputted math expressions should be rendered in MathML format inside the math tags.
+    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
+    * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
     * Ensure lines wrap properly, and that newlines are not in the middle of sentences.
@@ -57,9 +58,9 @@ with parameters w, the optimization objective of AT can be formulated as follows
 ```
 
 Output:
-analysis: The inline math is not in MathML format and is not surrounded by <math>...</math> tags.  The text is missing formatting tags like i as well.
+analysis: The inline math is not in LaTeX format and is not surrounded by <math>...</math> tags.
 ```html
-Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to minimize the model's risk under the worst-case perturbations, is currently the most effective approach for improving the robustness of deep neural networks. For a given neural network <math><mi>f</mi><mo>(</mo><mi>x</mi><mo>,</mo><mi>w</mi><mo>)</mo></math> with parameters <math><mi>w</mi></math>, the optimization objective of AT can be formulated as follows:
+Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to minimize the model's risk under the worst-case perturbations, is currently the most effective approach for improving the robustness of deep neural networks. For a given neural network <math>f(x, w)</math> with parameters <math>w</math>, the optimization objective of AT can be formulated as follows:
 ```
 
 **Input:**

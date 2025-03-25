@@ -25,13 +25,13 @@ class LLMEquationProcessor(BaseLLMSimpleBlockProcessor):
         str,
         "The prompt to use for generating LaTeX from equations.",
         "Default is a string containing the Gemini prompt."
-    ] = r"""You're an expert mathematician who is good at writing MathML code and html for equations.
-You'll receive an image of a math block, along with the text extracted from the block.  It may contain one or more equations. Your job is to write html that represents the content of the image, with the equations in MathML format.
+    ] = r"""You're an expert mathematician who is good at writing LaTeX code and html for equations.
+You'll receive an image of a math block, along with the text extracted from the block.  It may contain one or more equations. Your job is to write html that represents the content of the image, with the equations in LaTeX format.
 
 Some guidelines:
 - Output valid html, where all the equations can render properly.
-- Use <math display="block"> as a block equation delimiter and <math> for inline equations.
-- Keep the MathML code inside the math tags simple, concise, and faithful to the equation.
+- Use <math display="block"> as a block equation delimiter and <math> for inline equations.  Do not use $ or $$ as delimiters.
+- Keep the LaTeX code inside the math tags simple, concise, and KaTeX compatible.
 - Enclose all equations in the correct math tags. Use multiple math tags inside the html to represent multiple equations.
 - Only use the html tags math, i, b, p, and br.
 - Make sure to include all the equations in the image in the html output.
@@ -39,10 +39,10 @@ Some guidelines:
 
 **Instructions:**
 1. Carefully examine the provided image.
-2. Analyze the existing html, which may include MathML code representing the equation.
-3. Write a short analysis of how the html and MathML should be corrected to represent the image.
-4. If the html and MathML are correct, write "No corrections needed."
-5. If the html and MathML are incorrect, generate the corrected html.
+2. Analyze the existing html, which may include LaTeX code.
+3. Write a short analysis of how the html should be corrected to represent the image.
+4. If the html and LaTeX are correct, write "No corrections needed."
+5. If the html and LaTeX are incorrect, generate the corrected html.
 6. Output only the analysis, then the corrected html or "No corrections needed."
 **Example:**
 Input:
@@ -50,17 +50,17 @@ Input:
 The following equation illustrates the Pythagorean theorem:
 x2 + y2 = z2
 
-And this equation is a bit more complex, and contains ab * x5:
+And this equation is a bit more complex:
 (ab * x5 + x2 + 2 * x + 123)/t
 ```
 Output:
-analysis: The equations are not formatted as MathML, or enclosed in math tags.
+analysis: The equations are not formatted as LaTeX, or enclosed in math tags.
 ```html
-<p>The following equation illustrates the Pythagorean theorem:</p>
-<math display="block"><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><msup><mi>y</mi><mn>2</mn></msup><mo>=</mo><msup><mi>z</mi><mn>2</mn></msup></math>
+<p>The following equation illustrates the Pythagorean theorem:</p> 
+<math display="block">x^{2} + y^{2} = z^{2}</math>
 
-<p>And this equation is a bit more complex, and contains <math><mi>a</mi><mi>b</mi><mo>⋅</mo><msup><mi>x</mi><mn>5</mn></msup></math>:</p>
-<math display="block"><mfrac><mrow><mi>a</mi><mi>b</mi><mo>⋅</mo><msup><mi>x</mi><mn>5</mn></msup><mo>+</mo><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mn>2</mn><mo>⋅</mo><mi>x</mi><mo>+</mo><mn>123</mn></mrow><mi>t</mi></mfrac></math>
+<p>And this equation is a bit more complex, and contains <math>ab \cdot x^{5}</math>:</p>
+<math display="block">\frac{ab \cdot x^{5} + x^{2} + 2 \cdot x + 123}{t}</math>
 ```
 **Input:**
 ```html
@@ -74,6 +74,7 @@ analysis: The equations are not formatted as MathML, or enclosed in math tags.
         for block_data in blocks:
             block = block_data["block"]
             page = block_data["page"]
+
             # If we redo inline math, we redo all equations
             if all([
                 block.polygon.height / page.polygon.height < self.min_equation_height,
