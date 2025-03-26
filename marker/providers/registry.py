@@ -34,7 +34,7 @@ def load_extensions(doctype: str):
 
 
 def provider_from_ext(filepath: str):
-    ext = filepath.split(".")[-1].strip()
+    ext = filepath.rsplit(".", 1)[-1].strip()
     if not ext:
         return PdfProvider
 
