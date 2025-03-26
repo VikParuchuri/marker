@@ -1,10 +1,10 @@
-import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Annotated
 
 from pydantic import BaseModel
 from tqdm import tqdm
 
+from marker.output import json_to_html, unwrap_outer_tag
 from marker.processors.llm import BaseLLMComplexBlockProcessor
 
 from marker.schema import BlockTypes
@@ -16,19 +16,24 @@ from marker.schema.groups import PageGroup
 class LLMMathBlockProcessor(BaseLLMComplexBlockProcessor):
     redo_inline_math: Annotated[
         bool,
-        "If True, the inline math will be re-done, otherwise it will be left as is."
+        "If True, the inline math will be re-done, otherwise it will be left as is.",
     ] = False
     inlinemath_min_ratio: Annotated[
         float,
-        "If more than this ratio of blocks are inlinemath blocks, assume everything has math."
+        "If more than this ratio of blocks are inlinemath blocks, assume everything has math.",
     ] = 0.4
 
-    block_types = (BlockTypes.TextInlineMath,) # Primary block type
-    additional_block_types = (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote) # Seconday, can also contain math
+    block_types = (BlockTypes.TextInlineMath,)  # Primary block type
+    additional_block_types = (
+        BlockTypes.Text,
+        BlockTypes.Caption,
+        BlockTypes.SectionHeader,
+        BlockTypes.Footnote,
+    )  # Seconday, can also contain math
 
     text_math_rewriting_prompt = """You are a text correction expert specializing in accurately reproducing text from images.
-You will receive an image of a text block and a set of extracted lines corresponding to the text in the image.
-Your task is to correct any errors in the extracted block, including math, formatting, and other inaccuracies, and output the corrected block in html format.  Stay as faithful to the original text as possible.
+You will receive an image of a text block and extracted text corresponding to the text in the image.
+Your task is to correct any errors in the extracted text, including math, formatting, and other inaccuracies, and output the corrected block in html format.  Stay as faithful to the text in the image as possible.
 
 **Instructions:**
 
@@ -39,7 +44,7 @@ Your task is to correct any errors in the extracted block, including math, forma
 5. If there are no errors in any of the extracted text, output "No corrections needed".
 6. Correct any errors in the extracted text, including:
     * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
-      * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
+    * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.
     * Ensure lines wrap properly, and that newlines are not in the middle of sentences.
@@ -83,23 +88,46 @@ Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to min
         detected_blocks = [
             (page, block)
             for page in document.pages
-            for block in page.contained_blocks(document, (BlockTypes.Text, BlockTypes.Caption, BlockTypes.SectionHeader, BlockTypes.Footnote, BlockTypes.ListItem))
-            if any([b.formats and "math" in b.formats for b in block.contained_blocks(document, (BlockTypes.Line,))])
+            for block in page.contained_blocks(
+                document,
+                (
+                    BlockTypes.Text,
+                    BlockTypes.Caption,
+                    BlockTypes.SectionHeader,
+                    BlockTypes.Footnote,
+                    BlockTypes.ListItem,
+                ),
+            )
+            if any(
+                [
+                    b.formats and "math" in b.formats
+                    for b in block.contained_blocks(document, (BlockTypes.Line,))
+                ]
+            )
         ]
 
         # If a page has enough math blocks, assume all blocks can contain math
         additional_text_blocks = []
         for page in document.pages:
             # Check for inline math blocks
-            page_inlinemath_blocks = [im for im in inline_blocks if im[0].page_id == page.page_id]
-            page_detected_blocks = [db for db in detected_blocks if db[0].page_id == page.page_id]
+            page_inlinemath_blocks = [
+                im for im in inline_blocks if im[0].page_id == page.page_id
+            ]
+            page_detected_blocks = [
+                db for db in detected_blocks if db[0].page_id == page.page_id
+            ]
             math_block_count = len(page_inlinemath_blocks) + len(page_detected_blocks)
 
             # Find all potential blocks
-            additional_blocks = page.contained_blocks(document, self.additional_block_types + self.block_types)
+            additional_blocks = page.contained_blocks(
+                document, self.additional_block_types + self.block_types
+            )
 
             # Check if the ratio of math blocks to additional blocks is high enough
-            if math_block_count / max(1, len(additional_blocks)) < self.inlinemath_min_ratio:
+            if (
+                math_block_count / max(1, len(additional_blocks))
+                < self.inlinemath_min_ratio
+            ):
                 continue
 
             for b in additional_blocks:
@@ -113,19 +141,24 @@ Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to min
         if total_blocks == 0:
             return
 
-        pbar = tqdm(desc=f"{self.__class__.__name__} running", disable=self.disable_tqdm)
+        pbar = tqdm(
+            desc=f"{self.__class__.__name__} running", disable=self.disable_tqdm
+        )
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
-            for future in as_completed([
-                executor.submit(self.process_rewriting, document, b[0], b[1])
-                for b in inference_blocks
-            ]):
+            for future in as_completed(
+                [
+                    executor.submit(self.process_rewriting, document, b[0], b[1])
+                    for b in inference_blocks
+                ]
+            ):
                 future.result()  # Raise exceptions if any occurred
                 pbar.update(1)
 
         pbar.close()
 
     def get_block_text(self, block: Block, document: Document) -> str:
-        html = block.render(document).html
+        html = json_to_html(block.render(document))
+        html = unwrap_outer_tag(html)  # Remove an outer p tag if it exists
         return html
 
     def get_block_lines(self, block: Block, document: Document) -> Tuple[list, list]:
@@ -158,6 +191,7 @@ Adversarial training <i>(AT)</i> <a href='#page-9-1'>[23]</a>, which aims to min
             return
 
         block.html = corrected_html
+
 
 class LLMTextSchema(BaseModel):
     analysis: str

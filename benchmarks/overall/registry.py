@@ -3,6 +3,7 @@ from benchmarks.overall.methods.gt import GTMethod
 from benchmarks.overall.methods.llamaparse import LlamaParseMethod
 from benchmarks.overall.methods.marker import MarkerMethod
 from benchmarks.overall.methods.mathpix import MathpixMethod
+from benchmarks.overall.methods.mistral import MistralMethod
 from benchmarks.overall.methods.olmocr import OlmOCRMethod
 from benchmarks.overall.scorers.heuristic import HeuristicScorer
 from benchmarks.overall.scorers.llm import LLMScorer
@@ -18,5 +19,6 @@ METHOD_REGISTRY = {
     "mathpix": MathpixMethod,
     "llamaparse": LlamaParseMethod,
     "docling": DoclingMethod,
-    "olmocr": OlmOCRMethod
+    "olmocr": OlmOCRMethod,
+    "mistral": MistralMethod
 }

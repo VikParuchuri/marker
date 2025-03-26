@@ -19,11 +19,17 @@ LINE_MAPPING_TYPE = List[Tuple[int, ProviderOutput]]
 
 class PageGroup(Group):
     block_type: BlockTypes = BlockTypes.Page
-    lowres_image: Image.Image | None = None
-    highres_image: Image.Image | None = None
+    # This is bytes if it is serialized
+    lowres_image: Image.Image | None | bytes = None
+    highres_image: Image.Image | None | bytes = None
     children: List[Union[Any, Block]] | None = None
-    layout_sliced: bool = False  # Whether the layout model had to slice the image (order may be wrong)
-    excluded_block_types: Sequence[BlockTypes] = (BlockTypes.Line, BlockTypes.Span,)
+    layout_sliced: bool = (
+        False  # Whether the layout model had to slice the image (order may be wrong)
+    )
+    excluded_block_types: Sequence[BlockTypes] = (
+        BlockTypes.Line,
+        BlockTypes.Span,
+    )
     maximum_assignment_distance: float = 20  # pixels
     block_description: str = "A single page in the document."
     refs: List[Reference] | None = None
@@ -40,18 +46,28 @@ class PageGroup(Group):
         else:
             self.children.append(block)
 
-    def get_image(self, *args, highres: bool = False, remove_blocks: Sequence[BlockTypes] | None = None, **kwargs):
+    def get_image(
+        self,
+        *args,
+        highres: bool = False,
+        remove_blocks: Sequence[BlockTypes] | None = None,
+        **kwargs,
+    ):
         image = self.highres_image if highres else self.lowres_image
 
         # Avoid double OCR for certain elements
         if remove_blocks:
             image = image.copy()
             draw = ImageDraw.Draw(image)
-            bad_blocks = [block for block in self.current_children if block.block_type in remove_blocks]
+            bad_blocks = [
+                block
+                for block in self.current_children
+                if block.block_type in remove_blocks
+            ]
             for bad_block in bad_blocks:
                 poly = bad_block.polygon.rescale(self.polygon.size, image.size).polygon
                 poly = [(int(p[0]), int(p[1])) for p in poly]
-                draw.polygon(poly, fill='white')
+                draw.polygon(poly, fill="white")
 
         return image
 
@@ -60,7 +76,11 @@ class PageGroup(Group):
     def current_children(self) -> List[Block]:
         return [child for child in self.children if not child.removed]
 
-    def get_next_block(self, block: Optional[Block] = None, ignored_block_types: Optional[List[BlockTypes]] = None):
+    def get_next_block(
+        self,
+        block: Optional[Block] = None,
+        ignored_block_types: Optional[List[BlockTypes]] = None,
+    ):
         if ignored_block_types is None:
             ignored_block_types = []
 
@@ -108,11 +128,15 @@ class PageGroup(Group):
             template += f"<content-ref src='{c.id}'></content-ref>"
         return template
 
-    def compute_line_block_intersections(self, blocks: List[Block], provider_outputs: List[ProviderOutput]):
+    def compute_line_block_intersections(
+        self, blocks: List[Block], provider_outputs: List[ProviderOutput]
+    ):
         max_intersections = {}
 
         block_bboxes = [block.polygon.bbox for block in blocks]
-        line_bboxes = [provider_output.line.polygon.bbox for provider_output in provider_outputs]
+        line_bboxes = [
+            provider_output.line.polygon.bbox for provider_output in provider_outputs
+        ]
 
         intersection_matrix = matrix_intersection_area(line_bboxes, block_bboxes)
 
@@ -124,7 +148,7 @@ class PageGroup(Group):
             max_intersection = intersection_line.argmax()
             max_intersections[line_idx] = (
                 intersection_matrix[line_idx, max_intersection],
-                blocks[max_intersection].id
+                blocks[max_intersection].id,
             )
         return max_intersections
 
@@ -142,12 +166,11 @@ class PageGroup(Group):
         # Mark block as removed
         block.removed = True
 
-
     def identify_missing_blocks(
-            self,
-            provider_line_idxs: List[int],
-            provider_outputs: List[ProviderOutput],
-            assigned_line_idxs: set[int]
+        self,
+        provider_line_idxs: List[int],
+        provider_outputs: List[ProviderOutput],
+        assigned_line_idxs: set[int],
     ):
         new_blocks = []
         new_block = None
@@ -156,16 +179,23 @@ class PageGroup(Group):
                 continue
 
             # if the unassociated line is a new line with minimal area, we can skip it
-            if provider_outputs[line_idx].line.polygon.area <= 1 and \
-                    provider_outputs[line_idx].raw_text == "\n":
+            if (
+                provider_outputs[line_idx].line.polygon.area <= 1
+                and provider_outputs[line_idx].raw_text == "\n"
+            ):
                 continue
 
             if new_block is None:
                 new_block = [(line_idx, provider_outputs[line_idx])]
-            elif all([
-                new_block[-1][0] + 1 == line_idx,
-                provider_outputs[line_idx].line.polygon.center_distance(new_block[-1][1].line.polygon) < self.maximum_assignment_distance
-            ]):
+            elif all(
+                [
+                    new_block[-1][0] + 1 == line_idx,
+                    provider_outputs[line_idx].line.polygon.center_distance(
+                        new_block[-1][1].line.polygon
+                    )
+                    < self.maximum_assignment_distance,
+                ]
+            ):
                 new_block.append((line_idx, provider_outputs[line_idx]))
             else:
                 new_blocks.append(new_block)
@@ -177,13 +207,13 @@ class PageGroup(Group):
         return new_blocks
 
     def create_missing_blocks(
-            self,
-            new_blocks: List[LINE_MAPPING_TYPE],
-            block_lines: Dict[BlockId, LINE_MAPPING_TYPE]
+        self,
+        new_blocks: List[LINE_MAPPING_TYPE],
+        block_lines: Dict[BlockId, LINE_MAPPING_TYPE],
     ):
         for new_block in new_blocks:
             block = self.add_block(Text, new_block[0][1].line.polygon)
-            block.source = 'heuristics'
+            block.source = "heuristics"
             block_lines[block.id] = new_block
 
             min_dist_idx = None
@@ -193,7 +223,9 @@ class PageGroup(Group):
                 if existing_block.block_type in self.excluded_block_types:
                     continue
                 # We want to assign to blocks closer in y than x
-                dist = block.polygon.center_distance(existing_block.polygon, x_weight=5, absolute=True)
+                dist = block.polygon.center_distance(
+                    existing_block.polygon, x_weight=5, absolute=True
+                )
                 if dist > 0 and min_dist_idx is None or dist < min_dist:
                     min_dist = dist
                     min_dist_idx = existing_block.id
@@ -205,9 +237,7 @@ class PageGroup(Group):
                 self.structure.append(block.id)
 
     def add_initial_blocks(
-            self,
-            block_lines: Dict[BlockId, LINE_MAPPING_TYPE],
-            text_extraction_method: str
+        self, block_lines: Dict[BlockId, LINE_MAPPING_TYPE], text_extraction_method: str
     ):
         # Add lines to the proper blocks, sorted in order
         for block_id, lines in block_lines.items():
@@ -225,17 +255,18 @@ class PageGroup(Group):
                     line.add_structure(span)
 
     def merge_blocks(
-        self,
-        provider_outputs: List[ProviderOutput],
-        text_extraction_method: str
+        self, provider_outputs: List[ProviderOutput], text_extraction_method: str
     ):
         provider_line_idxs = list(range(len(provider_outputs)))
         valid_blocks = [
-            block for block in self.current_children # ensure we only look at children that haven't been replaced
+            block
+            for block in self.current_children  # ensure we only look at children that haven't been replaced
             if block.block_type not in self.excluded_block_types
         ]
 
-        max_intersections = self.compute_line_block_intersections(valid_blocks, provider_outputs)
+        max_intersections = self.compute_line_block_intersections(
+            valid_blocks, provider_outputs
+        )
 
         # Try to assign lines by intersection
         assigned_line_idxs = set()
@@ -264,7 +295,9 @@ class PageGroup(Group):
                 assigned_line_idxs.add(line_idx)
 
         # This creates new blocks to hold anything too far away
-        new_blocks = self.identify_missing_blocks(provider_line_idxs, provider_outputs, assigned_line_idxs)
+        new_blocks = self.identify_missing_blocks(
+            provider_line_idxs, provider_outputs, assigned_line_idxs
+        )
         self.create_missing_blocks(new_blocks, block_lines)
 
         # Add blocks to the page

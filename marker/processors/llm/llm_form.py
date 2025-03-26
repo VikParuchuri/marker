@@ -2,6 +2,7 @@ from typing import List
 
 from pydantic import BaseModel
 
+from marker.output import json_to_html
 from marker.processors.llm import PromptData, BaseLLMSimpleBlockProcessor, BlockData
 
 from marker.schema import BlockTypes
@@ -77,7 +78,7 @@ Comparison: The html representation has the labels in the first row and the valu
         prompt_data = []
         for block_data in self.inference_blocks(document):
             block = block_data["block"]
-            block_html = block.render(document).html
+            block_html = json_to_html(block.render(document))
             prompt = self.form_rewriting_prompt.replace("{block_html}", block_html)
             image = self.extract_image(document, block)
             prompt_data.append({
@@ -92,7 +93,7 @@ Comparison: The html representation has the labels in the first row and the valu
 
     def rewrite_block(self, response: dict, prompt_data: PromptData, document: Document):
         block = prompt_data["block"]
-        block_html = block.render(document).html
+        block_html = json_to_html(block.render(document))
 
         if not response or "corrected_html" not in response:
             block.update_metadata(llm_error_count=1)

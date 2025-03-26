@@ -1,4 +1,5 @@
 import re
+import html
 from collections import defaultdict
 from copy import deepcopy
 from typing import Annotated, List
@@ -158,7 +159,8 @@ class TableProcessor(BaseProcessor):
                 continue
             text = re.sub(r"(\s\.){2,}", "", text)  # Replace . . .
             text = re.sub(r"\.{2,}", "", text)  # Replace ..., like in table of contents
-            fixed_text.append(self.normalize_spaces(fix_text(text)))
+            text = self.normalize_spaces(fix_text(text))
+            fixed_text.append(html.escape(text))
         return fixed_text
 
     @staticmethod

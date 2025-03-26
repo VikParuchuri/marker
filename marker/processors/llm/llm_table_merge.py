@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from tqdm import tqdm
 from PIL import Image
 
+from marker.output import json_to_html
 from marker.processors.llm import BaseLLMComplexBlockProcessor
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, TableCell
@@ -235,8 +236,8 @@ Table 2
 
             start_image = start_block.get_image(document, highres=False)
             curr_image = curr_block.get_image(document, highres=False)
-            start_html = start_block.render(document).html
-            curr_html = curr_block.render(document).html
+            start_html = json_to_html(start_block.render(document))
+            curr_html = json_to_html(curr_block.render(document))
 
             prompt = self.table_merge_prompt.replace("{{table1}}", start_html).replace("{{table2}}", curr_html)
 
