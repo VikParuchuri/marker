@@ -88,6 +88,7 @@ class EquationProcessor(BaseProcessor):
         self,
         math_html: str
     ):
+        math_html = math_html.strip()
         soup = BeautifulSoup(math_html, 'html.parser')
         opening_math_tag = soup.find('math')
         
@@ -98,6 +99,10 @@ class EquationProcessor(BaseProcessor):
         # Force block format
         opening_math_tag.attrs['display'] = 'block'
         fixed_math_html = str(soup)
+
+        # Sometimes model outputs newlines at the beginning/end of tags
+        fixed_math_html = re.sub(r"^<math display=\"block\">\\n(?![a-zA-Z])", "<math display=\"block\">", fixed_math_html)
+        fixed_math_html = re.sub(r"\\n</math>$", "</math>", fixed_math_html)
         fixed_math_html = fix_text(fixed_math_html, config=TextFixerConfig(unescape_html=True))
         return fixed_math_html
 
@@ -116,7 +121,7 @@ class EquationProcessor(BaseProcessor):
         )
         
         equation_predictions = [
-            [line.text for line in page_prediction.text_lines] for page_prediction in predictions
+            [line.text.strip() for line in page_prediction.text_lines] for page_prediction in predictions
         ]
 
         return equation_predictions
