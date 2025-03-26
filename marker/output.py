@@ -3,6 +3,7 @@ import os
 
 from bs4 import BeautifulSoup, Tag
 from pydantic import BaseModel
+from PIL import Image
 
 from marker.renderers.html import HTMLOutput
 from marker.renderers.json import JSONOutput, JSONBlockOutput
@@ -60,6 +61,12 @@ def text_from_rendered(rendered: BaseModel):
         raise ValueError("Invalid output type")
 
 
+def convert_if_not_rgb(image: Image.Image) -> Image.Image:
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    return image
+
+
 def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
     text, ext, images = text_from_rendered(rendered)
     text = text.encode(settings.OUTPUT_ENCODING, errors="replace").decode(
@@ -80,4 +87,5 @@ def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
         f.write(json.dumps(rendered.metadata, indent=2))
 
     for img_name, img in images.items():
+        img = convert_if_not_rgb(img)  # RGBA images can't save as JPG
         img.save(os.path.join(output_dir, img_name), settings.OUTPUT_IMAGE_FORMAT)
