@@ -1,15 +1,24 @@
 import json
 import os
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from pydantic import BaseModel
 
 from marker.renderers.html import HTMLOutput
 from marker.renderers.json import JSONOutput, JSONBlockOutput
 from marker.renderers.markdown import MarkdownOutput
-from marker.schema.blocks import Block, BlockOutput
-from marker.schema.document import Document
+from marker.schema.blocks import BlockOutput
 from marker.settings import settings
+
+
+def unwrap_outer_tag(html: str):
+    soup = BeautifulSoup(html, "html.parser")
+    contents = list(soup.contents)
+    if len(contents) == 1 and isinstance(contents[0], Tag) and contents[0].name == "p":
+        # Unwrap the p tag
+        soup.p.unwrap()
+
+    return str(soup)
 
 
 def json_to_html(block: JSONBlockOutput | BlockOutput):
@@ -25,7 +34,9 @@ def json_to_html(block: JSONBlockOutput | BlockOutput):
         for ref in content_refs:
             src_id = ref.attrs["src"]
             if src_id in child_ids:
-                child_soup = BeautifulSoup(child_html[child_ids.index(src_id)], "html.parser")
+                child_soup = BeautifulSoup(
+                    child_html[child_ids.index(src_id)], "html.parser"
+                )
                 ref.replace_with(child_soup)
         return str(soup)
 
@@ -51,11 +62,21 @@ def text_from_rendered(rendered: BaseModel):
 
 def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
     text, ext, images = text_from_rendered(rendered)
-    text = text.encode(settings.OUTPUT_ENCODING, errors='replace').decode(settings.OUTPUT_ENCODING)
+    text = text.encode(settings.OUTPUT_ENCODING, errors="replace").decode(
+        settings.OUTPUT_ENCODING
+    )
 
-    with open(os.path.join(output_dir, f"{fname_base}.{ext}"), "w+", encoding=settings.OUTPUT_ENCODING) as f:
+    with open(
+        os.path.join(output_dir, f"{fname_base}.{ext}"),
+        "w+",
+        encoding=settings.OUTPUT_ENCODING,
+    ) as f:
         f.write(text)
-    with open(os.path.join(output_dir, f"{fname_base}_meta.json"), "w+", encoding=settings.OUTPUT_ENCODING) as f:
+    with open(
+        os.path.join(output_dir, f"{fname_base}_meta.json"),
+        "w+",
+        encoding=settings.OUTPUT_ENCODING,
+    ) as f:
         f.write(json.dumps(rendered.metadata, indent=2))
 
     for img_name, img in images.items():
