@@ -1,3 +1,5 @@
+import os
+import uuid
 from marker.providers.pdf import PdfProvider
 import tempfile
 from typing import Dict, Type
@@ -86,10 +88,13 @@ def temp_doc(request, pdf_dataset):
     idx = pdf_dataset['filename'].index(filename)
     suffix = filename.split(".")[-1]
 
-    temp_pdf = tempfile.NamedTemporaryFile(suffix=f".{suffix}")
-    temp_pdf.write(pdf_dataset['pdf'][idx])
-    temp_pdf.flush()
-    yield temp_pdf
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_pdf_path = os.path.join(temp_dir, f"temp.{suffix}")  # Randomized filename
+        
+        with open(temp_pdf_path, "wb") as temp_pdf:
+            temp_pdf.write(pdf_dataset['pdf'][idx])
+            temp_pdf.flush()
+            yield temp_pdf
 
 
 @pytest.fixture(scope="function")
@@ -148,7 +153,8 @@ def temp_image():
     img = Image.new("RGB", (512, 512), color="white")
     draw = ImageDraw.Draw(img)
     draw.text((10, 10), "Hello, World!", fill="black", font_size=24)
-    with tempfile.NamedTemporaryFile(suffix=".png") as f:
-        img.save(f.name)
-        f.flush()
-        yield f
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_png_path = os.path.join(temp_dir, f"{uuid.uuid4()}.png")  # Randomized filename
+        img.save(temp_png_path)
+        with open(temp_png_path, "rb") as f:
+            yield f
