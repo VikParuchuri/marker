@@ -19,9 +19,9 @@ DOCTYPE_MATCHERS = {
     "epub": [
         archive.Epub,
     ],
-    "doc": [document.Doc, document.Docx, document.Odt],
-    "xls": [document.Xls, document.Xlsx, document.Ods],
-    "ppt": [document.Ppt, document.Pptx, document.Odp],
+    "doc": [document.Docx],
+    "xls": [document.Xlsx],
+    "ppt": [document.Pptx],
 }
 
 
@@ -71,10 +71,11 @@ def provider_from_filepath(filepath: str):
         return PowerPointProvider
 
     try:
-        soup = BeautifulSoup(open(filepath, "r").read(), "html.parser")
-        # Check if there are any HTML tags
-        if bool(soup.find()):
-            return HTMLProvider
+        with open(filepath, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
+            # Check if there are any HTML tags
+            if bool(soup.find()):
+                return HTMLProvider
     except Exception:
         pass
 
