@@ -2,6 +2,7 @@ import inspect
 import os
 from importlib import import_module
 from typing import List, Annotated
+import re
 
 import numpy as np
 import requests
@@ -10,6 +11,19 @@ from pydantic import BaseModel
 from marker.schema.polygon import PolygonBox
 from marker.settings import settings
 
+OPENING_TAG_REGEX = re.compile(r"<((?:math|i|b))(?:\s+[^>]*)?>")
+CLOSING_TAG_REGEX = re.compile(r"</((?:math|i|b))>")
+TAG_MAPPING = {
+    'i': 'italic',
+    'b': 'bold',
+    'math': 'math',
+    'mark': 'highlight',
+    'sub': 'subscript',
+    'sup': 'superscript',
+    'small': 'small',
+    'u': 'underline',
+    'code': 'code'
+}
 
 def strings_to_classes(items: List[str]) -> List[type]:
     classes = []
@@ -144,3 +158,41 @@ def download_font():
             r.raise_for_status()
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
+
+def get_opening_tag_type(tag):
+    """
+    Determines if a tag is an opening tag and extracts the tag type.
+    
+    Args:
+        tag (str): The tag string to analyze.
+
+    Returns:
+        tuple: (is_opening_tag (bool), tag_type (str or None))
+    """
+    match = OPENING_TAG_REGEX.match(tag)
+    
+    if match:
+        tag_type = match.group(1)
+        if tag_type in TAG_MAPPING:
+            return True, TAG_MAPPING[tag_type]
+    
+    return False, None
+
+def get_closing_tag_type(tag):
+    """
+    Determines if a tag is an opening tag and extracts the tag type.
+    
+    Args:
+        tag (str): The tag string to analyze.
+
+    Returns:
+        tuple: (is_opening_tag (bool), tag_type (str or None))
+    """
+    match = CLOSING_TAG_REGEX.match(tag)
+    
+    if match:
+        tag_type = match.group(1)
+        if tag_type in TAG_MAPPING:
+            return True, TAG_MAPPING[tag_type]
+    
+    return False, None
