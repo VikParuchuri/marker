@@ -233,6 +233,11 @@ strip_existing_ocr = st.sidebar.checkbox(
     value=False,
 )
 debug = st.sidebar.checkbox("Debug", help="Show debug information", value=False)
+format_lines = st.sidebar.checkbox(
+    "Format lines",
+    help="Format lines in the document with OCR model",
+    value=False,
+)
 
 if not run_marker:
     st.stop()
@@ -252,6 +257,7 @@ with tempfile.TemporaryDirectory() as tmp_dir:
             "output_dir": settings.DEBUG_DATA_FOLDER if debug else None,
             "use_llm": use_llm,
             "strip_existing_ocr": strip_existing_ocr,
+            "fix_lines": format_lines,
         }
     )
     config_parser = ConfigParser(cli_options)
