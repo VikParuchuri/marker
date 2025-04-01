@@ -1,5 +1,3 @@
-import html
-
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block
 

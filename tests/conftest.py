@@ -41,11 +41,6 @@ def detection_model(model_dict):
 
 
 @pytest.fixture(scope="session")
-def texify_model(model_dict):
-    yield model_dict["texify_model"]
-
-
-@pytest.fixture(scope="session")
 def recognition_model(model_dict):
     yield model_dict["recognition_model"]
 
@@ -58,10 +53,6 @@ def table_rec_model(model_dict):
 @pytest.fixture(scope="session")
 def ocr_error_model(model_dict):
     yield model_dict["ocr_error_model"]
-
-@pytest.fixture(scope="session")
-def inline_detection_model(model_dict):
-    yield model_dict["inline_detection_model"]
 
 @pytest.fixture(scope="function")
 def config(request):
@@ -98,9 +89,9 @@ def doc_provider(request, config, temp_doc):
     yield provider_cls(temp_doc.name, config)
 
 @pytest.fixture(scope="function")
-def pdf_document(request, config, doc_provider, layout_model, ocr_error_model, recognition_model, detection_model, inline_detection_model):
+def pdf_document(request, config, doc_provider, layout_model, ocr_error_model, recognition_model, detection_model):
     layout_builder = LayoutBuilder(layout_model, config)
-    line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
+    line_builder = LineBuilder(detection_model, ocr_error_model, config)
     ocr_builder = OcrBuilder(recognition_model, config)
     builder = DocumentBuilder(config)
     document = builder(doc_provider, layout_builder, line_builder, ocr_builder)
