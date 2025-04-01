@@ -257,7 +257,7 @@ with tempfile.TemporaryDirectory() as tmp_dir:
             "output_dir": settings.DEBUG_DATA_FOLDER if debug else None,
             "use_llm": use_llm,
             "strip_existing_ocr": strip_existing_ocr,
-            "fix_lines": format_lines,
+            "format_lines": format_lines,
         }
     )
     config_parser = ConfigParser(cli_options)

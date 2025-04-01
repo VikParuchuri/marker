@@ -62,6 +62,10 @@ class TableProcessor(BaseProcessor):
         bool,
         "Whether to disable the tqdm progress bar.",
     ] = False
+    format_lines: Annotated[
+        bool,
+        "Whether to format the lines.",
+    ] = False
 
     def __init__(
         self,

@@ -4,10 +4,9 @@ from itertools import chain
 from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
-from ftfy import fix_text
 from PIL import Image
 
-from surya.detection import DetectionPredictor, InlineDetectionPredictor, TextDetectionResult
+from surya.detection import DetectionPredictor
 from surya.ocr_error import OCRErrorPredictor
 
 from marker.builders import BaseBuilder
@@ -22,27 +21,28 @@ from marker.schema.text.line import Line
 from marker.settings import settings
 from marker.util import matrix_intersection_area, sort_text_lines
 
+
 class LineBuilder(BaseBuilder):
     """
     A builder for detecting text lines. Merges the detected lines with the lines from the provider
     """
+
     detection_batch_size: Annotated[
         Optional[int],
         "The batch size to use for the detection model.",
-        "Default is None, which will use the default batch size for the model."
+        "Default is None, which will use the default batch size for the model.",
     ] = None
     ocr_error_batch_size: Annotated[
         Optional[int],
         "The batch size to use for the ocr error detection model.",
-        "Default is None, which will use the default batch size for the model."
+        "Default is None, which will use the default batch size for the model.",
     ] = None
     enable_table_ocr: Annotated[
         bool,
         "Whether to skip OCR on tables.  The TableProcessor will re-OCR them.  Only enable if the TableProcessor is not running.",
     ] = False
-    fix_lines: Annotated[
-        bool,
-        "Enable good provider lines to be checked and fixed by the OCR model"
+    format_lines: Annotated[
+        bool, "Enable good provider lines to be checked and fixed by the OCR model"
     ] = False
     layout_coverage_min_lines: Annotated[
         int,
@@ -53,30 +53,46 @@ class LineBuilder(BaseBuilder):
         float,
         "The minimum coverage ratio required for the layout model to consider",
         "the lines from the PdfProvider valid.",
-    ] = .25
+    ] = 0.25
     min_document_ocr_threshold: Annotated[
         float,
-        "If less pages than this threshold are good, OCR will happen in the document.  Otherwise it will not."
+        "If less pages than this threshold are good, OCR will happen in the document.  Otherwise it will not.",
     ] = 0.85
     provider_line_detected_line_min_overlap_pct: Annotated[
         float,
-        "The percentage of a provider line that has to be covered by a detected line"
-    ] = .1
+        "The percentage of a provider line that has to be covered by a detected line",
+    ] = 0.1
     line_vertical_merge_threshold: Annotated[
-        int,
-        "The maximum pixel distance between y1s for two lines to be merged"
+        int, "The maximum pixel distance between y1s for two lines to be merged"
     ] = 8
     excluded_for_coverage: Annotated[
         Tuple[BlockTypes],
         "A list of block types to exclude from the layout coverage check.",
-    ] = (BlockTypes.Figure, BlockTypes.Picture, BlockTypes.Table, BlockTypes.FigureGroup, BlockTypes.TableGroup, BlockTypes.PictureGroup)
-    ocr_remove_blocks: Tuple[BlockTypes, ...] = (BlockTypes.Table, BlockTypes.Form, BlockTypes.TableOfContents, BlockTypes.Equation)
+    ] = (
+        BlockTypes.Figure,
+        BlockTypes.Picture,
+        BlockTypes.Table,
+        BlockTypes.FigureGroup,
+        BlockTypes.TableGroup,
+        BlockTypes.PictureGroup,
+    )
+    ocr_remove_blocks: Tuple[BlockTypes, ...] = (
+        BlockTypes.Table,
+        BlockTypes.Form,
+        BlockTypes.TableOfContents,
+        BlockTypes.Equation,
+    )
     disable_tqdm: Annotated[
         bool,
         "Disable tqdm progress bars.",
     ] = False
 
-    def __init__(self, detection_model: DetectionPredictor, ocr_error_model: OCRErrorPredictor, config=None):
+    def __init__(
+        self,
+        detection_model: DetectionPredictor,
+        ocr_error_model: OCRErrorPredictor,
+        config=None,
+    ):
         super().__init__(config)
 
         self.detection_model = detection_model
@@ -102,11 +118,12 @@ class LineBuilder(BaseBuilder):
             return 4
         return 4
 
-    def get_detection_results(self, page_images: List[Image.Image], run_detection: List[bool]):
+    def get_detection_results(
+        self, page_images: List[Image.Image], run_detection: List[bool]
+    ):
         self.detection_model.disable_tqdm = self.disable_tqdm
         page_detection_results = self.detection_model(
-            images=page_images,
-            batch_size=self.get_detection_batch_size()
+            images=page_images, batch_size=self.get_detection_batch_size()
         )
 
         assert len(page_detection_results) == sum(run_detection)
@@ -123,9 +140,10 @@ class LineBuilder(BaseBuilder):
         assert len(run_detection) == len(detection_results)
         return detection_results
 
-
     def get_all_lines(self, document: Document, provider: PdfProvider):
-        ocr_error_detection_results = self.ocr_error_detection(document.pages, provider.page_lines)
+        ocr_error_detection_results = self.ocr_error_detection(
+            document.pages, provider.page_lines
+        )
 
         boxes_to_ocr = {page.page_id: [] for page in document.pages}
         page_lines = {page.page_id: [] for page in document.pages}
@@ -133,21 +151,31 @@ class LineBuilder(BaseBuilder):
         LineClass: Line = get_block_class(BlockTypes.Line)
 
         layout_good = []
-        for document_page, ocr_error_detection_label in zip(document.pages, ocr_error_detection_results.labels):
-            provider_lines: List[ProviderOutput] = provider.page_lines.get(document_page.page_id, [])
-            provider_lines_good = all([
-                bool(provider_lines),
-                ocr_error_detection_label != 'bad',
-                self.check_layout_coverage(document_page, provider_lines)
-            ])
+        for document_page, ocr_error_detection_label in zip(
+            document.pages, ocr_error_detection_results.labels
+        ):
+            provider_lines: List[ProviderOutput] = provider.page_lines.get(
+                document_page.page_id, []
+            )
+            provider_lines_good = all(
+                [
+                    bool(provider_lines),
+                    ocr_error_detection_label != "bad",
+                    self.check_layout_coverage(document_page, provider_lines),
+                ]
+            )
             layout_good.append(provider_lines_good)
 
         # Don't OCR if only a few pages are bad
         if sum(layout_good) > len(document.pages) * self.min_document_ocr_threshold:
             layout_good = [True] * len(document.pages)
 
-        run_detection = [(not good or self.fix_lines) for good in layout_good]
-        page_images = [page.get_image(highres=False, remove_blocks=self.ocr_remove_blocks) for page, good in zip(document.pages, run_detection) if good]
+        run_detection = [(not good or self.format_lines) for good in layout_good]
+        page_images = [
+            page.get_image(highres=False, remove_blocks=self.ocr_remove_blocks)
+            for page, good in zip(document.pages, run_detection)
+            if good
+        ]
 
         # Note: run_detection is longer than page_images, since it has a value for each page, not just good ones
         # Detection results and inline detection results are for every page (we use run_detection to make the list full length)
@@ -155,38 +183,43 @@ class LineBuilder(BaseBuilder):
 
         assert len(detection_results) == len(layout_good) == len(document.pages)
         for document_page, detection_result, provider_lines_good in zip(
-                document.pages,
-                detection_results,
-                layout_good
+            document.pages, detection_results, layout_good
         ):
-            provider_lines: List[ProviderOutput] = provider.page_lines.get(document_page.page_id, [])
+            provider_lines: List[ProviderOutput] = provider.page_lines.get(
+                document_page.page_id, []
+            )
             page_size = provider.get_page_bbox(document_page.page_id).size
-            image_size = PolygonBox.from_bbox(detection_result.image_bbox).size if detection_result else page_size
+            image_size = (
+                PolygonBox.from_bbox(detection_result.image_bbox).size
+                if detection_result
+                else page_size
+            )
 
             # Setup detection results
             if detection_result:
-                detection_boxes = [PolygonBox(polygon=box.polygon) for box in detection_result.bboxes]
+                detection_boxes = [
+                    PolygonBox(polygon=box.polygon) for box in detection_result.bboxes
+                ]
             else:
                 detection_boxes = []
             detection_boxes = sort_text_lines(detection_boxes)
 
             if provider_lines_good:
-                document_page.text_extraction_method = 'pdftext'
+                document_page.text_extraction_method = "pdftext"
 
                 # Add in the provider lines - merge ones that get broken by pdftext
                 merged_provider_lines = self.merge_provider_lines_detected_lines(
-                    provider_lines,
-                    detection_boxes,
-                    image_size,
-                    page_size
+                    provider_lines, detection_boxes, image_size, page_size
                 )
-                
+
                 # If fixing lines, mark every line to be passed to the OCR model
                 for provider_line in merged_provider_lines:
-                    provider_line.line.text_extraction_method = 'surya' if self.fix_lines else 'pdftext'
+                    provider_line.line.text_extraction_method = (
+                        "surya" if self.format_lines else "pdftext"
+                    )
                 page_lines[document_page.page_id] = merged_provider_lines
             else:
-                document_page.text_extraction_method = 'surya'
+                document_page.text_extraction_method = "surya"
                 boxes_to_ocr[document_page.page_id].extend(detection_boxes)
 
         # Dummy lines to merge into the document - Contains no spans, will be filled in later by OCRBuilder
@@ -195,31 +228,36 @@ class LineBuilder(BaseBuilder):
             page_size = provider.get_page_bbox(page_id).size
             image_size = document.get_page(page_id).get_image(highres=False).size
             for box_to_ocr in page_ocr_boxes:
-                line_polygon = PolygonBox(polygon=box_to_ocr.polygon).rescale(image_size, page_size)
+                line_polygon = PolygonBox(polygon=box_to_ocr.polygon).rescale(
+                    image_size, page_size
+                )
                 ocr_lines[page_id].append(
                     ProviderOutput(
                         line=LineClass(
                             polygon=line_polygon,
                             page_id=page_id,
-                            text_extraction_method='surya',
+                            text_extraction_method="surya",
                         ),
-                        spans=[]
+                        spans=[],
                     )
                 )
 
         return page_lines, ocr_lines
 
-    def ocr_error_detection(self, pages:List[PageGroup], provider_page_lines: ProviderPageLines):
+    def ocr_error_detection(
+        self, pages: List[PageGroup], provider_page_lines: ProviderPageLines
+    ):
         page_texts = []
         for document_page in pages:
             provider_lines = provider_page_lines.get(document_page.page_id, [])
-            page_text = '\n'.join(' '.join(s.text for s in line.spans) for line in provider_lines)
+            page_text = "\n".join(
+                " ".join(s.text for s in line.spans) for line in provider_lines
+            )
             page_texts.append(page_text)
 
         self.ocr_error_model.disable_tqdm = self.disable_tqdm
         ocr_error_detection_results = self.ocr_error_model(
-            page_texts,
-            batch_size=int(self.get_ocr_error_batch_size())
+            page_texts, batch_size=int(self.get_ocr_error_batch_size())
         )
         return ocr_error_detection_results
 
@@ -232,8 +270,12 @@ class LineBuilder(BaseBuilder):
         total_blocks = 0
         large_text_blocks = 0
 
-        layout_blocks = [document_page.get_block(block) for block in document_page.structure]
-        layout_blocks = [b for b in layout_blocks if b.block_type not in self.excluded_for_coverage]
+        layout_blocks = [
+            document_page.get_block(block) for block in document_page.structure
+        ]
+        layout_blocks = [
+            b for b in layout_blocks if b.block_type not in self.excluded_for_coverage
+        ]
 
         layout_bboxes = [block.polygon.bbox for block in layout_blocks]
         provider_bboxes = [line.line.polygon.bbox for line in provider_lines]
@@ -253,7 +295,10 @@ class LineBuilder(BaseBuilder):
             if intersecting_lines >= self.layout_coverage_min_lines:
                 covered_blocks += 1
 
-            if layout_block.polygon.intersection_pct(document_page.polygon) > 0.8 and layout_block.block_type == BlockTypes.Text:
+            if (
+                layout_block.polygon.intersection_pct(document_page.polygon) > 0.8
+                and layout_block.block_type == BlockTypes.Text
+            ):
                 large_text_blocks += 1
 
         coverage_ratio = covered_blocks / total_blocks if total_blocks > 0 else 1
@@ -264,7 +309,12 @@ class LineBuilder(BaseBuilder):
             text_okay = True
         return text_okay
 
-    def merge_blocks(self, document: Document, page_provider_lines: ProviderPageLines, page_ocr_lines: ProviderPageLines):
+    def merge_blocks(
+        self,
+        document: Document,
+        page_provider_lines: ProviderPageLines,
+        page_ocr_lines: ProviderPageLines,
+    ):
         for document_page in document.pages:
             provider_lines = page_provider_lines[document_page.page_id]
             ocr_lines = page_ocr_lines[document_page.page_id]
@@ -273,15 +323,14 @@ class LineBuilder(BaseBuilder):
             merged_lines = provider_lines + ocr_lines
 
             # Text extraction method is overridden later for OCRed documents
-            document_page.merge_blocks(merged_lines, text_extraction_method='pdftext')
-
+            document_page.merge_blocks(merged_lines, text_extraction_method="pdftext")
 
     def merge_provider_lines_detected_lines(
         self,
         provider_lines: List[ProviderOutput],
         text_lines: List[PolygonBox],
         image_size,
-        page_size
+        page_size,
     ):
         # When provider lines is empty or no lines detected, return provider lines
         if not provider_lines or not text_lines:
@@ -296,15 +345,22 @@ class LineBuilder(BaseBuilder):
             else:
                 out_provider_lines.append((j, provider_line))
 
-        provider_line_boxes = [p.line.polygon.bbox for _, p in horizontal_provider_lines]
-        detected_line_boxes = [PolygonBox(polygon=l.polygon).rescale(image_size, page_size).bbox for l in text_lines]
+        provider_line_boxes = [
+            p.line.polygon.bbox for _, p in horizontal_provider_lines
+        ]
+        detected_line_boxes = [
+            PolygonBox(polygon=line.polygon).rescale(image_size, page_size).bbox
+            for line in text_lines
+        ]
 
         overlaps = matrix_intersection_area(provider_line_boxes, detected_line_boxes)
 
         # Find potential merges
         merge_lines = defaultdict(list)
         for i in range(len(provider_line_boxes)):
-            max_overlap_pct = np.max(overlaps[i]) / max(1, horizontal_provider_lines[i][1].line.polygon.area)
+            max_overlap_pct = np.max(overlaps[i]) / max(
+                1, horizontal_provider_lines[i][1].line.polygon.area
+            )
             if max_overlap_pct <= self.provider_line_detected_line_min_overlap_pct:
                 continue
 
@@ -320,9 +376,10 @@ class LineBuilder(BaseBuilder):
                 line = horizontal_provider_lines[ml][1].line.polygon
                 if prev_line:
                     close = (
-                        abs(line.y_start - prev_line.y_start) < self.line_vertical_merge_threshold
-                        or
-                        abs(line.y_end - prev_line.y_end) < self.line_vertical_merge_threshold
+                        abs(line.y_start - prev_line.y_start)
+                        < self.line_vertical_merge_threshold
+                        or abs(line.y_end - prev_line.y_end)
+                        < self.line_vertical_merge_threshold
                     )
                 else:
                     # First line
@@ -344,9 +401,15 @@ class LineBuilder(BaseBuilder):
         for line_idx in filtered_merge_lines:
             potential_merges.extend(chain.from_iterable(filtered_merge_lines[line_idx]))
         potential_merges = set(potential_merges)
-        
+
         # Provider lines that are not in any merge group should be outputted as-is
-        out_provider_lines.extend([hp for i, hp in enumerate(horizontal_provider_lines) if i not in potential_merges])
+        out_provider_lines.extend(
+            [
+                hp
+                for i, hp in enumerate(horizontal_provider_lines)
+                if i not in potential_merges
+            ]
+        )
 
         for line_idx in filtered_merge_lines:
             text_line = text_lines[line_idx]
@@ -356,7 +419,9 @@ class LineBuilder(BaseBuilder):
                     continue
                 elif len(merge_section) == 1:
                     horizontal_provider_idx = merge_section[0]
-                    out_idx, merged_line = horizontal_provider_lines[horizontal_provider_idx]
+                    out_idx, merged_line = horizontal_provider_lines[
+                        horizontal_provider_idx
+                    ]
                     # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
                     # TODO Add metadata for this
                     merged_line.line.polygon = text_line.rescale(image_size, page_size)
@@ -374,7 +439,7 @@ class LineBuilder(BaseBuilder):
                         else:
                             # Combine the spans of the provider line with the merged line
                             merged_line = merged_line.merge(provider_line)
-                        already_merged.add(idx) # Prevent double merging
+                        already_merged.add(idx)  # Prevent double merging
                     # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
                     # TODO Add metadata for this
                     merged_line.line.polygon = text_line.rescale(image_size, page_size)
