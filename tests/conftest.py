@@ -89,7 +89,7 @@ def temp_doc(request, pdf_dataset):
     suffix = filename.split(".")[-1]
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_pdf_path = os.path.join(temp_dir, f"temp.{suffix}")  # Randomized filename
+        temp_pdf_path = os.path.join(temp_dir, f"{uuid.uuid4()}.{suffix}")  # Randomized filename
         
         with open(temp_pdf_path, "wb") as temp_pdf:
             temp_pdf.write(pdf_dataset['pdf'][idx])
