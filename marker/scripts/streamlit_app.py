@@ -1,5 +1,6 @@
 import os
 import sys
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["IN_STREAMLIT"] = "true"
 
@@ -37,11 +38,12 @@ COLORS = [
     "#af7aa1",
     "#ff9da7",
     "#9c755f",
-    "#bab0ab"
+    "#bab0ab",
 ]
 
 with open(
-    os.path.join(os.path.dirname(__file__), "streamlit_app_blocks_viz.html"), encoding="utf-8"
+    os.path.join(os.path.dirname(__file__), "streamlit_app_blocks_viz.html"),
+    encoding="utf-8",
 ) as f:
     BLOCKS_VIZ_TMPL = string.Template(f.read())
 
@@ -54,7 +56,7 @@ def parse_args():
         pass
 
     def extract_click_params(decorated_function):
-        if hasattr(decorated_function, '__click_params__'):
+        if hasattr(decorated_function, "__click_params__"):
             return decorated_function.__click_params__
         return []
 
@@ -68,6 +70,7 @@ def parse_args():
         return ctx.params
     except click.exceptions.ClickException as e:
         return {"error": str(e)}
+
 
 @st.cache_resource()
 def load_models():
@@ -83,7 +86,7 @@ def convert_pdf(fname: str, config_parser: ConfigParser) -> (str, Dict[str, Any]
         artifact_dict=model_dict,
         processor_list=config_parser.get_processors(),
         renderer=config_parser.get_renderer(),
-        llm_service=config_parser.get_llm_service()
+        llm_service=config_parser.get_llm_service(),
     )
     return converter(fname)
 
@@ -103,14 +106,19 @@ def img_to_html(img, img_alt):
 
 
 def markdown_insert_images(markdown, images):
-    image_tags = re.findall(r'(!\[(?P<image_title>[^\]]*)\]\((?P<image_path>[^\)"\s]+)\s*([^\)]*)\))', markdown)
+    image_tags = re.findall(
+        r'(!\[(?P<image_title>[^\]]*)\]\((?P<image_path>[^\)"\s]+)\s*([^\)]*)\))',
+        markdown,
+    )
 
     for image in image_tags:
         image_markdown = image[0]
         image_alt = image[1]
         image_path = image[2]
         if image_path in images:
-            markdown = markdown.replace(image_markdown, img_to_html(images[image_path], image_alt))
+            markdown = markdown.replace(
+                image_markdown, img_to_html(images[image_path], image_alt)
+            )
     return markdown
 
 
@@ -119,9 +127,13 @@ def get_page_image(pdf_file, page_num, dpi=96):
     if "pdf" in pdf_file.type:
         doc = open_pdf(pdf_file)
         page = doc[page_num]
-        png_image = page.render(
-            scale=dpi / 72,
-        ).to_pil().convert("RGB")
+        png_image = (
+            page.render(
+                scale=dpi / 72,
+            )
+            .to_pil()
+            .convert("RGB")
+        )
     else:
         png_image = Image.open(pdf_file).convert("RGB")
     return png_image
@@ -146,30 +158,26 @@ def block_display(image: Image, blocks: dict | None = None, dpi=96):
     if blocks is None:
         blocks = {}
 
-    image_data_url = (
-        'data:image/jpeg;base64,' + pillow_image_to_base64_string(image)
-    )
+    image_data_url = "data:image/jpeg;base64," + pillow_image_to_base64_string(image)
 
     template_values = {
         "image_data_url": image_data_url,
-        "image_width": image.width, "image_height": image.height,
-        "blocks_json": blocks, "colors_json": json.dumps(COLORS),
-        "block_types_json": json.dumps({
-            bt.name: i for i, bt in enumerate(BlockTypes)
-        })
+        "image_width": image.width,
+        "image_height": image.height,
+        "blocks_json": blocks,
+        "colors_json": json.dumps(COLORS),
+        "block_types_json": json.dumps({bt.name: i for i, bt in enumerate(BlockTypes)}),
     }
     return components.html(
-        BLOCKS_VIZ_TMPL.substitute(**template_values),
-        height=image.height
+        BLOCKS_VIZ_TMPL.substitute(**template_values), height=image.height * 1.5
     )
 
 
 st.set_page_config(layout="wide")
-col1, col2 = st.columns([.5, .5])
+col1, col2 = st.columns([0.5, 0.5])
 
 model_dict = load_models()
 cli_options = parse_args()
-
 
 st.markdown("""
 # Marker Demo
@@ -179,7 +187,10 @@ This app will let you try marker, a PDF or image -> Markdown, HTML, JSON convert
 Find the project [here](https://github.com/VikParuchuri/marker).
 """)
 
-in_file: UploadedFile = st.sidebar.file_uploader("PDF, document, or image file:", type=["pdf", "png", "jpg", "jpeg", "gif", "pptx", "docx", "xlsx", "html", "epub"])
+in_file: UploadedFile = st.sidebar.file_uploader(
+    "PDF, document, or image file:",
+    type=["pdf", "png", "jpg", "jpeg", "gif", "pptx", "docx", "xlsx", "html", "epub"],
+)
 
 if in_file is None:
     st.stop()
@@ -188,49 +199,69 @@ filetype = in_file.type
 
 with col1:
     page_count = page_count(in_file)
-    page_number = st.number_input(f"Page number out of {page_count}:", min_value=0, value=0, max_value=page_count)
+    page_number = st.number_input(
+        f"Page number out of {page_count}:", min_value=0, value=0, max_value=page_count
+    )
     pil_image = get_page_image(in_file, page_number)
     image_placeholder = st.empty()
 
     with image_placeholder:
         block_display(pil_image)
 
-
-page_range = st.sidebar.text_input("Page range to parse, comma separated like 0,5-10,20", value=f"{page_number}-{page_number}")
-output_format = st.sidebar.selectbox("Output format", ["markdown", "json", "html"], index=0)
+page_range = st.sidebar.text_input(
+    "Page range to parse, comma separated like 0,5-10,20",
+    value=f"{page_number}-{page_number}",
+)
+output_format = st.sidebar.selectbox(
+    "Output format", ["markdown", "json", "html"], index=0
+)
 run_marker = st.sidebar.button("Run Marker")
 
-use_llm = st.sidebar.checkbox("Use LLM", help="Use LLM for higher quality processing", value=False)
-show_blocks = st.sidebar.checkbox("Show Blocks", help="Display detected blocks, only when output is JSON", value=False, disabled=output_format != "json")
+use_llm = st.sidebar.checkbox(
+    "Use LLM", help="Use LLM for higher quality processing", value=False
+)
+show_blocks = st.sidebar.checkbox(
+    "Show Blocks",
+    help="Display detected blocks, only when output is JSON",
+    value=False,
+    disabled=output_format != "json",
+)
 force_ocr = st.sidebar.checkbox("Force OCR", help="Force OCR on all pages", value=False)
-strip_existing_ocr = st.sidebar.checkbox("Strip existing OCR", help="Strip existing OCR text from the PDF and re-OCR.", value=False)
+strip_existing_ocr = st.sidebar.checkbox(
+    "Strip existing OCR",
+    help="Strip existing OCR text from the PDF and re-OCR.",
+    value=False,
+)
 debug = st.sidebar.checkbox("Debug", help="Show debug information", value=False)
-fix_lines = st.sidebar.checkbox("Fix lines", help="Fix line formats and math in the document", value=False)
+format_lines = st.sidebar.checkbox(
+    "Format lines",
+    help="Format lines in the document with OCR model",
+    value=False,
+)
 
 if not run_marker:
     st.stop()
 
 # Run Marker
 with tempfile.TemporaryDirectory() as tmp_dir:
-    temp_pdf = os.path.join(tmp_dir, 'temp.pdf')
-    with open(temp_pdf, 'wb') as f:
+    temp_pdf = os.path.join(tmp_dir, "temp.pdf")
+    with open(temp_pdf, "wb") as f:
         f.write(in_file.getvalue())
-    
-    cli_options.update({
-        "output_format": output_format,
-        "page_range": page_range,
-        "force_ocr": force_ocr,
-        "debug": debug,
-        "output_dir": settings.DEBUG_DATA_FOLDER if debug else None,
-        "use_llm": use_llm,
-        "strip_existing_ocr": strip_existing_ocr,
-        "fix_lines": fix_lines
-    })
-    config_parser = ConfigParser(cli_options)
-    rendered = convert_pdf(
-        temp_pdf,
-        config_parser
+
+    cli_options.update(
+        {
+            "output_format": output_format,
+            "page_range": page_range,
+            "force_ocr": force_ocr,
+            "debug": debug,
+            "output_dir": settings.DEBUG_DATA_FOLDER if debug else None,
+            "use_llm": use_llm,
+            "strip_existing_ocr": strip_existing_ocr,
+            "format_lines": format_lines,
+        }
     )
+    config_parser = ConfigParser(cli_options)
+    rendered = convert_pdf(temp_pdf, config_parser)
     page_range = config_parser.generate_config_dict()["page_range"]
     first_page = page_range[0] if page_range else 0
 
@@ -255,7 +286,9 @@ if debug:
             pdf_image_path = os.path.join(debug_data_path, f"pdf_page_{first_page}.png")
             img = Image.open(pdf_image_path)
             st.image(img, caption="PDF debug image", use_container_width=True)
-            layout_image_path = os.path.join(debug_data_path, f"layout_page_{first_page}.png")
+            layout_image_path = os.path.join(
+                debug_data_path, f"layout_page_{first_page}.png"
+            )
             img = Image.open(layout_image_path)
             st.image(img, caption="Layout debug image", use_container_width=True)
         st.write("Raw output:")
