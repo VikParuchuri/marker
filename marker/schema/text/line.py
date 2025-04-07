@@ -39,7 +39,7 @@ class Line(Block):
     block_description: str = "A line of text."
     formats: List[Literal["math"]] | None = None # Sometimes we want to set math format at the line level, not span
 
-    def formatted_text(self, document):
+    def formatted_text(self, document, skip_urls=False):
         text = ""
         for block in self.contained_blocks(document, (BlockTypes.Span,)):
             block_text = html.escape(block.text)
@@ -49,7 +49,7 @@ class Line(Block):
                 if "<sup>" not in block_text:
                     block_text = f"<sup>{block_text}</sup>"
 
-            if block.url:
+            if block.url and not skip_urls:
                 block_text = f"<a href='{block.url}'>{block_text}</a>"
 
             if block.italic:
