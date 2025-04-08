@@ -91,7 +91,7 @@ class OcrBuilder(BaseBuilder):
                 if block.block_type in self.skip_ocr_blocks:
                     continue
                 block_lines = block.contained_blocks(document, [BlockTypes.Line])
-                block_detected_lines = [
+                block_lines_to_ocr = [
                     block_line
                     for block_line in block_lines
                     if block_line.text_extraction_method == "surya"
@@ -101,10 +101,13 @@ class OcrBuilder(BaseBuilder):
                 if document_page.text_extraction_method == "surya":
                     block.text_extraction_method = "surya"
 
-                for line in block_detected_lines:
-                    line_polygon = copy.deepcopy(line.polygon)
+                for line in block_lines_to_ocr:
+                    # Fit the polygon to image bounds since PIL image crop expands by default which might create bad images for the OCR model.
+                    line_polygon_rescaled = copy.deepcopy(line.polygon).rescale(page_size, image_size).fit_to_bounds((0, 0, *image_size))
+                    line_bbox_rescaled = line_polygon_rescaled.bbox
+
                     page_highres_boxes.append(
-                        line_polygon.rescale(page_size, image_size).bbox
+                        line_bbox_rescaled
                     )
                     page_line_ids.append(line.id)
                     # For OCRed pages, this text will be blank
