@@ -238,6 +238,11 @@ format_lines = st.sidebar.checkbox(
     help="Format lines in the document with OCR model",
     value=False,
 )
+disable_ocr_math = st.sidebar.checkbox(
+    "Disable math",
+    help="Disable math in OCR output - no inline math",
+    value=False,
+)
 
 if not run_marker:
     st.stop()
@@ -258,6 +263,7 @@ with tempfile.TemporaryDirectory() as tmp_dir:
             "use_llm": use_llm,
             "strip_existing_ocr": strip_existing_ocr,
             "format_lines": format_lines,
+            "disable_ocr_math": disable_ocr_math,
         }
     )
     config_parser = ConfigParser(cli_options)

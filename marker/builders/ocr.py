@@ -1,8 +1,8 @@
 import copy
 from typing import Annotated, List, Optional
-import re
 
 from ftfy import fix_text
+from surya.common.surya.schema import TaskNames
 from surya.recognition import RecognitionPredictor, OCRResult, TextChar
 
 from marker.builders import BaseBuilder
@@ -18,19 +18,16 @@ from marker.settings import settings
 from marker.schema.polygon import PolygonBox
 from marker.util import get_opening_tag_type, get_closing_tag_type
 
+
 class OcrBuilder(BaseBuilder):
     """
     A builder for performing OCR on PDF pages and merging the results into the document.
     """
+
     recognition_batch_size: Annotated[
         Optional[int],
         "The batch size to use for the recognition model.",
-        "Default is None, which will use the default batch size for the model."
-    ] = None
-    languages: Annotated[
-        Optional[List[str]],
-        "A list of languages to use for OCR.",
-        "Default is None."
+        "Default is None, which will use the default batch size for the model.",
     ] = None
     disable_tqdm: Annotated[
         bool,
@@ -39,8 +36,13 @@ class OcrBuilder(BaseBuilder):
     skip_ocr_blocks: Annotated[
         List[BlockTypes],
         "Blocktypes for which contained lines are not processed by the OCR model"
-        "By default, this avoids recognizing lines inside equations"
-    ] = (BlockTypes.Equation)
+        "By default, this avoids recognizing lines inside equations",
+    ] = BlockTypes.Equation
+    ocr_task_name: Annotated[
+        str,
+        "The OCR mode to use, see surya for details.  Set to 'ocr_without_boxes' for potentially better performance, at the expense of formatting.",
+    ] = TaskNames.ocr_with_boxes
+    disable_ocr_math: Annotated[bool, "Disable inline math recognition in OCR"] = False
 
     def __init__(self, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
@@ -50,8 +52,18 @@ class OcrBuilder(BaseBuilder):
     def __call__(self, document: Document, provider: PdfProvider):
         # pages_to_ocr = [page for page in document.pages if page.text_extraction_method == 'surya']
         pages_to_ocr = [page for page in document.pages]
-        images, line_boxes, line_ids, line_original_texts = self.get_ocr_images_boxes_ids(document, pages_to_ocr, provider)
-        self.ocr_extraction(document, pages_to_ocr, provider, images, line_boxes, line_ids, line_original_texts)
+        images, line_boxes, line_ids, line_original_texts = (
+            self.get_ocr_images_boxes_ids(document, pages_to_ocr, provider)
+        )
+        self.ocr_extraction(
+            document,
+            pages_to_ocr,
+            provider,
+            images,
+            line_boxes,
+            line_ids,
+            line_original_texts,
+        )
 
     def get_recognition_batch_size(self):
         if self.recognition_batch_size is not None:
@@ -62,7 +74,9 @@ class OcrBuilder(BaseBuilder):
             return 32
         return 32
 
-    def get_ocr_images_boxes_ids(self, document: Document, pages: List[PageGroup], provider: PdfProvider):
+    def get_ocr_images_boxes_ids(
+        self, document: Document, pages: List[PageGroup], provider: PdfProvider
+    ):
         highres_images, highres_boxes, line_ids, line_original_texts = [], [], [], []
         for document_page in pages:
             page_highres_image = document_page.get_image(highres=True)
@@ -77,18 +91,26 @@ class OcrBuilder(BaseBuilder):
                 if block.block_type in self.skip_ocr_blocks:
                     continue
                 block_lines = block.contained_blocks(document, [BlockTypes.Line])
-                block_detected_lines = [block_line for block_line in block_lines if block_line.text_extraction_method == 'surya']
-                
+                block_detected_lines = [
+                    block_line
+                    for block_line in block_lines
+                    if block_line.text_extraction_method == "surya"
+                ]
+
                 # Set extraction method of OCR-only pages
-                if document_page.text_extraction_method == 'surya':
-                    block.text_extraction_method = 'surya'
+                if document_page.text_extraction_method == "surya":
+                    block.text_extraction_method = "surya"
 
                 for line in block_detected_lines:
                     line_polygon = copy.deepcopy(line.polygon)
-                    page_highres_boxes.append(line_polygon.rescale(page_size, image_size).bbox)
+                    page_highres_boxes.append(
+                        line_polygon.rescale(page_size, image_size).bbox
+                    )
                     page_line_ids.append(line.id)
                     # For OCRed pages, this text will be blank
-                    page_line_original_texts.append(line.formatted_text(document, skip_urls=True).rstrip())
+                    page_line_original_texts.append(
+                        line.formatted_text(document, skip_urls=True).rstrip()
+                    )
 
             highres_images.append(page_highres_image)
             highres_boxes.append(page_highres_boxes)
@@ -97,27 +119,43 @@ class OcrBuilder(BaseBuilder):
 
         return highres_images, highres_boxes, line_ids, line_original_texts
 
-    def ocr_extraction(self, document: Document, pages: List[PageGroup], provider: PdfProvider, images: List[any], line_boxes: List[List[List[float]]], line_ids: List[List[BlockId]], line_original_texts: List[List[str]]):
-        if sum(len(b) for b in line_boxes)==0:
+    def ocr_extraction(
+        self,
+        document: Document,
+        pages: List[PageGroup],
+        provider: PdfProvider,
+        images: List[any],
+        line_boxes: List[List[List[float]]],
+        line_ids: List[List[BlockId]],
+        line_original_texts: List[List[str]],
+    ):
+        if sum(len(b) for b in line_boxes) == 0:
             return
 
         self.recognition_model.disable_tqdm = self.disable_tqdm
         recognition_results: OCRResult = self.recognition_model(
             images=images,
-            task_names=['ocr_with_boxes'] * len(images),
+            task_names=[self.ocr_task_name] * len(images),
             bboxes=line_boxes,
             input_text=line_original_texts,
             recognition_batch_size=int(self.get_recognition_batch_size()),
-            sort_lines=False
+            sort_lines=False,
+            math_mode=not self.disable_ocr_math,
         )
 
-        for document_page, page_recognition_result, page_line_ids in zip(pages, recognition_results, line_ids):
-            for line_id, ocr_line in zip(page_line_ids, page_recognition_result.text_lines):
+        for document_page, page_recognition_result, page_line_ids in zip(
+            pages, recognition_results, line_ids
+        ):
+            for line_id, ocr_line in zip(
+                page_line_ids, page_recognition_result.text_lines
+            ):
                 if ocr_line.original_text_good:
                     continue
                 if not fix_text(ocr_line.text):
                     continue
-                new_spans = self.spans_from_html_chars(ocr_line.chars, document_page.page_id)
+                new_spans = self.spans_from_html_chars(
+                    ocr_line.chars, document_page.page_id
+                )
 
                 line = document_page.get_block(line_id)
                 self.replace_line_spans(document, document_page, line, new_spans)
@@ -140,10 +178,12 @@ class OcrBuilder(BaseBuilder):
         return before_span, match_span, after_span
 
     # Pull all refs from old spans and attempt to insert back into appropriate place in new spans
-    def replace_line_spans(self, document: Document, page: PageGroup, line: Line, new_spans: List[Span]):
+    def replace_line_spans(
+        self, document: Document, page: PageGroup, line: Line, new_spans: List[Span]
+    ):
         old_spans = line.contained_blocks(document, [BlockTypes.Span])
         text_ref_matching = {span.text: span.url for span in old_spans if span.url}
-        
+
         # Insert refs into new spans, since the OCR model does not (cannot) generate these
         final_new_spans = []
         for span in new_spans:
@@ -155,7 +195,9 @@ class OcrBuilder(BaseBuilder):
                 for match_text, url in text_ref_matching.items():
                     if match_text in remaining_text:
                         matched = True
-                        before, current, after = self.link_and_break_span(original_span, remaining_text, match_text, url)
+                        before, current, after = self.link_and_break_span(
+                            original_span, remaining_text, match_text, url
+                        )
                         if before:
                             final_new_spans.append(before)
                         final_new_spans.append(current)
@@ -169,7 +211,7 @@ class OcrBuilder(BaseBuilder):
                     remaining_span.text = remaining_text
                     final_new_spans.append(remaining_span)
                     break
-        
+
         # Clear the old spans from the line
         line.structure = []
         for span in final_new_spans:
@@ -179,7 +221,7 @@ class OcrBuilder(BaseBuilder):
     def spans_from_html_chars(self, chars: List[TextChar], page_id: int):
         SpanClass: Span = get_block_class(BlockTypes.Span)
         spans = []
-        formats = {'plain'}
+        formats = {"plain"}
 
         current_span = None
         for char in chars:
@@ -189,18 +231,18 @@ class OcrBuilder(BaseBuilder):
                 if current_span:
                     spans.append(current_span)
                     current_span = None
-                if format == 'math':
+                if format == "math":
                     current_span = SpanClass(
-                        text='',
+                        text="",
                         formats=list(formats),
                         page_id=page_id,
                         polygon=PolygonBox(polygon=char.polygon),
                         minimum_position=0,
                         maximum_position=0,
-                        font='Unknown',
+                        font="Unknown",
                         font_weight=0,
                         font_size=0,
-                    ) 
+                    )
                 continue
 
             is_closing_tag, format = get_closing_tag_type(char.text)
@@ -208,11 +250,13 @@ class OcrBuilder(BaseBuilder):
                 # Useful since the OCR model sometimes returns closing tags without an opening tag
                 try:
                     formats.remove(format)
-                except:
+                except Exception:
                     continue
                 if current_span:
-                    if format == 'math':
-                        current_span.html = f'<math display="inline">{current_span.text}</math>'
+                    if format == "math":
+                        current_span.html = (
+                            f'<math display="inline">{current_span.text}</math>'
+                        )
                     spans.append(current_span)
                     current_span = None
                 continue
@@ -225,24 +269,25 @@ class OcrBuilder(BaseBuilder):
                     polygon=PolygonBox(polygon=char.polygon),
                     minimum_position=0,
                     maximum_position=0,
-                    font='Unknown',
+                    font="Unknown",
                     font_weight=0,
                     font_size=0,
                 )
                 continue
-            
 
             current_span.text = fix_text(current_span.text + char.text)
             # Tokens inside a math span don't have valid boxes, so we skip the merging
-            if 'math' not in formats:
-                current_span.polygon = current_span.polygon.merge([PolygonBox(polygon=char.polygon)])
-            
+            if "math" not in formats:
+                current_span.polygon = current_span.polygon.merge(
+                    [PolygonBox(polygon=char.polygon)]
+                )
+
         # Add the last span to the list
         if current_span:
             spans.append(current_span)
 
         # Add newline after all spans finish
         if not spans[-1].html:
-            spans[-1].text += '\n'
+            spans[-1].text += "\n"
 
         return spans
