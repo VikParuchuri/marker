@@ -411,6 +411,26 @@ class LineBuilder(BaseBuilder):
             ]
         )
 
+        def bbox_for_merge_section(
+            merge_section: List[int],
+            all_merge_sections: List[List[int]],
+            text_line: PolygonBox,
+        ):
+            # Don't just take the whole detected line if we have multiple sections inside
+            if len(all_merge_sections) == 1:
+                return text_line.rescale(image_size, page_size)
+            else:
+                poly = None
+                for section_idx in merge_section:
+                    section_polygon = deepcopy(
+                        horizontal_provider_lines[section_idx][1].line.polygon
+                    )
+                    if poly is None:
+                        poly = section_polygon
+                    else:
+                        poly = poly.merge([section_polygon])
+                return poly
+
         for line_idx in filtered_merge_lines:
             text_line = text_lines[line_idx]
             for merge_section in filtered_merge_lines[line_idx]:
@@ -424,7 +444,9 @@ class LineBuilder(BaseBuilder):
                     ]
                     # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
                     # TODO Add metadata for this
-                    merged_line.line.polygon = text_line.rescale(image_size, page_size)
+                    merged_line.line.polygon = bbox_for_merge_section(
+                        merge_section, filtered_merge_lines[line_idx], text_line
+                    )
                     out_provider_lines.append((out_idx, merged_line))
                     already_merged.add(merge_section[0])
                 else:
@@ -442,7 +464,9 @@ class LineBuilder(BaseBuilder):
                         already_merged.add(idx)  # Prevent double merging
                     # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
                     # TODO Add metadata for this
-                    merged_line.line.polygon = text_line.rescale(image_size, page_size)
+                    merged_line.line.polygon = bbox_for_merge_section(
+                        merge_section, filtered_merge_lines[line_idx], text_line
+                    )
                     out_provider_lines.append((out_idx, merged_line))
 
         # Sort to preserve original order
