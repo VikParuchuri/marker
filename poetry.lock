@@ -1101,6 +1101,18 @@ lxml = "*"
 six = "*"
 
 [[package]]
+name = "einops"
+version = "0.8.1"
+description = "A new flavour of deep learning operations"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "einops-0.8.1-py3-none-any.whl", hash = "sha256:919387eb55330f5757c6bea9165c5ff5cfe63a642682ea788a6d472576d81737"},
+    {file = "einops-0.8.1.tar.gz", hash = "sha256:de5d960a7a761225532e0f1959e5315ebeafc0cd43394732f103ca44b9837e84"},
+]
+
+[[package]]
 name = "et-xmlfile"
 version = "2.0.0"
 description = "An implementation of lxml.xmlfile for the standard library"
@@ -2641,6 +2653,18 @@ files = [
     {file = "MarkupSafe-3.0.2-cp39-cp39-win32.whl", hash = "sha256:8c4e8c3ce11e1f92f6536ff07154f9d49677ebaaafc32db9db4620bc11ed480f"},
     {file = "MarkupSafe-3.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:6e296a513ca3d94054c2c881cc913116e90fd030ad1c656b3869762b754f5f8a"},
     {file = "markupsafe-3.0.2.tar.gz", hash = "sha256:ee55d3edf80167e48ea11a923c7386f4669df67d7994554387f84e7d8b0a2bf0"},
+]
+
+[[package]]
+name = "mathml-to-latex"
+version = "1.0.0"
+description = "It converts MathML to LaTeX"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "mathml_to_latex-1.0.0-py3-none-any.whl", hash = "sha256:a85ec2434da774be019ed5ea32494616baabf48471b054e3567a7700ae759572"},
+    {file = "mathml_to_latex-1.0.0.tar.gz", hash = "sha256:ba6a438526684940572d1875b4d5f2d6cb3bea52943830307d08a9fc662e4f69"},
 ]
 
 [[package]]
@@ -5348,22 +5372,25 @@ snowflake = ["snowflake-connector-python (>=3.3.0) ; python_version < \"3.12\"",
 
 [[package]]
 name = "surya-ocr"
-version = "0.13.1"
+version = "0.14.0a1"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "surya_ocr-0.13.1-py3-none-any.whl", hash = "sha256:2704a97f5de625bc747eddf87874635cb8be164c4c9373207a022648325f009d"},
-    {file = "surya_ocr-0.13.1.tar.gz", hash = "sha256:af4004448eb8798aeddd4aa709c2f4d3795a3ec7bf12252595b481a65f799a52"},
+    {file = "surya_ocr-0.14.0a1-py3-none-any.whl", hash = "sha256:bd8c5b64f4a46f07d9bf87bde42cdff5e8dbba0ef9516420faf0d8cc4752afb8"},
+    {file = "surya_ocr-0.14.0a1.tar.gz", hash = "sha256:e53d39c6d446dc7af06ab876ecbffdccb0ee29df4ff270decda91cec14b1ba3c"},
 ]
 
 [package.dependencies]
 click = ">=8.1.8,<9.0.0"
+einops = ">=0.8.1,<0.9.0"
 filetype = ">=1.2.0,<2.0.0"
+mathml-to-latex = ">=1.0.0,<2.0.0"
 opencv-python-headless = ">=4.11.0.86,<5.0.0.0"
 pillow = ">=10.2.0,<11.0.0"
 platformdirs = ">=4.3.6,<5.0.0"
+pre-commit = ">=4.2.0,<5.0.0"
 pydantic = ">=2.5.3,<3.0.0"
 pydantic-settings = ">=2.1.0,<3.0.0"
 pypdfium2 = "4.30.0"
@@ -6449,4 +6476,4 @@ full = ["ebooklib", "mammoth", "openpyxl", "python-pptx", "weasyprint"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "66223b77eec2da27cc7d6fdddaa1863278a7bf5dadb631a4fb67100d0ded558c"
+content-hash = "095142a86f4cc1e0c39a5ff1940bce76ad971607705e9191a940cffbfed403e9"
