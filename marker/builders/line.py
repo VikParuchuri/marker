@@ -5,6 +5,7 @@ from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
+import cv2
 
 from surya.detection import DetectionPredictor
 from surya.ocr_error import OCRErrorPredictor
@@ -309,6 +310,31 @@ class LineBuilder(BaseBuilder):
             text_okay = True
         return text_okay
 
+    def is_blank_slice(self, slice_image: Image.Image):
+        image = np.asarray(slice_image)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        
+        binarized = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                        cv2.THRESH_BINARY_INV, 11, 2)
+
+        b = np.asarray(binarized) / 255
+        return (b.sum() == 0)
+
+    def filter_blank_lines(self, page: PageGroup, lines: List[ProviderOutput]):
+        page_size = (page.polygon.width, page.polygon.height)
+        page_image = page.get_image()
+        image_size = page_image.size
+
+        good_lines = []
+        for line in lines:
+            line_polygon_rescaled = deepcopy(line.line.polygon).rescale(page_size, image_size)
+            line_bbox = line_polygon_rescaled.fit_to_bounds((0, 0, *image_size)).bbox
+
+            if not self.is_blank_slice(page_image.crop(line_bbox)):
+                good_lines.append(line)
+
+        return good_lines
+
     def merge_blocks(
         self,
         document: Document,
@@ -320,7 +346,8 @@ class LineBuilder(BaseBuilder):
             ocr_lines = page_ocr_lines[document_page.page_id]
 
             # Only one or the other will have lines
-            merged_lines = provider_lines + ocr_lines
+            # Filter out blank lines which come from bad provider boxes, or invisible text
+            merged_lines = self.filter_blank_lines(document_page, provider_lines + ocr_lines)
 
             # Text extraction method is overridden later for OCRed documents
             document_page.merge_blocks(merged_lines, text_extraction_method="pdftext")
