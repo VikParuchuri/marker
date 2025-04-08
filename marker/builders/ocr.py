@@ -1,5 +1,8 @@
 import copy
 from typing import Annotated, List, Optional
+import numpy as np
+import cv2
+from PIL import Image
 
 from ftfy import fix_text
 from surya.common.surya.schema import TaskNames
@@ -74,6 +77,17 @@ class OcrBuilder(BaseBuilder):
             return 32
         return 32
 
+    # Check for completely blank image slices to prevent OCRing them when `format_lines` is set
+    def is_blank_slice(self, slice_image: Image.Image):
+        image = np.asarray(slice_image)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        
+        binarized = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                        cv2.THRESH_BINARY_INV, 11, 2)
+
+        b = np.asarray(binarized) / 255
+        return (b.sum() == 0)
+
     def get_ocr_images_boxes_ids(
         self, document: Document, pages: List[PageGroup], provider: PdfProvider
     ):
@@ -91,7 +105,7 @@ class OcrBuilder(BaseBuilder):
                 if block.block_type in self.skip_ocr_blocks:
                     continue
                 block_lines = block.contained_blocks(document, [BlockTypes.Line])
-                block_detected_lines = [
+                block_lines_to_ocr = [
                     block_line
                     for block_line in block_lines
                     if block_line.text_extraction_method == "surya"
@@ -101,10 +115,18 @@ class OcrBuilder(BaseBuilder):
                 if document_page.text_extraction_method == "surya":
                     block.text_extraction_method = "surya"
 
-                for line in block_detected_lines:
-                    line_polygon = copy.deepcopy(line.polygon)
+                for line in block_lines_to_ocr:
+                    # Fit the polygon to image bounds since PIL image crop expands by default
+                    line_polygon_rescaled = copy.deepcopy(line.polygon).rescale(page_size, image_size).fit_to_bounds((0, 0, *image_size))
+                    line_bbox_rescaled = line_polygon_rescaled.bbox
+
+                    # Skip bad provider boxes which are random empty boxes
+                    # TODO Check if the line text can be cleared in this case
+                    if self.is_blank_slice(page_highres_image.crop(line_bbox_rescaled)):
+                        continue
+
                     page_highres_boxes.append(
-                        line_polygon.rescale(page_size, image_size).bbox
+                        line_bbox_rescaled
                     )
                     page_line_ids.append(line.id)
                     # For OCRed pages, this text will be blank
