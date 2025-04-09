@@ -48,9 +48,11 @@ The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that
 
 There's a hosted API for marker available [here](https://www.datalab.to/):
 
-- Supports PDFs, word documents, and powerpoints 
+- Supports PDF, image, PPT, PPTX, DOC, DOCX, XLS, XLSX, HTML, EPUB files
 - 1/4th the price of leading cloud-based competitors
-- High uptime (99.99%), quality, and speed (around 15 seconds to convert a 250 page PDF)
+- Fast - ~15s for a 250 page PDF
+- Supports LLM mode
+- High uptime (99.99%)
 
 # Community
 

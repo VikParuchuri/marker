@@ -30,8 +30,8 @@ def test_garbled_pdf(pdf_document, detection_model, recognition_model, table_rec
 
 @pytest.mark.filename("hindi_judgement.pdf")
 @pytest.mark.config({"page_range": [2, 3], "disable_ocr": True})
-def test_garbled_builder(config, doc_provider, detection_model, inline_detection_model, ocr_error_model):
-    line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
+def test_garbled_builder(config, doc_provider, detection_model, ocr_error_model):
+    line_builder = LineBuilder(detection_model, ocr_error_model, config)
     builder = DocumentBuilder(config)
     document = builder.build_document(doc_provider)
 
@@ -42,8 +42,8 @@ def test_garbled_builder(config, doc_provider, detection_model, inline_detection
 
 @pytest.mark.filename("adversarial.pdf")
 @pytest.mark.config({"page_range": [2, 3], "disable_ocr": True})
-def test_nongarbled_builder(config, doc_provider, detection_model, inline_detection_model, ocr_error_model):
-    line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
+def test_nongarbled_builder(config, doc_provider, detection_model, ocr_error_model):
+    line_builder = LineBuilder(detection_model, ocr_error_model, config)
     builder = DocumentBuilder(config)
     document = builder.build_document(doc_provider)
 
