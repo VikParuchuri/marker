@@ -87,6 +87,7 @@ class LineBuilder(BaseBuilder):
         bool,
         "Disable tqdm progress bars.",
     ] = False
+    keep_chars: Annotated[bool, "Keep individual characters."] = False
 
     def __init__(
         self,
@@ -312,13 +313,23 @@ class LineBuilder(BaseBuilder):
 
     def is_blank_slice(self, slice_image: Image.Image):
         image = np.asarray(slice_image)
+        if (
+            image is None
+            or image.size == 0
+            or image.shape[0] == 0
+            or image.shape[1] == 0
+        ):
+            # Handle empty image case
+            return True
+
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        
-        binarized = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                        cv2.THRESH_BINARY_INV, 11, 2)
+
+        binarized = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
+        )
 
         b = np.asarray(binarized) / 255
-        return (b.sum() == 0)
+        return b.sum() == 0
 
     def filter_blank_lines(self, page: PageGroup, lines: List[ProviderOutput]):
         page_size = (page.polygon.width, page.polygon.height)
@@ -327,7 +338,9 @@ class LineBuilder(BaseBuilder):
 
         good_lines = []
         for line in lines:
-            line_polygon_rescaled = deepcopy(line.line.polygon).rescale(page_size, image_size)
+            line_polygon_rescaled = deepcopy(line.line.polygon).rescale(
+                page_size, image_size
+            )
             line_bbox = line_polygon_rescaled.fit_to_bounds((0, 0, *image_size)).bbox
 
             if not self.is_blank_slice(page_image.crop(line_bbox)):
@@ -347,7 +360,9 @@ class LineBuilder(BaseBuilder):
 
             # Only one or the other will have lines
             # Filter out blank lines which come from bad provider boxes, or invisible text
-            merged_lines = self.filter_blank_lines(document_page, provider_lines + ocr_lines)
+            merged_lines = self.filter_blank_lines(
+                document_page, provider_lines + ocr_lines
+            )
 
             # Text extraction method is overridden later for OCRed documents
             document_page.merge_blocks(merged_lines, text_extraction_method="pdftext")
