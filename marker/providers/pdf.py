@@ -213,6 +213,7 @@ class PdfProvider(BaseProvider):
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
+        CharClass: Char = get_block_class(BlockTypes.Char)
 
         for page in page_char_blocks:
             page_id = page["page"]
@@ -237,12 +238,12 @@ class PdfProvider(BaseProvider):
                             span["bbox"], ensure_nonzero_area=True
                         )
                         span_chars = [
-                            Char(
+                            CharClass(
                                 char=c["char"],
                                 polygon=PolygonBox.from_bbox(
                                     c["bbox"], ensure_nonzero_area=True
                                 ),
-                                char_idx=c["char_idx"],
+                                idx=c["char_idx"],
                             )
                             for c in span["chars"]
                         ]
