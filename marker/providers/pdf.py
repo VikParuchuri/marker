@@ -239,7 +239,7 @@ class PdfProvider(BaseProvider):
                         )
                         span_chars = [
                             CharClass(
-                                char=c["char"],
+                                text=c["char"],
                                 polygon=PolygonBox.from_bbox(
                                     c["bbox"], ensure_nonzero_area=True
                                 ),

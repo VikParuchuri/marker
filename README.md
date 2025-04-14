@@ -227,6 +227,27 @@ You can also run this via the CLI with
 marker_single FILENAME --use_llm --force_layout_block Table --converter_cls marker.converters.table.TableConverter --output_format json
 ```
 
+### OCR Only
+
+If you only want to run OCR, you can also do that through the `OCRConverter`.
+
+```python
+from marker.converters.ocr import OCRConverter
+from marker.models import create_model_dict
+
+converter = OCRConverter(
+    artifact_dict=create_model_dict(),
+)
+rendered = converter("FILEPATH")
+```
+
+This takes all the same configuration as the PdfConverter.
+
+You can also run this via the CLI with 
+```shell
+marker_single FILENAME --converter_cls marker.converters.ocr.OCRConverter
+```
+
 # Output Formats
 
 ## Markdown

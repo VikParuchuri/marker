@@ -171,10 +171,12 @@ class OcrBuilder(BaseBuilder):
         before_span, after_span = None, None
         if before_text:
             before_span = copy.deepcopy(span)
+            before_span.structure = []  # Avoid duplicate characters
             before_span.text = before_text
         if after_text:
             after_span = copy.deepcopy(span)
             after_span.text = after_text
+            after_span.structure = []  # Avoid duplicate characters
 
         match_span = copy.deepcopy(span)
         match_span.text = match_text
@@ -214,7 +216,6 @@ class OcrBuilder(BaseBuilder):
                 if not matched:
                     remaining_span = copy.deepcopy(original_span)
                     remaining_span.text = remaining_text
-                    remaining_span.structure = []
                     final_new_spans.append(remaining_span)
                     break
 
@@ -287,10 +288,11 @@ class OcrBuilder(BaseBuilder):
                         current_span.html = (
                             f'<math display="inline">{current_span.text}</math>'
                         )
+
+                    current_chars = self.assign_chars(current_span, current_chars)
                     spans.append(current_span)
                     current_span = None
 
-                    current_chars = self.assign_chars(current_span, current_chars)
                 continue
 
             if not current_span:

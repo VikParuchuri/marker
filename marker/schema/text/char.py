@@ -6,5 +6,5 @@ class Char(Block):
     block_type: BlockTypes = BlockTypes.Char
     block_description: str = "A single character inside a span."
 
-    char: str
+    text: str
     idx: int
