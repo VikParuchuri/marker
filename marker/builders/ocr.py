@@ -2,6 +2,7 @@ import copy
 from typing import Annotated, List, Optional
 
 from ftfy import fix_text
+from PIL import Image
 from surya.common.surya.schema import TaskNames
 from surya.recognition import RecognitionPredictor, OCRResult, TextChar
 
@@ -140,7 +141,7 @@ class OcrBuilder(BaseBuilder):
             return
 
         self.recognition_model.disable_tqdm = self.disable_tqdm
-        recognition_results: OCRResult = self.recognition_model(
+        recognition_results: List[OCRResult] = self.recognition_model(
             images=images,
             task_names=[self.ocr_task_name] * len(images),
             bboxes=line_boxes,
@@ -150,8 +151,11 @@ class OcrBuilder(BaseBuilder):
             math_mode=not self.disable_ocr_math,
         )
 
-        for document_page, page_recognition_result, page_line_ids in zip(
-            pages, recognition_results, line_ids
+        assert len(recognition_results) == len(images) == len(pages) == len(line_ids), (
+            f"Mismatch in OCR lengths: {len(recognition_results)}, {len(images)}, {len(pages)}, {len(line_ids)}"
+        )
+        for document_page, page_recognition_result, page_line_ids, image in zip(
+            pages, recognition_results, line_ids, images
         ):
             for line_id, ocr_line in zip(
                 page_line_ids, page_recognition_result.text_lines
@@ -160,7 +164,9 @@ class OcrBuilder(BaseBuilder):
                     continue
                 if not fix_text(ocr_line.text):
                     continue
-                new_spans = self.spans_from_html_chars(ocr_line.chars, document_page)
+                new_spans = self.spans_from_html_chars(
+                    ocr_line.chars, document_page, image
+                )
 
                 line = document_page.get_block(line_id)
                 self.replace_line_spans(document, document_page, line, new_spans)
@@ -236,7 +242,9 @@ class OcrBuilder(BaseBuilder):
             current_chars.append(char)
             page.add_full_block(char)
 
-    def spans_from_html_chars(self, chars: List[TextChar], page: PageGroup):
+    def spans_from_html_chars(
+        self, chars: List[TextChar], page: PageGroup, image: Image.Image
+    ):
         # Turn input characters from surya into spans - also store the raw characters
         SpanClass: Span = get_block_class(BlockTypes.Span)
         CharClass: Char = get_block_class(BlockTypes.Char)
@@ -245,12 +253,17 @@ class OcrBuilder(BaseBuilder):
 
         current_span = None
         current_chars = []
+        image_size = image.size
+
         for idx, char in enumerate(chars):
+            char_box = PolygonBox(polygon=char.polygon).rescale(
+                image_size, page.polygon.size
+            )
             marker_char = CharClass(
                 text=char.text,
                 idx=idx,
                 page_id=page.page_id,
-                polygon=PolygonBox(polygon=char.polygon),
+                polygon=char_box,
             )
 
             is_opening_tag, format = get_opening_tag_type(char.text)
@@ -258,15 +271,15 @@ class OcrBuilder(BaseBuilder):
                 formats.add(format)
                 if current_span:
                     current_chars = self.assign_chars(current_span, current_chars)
-
                     spans.append(current_span)
                     current_span = None
+
                 if format == "math":
                     current_span = SpanClass(
                         text="",
                         formats=list(formats),
                         page_id=page.page_id,
-                        polygon=PolygonBox(polygon=char.polygon),
+                        polygon=char_box,
                         minimum_position=0,
                         maximum_position=0,
                         font="Unknown",
@@ -292,7 +305,6 @@ class OcrBuilder(BaseBuilder):
                     current_chars = self.assign_chars(current_span, current_chars)
                     spans.append(current_span)
                     current_span = None
-
                 continue
 
             if not current_span:
@@ -300,7 +312,7 @@ class OcrBuilder(BaseBuilder):
                     text=fix_text(char.text),
                     formats=list(formats),
                     page_id=page.page_id,
-                    polygon=PolygonBox(polygon=char.polygon),
+                    polygon=char_box,
                     minimum_position=0,
                     maximum_position=0,
                     font="Unknown",
@@ -315,14 +327,12 @@ class OcrBuilder(BaseBuilder):
 
             # Tokens inside a math span don't have valid boxes, so we skip the merging
             if "math" not in formats:
-                current_span.polygon = current_span.polygon.merge(
-                    [PolygonBox(polygon=char.polygon)]
-                )
+                current_span.polygon = current_span.polygon.merge([char_box])
 
         # Add the last span to the list
         if current_span:
-            spans.append(current_span)
             self.assign_chars(current_span, current_chars)
+            spans.append(current_span)
 
         # Add newline after all spans finish
         if not spans[-1].html:
