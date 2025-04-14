@@ -79,7 +79,7 @@ pip install marker-pdf[full]
 First, some configuration:
 
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and strip out any existing OCR text.
+- Some PDFs, even digital ones, have bad text in them.  Set the `format_lines` flag to ensure the bad lines are fixed and formatted. You can also set `--force_ocr` to force OCR on all lines, or the `strip_existing_ocr` to keep all digital text, and strip out any existing OCR text.
 
 ## Interactive App
 
@@ -99,15 +99,16 @@ marker_single /path/to/file.pdf
 You can pass in PDFs or images.
 
 Options:
-- `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
-- `--output_format [markdown|json|html]`: Specify the format for the output results.
-- `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n` 
-- `--use_llm`: Uses an LLM to improve accuracy.  You must set your Gemini API key using the `GOOGLE_API_KEY` env var.
-- `--redo_inline_math`: If you want the highest quality inline math conversion, use this along with `--use_llm`.
-- `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
+- `--output_format [markdown|json|html]`: Specify the format for the output results.
+- `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
+- `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n` 
+- `--use_llm`: Uses an LLM to improve accuracy.  You will need to configure the LLM backend - see [below](#llm-services).
+- `--format_lines`: Reformat all lines using a local OCR model (inline math, underlines, bold, etc.).  This will give very good quality math output.
 - `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
 - `--strip_existing_ocr`: Remove all existing OCR text in the document and re-OCR with surya.
+- `--redo_inline_math`: If you want the absolute highest quality inline math conversion, use this along with `--use_llm`.
+- `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--debug`: Enable debug mode for additional logging and diagnostic information.
 - `--processors TEXT`: Override the default processors by providing their full module paths, separated by commas. Example: `--processors "module1.processor1,module2.processor2"`
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
@@ -229,7 +230,7 @@ marker_single FILENAME --use_llm --force_layout_block Table --converter_cls mark
 
 ### OCR Only
 
-If you only want to run OCR, you can also do that through the `OCRConverter`.
+If you only want to run OCR, you can also do that through the `OCRConverter`.  Set `--keep_chars` to keep individual characters and bounding boxes.  You can also set `--force_ocr` and `--format_lines` with this converter.
 
 ```python
 from marker.converters.ocr import OCRConverter
@@ -520,15 +521,4 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 - Very complex layouts, with nested tables and forms, may not work
 - Forms may not be rendered well
 
-Note: Passing the `--use_llm` flag will mostly solve these issues.
-
-# Thanks
-
-This work would not have been possible without amazing open source models and datasets, including (but not limited to):
-
-- Surya
-- Texify
-- Pypdfium2/pdfium
-- DocLayNet from IBM
-
-Thank you to the authors of these models and datasets for making them available to the community!
+Note: Passing the `--use_llm` and `--format_lines` flags will mostly solve these issues.

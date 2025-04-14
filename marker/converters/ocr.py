@@ -20,7 +20,6 @@ class OCRConverter(PdfConverter):
             self.config = {}
 
         self.config["format_lines"] = True
-        self.config["keep_chars"] = True
         self.renderer = OCRJSONRenderer
 
     def build_document(self, filepath: str):
