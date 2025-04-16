@@ -2,6 +2,7 @@ import copy
 from typing import Annotated, List, Optional
 
 from ftfy import fix_text
+from PIL import Image
 from surya.common.surya.schema import TaskNames
 from surya.recognition import RecognitionPredictor, OCRResult, TextChar
 
@@ -12,6 +13,7 @@ from marker.schema.blocks import BlockId
 from marker.schema.document import Document
 from marker.schema.groups import PageGroup
 from marker.schema.registry import get_block_class
+from marker.schema.text.char import Char
 from marker.schema.text.line import Line
 from marker.schema.text.span import Span
 from marker.settings import settings
@@ -42,6 +44,7 @@ class OcrBuilder(BaseBuilder):
         str,
         "The OCR mode to use, see surya for details.  Set to 'ocr_without_boxes' for potentially better performance, at the expense of formatting.",
     ] = TaskNames.ocr_with_boxes
+    keep_chars: Annotated[bool, "Keep individual characters."] = False
     disable_ocr_math: Annotated[bool, "Disable inline math recognition in OCR"] = False
 
     def __init__(self, recognition_model: RecognitionPredictor, config=None):
@@ -103,12 +106,14 @@ class OcrBuilder(BaseBuilder):
 
                 for line in block_lines_to_ocr:
                     # Fit the polygon to image bounds since PIL image crop expands by default which might create bad images for the OCR model.
-                    line_polygon_rescaled = copy.deepcopy(line.polygon).rescale(page_size, image_size).fit_to_bounds((0, 0, *image_size))
+                    line_polygon_rescaled = (
+                        copy.deepcopy(line.polygon)
+                        .rescale(page_size, image_size)
+                        .fit_to_bounds((0, 0, *image_size))
+                    )
                     line_bbox_rescaled = line_polygon_rescaled.bbox
 
-                    page_highres_boxes.append(
-                        line_bbox_rescaled
-                    )
+                    page_highres_boxes.append(line_bbox_rescaled)
                     page_line_ids.append(line.id)
                     # For OCRed pages, this text will be blank
                     page_line_original_texts.append(
@@ -136,7 +141,7 @@ class OcrBuilder(BaseBuilder):
             return
 
         self.recognition_model.disable_tqdm = self.disable_tqdm
-        recognition_results: OCRResult = self.recognition_model(
+        recognition_results: List[OCRResult] = self.recognition_model(
             images=images,
             task_names=[self.ocr_task_name] * len(images),
             bboxes=line_boxes,
@@ -146,8 +151,11 @@ class OcrBuilder(BaseBuilder):
             math_mode=not self.disable_ocr_math,
         )
 
-        for document_page, page_recognition_result, page_line_ids in zip(
-            pages, recognition_results, line_ids
+        assert len(recognition_results) == len(images) == len(pages) == len(line_ids), (
+            f"Mismatch in OCR lengths: {len(recognition_results)}, {len(images)}, {len(pages)}, {len(line_ids)}"
+        )
+        for document_page, page_recognition_result, page_line_ids, image in zip(
+            pages, recognition_results, line_ids, images
         ):
             for line_id, ocr_line in zip(
                 page_line_ids, page_recognition_result.text_lines
@@ -157,7 +165,7 @@ class OcrBuilder(BaseBuilder):
                 if not fix_text(ocr_line.text):
                     continue
                 new_spans = self.spans_from_html_chars(
-                    ocr_line.chars, document_page.page_id
+                    ocr_line.chars, document_page, image
                 )
 
                 line = document_page.get_block(line_id)
@@ -169,10 +177,12 @@ class OcrBuilder(BaseBuilder):
         before_span, after_span = None, None
         if before_text:
             before_span = copy.deepcopy(span)
+            before_span.structure = []  # Avoid duplicate characters
             before_span.text = before_text
         if after_text:
             after_span = copy.deepcopy(span)
             after_span.text = after_text
+            after_span.structure = []  # Avoid duplicate characters
 
         match_span = copy.deepcopy(span)
         match_span.text = match_text
@@ -219,33 +229,64 @@ class OcrBuilder(BaseBuilder):
         line.structure = []
         for span in final_new_spans:
             page.add_full_block(span)
-            line.structure.append(span)
+            line.structure.append(span.id)
 
-    def spans_from_html_chars(self, chars: List[TextChar], page_id: int):
+    def assign_chars(self, span: Span, current_chars: List[Char]):
+        if self.keep_chars:
+            span.structure = [c.id for c in current_chars]
+
+        return []
+
+    def store_char(self, char: Char, current_chars: List[Char], page: PageGroup):
+        if self.keep_chars:
+            current_chars.append(char)
+            page.add_full_block(char)
+
+    def spans_from_html_chars(
+        self, chars: List[TextChar], page: PageGroup, image: Image.Image
+    ):
+        # Turn input characters from surya into spans - also store the raw characters
         SpanClass: Span = get_block_class(BlockTypes.Span)
+        CharClass: Char = get_block_class(BlockTypes.Char)
         spans = []
         formats = {"plain"}
 
         current_span = None
-        for char in chars:
+        current_chars = []
+        image_size = image.size
+
+        for idx, char in enumerate(chars):
+            char_box = PolygonBox(polygon=char.polygon).rescale(
+                image_size, page.polygon.size
+            )
+            marker_char = CharClass(
+                text=char.text,
+                idx=idx,
+                page_id=page.page_id,
+                polygon=char_box,
+            )
+
             is_opening_tag, format = get_opening_tag_type(char.text)
             if is_opening_tag and format not in formats:
                 formats.add(format)
                 if current_span:
+                    current_chars = self.assign_chars(current_span, current_chars)
                     spans.append(current_span)
                     current_span = None
+
                 if format == "math":
                     current_span = SpanClass(
                         text="",
                         formats=list(formats),
-                        page_id=page_id,
-                        polygon=PolygonBox(polygon=char.polygon),
+                        page_id=page.page_id,
+                        polygon=char_box,
                         minimum_position=0,
                         maximum_position=0,
                         font="Unknown",
                         font_weight=0,
                         font_size=0,
                     )
+                    self.store_char(marker_char, current_chars, page)
                 continue
 
             is_closing_tag, format = get_closing_tag_type(char.text)
@@ -260,6 +301,8 @@ class OcrBuilder(BaseBuilder):
                         current_span.html = (
                             f'<math display="inline">{current_span.text}</math>'
                         )
+
+                    current_chars = self.assign_chars(current_span, current_chars)
                     spans.append(current_span)
                     current_span = None
                 continue
@@ -268,25 +311,27 @@ class OcrBuilder(BaseBuilder):
                 current_span = SpanClass(
                     text=fix_text(char.text),
                     formats=list(formats),
-                    page_id=page_id,
-                    polygon=PolygonBox(polygon=char.polygon),
+                    page_id=page.page_id,
+                    polygon=char_box,
                     minimum_position=0,
                     maximum_position=0,
                     font="Unknown",
                     font_weight=0,
                     font_size=0,
                 )
+                self.store_char(marker_char, current_chars, page)
                 continue
 
             current_span.text = fix_text(current_span.text + char.text)
+            self.store_char(marker_char, current_chars, page)
+
             # Tokens inside a math span don't have valid boxes, so we skip the merging
             if "math" not in formats:
-                current_span.polygon = current_span.polygon.merge(
-                    [PolygonBox(polygon=char.polygon)]
-                )
+                current_span.polygon = current_span.polygon.merge([char_box])
 
         # Add the last span to the list
         if current_span:
+            self.assign_chars(current_span, current_chars)
             spans.append(current_span)
 
         # Add newline after all spans finish

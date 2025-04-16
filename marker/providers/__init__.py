@@ -9,16 +9,13 @@ from pdftext.schema import Reference
 from marker.logger import configure_logging
 from marker.schema.polygon import PolygonBox
 from marker.schema.text import Span
+from marker.schema.text.char import Char
 from marker.schema.text.line import Line
 from marker.settings import settings
 from marker.util import assign_config
 
 configure_logging()
 
-class Char(BaseModel):
-    char: str
-    polygon: PolygonBox
-    char_idx: int
 
 class ProviderOutput(BaseModel):
     line: Line
@@ -42,11 +39,14 @@ class ProviderOutput(BaseModel):
         elif other_copy.chars is not None:
             new_output.chars = other_copy.chars
 
-        new_output.line.polygon = new_output.line.polygon.merge([other_copy.line.polygon])
+        new_output.line.polygon = new_output.line.polygon.merge(
+            [other_copy.line.polygon]
+        )
         return new_output
 
 
 ProviderPageLines = Dict[int, List[ProviderOutput]]
+
 
 class BaseProvider:
     def __init__(self, filepath: str, config: Optional[BaseModel | dict] = None):
@@ -77,7 +77,8 @@ class BaseProvider:
         from weasyprint.text.fonts import FontConfiguration
 
         font_config = FontConfiguration()
-        css = CSS(string=f'''
+        css = CSS(
+            string=f"""
             @font-face {{
                 font-family: GoNotoCurrent-Regular;
                 src: url({settings.FONT_PATH});
@@ -89,5 +90,7 @@ class BaseProvider:
                 font-feature-settings: "liga" 0;
                 text-rendering: optimizeLegibility;
             }}
-            ''', font_config=font_config)
+            """,
+            font_config=font_config,
+        )
         return css

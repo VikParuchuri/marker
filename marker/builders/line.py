@@ -241,6 +241,7 @@ class LineBuilder(BaseBuilder):
                             text_extraction_method="surya",
                         ),
                         spans=[],
+                        chars=[],
                     )
                 )
 
@@ -355,8 +356,10 @@ class LineBuilder(BaseBuilder):
         page_ocr_lines: ProviderPageLines,
     ):
         for document_page in document.pages:
-            provider_lines = page_provider_lines[document_page.page_id]
-            ocr_lines = page_ocr_lines[document_page.page_id]
+            provider_lines: List[ProviderOutput] = page_provider_lines[
+                document_page.page_id
+            ]
+            ocr_lines: List[ProviderOutput] = page_ocr_lines[document_page.page_id]
 
             # Only one or the other will have lines
             # Filter out blank lines which come from bad provider boxes, or invisible text
@@ -365,7 +368,11 @@ class LineBuilder(BaseBuilder):
             )
 
             # Text extraction method is overridden later for OCRed documents
-            document_page.merge_blocks(merged_lines, text_extraction_method="pdftext")
+            document_page.merge_blocks(
+                merged_lines,
+                text_extraction_method="pdftext",
+                keep_chars=self.keep_chars,
+            )
 
     def merge_provider_lines_detected_lines(
         self,

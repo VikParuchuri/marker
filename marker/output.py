@@ -8,6 +8,7 @@ from PIL import Image
 from marker.renderers.html import HTMLOutput
 from marker.renderers.json import JSONOutput, JSONBlockOutput
 from marker.renderers.markdown import MarkdownOutput
+from marker.renderers.ocr_json import OCRJSONOutput
 from marker.schema.blocks import BlockOutput
 from marker.settings import settings
 
@@ -56,6 +57,8 @@ def text_from_rendered(rendered: BaseModel):
     elif isinstance(rendered, HTMLOutput):
         return rendered.html, "html", rendered.images
     elif isinstance(rendered, JSONOutput):
+        return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", {}
+    elif isinstance(rendered, OCRJSONOutput):
         return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", {}
     else:
         raise ValueError("Invalid output type")
