@@ -11,13 +11,14 @@ from marker.schema import BlockTypes
 from marker.schema.document import Document
 from marker.settings import settings
 
-MATH_TAG_PATTERN = re.compile(r'<math[^>]*>(.*?)</math>')
+MATH_TAG_PATTERN = re.compile(r"<math[^>]*>(.*?)</math>")
 
 
 class EquationProcessor(BaseProcessor):
     """
     A processor for recognizing equations in the document.
     """
+
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",
@@ -29,7 +30,7 @@ class EquationProcessor(BaseProcessor):
     equation_batch_size: Annotated[
         Optional[int],
         "The batch size to use for the recognition model while processing equations.",
-        "Default is None, which will use the default batch size for the model."
+        "Default is None, which will use the default batch size for the model.",
     ] = None
     disable_tqdm: Annotated[
         bool,
@@ -41,15 +42,15 @@ class EquationProcessor(BaseProcessor):
 
         self.recognition_model = recognition_model
 
-    # TODO Find optimal values
     def get_batch_size(self):
+        # Set to 1/4th of OCR batch size due to sequence length with tiling
         if self.equation_batch_size is not None:
             return self.equation_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 8
+            return 16
         elif settings.TORCH_DEVICE_MODEL == "mps":
             return 6
-        return 2
+        return 6
 
     def __call__(self, document: Document):
         images = []
@@ -66,7 +67,9 @@ class EquationProcessor(BaseProcessor):
             page_equation_block_ids = []
             equation_blocks = page.contained_blocks(document, self.block_types)
             for block in equation_blocks:
-                page_equation_boxes.append(block.polygon.rescale(page_size, image_size).bbox)
+                page_equation_boxes.append(
+                    block.polygon.rescale(page_size, image_size).bbox
+                )
                 page_equation_block_ids.append(block.id)
                 total_equation_blocks += 1
 
@@ -78,50 +81,60 @@ class EquationProcessor(BaseProcessor):
             return
 
         predictions = self.get_latex_batched(images, equation_boxes)
-        for page_predictions, page_equation_block_ids in zip(predictions, equation_block_ids):
-            assert len(page_predictions) == len(page_equation_block_ids), "Every equation block should have a corresponding prediction"
-            for block_prediction, block_id in zip(page_predictions, page_equation_block_ids):
+        for page_predictions, page_equation_block_ids in zip(
+            predictions, equation_block_ids
+        ):
+            assert len(page_predictions) == len(page_equation_block_ids), (
+                "Every equation block should have a corresponding prediction"
+            )
+            for block_prediction, block_id in zip(
+                page_predictions, page_equation_block_ids
+            ):
                 block = document.get_block(block_id)
                 block.html = self.fix_latex(block_prediction)
 
-    def fix_latex(
-        self,
-        math_html: str
-    ):
+    def fix_latex(self, math_html: str):
         math_html = math_html.strip()
-        soup = BeautifulSoup(math_html, 'html.parser')
-        opening_math_tag = soup.find('math')
-        
+        soup = BeautifulSoup(math_html, "html.parser")
+        opening_math_tag = soup.find("math")
+
         # No math block found
         if not opening_math_tag:
             return ""
-    
+
         # Force block format
-        opening_math_tag.attrs['display'] = 'block'
+        opening_math_tag.attrs["display"] = "block"
         fixed_math_html = str(soup)
 
         # Sometimes model outputs newlines at the beginning/end of tags
-        fixed_math_html = re.sub(r"^<math display=\"block\">\\n(?![a-zA-Z])", "<math display=\"block\">", fixed_math_html)
+        fixed_math_html = re.sub(
+            r"^<math display=\"block\">\\n(?![a-zA-Z])",
+            '<math display="block">',
+            fixed_math_html,
+        )
         fixed_math_html = re.sub(r"\\n</math>$", "</math>", fixed_math_html)
-        fixed_math_html = fix_text(fixed_math_html, config=TextFixerConfig(unescape_html=True))
+        fixed_math_html = fix_text(
+            fixed_math_html, config=TextFixerConfig(unescape_html=True)
+        )
         return fixed_math_html
 
     def get_latex_batched(
-        self, 
+        self,
         page_images: List[Image.Image],
         bboxes: List[List[List[float]]],
     ):
         self.recognition_model.disable_tqdm = self.disable_tqdm
-        predictions : List[OCRResult] = self.recognition_model(
+        predictions: List[OCRResult] = self.recognition_model(
             images=page_images,
             bboxes=bboxes,
             task_names=["block_without_boxes"] * len(page_images),
             recognition_batch_size=self.get_batch_size(),
-            sort_lines=False
+            sort_lines=False,
         )
-        
+
         equation_predictions = [
-            [line.text.strip() for line in page_prediction.text_lines] for page_prediction in predictions
+            [line.text.strip() for line in page_prediction.text_lines]
+            for page_prediction in predictions
         ]
 
         return equation_predictions

@@ -110,14 +110,14 @@ class LineBuilder(BaseBuilder):
         if self.detection_batch_size is not None:
             return self.detection_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 4
+            return 12
         return 4
 
     def get_ocr_error_batch_size(self):
         if self.ocr_error_batch_size is not None:
             return self.ocr_error_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 4
+            return 14
         return 4
 
     def get_detection_results(
