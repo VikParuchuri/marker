@@ -4,6 +4,7 @@ from enum import auto, Enum
 class BlockTypes(str, Enum):
     Line = auto()
     Span = auto()
+    Char = auto()
     FigureGroup = auto()
     TableGroup = auto()
     ListGroup = auto()
