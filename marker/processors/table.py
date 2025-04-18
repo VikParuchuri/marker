@@ -482,7 +482,7 @@ class TableProcessor(BaseProcessor):
         if self.detection_batch_size is not None:
             return self.detection_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 4
+            return 12
         return 4
 
     def get_table_rec_batch_size(self):
@@ -491,7 +491,7 @@ class TableProcessor(BaseProcessor):
         elif settings.TORCH_DEVICE_MODEL == "mps":
             return 6
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 6
+            return 14
         return 6
 
     def get_recognition_batch_size(self):
