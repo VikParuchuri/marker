@@ -45,6 +45,12 @@ from marker.services.gemini import GoogleGeminiService
 from marker.processors.line_merge import LineMergeProcessor
 from marker.processors.llm.llm_mathblock import LLMMathBlockProcessor
 
+from datetime import datetime
+from marker.utils import send_callback, flush_cuda_memory
+import pytz
+# 获取北京时区
+beijing_tz = pytz.timezone('Asia/Shanghai')
+
 
 class PdfConverter(BaseConverter):
     """
@@ -95,7 +101,9 @@ class PdfConverter(BaseConverter):
         processor_list: Optional[List[str]] = None,
         renderer: str | None = None,
         llm_service: str | None = None,
-        config=None
+        config=None,
+        callback_url: str | None = None,
+        docId: str | None = None
     ):
         super().__init__(config)
 
@@ -134,6 +142,9 @@ class PdfConverter(BaseConverter):
         self.layout_builder_class = LayoutBuilder
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
+        
+        self.callback_url = callback_url
+        self.docId = docId
 
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
@@ -141,10 +152,35 @@ class PdfConverter(BaseConverter):
         line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         provider = provider_cls(filepath, self.config)
-        document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
+        document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder, callback_url=self.callback_url, docId=self.docId)
+        
+        flush_cuda_memory()
+        time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
+        send_callback(self.callback_url, {
+            'status': True,
+            'messages': 'success',
+            'docId': self.docId,
+            'progress': 68,
+            'progress_text': '完成OCR ' + time_str
+        })
+
         structure_builder_cls = self.resolve_dependencies(StructureBuilder)
         structure_builder_cls(document)
 
+        flush_cuda_memory()
+        time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
+        send_callback(self.callback_url, {
+            'status': True,
+            'messages': 'success',
+            'docId': self.docId,
+            'progress': 91,
+            'progress_text': '完成文档重建 ' + time_str
+        })
+
+        # 移除 DebugProcessor 和 IgnoreTextProcessor
+        self.processor_list = [p for p in self.processor_list 
+                              if not isinstance(p, (DebugProcessor, IgnoreTextProcessor))]
+        
         for processor in self.processor_list:
             processor(document)
 

@@ -9,6 +9,11 @@ from marker.schema import BlockTypes
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.registry import get_block_class
+from marker.utils import send_callback, flush_cuda_memory
+from datetime import datetime
+import pytz
+# 获取北京时区
+beijing_tz = pytz.timezone('Asia/Shanghai')
 
 
 class DocumentBuilder(BaseBuilder):
@@ -28,10 +33,31 @@ class DocumentBuilder(BaseBuilder):
         "Disable OCR processing.",
     ] = False
 
-    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, line_builder: LineBuilder, ocr_builder: OcrBuilder):
+    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, line_builder: LineBuilder, ocr_builder: OcrBuilder, callback_url: str | None = None, docId: str | None = None):
         document = self.build_document(provider)
+        flush_cuda_memory()
+        time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
+        send_callback(callback_url, {
+            'status': True,
+            'messages': 'success',
+            'docId': docId,
+            'progress': 21,
+            'progress_text': '完成文字Detection ' + time_str
+        })
+
         layout_builder(document, provider)
         line_builder(document, provider)
+
+        flush_cuda_memory()
+        time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
+        send_callback(callback_url, {
+            'status': True,
+            'messages': 'success',
+            'docId': docId,
+            'progress': 42,
+            'progress_text': '完成Layout解析 ' + time_str
+        })
+
         if not self.disable_ocr:
             ocr_builder(document, provider)
         return document

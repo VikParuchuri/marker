@@ -9,6 +9,7 @@ from google.genai import types
 from google.genai.errors import APIError
 from pydantic import BaseModel
 
+import httpx
 from marker.schema.blocks import Block
 from marker.services import BaseService
 
@@ -43,7 +44,7 @@ class BaseGeminiService(BaseService):
 
         if not isinstance(image, list):
             image = [image]
-
+        print('ssssss', flush=True)
         client = self.get_google_client(timeout=timeout)
         image_parts = [types.Part.from_bytes(data=self.img_to_bytes(img), mime_type="image/webp") for img in image]
 
@@ -84,10 +85,14 @@ class GoogleGeminiService(BaseGeminiService):
     gemini_api_key: Annotated[
         str,
         "The Google API key to use for the service."
-    ] = None
+    ] = 'AIzaSyCguwG1QrgHvrbJwT5g5S7IIs3yZTUOaEg'
+
+    import os
+    os.environ["HTTP_PROXY"] = "http://172.21.0.16:7890"
+    os.environ["HTTPS_PROXY"] = "http://172.21.0.16:7890"
 
     def get_google_client(self, timeout: int):
         return genai.Client(
             api_key=self.gemini_api_key,
-            http_options={"timeout": timeout * 1000} # Convert to milliseconds
+            http_options={"timeout": timeout * 1000}, # Convert to milliseconds
         )

@@ -72,17 +72,39 @@ class BaseRenderer:
             html = new_merged
 
         return html
+    
+    def get_page_footer(self, page: any):
+        try:
+            for block in page.children:
+                if block.block_type == BlockTypes.PageFooter:
+                    return block.raw_text(page)
+        except Exception as e:
+            print('get_page_footer', e, flush=True)
+        return ''
+    
+    def get_page_header(self, page: any):
+        try:
+            for block in page.children:
+                if block.block_type == BlockTypes.PageHeader:
+                    return block.raw_text(page)
+        except Exception as e:
+            print('get_page_header', e, flush=True)
+        return ''
 
     def generate_page_stats(self, document: Document, document_output):
         page_stats = []
         for page in document.pages:
             block_counts = Counter([str(block.block_type) for block in page.children]).most_common()
             block_metadata = page.aggregate_block_metadata()
+            page_header = self.get_page_header(page)
+            page_footer = self.get_page_footer(page)
             page_stats.append({
                 "page_id": page.page_id,
                 "text_extraction_method": page.text_extraction_method,
                 "block_counts": block_counts,
-                "block_metadata": block_metadata.model_dump()
+                "block_metadata": block_metadata.model_dump(),
+                "page_header": page_header,
+                "page_footer": page_footer
             })
         return page_stats
 
