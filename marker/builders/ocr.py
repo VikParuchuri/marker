@@ -93,7 +93,9 @@ class OcrBuilder(BaseBuilder):
             for block in document_page.contained_blocks(document):
                 if block.block_type in self.skip_ocr_blocks:
                     continue
-                block_lines = block.contained_blocks(document, [BlockTypes.Line])
+                block_lines: List[Line] = block.contained_blocks(
+                    document, [BlockTypes.Line]
+                )
                 block_lines_to_ocr = [
                     block_line
                     for block_line in block_lines
@@ -116,9 +118,7 @@ class OcrBuilder(BaseBuilder):
                     page_highres_boxes.append(line_bbox_rescaled)
                     page_line_ids.append(line.id)
                     # For OCRed pages, this text will be blank
-                    page_line_original_texts.append(
-                        line.formatted_text(document, skip_urls=True).rstrip()
-                    )
+                    page_line_original_texts.append(line.ocr_input_text(document))
 
             highres_images.append(page_highres_image)
             highres_boxes.append(page_highres_boxes)
