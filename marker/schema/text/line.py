@@ -118,7 +118,14 @@ class Line(Block):
 
     def merge(self, other: "Line"):
         self.polygon = self.polygon.merge([other.polygon])
-        self.structure = self.structure + other.structure
+
+        # Handle merging structure with Nones
+        if self.structure is None:
+            self.structure = other.structure
+        elif other.structure is not None:
+            self.structure = self.structure + other.structure
+
+        # Merge formats with Nones
         if self.formats is None:
             self.formats = other.formats
         elif other.formats is not None:
