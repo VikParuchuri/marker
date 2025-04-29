@@ -111,6 +111,15 @@ def convert_cli(in_folder: str, **kwargs):
 
     total_processes = min(len(files_to_convert), kwargs["workers"])
 
+    if total_processes == 0:
+        # Disable multiprocessing
+        global model_refs
+        model_refs = create_model_dict()
+        for f in tqdm(files_to_convert):
+            process_single_pdf((f, kwargs))
+        del model_refs
+        return
+
     try:
         mp.set_start_method('spawn') # Required for CUDA, forkserver doesn't work
     except RuntimeError:
