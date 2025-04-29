@@ -89,6 +89,10 @@ class Markdownify(MarkdownConverter):
 
 
     def convert_table(self, el, text, convert_as_inline):
+        # Table blocks are now treated as images only, so markdown table rendering is disabled here.
+        # The original implementation is commented out for reference.
+        return ""
+        """
         total_rows = len(el.find_all('tr'))
         colspans = []
         rowspan_cols = defaultdict(int)
@@ -170,6 +174,7 @@ class Markdownify(MarkdownConverter):
 
         table_md = '\n'.join(markdown_lines)
         return "\n\n" + table_md + "\n\n"
+        """
 
     def convert_a(self, el, text, convert_as_inline):
         text = self.escape(text)

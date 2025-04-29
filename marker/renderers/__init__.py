@@ -15,7 +15,7 @@ from marker.util import assign_config
 
 
 class BaseRenderer:
-    image_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to consider as images."] = (BlockTypes.Picture, BlockTypes.Figure)
+    image_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to consider as images."] = (BlockTypes.Picture, BlockTypes.Figure,BlockTypes.Table)
     extract_images: Annotated[bool, "Extract images from the document."] = True
     image_extraction_mode: Annotated[
         Literal["lowres", "highres"],
