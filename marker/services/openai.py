@@ -16,16 +16,13 @@ from marker.services import BaseService
 
 class OpenAIService(BaseService):
     openai_base_url: Annotated[
-        str,
-        "The base url to use for OpenAI-like models.  No trailing slash."
+        str, "The base url to use for OpenAI-like models.  No trailing slash."
     ] = "https://api.openai.com/v1"
-    openai_model: Annotated[
-        str,
-        "The model name to use for OpenAI-like model."
-    ] = "gpt-4o-mini"
+    openai_model: Annotated[str, "The model name to use for OpenAI-like model."] = (
+        "gpt-4o-mini"
+    )
     openai_api_key: Annotated[
-        str,
-        "The API key to use for the OpenAI-like service."
+        str, "The API key to use for the OpenAI-like service."
     ] = None
 
     def image_to_base64(self, image: PIL.Image.Image):
@@ -46,7 +43,7 @@ class OpenAIService(BaseService):
                     "url": "data:image/webp;base64,{}".format(
                         self.image_to_base64(img)
                     ),
-                }
+                },
             }
             for img in images
         ]
@@ -102,7 +99,7 @@ class OpenAIService(BaseService):
             except (APITimeoutError, RateLimitError) as e:
                 # Rate limit exceeded
                 tries += 1
-                wait_time = tries * 3
+                wait_time = tries * self.retry_wait_time
                 print(
                     f"Rate limit error: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{max_retries})"
                 )

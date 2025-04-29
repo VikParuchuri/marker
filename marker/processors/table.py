@@ -1,5 +1,4 @@
 import re
-import html
 from collections import defaultdict
 from copy import deepcopy
 from typing import Annotated, List
@@ -99,7 +98,8 @@ class TableProcessor(BaseProcessor):
                         "table_image": image,
                         "table_bbox": image_poly.bbox,
                         "img_size": page.get_image(highres=True).size,
-                        "ocr_block": page.text_extraction_method == "surya",
+                        "ocr_block": page.text_extraction_method == "surya"
+                        or self.format_lines,
                     }
                 )
 
@@ -181,7 +181,7 @@ class TableProcessor(BaseProcessor):
             text = re.sub(r"(\s\.){2,}", "", text)  # Replace . . .
             text = re.sub(r"\.{2,}", "", text)  # Replace ..., like in table of contents
             text = self.normalize_spaces(fix_text(text))
-            fixed_text.append(html.escape(text))
+            fixed_text.append(text)
         return fixed_text
 
     @staticmethod
