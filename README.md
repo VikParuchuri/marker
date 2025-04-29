@@ -508,4 +508,54 @@ This work would not have been possible without amazing open source models and da
 - Pypdfium2/pdfium
 - DocLayNet from IBM
 
+# How to use this library for Python 3.10
+```shell
+pip install -r https://raw.githubusercontent.com/VikParuchuri/marker/master/requirements.txt
+```
+```shell
+    import os
+    
+    from marker.convert import convert_single_pdf
+    from marker.logger import configure_logging
+    from marker.models import load_all_models
+    from marker.output import save_markdown
+    
+    
+    def convert_pdf_to_markdown(filename, output_dir, max_pages=470, start_page=1, batch_multiplier=1, langs=["en"]):
+        """
+      Converts a PDF file to Markdown format using the Marker library.
+    
+      Args:
+          filename (str): Path to the PDF file.
+          output_dir (str): Directory to save the converted Markdown file.
+          max_pages (int, optional): Maximum number of pages to convert. Defaults to 10.
+          start_page (int, optional): Page number to start conversion from. Defaults to 1.
+          batch_multiplier (int, optional): Multiplier for batch processing. Defaults to 2.
+          langs (str, optional): Languages to be detected in the PDF. Defaults to "English".
+    
+      Returns:
+          str: Path to the folder containing the converted Markdown file.
+    
+      Raises:
+          ImportError: If the Marker library is not installed.
+      """
+        configure_logging()
+    
+        model_lst = load_all_models()
+        full_text, images, out_meta = convert_single_pdf(filename, model_lst, max_pages=max_pages, langs=langs,
+                                                         batch_multiplier=batch_multiplier, start_page=start_page)
+        fname = os.path.basename(filename)
+        subfolder_path = save_markdown(output_dir, fname, full_text, images, out_meta)
+        print(f"Saved markdown to the {subfolder_path} folder")
+    
+        return subfolder_path
+    
+    filename = "input file.pdf"
+    output = "output_folder"
+    
+    # Example usage
+    converted_folder = convert_pdf_to_markdown(filename,output)
+
+```
 Thank you to the authors of these models and datasets for making them available to the community!
+
