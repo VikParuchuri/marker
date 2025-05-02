@@ -103,7 +103,7 @@ class PdfConverter(BaseConverter):
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
 
-        if processor_list:
+        if processor_list is not None:
             processor_list = strings_to_classes(processor_list)
         else:
             processor_list = self.default_processors
