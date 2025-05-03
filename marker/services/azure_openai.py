@@ -86,7 +86,6 @@ class AzureOpenAIService(BaseService):
             api_key=self.azure_api_key,
             api_version=self.azure_api_version,
             temperature=0.0,
-            max_tokens=800,
             request_timeout=timeout,
         )
         
@@ -121,7 +120,7 @@ class AzureOpenAIService(BaseService):
                 response = structured_llm.invoke([message])
                 
                 # If successful, return the structured output directly
-                block.update_metadata(llm_tokens_used=800, llm_request_count=1)  # Approximate token usage
+                block.update_metadata(llm_tokens_used=4000, llm_request_count=1)  # Approximate token usage
                 
                 # Convert Pydantic model to dict
                 result = response.model_dump()
