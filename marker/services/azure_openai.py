@@ -14,12 +14,6 @@ from langchain_core.messages import HumanMessage
 from marker.schema.blocks import Block
 from marker.services import BaseService
 
-
-class ImageDescription(BaseModel):
-    """Model for image description response."""
-    image_description: str = Field(description="Detailed description of the image content. This will be formatted as markdown italic text.")
-
-
 class AzureOpenAIService(BaseService):
     azure_endpoint: Annotated[
         str,
@@ -89,9 +83,9 @@ class AzureOpenAIService(BaseService):
             request_timeout=timeout,
         )
         
-        # Create a structured output wrapper
+        # Create a structured output wrapper using the provided response_schema
         structured_llm = llm.with_structured_output(
-            ImageDescription,
+            response_schema,
             include_raw=False
         )
         
@@ -124,13 +118,6 @@ class AzureOpenAIService(BaseService):
                 
                 # Convert Pydantic model to dict
                 result = response.model_dump()
-                
-                # Ensure compatibility with expected output format
-                if hasattr(response_schema, '__annotations__'):
-                    # Add missing fields from response_schema if needed
-                    for key in response_schema.__annotations__:
-                        if key not in result and key != 'image_description':
-                            result[key] = ""
                 
                 return result
                 
