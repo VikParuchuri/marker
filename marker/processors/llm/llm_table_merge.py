@@ -111,6 +111,7 @@ Output:
 Table 1
 ```html
 {{table1}}
+```
 Table 2
 ```html
 {{table2}}
