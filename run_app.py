@@ -6,6 +6,7 @@ import logging
 # multiprocessing.set_start_method('spawn')
 import multiprocessing
 import torch
+import tempfile
 import json
 try:
     torch.multiprocessing.set_start_method('spawn')
@@ -93,7 +94,7 @@ def document_proc(
 
         file = params.get("file", None)
         args = params.get("args", {})
-        file_type = args.get("file_type", "pdf")
+        file_type = params.get("file_type", "pdf")
         docId = params.get("docId", "")
         callback_url = params.get("callback_url", "")
         print('callback_url', callback_url, flush=True)
@@ -105,7 +106,8 @@ def document_proc(
                     args, 
                     file, 
                     callback_url=callback_url,
-                    docId=docId
+                    docId=docId,
+                    file_type=file_type
                 )
             elif file_type == "docx":
                 extraction_outputs = extraction_proc.parse_docx(file)
@@ -113,9 +115,18 @@ def document_proc(
             elif file_type == "pptx":
                 extraction_outputs = extraction_proc.parse_pptx(file)
                 print('extraction_outputs', extraction_outputs, flush=True)
-            elif file_type == "txt":
-                extraction_outputs = extraction_proc.parse_txt(file)
-                print('extraction_outputs', extraction_outputs, flush=True)
+            elif file_type == "jpg" or file_type == "png" or file_type == "jpeg":
+                # 将file存在临时文件里面，并提供path
+                temp_file_path = os.path.join(tempfile.gettempdir(), f"{docId}.{file_type}")
+                with open(temp_file_path, "wb") as f:
+                    f.write(file)
+                extraction_outputs = extraction_proc.extraction(
+                    args, 
+                    temp_file_path, 
+                    callback_url=callback_url,
+                    docId=docId,
+                    file_type=file_type
+                )
             else:
                 raise Exception("Unsupported file type")
             result_queue.put({"docId": docId, "result": extraction_outputs})
@@ -171,6 +182,7 @@ async def document_extract(request):
     try:
         form = await request.form()
         docId = form.get("docId", "")
+        file_type = form.get("file_type", "pdf")  # pdf, docx, pptx, jpg, png, jpeg
         callback_url = form.get("callback_url", "")
 
         if not docId:
@@ -194,6 +206,7 @@ async def document_extract(request):
 
         params = {
             "file": file_content,
+            "file_type": file_type,
             "args": args,
             "docId": docId,
             "callback_url": callback_url,

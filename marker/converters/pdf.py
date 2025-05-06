@@ -146,8 +146,8 @@ class PdfConverter(BaseConverter):
         self.callback_url = callback_url
         self.docId = docId
 
-    def build_document(self, filepath: str):
-        provider_cls = provider_from_filepath(filepath)
+    def build_document(self, filepath: str, file_type: str='pdf'):
+        provider_cls = provider_from_filepath(filepath, file_type=file_type)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
         line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
@@ -186,7 +186,7 @@ class PdfConverter(BaseConverter):
 
         return document
 
-    def __call__(self, filepath: str):
-        document = self.build_document(filepath)
+    def __call__(self, filepath: str, file_type: str='pdf'):
+        document = self.build_document(filepath, file_type=file_type)
         renderer = self.resolve_dependencies(self.renderer)
         return renderer(document)

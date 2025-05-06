@@ -56,8 +56,13 @@ def provider_from_ext(filepath: str):
     return PdfProvider
 
 
-def provider_from_filepath(filepath: str):
-    return PdfProvider
+def provider_from_filepath(filepath: str, file_type: str='pdf'):
+    if file_type == 'jpg' or file_type == 'png' or file_type == 'jpeg':
+        return ImageProvider
+    elif file_type == 'pdf':
+        return PdfProvider
+    else:
+        return PdfProvider
     if filetype.image_match(filepath) is not None:
         return ImageProvider
     if file_match(filepath, load_matchers("pdf")) is not None:

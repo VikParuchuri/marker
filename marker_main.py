@@ -81,7 +81,7 @@ class ExtractionProc:
         full_text = file_byte.decode('utf-8')
         return full_text, None, None
 
-    def extraction(self, args, file_byte, callback_url='', docId=''):
+    def extraction(self, args, file_byte, callback_url='', docId='', file_type='pdf'):
         start = time.time()
         kwargs = {
             'output_dir': args.get('output_dir', settings.OUTPUT_DIR),
@@ -114,7 +114,7 @@ class ExtractionProc:
             docId=docId,
             llm_service="marker.services.gemini.GoogleGeminiService"
         )
-        rendered = converter(file_byte)
+        rendered = converter(file_byte, file_type=file_type)
         # 统计metadata中有多少page 多少表格 多少公式和ocr次数
         # print('rendered.metadata', rendered.metadata)
         info = self.count_table_formula(rendered.metadata)
