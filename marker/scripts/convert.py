@@ -67,7 +67,6 @@ def process_single_pdf(args):
             llm_service=config_parser.get_llm_service()
         )
         rendered = converter(fpath)
-        out_folder = config_parser.get_output_folder(fpath)
         save_output(rendered, out_folder, base_name)
         if cli_options.get("debug_print"):
             print(f"Converted {fpath}")
