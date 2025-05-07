@@ -6,12 +6,15 @@ from typing import Annotated, List, Union
 
 import openai
 import PIL
+from marker.logger import get_logger
 from openai import APITimeoutError, RateLimitError
 from PIL import Image
 from pydantic import BaseModel
 
 from marker.schema.blocks import Block
 from marker.services import BaseService
+
+logger = get_logger()
 
 
 class OpenAIService(BaseService):
@@ -100,12 +103,12 @@ class OpenAIService(BaseService):
                 # Rate limit exceeded
                 tries += 1
                 wait_time = tries * self.retry_wait_time
-                print(
+                logger.warning(
                     f"Rate limit error: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{max_retries})"
                 )
                 time.sleep(wait_time)
             except Exception as e:
-                print(e)
+                logger.error(f"OpenAI inference failed: {e}")
                 break
 
         return {}

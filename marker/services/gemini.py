@@ -7,10 +7,13 @@ import PIL
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
+from marker.logger import get_logger
 from pydantic import BaseModel
 
 from marker.schema.blocks import Block
 from marker.services import BaseService
+
+logger = get_logger()
 
 
 class BaseGeminiService(BaseService):
@@ -74,15 +77,15 @@ class BaseGeminiService(BaseService):
                     # Rate limit exceeded
                     tries += 1
                     wait_time = tries * self.retry_wait_time
-                    print(
+                    logger.warning(
                         f"APIError: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{max_retries})"
                     )
                     time.sleep(wait_time)
                 else:
-                    print(e)
+                    logger.error(f"APIError: {e}")
                     break
             except Exception as e:
-                print(e)
+                logger.error(f"Exception: {e}")
                 break
 
         return {}

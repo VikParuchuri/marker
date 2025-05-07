@@ -6,12 +6,15 @@ import click
 
 from marker.config.crawler import crawler
 from marker.converters.pdf import PdfConverter
+from marker.logger import get_logger
 from marker.renderers.html import HTMLRenderer
 from marker.renderers.json import JSONRenderer
 from marker.renderers.markdown import MarkdownRenderer
 from marker.settings import settings
 from marker.util import classes_to_strings, parse_range_str, strings_to_classes
 from marker.schema import BlockTypes
+
+logger = get_logger()
 
 
 class ConfigParser:
@@ -156,7 +159,7 @@ class ConfigParser:
                 try:
                     strings_to_classes([p])
                 except Exception as e:
-                    print(f"Error loading processor: {p} with error: {e}")
+                    logger.error(f"Error loading processor: {p} with error: {e}")
                     raise
 
         return processors
@@ -167,7 +170,9 @@ class ConfigParser:
             try:
                 return strings_to_classes([converter_cls])[0]
             except Exception as e:
-                print(f"Error loading converter: {converter_cls} with error: {e}")
+                logger.error(
+                    f"Error loading converter: {converter_cls} with error: {e}"
+                )
                 raise
 
         return PdfConverter

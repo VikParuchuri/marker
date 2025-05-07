@@ -6,11 +6,14 @@ import regex
 import six
 from bs4 import NavigableString
 from markdownify import MarkdownConverter, whitespace_re
+from marker.logger import get_logger
 from pydantic import BaseModel
 
 from marker.renderers.html import HTMLRenderer
 from marker.schema import BlockTypes
 from marker.schema.document import Document
+
+logger = get_logger()
 
 
 def escape_dollars(text):
@@ -164,7 +167,7 @@ class Markdownify(MarkdownConverter):
                                 )
                         except IndexError:
                             # Sometimes the colspan/rowspan predictions can overflow
-                            print(
+                            logger.info(
                                 f"Overflow in columns: {col_idx + c} >= {total_cols} or rows: {row_idx + r} >= {total_rows}"
                             )
                             continue

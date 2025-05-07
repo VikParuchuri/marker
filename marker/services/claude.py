@@ -8,10 +8,13 @@ import PIL
 from PIL import Image
 import anthropic
 from anthropic import RateLimitError, APITimeoutError
+from marker.logger import get_logger
 from pydantic import BaseModel
 
 from marker.schema.blocks import Block
 from marker.services import BaseService
+
+logger = get_logger()
 
 
 class ClaudeService(BaseService):
@@ -129,12 +132,12 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
                 # Rate limit exceeded
                 tries += 1
                 wait_time = tries * self.retry_wait_time
-                print(
+                logger.warning(
                     f"Rate limit error: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{max_retries})"
                 )
                 time.sleep(wait_time)
             except Exception as e:
-                print(e)
+                logger.error(f"Error during Claude API call: {e}")
                 break
 
         return {}
