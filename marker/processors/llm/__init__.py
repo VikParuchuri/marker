@@ -12,7 +12,6 @@ from marker.schema.blocks import Block
 from marker.schema.document import Document
 from marker.schema.groups import PageGroup
 from marker.services import BaseService
-from marker.settings import settings
 from marker.util import assign_config
 from marker.logger import get_logger
 
@@ -38,14 +37,6 @@ class BaseLLMProcessor(BaseProcessor):
     A processor for using LLMs to convert blocks.
     """
 
-    google_api_key: Annotated[
-        str,
-        "The Google API key to use for the Gemini model.",
-    ] = settings.GOOGLE_API_KEY
-    model_name: Annotated[
-        str,
-        "The name of the Gemini model to use.",
-    ] = "gemini-2.0-flash"
     max_concurrency: Annotated[
         int,
         "The maximum number of concurrent requests to make to the Gemini model.",
