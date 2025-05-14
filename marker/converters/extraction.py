@@ -1,3 +1,4 @@
+import json
 import re
 
 from marker.builders.document import DocumentBuilder
@@ -8,7 +9,7 @@ from marker.converters.pdf import PdfConverter
 from marker.extractors.page import PageExtractor, json_schema_to_base_model
 from marker.providers.registry import provider_from_filepath
 
-from marker.renderers.extraction import ExtractionMerger
+from marker.renderers.extraction import ExtractionMerger, ExtractionOutput
 from marker.renderers.markdown import MarkdownRenderer
 
 from marker.logger import get_logger
@@ -36,13 +37,13 @@ class ExtractionConverter(PdfConverter):
 
         return document, provider
 
-    def __call__(self, filepath: str) -> str:
+    def __call__(self, filepath: str) -> ExtractionOutput:
         self.config["paginate_output"] = True  # Ensure we can split the output properly
         self.config["output_format"] = (
             "markdown"  # Output must be markdown for extraction
         )
         try:
-            json_schema_to_base_model(self.config["page_schema"])
+            json_schema_to_base_model(json.loads(self.config["page_schema"]))
         except Exception as e:
             logger.error(f"Could not parse page schema: {e}")
             raise ValueError(

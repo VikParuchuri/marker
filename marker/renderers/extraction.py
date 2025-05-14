@@ -45,7 +45,7 @@ class ExtractionMerger:
     def __init__(self):
         pass
 
-    def __call__(self, outputs: Dict[int, ExtractionResult]):
+    def __call__(self, outputs: Dict[int, ExtractionResult]) -> ExtractionOutput:
         pnums = sorted(list(outputs.keys()))
         merged_result = outputs[pnums[0]].extracted_data.copy()
         confidence_exists = outputs[pnums[0]].existence_confidence
