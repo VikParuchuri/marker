@@ -106,10 +106,11 @@ class PageExtractor(BaseExtractor):
 
     page_extraction_prompt = """You are an expert document analyst who reads documents and pulls data out in JSON format.
 You will receive an image of a document page, the markdown representation of the page, and a JSON schema in pydantic format.
-Your task is to extract the values in the schema from the page, and return them.  If a value in the schema does not exist on the page, return None to reflect that.
+Your task is to extract the values in the schema from the page, and return them.  If a value in the schema does not exist on the page, return null to reflect that.
 
 Some guidelines:
 - If the schema has a field that is not present in the image, return null for that field.
+- The confidence score should reflect both how confident you feel that the value in the schema exists in the image, and that you extracted the right value.
 
 **Instructions:**
 1. Carefully examine the provided page image.
@@ -117,6 +118,7 @@ Some guidelines:
 3. Analyze the JSON schema.
 4. Write a short description of the fields in the schema, and the associated values in the image.
 5. Extract the data in the schema that can be found in the image and output the data in JSON format.
+6. Output a confidence score from 1 to 5, where 1 is very low confidence in your extracted values, and 5 is very high confidence in your extracted values.
 
 **Example:**
 Input:
@@ -138,6 +140,7 @@ Schema
 Output:
 
 Description: The schema has a list of cars, each with a make, sales, and color. The image and markdown contain a table with 2 cars: Honda with 100 sales and Toyota with 200 sales. The color is not present in the table.
+
 ```json
 {
     "cars": [
@@ -154,6 +157,8 @@ Description: The schema has a list of cars, each with a make, sales, and color. 
     ]
 }
 ```
+
+Confidence: 5
 
 **Input:**
 
@@ -203,3 +208,4 @@ Schema
 class PageExtractionSchema(BaseModel):
     description: str
     extracted_json: str
+    confidence: int

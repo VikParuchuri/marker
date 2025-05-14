@@ -1,4 +1,7 @@
 import os
+
+from marker.services import BaseService
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 from collections import defaultdict
@@ -49,12 +52,13 @@ class PdfConverter(BaseConverter):
     """
     A converter for processing and rendering PDF files into Markdown, JSON, HTML and other formats.
     """
+
     override_map: Annotated[
         Dict[BlockTypes, Type[Block]],
         "A mapping to override the default block classes for specific block types.",
         "The keys are `BlockTypes` enum values, representing the types of blocks,",
         "and the values are corresponding `Block` class implementations to use",
-        "instead of the defaults."
+        "instead of the defaults.",
     ] = defaultdict()
     use_llm: Annotated[
         bool,
@@ -86,6 +90,7 @@ class PdfConverter(BaseConverter):
         ReferenceProcessor,
         DebugProcessor,
     )
+    default_llm_service: BaseService = GoogleGeminiService
 
     def __init__(
         self,
@@ -93,7 +98,7 @@ class PdfConverter(BaseConverter):
         processor_list: Optional[List[str]] = None,
         renderer: str | None = None,
         llm_service: str | None = None,
-        config=None
+        config=None,
     ):
         super().__init__(config)
 
@@ -117,7 +122,7 @@ class PdfConverter(BaseConverter):
             llm_service_cls = strings_to_classes([llm_service])[0]
             llm_service = self.resolve_dependencies(llm_service_cls)
         elif config.get("use_llm", False):
-            llm_service = self.resolve_dependencies(GoogleGeminiService)
+            llm_service = self.resolve_dependencies(self.default_llm_service)
 
         # Inject llm service into artifact_dict so it can be picked up by processors, etc.
         artifact_dict["llm_service"] = llm_service
@@ -139,7 +144,9 @@ class PdfConverter(BaseConverter):
         line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         provider = provider_cls(filepath, self.config)
-        document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder)
+        document = DocumentBuilder(self.config)(
+            provider, layout_builder, line_builder, ocr_builder
+        )
         structure_builder_cls = self.resolve_dependencies(StructureBuilder)
         structure_builder_cls(document)
 

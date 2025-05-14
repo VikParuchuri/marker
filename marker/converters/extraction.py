@@ -46,12 +46,17 @@ class ExtractionConverter(PdfConverter):
             1:
         ]  # Split output into pages
 
+        # This needs an LLM service for extraction, this sets it in the extractor
+        if not self.artifact_dict["llm_service"]:
+            self.artifact_dict["llm_service"] = self.resolve_dependencies(
+                self.default_llm_service
+            )
+
         extractor = self.resolve_dependencies(PageExtractor)
 
         all_json = []
         for page, page_md in zip(document.pages, output_pages):
             extracted_model = extractor(document, page, page_md.strip())
             extracted_json = extracted_model.model_dump_json()
-            print(extracted_json)
             all_json.append(extracted_json)
         return ExtractionOutput(json=json.dumps(all_json, indent=4, ensure_ascii=False))
