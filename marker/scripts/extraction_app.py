@@ -1,6 +1,7 @@
 import json
 import os
 
+from streamlit_ace import st_ace
 from pydantic import BaseModel
 
 from marker.converters.extraction import ExtractionConverter
@@ -23,7 +24,6 @@ from typing import Any, Dict
 import streamlit as st
 
 from marker.config.parser import ConfigParser
-from marker.output import text_from_rendered
 
 
 def extract_data(fname: str, config: dict, schema: str) -> (str, Dict[str, Any], dict):
@@ -55,9 +55,9 @@ cli_options = parse_args()
 st.markdown("""
 # Marker Extraction Demo
 
-This app will let you try marker, a PDF or image -> Markdown, HTML, JSON converter. It works with any language, and extracts images, tables, equations, etc.
+This app will let you use marker to do structured extraction.
 
-Find the project [here](https://github.com/VikParuchuri/marker).
+Warning: This can execute untrusted code entered into the schema panel.
 """)
 
 in_file: UploadedFile = st.sidebar.file_uploader(
@@ -79,18 +79,18 @@ with col1:
     st.image(pil_image, use_container_width=True)
 
 with col2:
-    schema = st.text_area(
-        "Pyantic schema for extraction",
-        value="""
+    st.write("Enter pydantic schema here")
+    schema = st_ace(
+        value="""from pydantic import BaseModel
 class Schema(BaseModel):
-    pass        
-""",
+    pass""",
+        language="python",
     )
 
 run_marker = st.sidebar.button("Run Extraction")
 
 use_llm = st.sidebar.checkbox(
-    "Use LLM", help="Use LLM for higher quality processing", value=False
+    "Use LLM", help="Use LLM for higher quality text", value=False
 )
 force_ocr = st.sidebar.checkbox("Force OCR", help="Force OCR on all pages", value=False)
 strip_existing_ocr = st.sidebar.checkbox(
@@ -123,8 +123,6 @@ with tempfile.TemporaryDirectory() as tmp_dir:
     )
     rendered = extract_data(temp_pdf, cli_options, schema)
 
-text, ext, images = text_from_rendered(rendered)
-
 with col2:
     st.write("Output JSON")
-    st.json(text)
+    st.json(rendered.model_dump())

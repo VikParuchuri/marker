@@ -86,7 +86,7 @@ First, some configuration:
 I've included a streamlit app that lets you interactively try marker with some basic options.  Run it with:
 
 ```shell
-pip install streamlit
+pip install streamlit streamlit-ace
 marker_gui
 ```
 
@@ -247,6 +247,32 @@ This takes all the same configuration as the PdfConverter.
 You can also run this via the CLI with 
 ```shell
 marker_single FILENAME --converter_cls marker.converters.ocr.OCRConverter
+```
+
+### Structured Extraction (alpha)
+
+You can run structured extraction via the `ExtractionConverter`.  This requires an llm service to be setup first (see [here](#llm-services) for details).  You'll get a JSON output with the extracted values.
+
+```python
+from marker.converters.extraction import ExtractionConverter
+from marker.models import create_model_dict
+from marker.config.parser import ConfigParser
+from pydantic import BaseModel
+
+class Links(BaseModel):
+    links: list[str]
+    
+schema = Links.model_json_schema()
+config_parser = ConfigParser({
+    "page_schema": schema
+})
+
+converter = ExtractionConverter(
+    artifact_dict=create_model_dict(),
+    config=config_parser.generate_config_dict(),
+    llm_service=config_parser.get_llm_service(),
+)
+rendered = converter("FILEPATH")
 ```
 
 # Output Formats

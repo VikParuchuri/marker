@@ -4,7 +4,7 @@ from pydantic import create_model, BaseModel, Field, ValidationError
 from typing import Annotated, Type, Optional, Any, Dict
 from enum import Enum
 
-from marker.extractors import BaseExtractor
+from marker.extractors import BaseExtractor, ExtractionResult
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 
@@ -118,7 +118,8 @@ Some guidelines:
 3. Analyze the JSON schema.
 4. Write a short description of the fields in the schema, and the associated values in the image.
 5. Extract the data in the schema that can be found in the image and output the data in JSON format.
-6. Output a confidence score from 1 to 5, where 1 is very low confidence in your extracted values, and 5 is very high confidence in your extracted values.
+6. Output an existence confidence score 1 to 5, where 1 is very low confidence that the values exist on the page, and 5 is very high confidence that the values exist on the page.
+7. Output a value confidence score from 1 to 5, where 1 is very low confidence that the values are correct, and 5 is very high confidence that the values are correct.
 
 **Example:**
 Input:
@@ -158,7 +159,8 @@ Description: The schema has a list of cars, each with a make, sales, and color. 
 }
 ```
 
-Confidence: 5
+Existence confidence: 5
+Value confidence: 5
 
 **Input:**
 
@@ -175,7 +177,7 @@ Schema
 
     def __call__(
         self, document: Document, page: PageGroup, page_markdown: str, **kwargs
-    ) -> Optional[BaseModel]:
+    ) -> Optional[ExtractionResult]:
         page_image = self.extract_image(document, page)
         if not self.page_schema:
             raise ValueError(
@@ -189,23 +191,37 @@ Schema
         ).replace("{schema}", json.dumps(optional_schema))
         response = self.llm_service(prompt, page_image, page, PageExtractionSchema)
 
-        if not response or "extracted_json" not in response:
+        if not response or any(
+            [
+                key not in response
+                for key in [
+                    "extracted_json",
+                    "existence_confidence",
+                    "value_confidence",
+                ]
+            ]
+        ):
             page.update_metadata(llm_error_count=1)
-            return
+            return None
 
         extracted_json = response["extracted_json"]
 
         OptionalPageModel = json_schema_to_base_model(optional_schema)
         try:
-            parsed_json = OptionalPageModel.model_validate_json(extracted_json)
+            OptionalPageModel.model_validate_json(extracted_json)
         except ValidationError as e:
             print(f"Validation error with extracted data: {e}")
-            return
+            return None
 
-        return parsed_json
+        return ExtractionResult(
+            extracted_data=json.loads(extracted_json),
+            existence_confidence=response["existence_confidence"],
+            value_confidence=response["value_confidence"],
+        )
 
 
 class PageExtractionSchema(BaseModel):
     description: str
     extracted_json: str
-    confidence: int
+    existence_confidence: int
+    value_confidence: int

@@ -1,4 +1,3 @@
-import json
 import re
 
 from marker.builders.document import DocumentBuilder
@@ -6,11 +5,15 @@ from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
 from marker.converters.pdf import PdfConverter
-from marker.extractors.page import PageExtractor
+from marker.extractors.page import PageExtractor, json_schema_to_base_model
 from marker.providers.registry import provider_from_filepath
 
-from marker.renderers.extraction import ExtractionOutput
+from marker.renderers.extraction import ExtractionMerger
 from marker.renderers.markdown import MarkdownRenderer
+
+from marker.logger import get_logger
+
+logger = get_logger()
 
 
 class ExtractionConverter(PdfConverter):
@@ -33,11 +36,19 @@ class ExtractionConverter(PdfConverter):
 
         return document, provider
 
-    def __call__(self, filepath: str):
+    def __call__(self, filepath: str) -> str:
         self.config["paginate_output"] = True  # Ensure we can split the output properly
         self.config["output_format"] = (
             "markdown"  # Output must be markdown for extraction
         )
+        try:
+            json_schema_to_base_model(self.config["page_schema"])
+        except Exception as e:
+            logger.error(f"Could not parse page schema: {e}")
+            raise ValueError(
+                "Could not parse your page schema. Please check the schema format."
+            )
+
         document, provider = self.build_document(filepath)
         renderer = self.resolve_dependencies(MarkdownRenderer)
         output = renderer(document)
@@ -53,10 +64,13 @@ class ExtractionConverter(PdfConverter):
             )
 
         extractor = self.resolve_dependencies(PageExtractor)
+        merger = self.resolve_dependencies(ExtractionMerger)
 
-        all_json = []
-        for page, page_md in zip(document.pages, output_pages):
-            extracted_model = extractor(document, page, page_md.strip())
-            extracted_json = extracted_model.model_dump_json()
-            all_json.append(extracted_json)
-        return ExtractionOutput(json=json.dumps(all_json, indent=4, ensure_ascii=False))
+        pnums = provider.page_range
+        all_json = {}
+        for page, page_md, pnum in zip(document.pages, output_pages, pnums):
+            extracted_json = extractor(document, page, page_md.strip())
+            all_json[pnum] = extracted_json
+
+        merged = merger(all_json)
+        return merged

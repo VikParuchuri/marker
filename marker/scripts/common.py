@@ -165,8 +165,10 @@ def get_root_class(schema_code: str) -> Optional[BaseModel]:
         return None
 
     if "from pydantic" not in schema_code:
+        schema_code = "from pydantic import BaseModel\n" + schema_code
+    if "from typing" not in schema_code:
         schema_code = (
-            "from pydantic import BaseModel\nfrom typing import List, Dict, Optional, Set, Tuple, Union, Any\n\n"
+            "from typing import List, Dict, Optional, Set, Tuple, Union, Any\n\n"
             + schema_code
         )
 
