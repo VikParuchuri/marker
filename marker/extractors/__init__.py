@@ -40,10 +40,11 @@ class BaseExtractor:
         document: Document,
         page: PageGroup,
         remove_blocks: Sequence[BlockTypes] | None = None,
+        highres: bool = False,  # Default False to save tokens
     ) -> Image.Image:
         return page.get_image(
             document,
-            highres=False,
+            highres=highres,
             remove_blocks=remove_blocks,
         )
 

@@ -14,7 +14,9 @@ class MergeData:
     confidence_value_2: float
 
 
-def merge_keys(json: dict | list, json2: dict, merge_data: MergeData):
+def merge_keys(
+    json: dict | list, json2: dict, merge_data: MergeData, confidence_threshold: int = 3
+):
     if isinstance(json, list):
         json.extend(json2)
 
@@ -25,11 +27,12 @@ def merge_keys(json: dict | list, json2: dict, merge_data: MergeData):
             elif isinstance(json[key], list):
                 json[key] = json[key] + json2[key]
             else:
-                if (
-                    merge_data.confidence_exists_2 > 3
-                    and merge_data.confidence_value_2 > 3
-                    and json2[key]
-                ):
+                value_2_correct = (
+                    merge_data.confidence_exists_2 > confidence_threshold
+                    and merge_data.confidence_value_2 > confidence_threshold
+                )
+
+                if value_2_correct and json2[key]:
                     json[key] = json2[key]
 
                 if not json[key] and json2[key]:
@@ -42,9 +45,6 @@ class ExtractionOutput(BaseModel):
 
 
 class ExtractionMerger:
-    def __init__(self):
-        pass
-
     def __call__(self, outputs: Dict[int, ExtractionResult]) -> ExtractionOutput:
         pnums = sorted(list(outputs.keys()))
         merged_result = outputs[pnums[0]].extracted_data.copy()

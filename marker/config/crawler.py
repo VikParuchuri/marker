@@ -27,7 +27,7 @@ class ConfigCrawler:
         ),
     ):
         self.base_classes = base_classes
-        self.class_config_map = {}
+        self.class_config_map: Dict[str, dict] = {}
 
         self._crawl_config()
 
