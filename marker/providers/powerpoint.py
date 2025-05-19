@@ -3,9 +3,12 @@ import os
 import tempfile
 import traceback
 
+from marker.logger import get_logger
 from marker.providers.pdf import PdfProvider
 
-css = '''
+logger = get_logger()
+
+css = """
 @page {
     size: A4 landscape;
     margin: 1.5cm;
@@ -33,14 +36,14 @@ img {
     height: auto;
     object-fit: contain;
 }
-'''
+"""
 
 
 class PowerPointProvider(PdfProvider):
     include_slide_number: bool = False
 
     def __init__(self, filepath: str, config=None):
-        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=f".pdf")
+        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
         self.temp_pdf_path = temp_pdf.name
         temp_pdf.close()
 
@@ -68,7 +71,7 @@ class PowerPointProvider(PdfProvider):
         html_parts = []
 
         for slide_index, slide in enumerate(pptx.slides):
-            html_parts.append(f"<section>")
+            html_parts.append("<section>")
             if self.include_slide_number:
                 html_parts.append(f"<h2>Slide {slide_index + 1}</h2>")
 
@@ -97,14 +100,13 @@ class PowerPointProvider(PdfProvider):
                     else:
                         html_parts.append(f"<p>{self._escape_html(shape.text)}</p>")
 
-            html_parts.append(f"</section>")
+            html_parts.append("</section>")
 
-        html = '\n'.join(html_parts)
+        html = "\n".join(html_parts)
 
         # We convert the HTML into a PDF
         HTML(string=html).write_pdf(
-            self.temp_pdf_path,
-            stylesheets=[CSS(string=css), self.get_font_css()]
+            self.temp_pdf_path, stylesheets=[CSS(string=css), self.get_font_css()]
         )
 
     def _handle_group(self, group_shape) -> str:
@@ -163,7 +165,7 @@ class PowerPointProvider(PdfProvider):
             bullet_num = p_el.find(".//a:buAutoNum", namespaces=p_el.nsmap)
 
             is_bullet = (bullet_char is not None) or (paragraph.level > 0)
-            is_numbered = (bullet_num is not None)
+            is_numbered = bullet_num is not None
 
             # If the paragraph is bullet or numbered
             if is_bullet or is_numbered:
@@ -198,7 +200,9 @@ class PowerPointProvider(PdfProvider):
                 p_text = "".join(run.text for run in paragraph.runs)
                 if p_text:
                     # If we know it's a slide title, we can use <h3> or so
-                    html_parts.append(f"<{label_html_tag}>{self._escape_html(p_text)}</{label_html_tag}>")
+                    html_parts.append(
+                        f"<{label_html_tag}>{self._escape_html(p_text)}</{label_html_tag}>"
+                    )
 
         # If the text frame ended and we still have an open list, close it
         if list_open:
@@ -214,10 +218,10 @@ class PowerPointProvider(PdfProvider):
         image_bytes = image.blob
 
         try:
-            img_str = base64.b64encode(image_bytes).decode('utf-8')
+            img_str = base64.b64encode(image_bytes).decode("utf-8")
             return f"<img src='data:{image.content_type};base64,{img_str}' />"
         except Exception as e:
-            print(f"Warning: image cannot be loaded by Pillow: {e}")
+            logger.warning(f"Warning: image cannot be loaded by Pillow: {e}")
             return ""
 
     def _handle_table(self, shape) -> str:
@@ -243,8 +247,8 @@ class PowerPointProvider(PdfProvider):
         """
         return (
             text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace('"', "&quot;")
-                .replace("'", "&#39;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&#39;")
         )

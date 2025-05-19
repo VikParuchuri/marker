@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Annotated
 
+from marker.logger import get_logger
 from surya.layout import LayoutPredictor
 from tqdm import tqdm
 from pydantic import BaseModel
@@ -14,6 +15,8 @@ from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.registry import get_block_class
 from marker.settings import settings
+
+logger = get_logger()
 
 
 class LLMLayoutBuilder(LayoutBuilder):
@@ -48,7 +51,7 @@ class LLMLayoutBuilder(LayoutBuilder):
     topk_relabelling_prompt: Annotated[
         str,
         "The prompt to use for relabelling blocks.",
-        "Default is a string containing the Gemini relabelling prompt."
+        "Default is a string containing the Gemini relabelling prompt.",
     ] = """You're a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
 You will be provided with an image of a layout block and the top k predictions from the current model, along with the per-label confidence scores.
@@ -71,7 +74,7 @@ Here are the top k predictions from the model:
     complex_relabeling_prompt: Annotated[
         str,
         "The prompt to use for complex relabelling blocks.",
-        "Default is a string containing the complex relabelling prompt."
+        "Default is a string containing the complex relabelling prompt.",
     ] = """You're a layout expert specializing in document analysis.
 Your task is to relabel layout blocks in images to improve the accuracy of an existing layout model.
 You will be provided with an image of a layout block and some potential labels that might be appropriate.
@@ -89,7 +92,9 @@ Potential labels:
 Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form`.
 """
 
-    def __init__(self, layout_model: LayoutPredictor, llm_service: BaseService, config=None):
+    def __init__(
+        self, layout_model: LayoutPredictor, llm_service: BaseService, config=None
+    ):
         super().__init__(layout_model, config)
 
         self.llm_service = llm_service
@@ -99,7 +104,7 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
         try:
             self.relabel_blocks(document)
         except Exception as e:
-            print(f"Error relabelling blocks: {e}")
+            logger.warning(f"Error relabelling blocks: {e}")
 
     def relabel_blocks(self, document: Document):
         pbar = tqdm(desc="LLM layout relabelling", disable=self.disable_tqdm)
@@ -112,10 +117,33 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
                         confidence = block.top_k.get(block.block_type)
                         # Case when the block is detected as a different type with low confidence
                         if confidence < self.confidence_threshold:
-                            futures.append(executor.submit(self.process_block_topk_relabeling, document, page, block))
+                            futures.append(
+                                executor.submit(
+                                    self.process_block_topk_relabeling,
+                                    document,
+                                    page,
+                                    block,
+                                )
+                            )
                         # Case when the block is detected as a picture or figure, but is actually complex
-                        elif block.block_type in (BlockTypes.Picture, BlockTypes.Figure, BlockTypes.SectionHeader) and block.polygon.height > page.polygon.height * self.picture_height_threshold:
-                            futures.append(executor.submit(self.process_block_complex_relabeling, document, page, block))
+                        elif (
+                            block.block_type
+                            in (
+                                BlockTypes.Picture,
+                                BlockTypes.Figure,
+                                BlockTypes.SectionHeader,
+                            )
+                            and block.polygon.height
+                            > page.polygon.height * self.picture_height_threshold
+                        ):
+                            futures.append(
+                                executor.submit(
+                                    self.process_block_complex_relabeling,
+                                    document,
+                                    page,
+                                    block,
+                                )
+                            )
 
             for future in as_completed(futures):
                 future.result()  # Raise exceptions if any occurred
@@ -123,7 +151,9 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
 
         pbar.close()
 
-    def process_block_topk_relabeling(self, document: Document, page: PageGroup, block: Block):
+    def process_block_topk_relabeling(
+        self, document: Document, page: PageGroup, block: Block
+    ):
         topk_types = list(block.top_k.keys())
         potential_labels = ""
         for block_type in topk_types:
@@ -131,36 +161,49 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
             potential_labels += f"- `{block_type}` - {label_cls.model_fields['block_description'].default}\n"
 
         topk = ""
-        for k,v in block.top_k.items():
+        for k, v in block.top_k.items():
             topk += f"- `{k}` - Confidence {round(v, 3)}\n"
 
-        prompt = self.topk_relabelling_prompt.replace("{potential_labels}", potential_labels).replace("{top_k}", topk)
+        prompt = self.topk_relabelling_prompt.replace(
+            "{potential_labels}", potential_labels
+        ).replace("{top_k}", topk)
 
         return self.process_block_relabeling(document, page, block, prompt)
 
-    def process_block_complex_relabeling(self, document: Document, page: PageGroup, block: Block):
+    def process_block_complex_relabeling(
+        self, document: Document, page: PageGroup, block: Block
+    ):
         potential_labels = ""
-        for block_type in [BlockTypes.Figure, BlockTypes.Picture, BlockTypes.ComplexRegion, BlockTypes.Table, BlockTypes.Form]:
+        for block_type in [
+            BlockTypes.Figure,
+            BlockTypes.Picture,
+            BlockTypes.ComplexRegion,
+            BlockTypes.Table,
+            BlockTypes.Form,
+        ]:
             label_cls = get_block_class(block_type)
             potential_labels += f"- `{block_type}` - {label_cls.model_fields['block_description'].default}\n"
 
-        complex_prompt = self.complex_relabeling_prompt.replace("{potential_labels}", potential_labels)
+        complex_prompt = self.complex_relabeling_prompt.replace(
+            "{potential_labels}", potential_labels
+        )
         return self.process_block_relabeling(document, page, block, complex_prompt)
 
-    def process_block_relabeling(self, document: Document, page: PageGroup, block: Block, prompt: str):
+    def process_block_relabeling(
+        self, document: Document, page: PageGroup, block: Block, prompt: str
+    ):
         image = self.extract_image(document, block)
 
-        response = self.llm_service(
-            prompt,
-            image,
-            block,
-            LayoutSchema
-        )
+        response = self.llm_service(prompt, image, block, LayoutSchema)
         generated_label = None
         if response and "label" in response:
             generated_label = response["label"]
 
-        if generated_label and generated_label != str(block.block_type) and generated_label in [str(t) for t in BlockTypes]:
+        if (
+            generated_label
+            and generated_label != str(block.block_type)
+            and generated_label in [str(t) for t in BlockTypes]
+        ):
             generated_block_class = get_block_class(BlockTypes[generated_label])
             generated_block = generated_block_class(
                 polygon=block.polygon,
@@ -169,8 +212,12 @@ Respond only with one of `Figure`, `Picture`, `ComplexRegion`, `Table`, or `Form
             )
             page.replace_block(block, generated_block)
 
-    def extract_image(self, document: Document, image_block: Block, expand: float = 0.01):
-        return image_block.get_image(document, highres=False, expansion=(expand, expand))
+    def extract_image(
+        self, document: Document, image_block: Block, expand: float = 0.01
+    ):
+        return image_block.get_image(
+            document, highres=False, expansion=(expand, expand)
+        )
 
 
 class LayoutSchema(BaseModel):
