@@ -55,15 +55,15 @@ class OcrBuilder(BaseBuilder):
     def __call__(self, document: Document, provider: PdfProvider):
         # pages_to_ocr = [page for page in document.pages if page.text_extraction_method == 'surya']
         pages_to_ocr = [page for page in document.pages]
-        images, line_boxes, line_ids, line_original_texts = (
-            self.get_ocr_images_boxes_ids(document, pages_to_ocr, provider)
+        images, line_polygons, line_ids, line_original_texts = (
+            self.get_ocr_images_polygons_ids(document, pages_to_ocr, provider)
         )
         self.ocr_extraction(
             document,
             pages_to_ocr,
             provider,
             images,
-            line_boxes,
+            line_polygons,
             line_ids,
             line_original_texts,
         )
@@ -77,13 +77,13 @@ class OcrBuilder(BaseBuilder):
             return 32
         return 32
 
-    def get_ocr_images_boxes_ids(
+    def get_ocr_images_polygons_ids(
         self, document: Document, pages: List[PageGroup], provider: PdfProvider
     ):
-        highres_images, highres_boxes, line_ids, line_original_texts = [], [], [], []
+        highres_images, highres_polys, line_ids, line_original_texts = [], [], [], []
         for document_page in pages:
             page_highres_image = document_page.get_image(highres=True)
-            page_highres_boxes = []
+            page_highres_polys = []
             page_line_ids = []
             page_line_original_texts = []
 
@@ -113,19 +113,22 @@ class OcrBuilder(BaseBuilder):
                         .rescale(page_size, image_size)
                         .fit_to_bounds((0, 0, *image_size))
                     )
-                    line_bbox_rescaled = line_polygon_rescaled.bbox
+                    line_bbox_rescaled = line_polygon_rescaled.polygon
+                    line_bbox_rescaled = [
+                        [int(x) for x in point] for point in line_bbox_rescaled
+                    ]
 
-                    page_highres_boxes.append(line_bbox_rescaled)
+                    page_highres_polys.append(line_bbox_rescaled)
                     page_line_ids.append(line.id)
                     # For OCRed pages, this text will be blank
                     page_line_original_texts.append(line.ocr_input_text(document))
 
             highres_images.append(page_highres_image)
-            highres_boxes.append(page_highres_boxes)
+            highres_polys.append(page_highres_polys)
             line_ids.append(page_line_ids)
             line_original_texts.append(page_line_original_texts)
 
-        return highres_images, highres_boxes, line_ids, line_original_texts
+        return highres_images, highres_polys, line_ids, line_original_texts
 
     def ocr_extraction(
         self,
@@ -133,18 +136,18 @@ class OcrBuilder(BaseBuilder):
         pages: List[PageGroup],
         provider: PdfProvider,
         images: List[any],
-        line_boxes: List[List[List[float]]],
+        line_polygons: List[List[List[List[int]]]],  # polygons
         line_ids: List[List[BlockId]],
         line_original_texts: List[List[str]],
     ):
-        if sum(len(b) for b in line_boxes) == 0:
+        if sum(len(b) for b in line_polygons) == 0:
             return
 
         self.recognition_model.disable_tqdm = self.disable_tqdm
         recognition_results: List[OCRResult] = self.recognition_model(
             images=images,
             task_names=[self.ocr_task_name] * len(images),
-            bboxes=line_boxes,
+            polygons=line_polygons,
             input_text=line_original_texts,
             recognition_batch_size=int(self.get_recognition_batch_size()),
             sort_lines=False,
