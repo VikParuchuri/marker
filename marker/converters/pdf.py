@@ -5,7 +5,10 @@ from marker.services import BaseService
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # disables a tokenizers warning
 
 from collections import defaultdict
-from typing import Annotated, Any, Dict, List, Optional, Type, Tuple
+from typing import Annotated, Any, Dict, List, Optional, Type, Tuple, Union
+import io
+from contextlib import contextmanager
+import tempfile
 
 from marker.processors import BaseProcessor
 from marker.processors.llm.llm_table_merge import LLMTableMergeProcessor
@@ -138,6 +141,29 @@ class PdfConverter(BaseConverter):
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
 
+    @contextmanager
+    def filepath_to_str(self, file_input: Union[str, io.BytesIO]):
+        temp_file = None
+        try:
+            if isinstance(file_input, str):
+                yield file_input
+            else:
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".pdf"
+                ) as temp_file:
+                    if isinstance(file_input, io.BytesIO):
+                        file_input.seek(0)
+                        temp_file.write(file_input.getvalue())
+                    else:
+                        raise TypeError(
+                            f"Expected str or BytesIO, got {type(file_input)}"
+                        )
+
+                yield temp_file.name
+        finally:
+            if temp_file is not None and os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
+
     def build_document(self, filepath: str):
         provider_cls = provider_from_filepath(filepath)
         layout_builder = self.resolve_dependencies(self.layout_builder_class)
@@ -155,7 +181,9 @@ class PdfConverter(BaseConverter):
 
         return document
 
-    def __call__(self, filepath: str):
-        document = self.build_document(filepath)
-        renderer = self.resolve_dependencies(self.renderer)
-        return renderer(document)
+    def __call__(self, filepath: str | io.BytesIO):
+        with self.filepath_to_str(filepath) as temp_path:
+            document = self.build_document(temp_path)
+            renderer = self.resolve_dependencies(self.renderer)
+            rendered = renderer(document)
+        return rendered
