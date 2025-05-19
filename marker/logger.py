@@ -18,7 +18,6 @@ def configure_logging():
 
     # Ignore future warnings
     warnings.simplefilter(action="ignore", category=FutureWarning)
-    warnings.simplefilter(action="ignore", category=UserWarning)
 
     # Set component loglevels
     logging.getLogger("PIL").setLevel(logging.ERROR)

@@ -62,5 +62,5 @@ def test_extraction_converter_multiple_pages(extraction_converter, temp_doc):
     result = extraction_converter(temp_doc.name)
 
     assert result is not None
-    assert result.json is not None
-    assert result.json == {"test_key": "test_value"}
+    assert result.document_json is not None
+    assert result.document_json == {"test_key": "test_value"}
