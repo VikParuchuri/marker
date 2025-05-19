@@ -6,6 +6,8 @@ from marker.config.crawler import crawler
 
 
 class CustomClickPrinter(click.Command):
+    force_flags = ["use_llm"]
+
     def parse_args(self, ctx, args):
         display_help = "config" in args and "--help" in args
         if display_help:
@@ -47,6 +49,9 @@ class CustomClickPrinter(click.Command):
         # Add shared attribute options first
         for attr, info in shared_attrs.items():
             if info["type"] in attr_types:
+                if attr in self.force_flags:
+                    continue
+
                 ctx.command.params.append(
                     click.Option(
                         ["--" + attr],

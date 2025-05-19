@@ -71,6 +71,12 @@ class ConfigParser:
 
         # we put common options here
         fn = click.option(
+            "--use_llm",
+            is_flag=True,
+            default=False,
+            help="Use LLM for higher accuracy.",
+        )(fn)
+        fn = click.option(
             "--converter_cls",
             type=str,
             default=None,
