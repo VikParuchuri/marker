@@ -9,7 +9,7 @@ from marker.converters.pdf import PdfConverter
 from marker.extractors.page import PageExtractor, json_schema_to_base_model
 from marker.providers.registry import provider_from_filepath
 
-from marker.renderers.extraction import ExtractionMerger, ExtractionOutput
+from marker.renderers.extraction import ExtractionRenderer, ExtractionOutput
 from marker.renderers.markdown import MarkdownRenderer
 
 from marker.logger import get_logger
@@ -65,7 +65,7 @@ class ExtractionConverter(PdfConverter):
             )
 
         extractor = self.resolve_dependencies(PageExtractor)
-        merger = self.resolve_dependencies(ExtractionMerger)
+        renderer = self.resolve_dependencies(ExtractionRenderer)
 
         pnums = provider.page_range
         all_json = {}
@@ -73,5 +73,5 @@ class ExtractionConverter(PdfConverter):
             extracted_json = extractor(document, page, page_md.strip())
             all_json[pnum] = extracted_json
 
-        merged = merger(all_json)
+        merged = renderer(all_json)
         return merged

@@ -3,6 +3,7 @@
 Marker converts documents to markdown, JSON, and HTML quickly and accurately.
 
 - Converts PDF, image, PPTX, DOCX, XLSX, HTML, EPUB files in all languages
+- Does structured extraction, given a JSON schema (beta)
 - Formats tables, forms, equations, inline math, links, references, and code blocks
 - Extracts and saves images
 - Removes headers/footers/other artifacts
@@ -249,7 +250,7 @@ You can also run this via the CLI with
 marker_single FILENAME --converter_cls marker.converters.ocr.OCRConverter
 ```
 
-### Structured Extraction (alpha)
+### Structured Extraction (beta)
 
 You can run structured extraction via the `ExtractionConverter`.  This requires an llm service to be setup first (see [here](#llm-services) for details).  You'll get a JSON output with the extracted values.
 

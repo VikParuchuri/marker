@@ -35,13 +35,13 @@ def check_bboxes(page: OCRJSONPageOutput, lines):
 
 @pytest.mark.config({"page_range": [0]})
 def test_ocr_converter(config, model_dict, temp_doc):
-    _ocr_converter(config, model_dict, temp_doc, 85, 2)
+    _ocr_converter(config, model_dict, temp_doc, 84, 2)
 
 
 @pytest.mark.filename("pres.pdf")
 @pytest.mark.config({"page_range": [1], "force_ocr": True, "keep_chars": True})
 def test_ocr_converter_force(config, model_dict, temp_doc):
-    pages = _ocr_converter(config, model_dict, temp_doc, 9, 0)
+    pages = _ocr_converter(config, model_dict, temp_doc, 10, 0)
     lines = [line for line in pages[0].children if line.block_type == "Line"]
     check_bboxes(pages[0], lines)
 

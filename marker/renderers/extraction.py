@@ -4,6 +4,7 @@ from typing import Dict
 from pydantic import BaseModel
 
 from marker.extractors import ExtractionResult
+from marker.renderers import BaseRenderer
 
 
 @dataclass
@@ -44,7 +45,7 @@ class ExtractionOutput(BaseModel):
     json: dict
 
 
-class ExtractionMerger:
+class ExtractionRenderer(BaseRenderer):
     def __call__(self, outputs: Dict[int, ExtractionResult]) -> ExtractionOutput:
         pnums = sorted(list(outputs.keys()))
         merged_result = outputs[pnums[0]].extracted_data.copy()
