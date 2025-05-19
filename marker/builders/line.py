@@ -328,13 +328,12 @@ class LineBuilder(BaseBuilder):
 
         # Adaptive threshold (inverse for text as white)
         binarized = cv2.adaptiveThreshold(
-            gray, 255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY_INV,
-            31, 15
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 15
         )
 
-        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binarized, connectivity=8)
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+            binarized, connectivity=8
+        )
         cleaned = np.zeros_like(binarized)
         for i in range(1, num_labels):  # skip background
             cleaned[labels == i] = 255
@@ -487,7 +486,7 @@ class LineBuilder(BaseBuilder):
                         horizontal_provider_lines[section_idx][1].line.polygon
                     )
                     if poly is None:
-                        poly = section_polygon
+                        poly: PolygonBox = section_polygon
                     else:
                         poly = poly.merge([section_polygon])
                 return poly

@@ -219,6 +219,8 @@ class OcrBuilder(BaseBuilder):
                         final_new_spans.append(current)
                         if after:
                             remaining_text = after.text
+                        else:
+                            remaining_text = ""  # No more text left
                         # Prevent repeat matches
                         del text_ref_matching[match_text]
                         break
