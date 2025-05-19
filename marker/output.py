@@ -62,7 +62,7 @@ def text_from_rendered(rendered: BaseModel):
     elif isinstance(rendered, OCRJSONOutput):
         return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", {}
     elif isinstance(rendered, ExtractionOutput):
-        return rendered.json, "json", {}
+        return rendered.document_json, "json", {}
     else:
         raise ValueError("Invalid output type")
 

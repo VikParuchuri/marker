@@ -12,7 +12,6 @@ from marker.renderers.json import JSONRenderer
 from marker.renderers.markdown import MarkdownRenderer
 from marker.settings import settings
 from marker.util import classes_to_strings, parse_range_str, strings_to_classes
-from marker.schema import BlockTypes
 
 logger = get_logger()
 
@@ -73,8 +72,9 @@ class ConfigParser:
         # we put common options here
         fn = click.option(
             "--use_llm",
+            is_flag=True,
             default=False,
-            help="Enable higher quality processing with LLMs.",
+            help="Use LLM for higher accuracy.",
         )(fn)
         fn = click.option(
             "--converter_cls",
@@ -87,13 +87,6 @@ class ConfigParser:
             type=str,
             default=None,
             help="LLM service to use - should be full import path, like marker.services.gemini.GoogleGeminiService",
-        )(fn)
-
-        # enum options
-        fn = click.option(
-            "--force_layout_block",
-            type=click.Choice(choices=[t.name for t in BlockTypes]),
-            default=None,
         )(fn)
         return fn
 

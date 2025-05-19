@@ -42,7 +42,7 @@ def merge_keys(
 
 class ExtractionOutput(BaseModel):
     pages: Dict[int, ExtractionResult]
-    json: dict
+    document_json: dict
 
 
 class ExtractionRenderer(BaseRenderer):
@@ -61,4 +61,4 @@ class ExtractionRenderer(BaseRenderer):
             )
             merge_keys(merged_result, outputs[pnum].extracted_data, merge_data)
 
-        return ExtractionOutput(pages=outputs, json=merged_result)
+        return ExtractionOutput(pages=outputs, document_json=merged_result)
