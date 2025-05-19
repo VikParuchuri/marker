@@ -3337,10 +3337,10 @@ files = [
 
 [package.dependencies]
 numpy = [
+    {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\""},
+    {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\""},
+    {version = ">=1.23.5", markers = "python_version >= \"3.11\""},
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
-    {version = ">=1.23.5", markers = "python_version == \"3.11\""},
-    {version = ">=1.21.4", markers = "python_version == \"3.10\" and platform_system == \"Darwin\""},
-    {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version == \"3.10\""},
 ]
 
 [[package]]
@@ -3437,9 +3437,9 @@ files = [
 
 [package.dependencies]
 numpy = [
-    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
-    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
     {version = ">=1.22.4", markers = "python_version < \"3.11\""},
+    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
+    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -5361,14 +5361,14 @@ snowflake = ["snowflake-connector-python (>=3.3.0) ; python_version < \"3.12\"",
 
 [[package]]
 name = "surya-ocr"
-version = "0.14.0a4"
+version = "0.14.1"
 description = "OCR, layout, reading order, and table recognition in 90+ languages"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "surya_ocr-0.14.0a4-py3-none-any.whl", hash = "sha256:f23cb4c83673414b88b516ada5301ed9a95069f268a8879ea3b6f71776a4c04c"},
-    {file = "surya_ocr-0.14.0a4.tar.gz", hash = "sha256:3755e4f34122edf329594f32aa98ccb1fffbb9bd70f7598f66b0276c9f39a36b"},
+    {file = "surya_ocr-0.14.1-py3-none-any.whl", hash = "sha256:e1d5435fc4dc354bf4a21b48e7552c4ed3840da01c89d57fa6c2e2c49005c296"},
+    {file = "surya_ocr-0.14.1.tar.gz", hash = "sha256:655cf9df26e79901791dd590b2c14dffb2adee461669f2de9ff12adc1d7049c6"},
 ]
 
 [package.dependencies]
@@ -6467,4 +6467,4 @@ full = ["ebooklib", "mammoth", "openpyxl", "python-pptx", "weasyprint"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "194114f52eb1dc3deab95d36d886d0597c14c65e765003f6b0610baac8189cb2"
+content-hash = "9ad983393fbfbb4ade6ce2e8a1ec239afde9e648ce56d7d34dd21eb50cd5d0ca"
