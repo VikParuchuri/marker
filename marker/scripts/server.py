@@ -58,11 +58,10 @@ class CommonParams(BaseModel):
     ]
     page_range: Annotated[
         Optional[str],
-        Field(description="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20", example=None)
-    ] = None
-    languages: Annotated[
-        Optional[str],
-        Field(description="Comma separated list of languages to use for OCR. Must be either the names or codes from from https://github.com/VikParuchuri/surya/blob/master/surya/recognition/languages.py.", example=None)
+        Field(
+            description="Page range to convert, specify comma separated page numbers or ranges.  Example: 0,5-10,20",
+            example=None,
+        ),
     ] = None
     force_ocr: Annotated[
         bool,
@@ -78,7 +77,9 @@ class CommonParams(BaseModel):
     ] = False
     output_format: Annotated[
         str,
-        Field(description="The format to output the text in.  Can be 'markdown', 'json', or 'html'.  Defaults to 'markdown'.")
+        Field(
+            description="The format to output the text in.  Can be 'markdown', 'json', or 'html'.  Defaults to 'markdown'."
+        ),
     ] = "markdown"
 
 
@@ -86,7 +87,6 @@ async def _convert_pdf(params: CommonParams):
     assert params.output_format in ["markdown", "json", "html"], "Invalid output format"
     try:
         options = params.model_dump()
-        print(options)
         config_parser = ConfigParser(options)
         config_dict = config_parser.generate_config_dict()
         config_dict["pdftext_workers"] = 1
@@ -96,7 +96,7 @@ async def _convert_pdf(params: CommonParams):
             artifact_dict=app_data["models"],
             processor_list=config_parser.get_processors(),
             renderer=config_parser.get_renderer(),
-            llm_service=config_parser.get_llm_service()
+            llm_service=config_parser.get_llm_service(),
         )
         rendered = converter(params.filepath)
         text, _, images = text_from_rendered(rendered)
@@ -112,7 +112,9 @@ async def _convert_pdf(params: CommonParams):
     for k, v in images.items():
         byte_stream = io.BytesIO()
         v.save(byte_stream, format=settings.OUTPUT_IMAGE_FORMAT)
-        encoded[k] = base64.b64encode(byte_stream.getvalue()).decode(settings.OUTPUT_ENCODING)
+        encoded[k] = base64.b64encode(byte_stream.getvalue()).decode(
+            settings.OUTPUT_ENCODING
+        )
 
     return {
         "format": params.output_format,
@@ -122,18 +124,15 @@ async def _convert_pdf(params: CommonParams):
         "success": True,
     }
 
-@app.post("/marker")
-async def convert_pdf(
-    params: CommonParams
-):
-    return await _convert_pdf(params)
 
+@app.post("/marker")
+async def convert_pdf(params: CommonParams):
+    return await _convert_pdf(params)
 
 
 @app.post("/marker/upload")
 async def convert_pdf_upload(
     page_range: Optional[str] = Form(default=None),
-    languages: Optional[str] = Form(default=None),
     force_ocr: Optional[bool] = Form(default=False),
     paginate_output: Optional[bool] = Form(default=False),
     output_format: Optional[str] = Form(default="markdown"),
@@ -149,7 +148,6 @@ async def convert_pdf_upload(
     params = CommonParams(
         filepath=upload_path,
         page_range=page_range,
-        languages=languages,
         force_ocr=force_ocr,
         paginate_output=paginate_output,
         output_format=output_format,
@@ -164,6 +162,7 @@ async def convert_pdf_upload(
 @click.option("--host", type=str, default="127.0.0.1", help="Host to run the server on")
 def server_cli(port: int, host: str):
     import uvicorn
+
     # Run the server
     uvicorn.run(
         app,

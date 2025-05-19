@@ -43,7 +43,21 @@ class Line(Block):
         None  # Sometimes we want to set math format at the line level, not span
     )
 
-    def formatted_text(self, document):
+    def ocr_input_text(self, document):
+        text = ""
+        for block in self.contained_blocks(document, (BlockTypes.Span,)):
+            # We don't include superscripts/subscripts and math since they can be unreliable at this stage
+            block_text = block.text
+            if block.italic:
+                text += f"<i>{block_text}</i>"
+            elif block.bold:
+                text += f"<b>{block_text}</b>"
+            else:
+                text += block_text
+
+        return text.strip()
+
+    def formatted_text(self, document, skip_urls=False):
         text = ""
         for block in self.contained_blocks(document, (BlockTypes.Span,)):
             block_text = html.escape(block.text)
@@ -53,7 +67,7 @@ class Line(Block):
                 if "<sup>" not in block_text:
                     block_text = f"<sup>{block_text}</sup>"
 
-            if block.url:
+            if block.url and not skip_urls:
                 block_text = f"<a href='{block.url}'>{block_text}</a>"
 
             if block.italic:
@@ -105,12 +119,13 @@ class Line(Block):
     def merge(self, other: "Line"):
         self.polygon = self.polygon.merge([other.polygon])
 
-        if self.structure and other.structure:
-            self.structure = self.structure + other.structure
-        elif other.structure:
-            # If self has no structure, just take the other structure
+        # Handle merging structure with Nones
+        if self.structure is None:
             self.structure = other.structure
+        elif other.structure is not None:
+            self.structure = self.structure + other.structure
 
+        # Merge formats with Nones
         if self.formats is None:
             self.formats = other.formats
         elif other.formats is not None:

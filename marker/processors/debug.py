@@ -3,21 +3,23 @@ import os
 from typing import Annotated
 
 from PIL import Image, ImageDraw, ImageFont
+from marker.logger import get_logger
 
 from marker.processors import BaseProcessor
 from marker.schema import BlockTypes
 from marker.schema.document import Document
 from marker.settings import settings
 
+logger = get_logger()
+
 
 class DebugProcessor(BaseProcessor):
     """
     A processor for debugging the document.
     """
+
     block_types: Annotated[
-        tuple,
-        "The block types to process.",
-        "Default is an empty tuple."
+        tuple, "The block types to process.", "Default is an empty tuple."
     ] = tuple()
     debug_data_folder: Annotated[
         str,
@@ -36,7 +38,6 @@ class DebugProcessor(BaseProcessor):
         "Whether to dump block debug data.",
     ] = False
 
-
     def __call__(self, document: Document):
         # Remove extension from doc name
         doc_base = os.path.basename(document.filepath).rsplit(".", 1)[0]
@@ -48,15 +49,15 @@ class DebugProcessor(BaseProcessor):
 
         if self.debug_layout_images:
             self.draw_layout_debug_images(document)
-            print(f"Dumped layout debug images to {self.debug_data_folder}")
+            logger.info(f"Dumped layout debug images to {self.debug_data_folder}")
 
         if self.debug_pdf_images:
             self.draw_pdf_debug_images(document)
-            print(f"Dumped PDF debug images to {self.debug_data_folder}")
+            logger.info(f"Dumped PDF debug images to {self.debug_data_folder}")
 
         if self.debug_json:
             self.dump_block_debug_data(document)
-            print(f"Dumped block debug data to {self.debug_data_folder}")
+            logger.info(f"Dumped block debug data to {self.debug_data_folder}")
 
     def draw_pdf_debug_images(self, document: Document):
         for page in document.pages:
@@ -78,7 +79,14 @@ class DebugProcessor(BaseProcessor):
                     bbox = child.polygon.rescale(page.polygon.size, png_image.size).bbox
                     span_bboxes.append(bbox)
 
-            self.render_on_image(line_bboxes, png_image, color="blue", draw_bbox=True, label_font_size=24, labels=[str(i) for i in line_ids])
+            self.render_on_image(
+                line_bboxes,
+                png_image,
+                color="blue",
+                draw_bbox=True,
+                label_font_size=24,
+                labels=[str(i) for i in line_ids],
+            )
 
             png_image = self.render_layout_boxes(page, png_image)
 
@@ -103,11 +111,20 @@ class DebugProcessor(BaseProcessor):
                 line_bboxes.append(bbox)
                 line_text.append(child.raw_text(document))
 
-            self.render_on_image(line_bboxes, png_image, labels=line_text, color="black", draw_bbox=False, label_font_size=24)
+            self.render_on_image(
+                line_bboxes,
+                png_image,
+                labels=line_text,
+                color="black",
+                draw_bbox=False,
+                label_font_size=24,
+            )
 
             png_image = self.render_layout_boxes(page, png_image)
 
-            debug_file = os.path.join(self.debug_folder, f"layout_page_{page.page_id}.png")
+            debug_file = os.path.join(
+                self.debug_folder, f"layout_page_{page.page_id}.png"
+            )
             png_image.save(debug_file)
 
     def render_layout_boxes(self, page, png_image):
@@ -122,7 +139,13 @@ class DebugProcessor(BaseProcessor):
             layout_bboxes.append(bbox)
             layout_labels.append(str(child.block_type))
 
-        self.render_on_image(layout_bboxes, png_image, labels=layout_labels, color="red", label_font_size=24)
+        self.render_on_image(
+            layout_bboxes,
+            png_image,
+            labels=layout_labels,
+            color="red",
+            label_font_size=24,
+        )
 
         order_labels = [str(i) for i in range(len(layout_bboxes))]
         self.render_on_image(
@@ -132,15 +155,23 @@ class DebugProcessor(BaseProcessor):
             color="green",
             draw_bbox=False,
             label_offset=5,
-            label_font_size=24
+            label_font_size=24,
         )
         return png_image
 
     def dump_block_debug_data(self, document: Document):
-        debug_file = os.path.join(self.debug_folder, f"blocks.json")
+        debug_file = os.path.join(self.debug_folder, "blocks.json")
         debug_data = []
         for page in document.pages:
-            page_data = page.model_dump(exclude={"lowres_image": True, "highres_image": True, "children": {"__all__": {"lowres_image": True, "highres_image": True}}})
+            page_data = page.model_dump(
+                exclude={
+                    "lowres_image": True,
+                    "highres_image": True,
+                    "children": {
+                        "__all__": {"lowres_image": True, "highres_image": True}
+                    },
+                }
+            )
             debug_data.append(page_data)
 
         with open(debug_file, "w+") as f:
@@ -152,7 +183,16 @@ class DebugProcessor(BaseProcessor):
         _, _, width, height = draw.textbbox((0, 0), text=text, font=font)
         return width, height
 
-    def render_on_image(self, bboxes, image, labels=None, label_offset=1, label_font_size=10, color: str | list = 'red', draw_bbox=True):
+    def render_on_image(
+        self,
+        bboxes,
+        image,
+        labels=None,
+        label_offset=1,
+        label_font_size=10,
+        color: str | list = "red",
+        draw_bbox=True,
+    ):
         draw = ImageDraw.Draw(image)
         font_path = settings.FONT_PATH
         label_font = ImageFont.truetype(font_path, label_font_size)
@@ -160,14 +200,15 @@ class DebugProcessor(BaseProcessor):
         for i, bbox in enumerate(bboxes):
             bbox = [int(p) for p in bbox]
             if draw_bbox:
-                draw.rectangle(bbox, outline=color[i] if isinstance(color, list) else color, width=1)
+                draw.rectangle(
+                    bbox,
+                    outline=color[i] if isinstance(color, list) else color,
+                    width=1,
+                )
 
             if labels is not None:
                 label = labels[i]
-                text_position = (
-                    bbox[0] + label_offset,
-                    bbox[1] + label_offset
-                )
+                text_position = (bbox[0] + label_offset, bbox[1] + label_offset)
                 text_size = self.get_text_size(label, label_font)
                 if text_size[0] <= 0 or text_size[1] <= 0:
                     continue
@@ -175,14 +216,14 @@ class DebugProcessor(BaseProcessor):
                     text_position[0],
                     text_position[1],
                     text_position[0] + text_size[0],
-                    text_position[1] + text_size[1]
+                    text_position[1] + text_size[1],
                 )
                 draw.rectangle(box_position, fill="white")
                 draw.text(
                     text_position,
                     label,
                     fill=color[i] if isinstance(color, list) else color,
-                    font=label_font
+                    font=label_font,
                 )
 
         return image

@@ -3,11 +3,29 @@ import warnings
 
 
 def configure_logging():
-    logging.basicConfig(level=logging.WARNING)
+    # Setup marker logger
+    logger = logging.getLogger("marker")
 
-    logging.getLogger('PIL').setLevel(logging.ERROR)
-    warnings.simplefilter(action='ignore', category=FutureWarning)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
-    logging.getLogger('fontTools.subset').setLevel(logging.ERROR)
-    logging.getLogger('fontTools.ttLib.ttFont').setLevel(logging.ERROR)
-    logging.getLogger('weasyprint').setLevel(logging.CRITICAL)
+    logger.setLevel(logging.DEBUG)
+
+    # Ignore future warnings
+    warnings.simplefilter(action="ignore", category=FutureWarning)
+    warnings.simplefilter(action="ignore", category=UserWarning)
+
+    # Set component loglevels
+    logging.getLogger("PIL").setLevel(logging.ERROR)
+    logging.getLogger("fontTools.subset").setLevel(logging.ERROR)
+    logging.getLogger("fontTools.ttLib.ttFont").setLevel(logging.ERROR)
+    logging.getLogger("weasyprint").setLevel(logging.CRITICAL)
+
+
+def get_logger():
+    return logging.getLogger("marker")

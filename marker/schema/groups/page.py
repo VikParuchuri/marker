@@ -237,7 +237,10 @@ class PageGroup(Group):
                 self.structure.append(block.id)
 
     def add_initial_blocks(
-        self, block_lines: Dict[BlockId, LINE_MAPPING_TYPE], text_extraction_method: str
+        self,
+        block_lines: Dict[BlockId, LINE_MAPPING_TYPE],
+        text_extraction_method: str,
+        keep_chars: bool = False,
     ):
         # Add lines to the proper blocks, sorted in order
         for block_id, lines in block_lines.items():
@@ -250,12 +253,28 @@ class PageGroup(Group):
                 block.add_structure(line)
                 block.polygon = block.polygon.merge([line.polygon])
                 block.text_extraction_method = text_extraction_method
-                for span in spans:
+                for span_idx, span in enumerate(spans):
                     self.add_full_block(span)
                     line.add_structure(span)
 
+                    if not keep_chars:
+                        continue
+
+                    # Provider doesn't have chars
+                    if len(provider_output.chars) == 0:
+                        continue
+
+                    # Loop through characters associated with the span
+                    for char in provider_output.chars[span_idx]:
+                        char.page_id = self.page_id
+                        self.add_full_block(char)
+                        span.add_structure(char)
+
     def merge_blocks(
-        self, provider_outputs: List[ProviderOutput], text_extraction_method: str
+        self,
+        provider_outputs: List[ProviderOutput],
+        text_extraction_method: str,
+        keep_chars: bool = False,
     ):
         provider_line_idxs = list(range(len(provider_outputs)))
         valid_blocks = [
@@ -301,7 +320,7 @@ class PageGroup(Group):
         self.create_missing_blocks(new_blocks, block_lines)
 
         # Add blocks to the page
-        self.add_initial_blocks(block_lines, text_extraction_method)
+        self.add_initial_blocks(block_lines, text_extraction_method, keep_chars)
 
     def aggregate_block_metadata(self) -> BlockMetadata:
         if self.metadata is None:
