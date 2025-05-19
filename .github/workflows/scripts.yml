@@ -27,5 +27,11 @@ jobs:
         run: poetry run marker benchmark_data/pdfs --max_files 2 --workers 2 --page_range 0-5
       - name: Test llm option
         run: |
-          poetry run marker_single benchmark_data/pdfs/switch_trans.pdf --page_range 0 --use_llm > output.txt || true
-          grep -qv "UserWarning" output.txt
+          poetry run marker_single benchmark_data/pdfs/switch_trans.pdf --page_range 0 --use_llm > output.txt || echo "Command failed but continuing"
+          if ! grep -q "UserWarning" output.txt; then
+            echo "Success: No UserWarning found"
+            exit 0
+          else
+            echo "Error: UserWarning found in output"
+            exit 1
+          fi
