@@ -53,7 +53,7 @@ def test_config_none():
 
     for key in crawler.attr_set:
         # We force some options to become flags for ease of use on the CLI
-        value = None if key not in CustomClickPrinter.force_flags else False
+        value = None
         assert kwargs.get(key) is value
 
 
@@ -64,3 +64,13 @@ def test_config_llm():
 
     # Validate kwarg capturing
     assert config_dict["use_llm"]
+
+
+def test_config_force_ocr():
+    kwargs = capture_kwargs(["test", "--force_ocr", "--format_lines"])
+    parser = ConfigParser(kwargs)
+    config_dict = parser.generate_config_dict()
+
+    # Validate kwarg capturing
+    assert config_dict["force_ocr"]
+    assert config_dict["format_lines"]

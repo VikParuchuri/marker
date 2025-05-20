@@ -1,10 +1,12 @@
 import logging
 import warnings
 
+from marker.settings import settings
+
 
 def configure_logging():
     # Setup marker logger
-    logger = logging.getLogger("marker")
+    logger = get_logger()
 
     if not logger.handlers:
         handler = logging.StreamHandler()
@@ -14,7 +16,7 @@ def configure_logging():
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(settings.LOGLEVEL)
 
     # Ignore future warnings
     warnings.simplefilter(action="ignore", category=FutureWarning)
