@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     ARTIFACT_URL: str = "https://models.datalab.to/artifacts"
     FONT_NAME: str = "GoNotoCurrent-Regular.ttf"
     FONT_PATH: str = os.path.join(FONT_DIR, FONT_NAME)
+    LOGLEVEL: str = "INFO"
 
     # General
     OUTPUT_ENCODING: str = "utf-8"
@@ -25,7 +26,9 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: Optional[str] = ""
 
     # General models
-    TORCH_DEVICE: Optional[str] = None  # Note: MPS device does not work for text detection, and will default to CPU
+    TORCH_DEVICE: Optional[str] = (
+        None  # Note: MPS device does not work for text detection, and will default to CPU
+    )
 
     @computed_field
     @property
