@@ -18,6 +18,9 @@ from marker.schema.document import Document
 from marker.schema.polygon import PolygonBox
 from marker.settings import settings
 from marker.util import matrix_intersection_area
+from marker.logger import get_logger
+
+logger = get_logger()
 
 
 class TableProcessor(BaseProcessor):
@@ -110,9 +113,12 @@ class TableProcessor(BaseProcessor):
 
         ocr_blocks = [t for t in table_data if t["ocr_block"]]
         self.assign_ocr_lines(ocr_blocks)  # Handle tables where OCR is needed
-        assert all("table_text_lines" in t for t in table_data), (
-            "All table data must have table cells"
-        )
+        for table_item in table_data:
+            if "table_text_lines" not in table_item:
+                logger.warning(
+                    f"No text lines found for table {table_item['block_id']}"
+                )
+                table_item["table_text_lines"] = []
 
         self.table_rec_model.disable_tqdm = self.disable_tqdm
         tables: List[TableResult] = self.table_rec_model(
