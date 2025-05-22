@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List
 
 from surya.layout import LayoutPredictor
 from surya.layout.schema import LayoutResult, LayoutBox
@@ -19,7 +19,7 @@ class LayoutBuilder(BaseBuilder):
     """
 
     layout_batch_size: Annotated[
-        Optional[int],
+        int,
         "The batch size to use for the layout model.",
         "Default is None, which will use the default batch size for the model.",
     ] = None

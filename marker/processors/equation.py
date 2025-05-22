@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional, Tuple
+from typing import Annotated, List, Tuple
 from PIL import Image
 import re
 from bs4 import BeautifulSoup
@@ -28,7 +28,7 @@ class EquationProcessor(BaseProcessor):
         "The maximum number of tokens to allow for the Recognition model.",
     ] = 1024
     equation_batch_size: Annotated[
-        Optional[int],
+        int,
         "The batch size to use for the recognition model while processing equations.",
         "Default is None, which will use the default batch size for the model.",
     ] = None
@@ -47,7 +47,7 @@ class EquationProcessor(BaseProcessor):
         if self.equation_batch_size is not None:
             return self.equation_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 16
+            return 32
         elif settings.TORCH_DEVICE_MODEL == "mps":
             return 6
         return 6
