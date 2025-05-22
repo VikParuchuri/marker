@@ -32,7 +32,7 @@ class PdfProvider(BaseProvider):
     """
 
     page_range: Annotated[
-        Optional[List[int]],
+        List[int],
         "The range of pages to process.",
         "Default is None, which will process all pages.",
     ] = None

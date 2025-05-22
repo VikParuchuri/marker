@@ -1,7 +1,7 @@
 from collections import defaultdict
 from copy import deepcopy
 from itertools import chain
-from typing import Annotated, List, Optional, Tuple
+from typing import Annotated, List, Tuple
 
 import numpy as np
 from PIL import Image
@@ -29,12 +29,12 @@ class LineBuilder(BaseBuilder):
     """
 
     detection_batch_size: Annotated[
-        Optional[int],
+        int,
         "The batch size to use for the detection model.",
         "Default is None, which will use the default batch size for the model.",
     ] = None
     ocr_error_batch_size: Annotated[
-        Optional[int],
+        int,
         "The batch size to use for the ocr error detection model.",
         "Default is None, which will use the default batch size for the model.",
     ] = None
