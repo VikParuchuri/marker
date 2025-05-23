@@ -5,10 +5,13 @@ import tempfile
 from io import BytesIO
 
 from PIL import Image
+from marker.logger import get_logger
 
 from marker.providers.pdf import PdfProvider
 
-css = '''
+logger = get_logger()
+
+css = """
 @page {
     size: A4;
     margin: 2cm;
@@ -43,12 +46,12 @@ td {
     border: 0.75pt solid #000;
     padding: 6pt;
 }
-'''
+"""
 
 
 class DocumentProvider(PdfProvider):
     def __init__(self, filepath: str, config=None):
-        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=f".pdf")
+        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
         self.temp_pdf_path = temp_pdf.name
         temp_pdf.close()
 
@@ -76,8 +79,7 @@ class DocumentProvider(PdfProvider):
 
             # We convert the HTML into a PDF
             HTML(string=self._preprocess_base64_images(html)).write_pdf(
-                self.temp_pdf_path,
-                stylesheets=[CSS(string=css), self.get_font_css()]
+                self.temp_pdf_path, stylesheets=[CSS(string=css), self.get_font_css()]
             )
 
     @staticmethod
@@ -93,10 +95,10 @@ class DocumentProvider(PdfProvider):
                         output = BytesIO()
                         img.save(output, format=img.format)
                         new_base64 = base64.b64encode(output.getvalue()).decode()
-                        return f'data:{match.group(1)};base64,{new_base64}'
+                        return f"data:{match.group(1)};base64,{new_base64}"
 
             except Exception as e:
-                print(e)
+                logger.error(f"Failed to process image: {e}")
                 return ""  # we ditch broken images as that breaks the PDF creation down the line
 
         return re.sub(pattern, convert_image, html_content)

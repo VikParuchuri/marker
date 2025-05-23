@@ -1,6 +1,5 @@
 import os
 import uuid
-from marker.providers.pdf import PdfProvider
 import tempfile
 from typing import Dict, Type
 
@@ -21,7 +20,6 @@ from marker.schema.blocks import Block
 from marker.renderers.markdown import MarkdownRenderer
 from marker.renderers.json import JSONRenderer
 from marker.schema.registry import register_block_class
-from marker.services.gemini import GoogleGeminiService
 from marker.util import classes_to_strings, strings_to_classes
 
 
@@ -43,11 +41,6 @@ def detection_model(model_dict):
 
 
 @pytest.fixture(scope="session")
-def texify_model(model_dict):
-    yield model_dict["texify_model"]
-
-
-@pytest.fixture(scope="session")
 def recognition_model(model_dict):
     yield model_dict["recognition_model"]
 
@@ -61,9 +54,6 @@ def table_rec_model(model_dict):
 def ocr_error_model(model_dict):
     yield model_dict["ocr_error_model"]
 
-@pytest.fixture(scope="session")
-def inline_detection_model(model_dict):
-    yield model_dict["inline_detection_model"]
 
 @pytest.fixture(scope="function")
 def config(request):
@@ -76,23 +66,25 @@ def config(request):
 
     return config
 
+
 @pytest.fixture(scope="session")
 def pdf_dataset():
     return datasets.load_dataset("datalab-to/pdfs", split="train")
+
 
 @pytest.fixture(scope="function")
 def temp_doc(request, pdf_dataset):
     filename_mark = request.node.get_closest_marker("filename")
     filename = filename_mark.args[0] if filename_mark else "adversarial.pdf"
 
-    idx = pdf_dataset['filename'].index(filename)
+    idx = pdf_dataset["filename"].index(filename)
     suffix = filename.split(".")[-1]
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_pdf_path = os.path.join(temp_dir, f"temp.{suffix}")  # Randomized filename
-        
+        temp_pdf_path = os.path.join(temp_dir, f"{uuid.uuid4()}.{suffix}")
+
         with open(temp_pdf_path, "wb") as temp_pdf:
-            temp_pdf.write(pdf_dataset['pdf'][idx])
+            temp_pdf.write(pdf_dataset["pdf"][idx])
             temp_pdf.flush()
             yield temp_pdf
 
@@ -102,10 +94,19 @@ def doc_provider(request, config, temp_doc):
     provider_cls = provider_from_filepath(temp_doc.name)
     yield provider_cls(temp_doc.name, config)
 
+
 @pytest.fixture(scope="function")
-def pdf_document(request, config, doc_provider, layout_model, ocr_error_model, recognition_model, detection_model, inline_detection_model):
+def pdf_document(
+    request,
+    config,
+    doc_provider,
+    layout_model,
+    ocr_error_model,
+    recognition_model,
+    detection_model,
+):
     layout_builder = LayoutBuilder(layout_model, config)
-    line_builder = LineBuilder(detection_model, inline_detection_model, ocr_error_model, config)
+    line_builder = LineBuilder(detection_model, ocr_error_model, config)
     ocr_builder = OcrBuilder(recognition_model, config)
     builder = DocumentBuilder(config)
     document = builder(doc_provider, layout_builder, line_builder, ocr_builder)
@@ -121,7 +122,7 @@ def pdf_converter(request, config, model_dict, renderer, llm_service):
         processor_list=None,
         renderer=classes_to_strings([renderer])[0],
         config=config,
-        llm_service=llm_service
+        llm_service=llm_service,
     )
 
 
@@ -154,7 +155,7 @@ def temp_image():
     draw = ImageDraw.Draw(img)
     draw.text((10, 10), "Hello, World!", fill="black", font_size=24)
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_png_path = os.path.join(temp_dir, f"{uuid.uuid4()}.png")  # Randomized filename
+        temp_png_path = os.path.join(temp_dir, f"{uuid.uuid4()}.png")
         img.save(temp_png_path)
         with open(temp_png_path, "rb") as f:
             yield f
