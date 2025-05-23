@@ -70,7 +70,6 @@ def process_single_pdf(args):
             llm_service=config_parser.get_llm_service(),
         )
         rendered = converter(fpath)
-        out_folder = config_parser.get_output_folder(fpath)
         save_output(rendered, out_folder, base_name)
         if cli_options.get("debug_print"):
             logger.debug(f"Converted {fpath}")
@@ -134,6 +133,15 @@ def convert_cli(in_folder: str, **kwargs):
     kwargs["disable_multiprocessing"] = True
 
     total_processes = min(len(files_to_convert), kwargs["workers"])
+
+    if total_processes == 0:
+        # Disable multiprocessing
+        global model_refs
+        model_refs = create_model_dict()
+        for f in tqdm(files_to_convert):
+            process_single_pdf((f, kwargs))
+        del model_refs
+        return
 
     try:
         mp.set_start_method("spawn")  # Required for CUDA, forkserver doesn't work
