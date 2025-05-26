@@ -116,7 +116,6 @@ class ExtractionProc:
         )
         rendered = converter(file_byte, file_type=file_type)
         # 统计metadata中有多少page 多少表格 多少公式和ocr次数
-        # print('rendered.metadata', rendered.metadata)
         info = self.count_table_formula(rendered.metadata)
         full_text = rendered.markdown
         print('use time: ', time.time() - start)

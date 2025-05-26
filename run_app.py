@@ -33,6 +33,10 @@ from marker.utils import send_callback
 import time
 from datetime import datetime
 import pytz
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # 获取北京时区
 beijing_tz = pytz.timezone('Asia/Shanghai')
@@ -256,7 +260,7 @@ def main():
 
     # 启动Uvicorn服务器
     try:
-        uvicorn.run(app, host="0.0.0.0", port=8080)
+        uvicorn.run(app, host=os.getenv("HOST"), port=int(os.getenv("PORT")))
     finally:
         # Shutdown consumers
         for _ in processes:
