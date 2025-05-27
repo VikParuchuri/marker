@@ -1,11 +1,13 @@
-from typing import Optional
+from typing import Optional, Literal
 
-from dotenv import find_dotenv
+from dotenv import find_dotenv, load_dotenv
 from pydantic import computed_field
 from pydantic_settings import BaseSettings
 import torch
 import os
 
+# Load environment variables from .env file
+load_dotenv(find_dotenv(".env"))
 
 class Settings(BaseSettings):
     # Paths
@@ -29,6 +31,11 @@ class Settings(BaseSettings):
     TORCH_DEVICE: Optional[str] = (
         None  # Note: MPS device does not work for text detection, and will default to CPU
     )
+
+    # Equation processing settings
+    EQUATION_PROCESSOR: Literal["mathpix", "original"] = "original"  # Default to original implementation
+    MATHPIX_APP_ID: str = os.getenv("MATHPIX_APP_ID", "")
+    MATHPIX_APP_KEY: str = os.getenv("MATHPIX_APP_KEY", "")
 
     @computed_field
     @property

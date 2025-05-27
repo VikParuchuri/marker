@@ -60,6 +60,12 @@ class ConfigParser:
             default=False,
             help="Disable image extraction.",
         )(fn)
+        fn = click.option(
+            "--mathpix",
+            is_flag=True,
+            default=False,
+            help="Use Mathpix for equation processing.",
+        )(fn)
 
         # these are options that need a list transformation, i.e splitting/parsing a string
         fn = click.option(
@@ -106,6 +112,9 @@ class ConfigParser:
                     config["pdftext_workers"] = 1
                 case "disable_image_extraction":
                     config["extract_images"] = False
+                case "mathpix":
+                    if v:
+                        settings.EQUATION_PROCESSOR = "mathpix"
                 case _:
                     if k in crawler.attr_set:
                         config[k] = v
