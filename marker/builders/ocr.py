@@ -35,6 +35,7 @@ class OcrBuilder(BaseBuilder):
         bool,
         "Disable tqdm progress bars.",
     ] = False
+    # We can skip tables here, since the TableProcessor will re-OCR
     skip_ocr_blocks: Annotated[
         List[BlockTypes],
         "Blocktypes for which contained lines are not processed by the OCR model"
