@@ -211,7 +211,7 @@ class LineBuilder(BaseBuilder):
 
                 # Add in the provider lines - merge ones that get broken by pdftext
                 merged_provider_lines = self.merge_provider_lines_detected_lines(
-                    provider_lines, detection_boxes, image_size, page_size
+                    provider_lines, detection_boxes, image_size, page_size, document_page.page_id
                 )
 
                 # If fixing lines, mark every line to be passed to the OCR model
@@ -391,6 +391,7 @@ class LineBuilder(BaseBuilder):
         text_lines: List[PolygonBox],
         image_size,
         page_size,
+        page_id,
     ):
         # When provider lines is empty or no lines detected, return provider lines
         if not provider_lines or not text_lines:
@@ -414,7 +415,7 @@ class LineBuilder(BaseBuilder):
         ]
 
         overlaps = matrix_intersection_area(provider_line_boxes, detected_line_boxes)
-
+        
         # Find potential merges
         merge_lines = defaultdict(list)
         for i in range(len(provider_line_boxes)):
@@ -532,4 +533,22 @@ class LineBuilder(BaseBuilder):
         # Sort to preserve original order
         out_provider_lines = sorted(out_provider_lines, key=lambda x: x[0])
         out_provider_lines = [p for _, p in out_provider_lines]
+
+        # Detected lines that do not overlap with any provider lines shoudl be outputted as-is
+        LineClass: Line = get_block_class(BlockTypes.Line)
+        for j in range(len(detected_line_boxes)):
+            if np.max(overlaps[:, j]) == 0:
+                detected_line_polygon = PolygonBox.from_bbox(detected_line_boxes[j])
+                out_provider_lines.append(
+                    ProviderOutput(
+                        line=LineClass(
+                            polygon=detected_line_polygon,
+                            page_id=page_id,
+                            text_extraction_method="surya",
+                        ),
+                        spans=[],
+                        chars=[],
+                    )
+                )
+
         return out_provider_lines
