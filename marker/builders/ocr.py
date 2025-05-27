@@ -39,7 +39,7 @@ class OcrBuilder(BaseBuilder):
     skip_ocr_blocks: Annotated[
         List[BlockTypes],
         "Blocktypes for which contained lines are not processed by the OCR model"
-        "By default, this avoids recognizing lines inside equations",
+        "By default, this avoids recognizing lines inside equations, figures, and pictures",
     ] = [BlockTypes.Equation, BlockTypes.Figure, BlockTypes.FigureGroup, BlockTypes.Picture, BlockTypes.PictureGroup, BlockTypes.Table]
     ocr_task_name: Annotated[
         str,
