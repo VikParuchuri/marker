@@ -479,7 +479,11 @@ class LineBuilder(BaseBuilder):
         ):
             # Don't just take the whole detected line if we have multiple sections inside
             if len(all_merge_sections) == 1:
-                return text_line.rescale(image_size, page_size)
+                text_line_overlaps = np.nonzero(overlaps[merge_section[0]])[0].tolist()
+                merged_text_line: PolygonBox = text_lines[text_line_overlaps[0]]
+                if len(text_line_overlaps) > 1:
+                    merged_text_line =  merged_text_line.merge([text_lines[k] for k in text_line_overlaps[1:]])
+                return merged_text_line.rescale(image_size, page_size)
             else:
                 poly = None
                 for section_idx in merge_section:
