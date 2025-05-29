@@ -113,8 +113,7 @@ class ConfigParser:
                 case "disable_image_extraction":
                     config["extract_images"] = False
                 case "mathpix":
-                    if v:
-                        settings.EQUATION_PROCESSOR = "mathpix"
+                    config["use_mathpix"] = v
                 case _:
                     if k in crawler.attr_set:
                         config[k] = v

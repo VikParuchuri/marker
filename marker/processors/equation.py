@@ -42,10 +42,8 @@ class EquationProcessor(BaseProcessor):
     def __init__(self, recognition_model: RecognitionPredictor, config=None):
         super().__init__(config)
         self.recognition_model = recognition_model
-        
-        if config and config.get("use_mathpix", False):
-            self.use_mathpix = True
-            
+
+        if self.use_mathpix == True:
             if not settings.MATHPIX_APP_ID or not settings.MATHPIX_APP_KEY:
                 raise ValueError("Mathpix API credentials not configured")
             self.mathpix_provider = MathpixProvider(
