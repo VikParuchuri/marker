@@ -5,7 +5,7 @@ from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.converters.pdf import PdfConverter
 from marker.processors import BaseProcessor
-from marker.processors.equation import get_equation_processor
+from marker.processors.equation import EquationProcessor
 from marker.providers.registry import provider_from_filepath
 from marker.renderers.ocr_json import OCRJSONRenderer
 from marker.providers.mathpix import MathpixProvider
@@ -13,7 +13,7 @@ from marker.settings import settings
 
 
 class OCRConverter(PdfConverter):
-    default_processors: Tuple[BaseProcessor, ...] = (get_equation_processor(),)
+    default_processors: Tuple[BaseProcessor, ...] = (EquationProcessor,)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

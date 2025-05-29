@@ -24,7 +24,7 @@ from marker.processors.blockquote import BlockquoteProcessor
 from marker.processors.code import CodeProcessor
 from marker.processors.debug import DebugProcessor
 from marker.processors.document_toc import DocumentTOCProcessor
-from marker.processors.equation import get_equation_processor
+from marker.processors.equation import EquationProcessor
 from marker.processors.footnote import FootnoteProcessor
 from marker.processors.ignoretext import IgnoreTextProcessor
 from marker.processors.line_numbers import LineNumbersProcessor
@@ -73,7 +73,7 @@ class PdfConverter(BaseConverter):
         BlockquoteProcessor,
         CodeProcessor,
         DocumentTOCProcessor,
-        get_equation_processor,
+        EquationProcessor,
         FootnoteProcessor,
         IgnoreTextProcessor,
         LineNumbersProcessor,
