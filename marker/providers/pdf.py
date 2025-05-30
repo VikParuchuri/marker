@@ -76,6 +76,10 @@ class PdfProvider(BaseProvider):
         bool,
         "Whether to disable links.",
     ] = False
+    keep_chars: Annotated[
+        bool,
+        "Whether to keep character-level information in the output.",
+    ] = False
 
     def __init__(self, filepath: str, config=None):
         super().__init__(filepath, config)
@@ -200,7 +204,7 @@ class PdfProvider(BaseProvider):
         page_char_blocks = dictionary_output(
             self.filepath,
             page_range=self.page_range,
-            keep_chars=True,
+            keep_chars=self.keep_chars,
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf,
             quote_loosebox=False,
@@ -237,16 +241,6 @@ class PdfProvider(BaseProvider):
                         polygon = PolygonBox.from_bbox(
                             span["bbox"], ensure_nonzero_area=True
                         )
-                        span_chars = [
-                            CharClass(
-                                text=c["char"],
-                                polygon=PolygonBox.from_bbox(
-                                    c["bbox"], ensure_nonzero_area=True
-                                ),
-                                idx=c["char_idx"],
-                            )
-                            for c in span["chars"]
-                        ]
                         superscript = span.get("superscript", False)
                         subscript = span.get("subscript", False)
                         text = self.normalize_spaces(fix_text(span["text"]))
@@ -270,11 +264,24 @@ class PdfProvider(BaseProvider):
                                 has_subscript=subscript,
                             )
                         )
-                        chars.append(span_chars)
+
+                        if self.keep_chars:
+                            span_chars = [
+                                CharClass(
+                                    text=c["char"],
+                                    polygon=PolygonBox.from_bbox(
+                                        c["bbox"], ensure_nonzero_area=True
+                                    ),
+                                    idx=c["char_idx"],
+                                )
+                                for c in span["chars"]
+                            ]
+                            chars.append(span_chars)
+
                     polygon = PolygonBox.from_bbox(
                         line["bbox"], ensure_nonzero_area=True
                     )
-                    assert len(spans) == len(chars)
+
                     lines.append(
                         ProviderOutput(
                             line=LineClass(polygon=polygon, page_id=page_id),
