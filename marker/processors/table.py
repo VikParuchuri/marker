@@ -1,5 +1,4 @@
 import re
-from collections import defaultdict
 from copy import deepcopy
 from typing import Annotated, List
 from collections import Counter
@@ -18,6 +17,7 @@ from marker.schema.document import Document
 from marker.schema.polygon import PolygonBox
 from marker.settings import settings
 from marker.util import matrix_intersection_area
+from marker.utils.merge import assign_text_to_bboxes
 from marker.logger import get_logger
 
 logger = get_logger()
@@ -400,21 +400,9 @@ class TableProcessor(BaseProcessor):
         for table_result, table_page_data in zip(tables, table_data):
             table_text_lines = table_page_data["table_text_lines"]
             table_cells: List[SuryaTableCell] = table_result.cells
-            text_line_bboxes = [t["bbox"] for t in table_text_lines]
-            table_cell_bboxes = [c.bbox for c in table_cells]
 
-            intersection_matrix = matrix_intersection_area(
-                text_line_bboxes, table_cell_bboxes
-            )
-
-            cell_text = defaultdict(list)
-            for text_line_idx, table_text_line in enumerate(table_text_lines):
-                intersections = intersection_matrix[text_line_idx]
-                if intersections.sum() == 0:
-                    continue
-
-                max_intersection = intersections.argmax()
-                cell_text[max_intersection].append(table_text_line)
+            # Use the shared utility function
+            cell_text = assign_text_to_bboxes(table_text_lines, table_cells)
 
             for k in cell_text:
                 # TODO: see if the text needs to be sorted (based on rotation)
