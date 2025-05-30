@@ -110,7 +110,7 @@ class LineBuilder(BaseBuilder):
         if self.detection_batch_size is not None:
             return self.detection_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 12
+            return 10
         return 4
 
     def get_ocr_error_batch_size(self):
@@ -156,13 +156,14 @@ class LineBuilder(BaseBuilder):
         for document_page, ocr_error_detection_label in zip(
             document.pages, ocr_error_detection_results.labels
         ):
+            document_page.ocr_errors_detected = ocr_error_detection_label == "bad"
             provider_lines: List[ProviderOutput] = provider.page_lines.get(
                 document_page.page_id, []
             )
             provider_lines_good = all(
                 [
                     bool(provider_lines),
-                    ocr_error_detection_label != "bad",
+                    not document_page.ocr_errors_detected,
                     self.check_layout_coverage(document_page, provider_lines),
                 ]
             )

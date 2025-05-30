@@ -47,7 +47,7 @@ class EquationProcessor(BaseProcessor):
         if self.equation_batch_size is not None:
             return self.equation_batch_size
         elif settings.TORCH_DEVICE_MODEL == "cuda":
-            return 32
+            return 16
         elif settings.TORCH_DEVICE_MODEL == "mps":
             return 6
         return 6
