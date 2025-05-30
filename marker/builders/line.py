@@ -210,16 +210,17 @@ class LineBuilder(BaseBuilder):
                 document_page.text_extraction_method = "pdftext"
 
                 # Add in the provider lines - merge ones that get broken by pdftext
-                merged_provider_lines = self.merge_provider_lines_detected_lines(
+                # Also track the lines that were detected but have no provider overlaps
+                merged_provider_lines, detected_only_lines = self.merge_provider_lines_detected_lines(
                     provider_lines, detection_boxes, image_size, page_size, document_page.page_id
                 )
 
                 # If fixing lines, mark every line to be passed to the OCR model
                 for provider_line in merged_provider_lines:
                     provider_line.line.text_extraction_method = (
-                        "surya" if self.format_lines else "pdftext"
+                        "hybrid" if self.format_lines else "pdftext"
                     )
-                page_lines[document_page.page_id] = merged_provider_lines
+                page_lines[document_page.page_id] = merged_provider_lines + detected_only_lines
             else:
                 document_page.text_extraction_method = "surya"
                 boxes_to_ocr[document_page.page_id].extend(detection_boxes)
@@ -381,7 +382,7 @@ class LineBuilder(BaseBuilder):
             # Text extraction method is overridden later for OCRed documents
             document_page.merge_blocks(
                 merged_lines,
-                text_extraction_method="pdftext",
+                text_extraction_method="pdftext" if provider_lines else "surya",
                 keep_chars=self.keep_chars,
             )
 
@@ -539,11 +540,12 @@ class LineBuilder(BaseBuilder):
         out_provider_lines = [p for _, p in out_provider_lines]
 
         # Detected lines that do not overlap with any provider lines shoudl be outputted as-is
+        detected_only_lines = []
         LineClass: Line = get_block_class(BlockTypes.Line)
         for j in range(len(detected_line_boxes)):
             if np.max(overlaps[:, j]) == 0:
                 detected_line_polygon = PolygonBox.from_bbox(detected_line_boxes[j])
-                out_provider_lines.append(
+                detected_only_lines.append(
                     ProviderOutput(
                         line=LineClass(
                             polygon=detected_line_polygon,
@@ -555,4 +557,4 @@ class LineBuilder(BaseBuilder):
                     )
                 )
 
-        return out_provider_lines
+        return out_provider_lines, detected_only_lines
