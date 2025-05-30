@@ -277,11 +277,16 @@ class PdfProvider(BaseProvider):
                                 for c in span["chars"]
                             ]
                             chars.append(span_chars)
+                        else:
+                            chars.append([])
 
                     polygon = PolygonBox.from_bbox(
                         line["bbox"], ensure_nonzero_area=True
                     )
 
+                    assert len(spans) == len(chars), (
+                        f"Spans and chars length mismatch on page {page_id}: {len(spans)} spans, {len(chars)} chars"
+                    )
                     lines.append(
                         ProviderOutput(
                             line=LineClass(polygon=polygon, page_id=page_id),

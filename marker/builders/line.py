@@ -313,26 +313,36 @@ class LineBuilder(BaseBuilder):
             text_okay = True
         return text_okay
 
-    def is_blank_slice(
-        self, slice_image: Image.Image, std_thresh: float = 2, noise_area: int = 30
-    ):
-        gray = np.asarray(slice_image.convert("L"))
-        if gray.size == 0:
+    def is_blank_slice(self, slice_image: Image.Image):
+        image = np.asarray(slice_image)
+        if (
+            image is None
+            or image.size == 0
+            or image.shape[0] == 0
+            or image.shape[1] == 0
+        ):
+            # Handle empty image case
             return True
 
-        if gray.std() < std_thresh:
-            return True
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        gray = cv2.GaussianBlur(gray, (3, 3), 0)
 
-        _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+        # Adaptive threshold (inverse for text as white)
+        binarized = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 15
+        )
 
-        if cv2.countNonZero(bw) < noise_area:
-            return True
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+            binarized, connectivity=8
+        )
+        cleaned = np.zeros_like(binarized)
+        for i in range(1, num_labels):  # skip background
+            cleaned[labels == i] = 255
 
-        kernel_size = max(3, int(np.sqrt(noise_area)))  # Scale kernel to noise_area
-        kernel = np.ones((kernel_size, kernel_size), np.uint8)
-        bw = cv2.morphologyEx(bw, cv2.MORPH_OPEN, kernel)
-
-        return cv2.countNonZero(bw) == 0
+        kernel = np.ones((1, 5), np.uint8)
+        dilated = cv2.dilate(cleaned, kernel, iterations=3)
+        b = dilated / 255
+        return b.sum() == 0
 
     def filter_blank_lines(self, page: PageGroup, lines: List[ProviderOutput]):
         page_size = (page.polygon.width, page.polygon.height)
