@@ -500,11 +500,16 @@ class LineBuilder(BaseBuilder):
         ):
             # Don't just take the whole detected line if we have multiple sections inside
             if len(all_merge_sections) == 1:
-                text_line_overlaps = np.nonzero(overlaps[merge_section[0]])[0].tolist()
-                merged_text_line: PolygonBox = text_lines[text_line_overlaps[0]]
-                if len(text_line_overlaps) > 1:
-                    merged_text_line =  merged_text_line.merge([text_lines[k] for k in text_line_overlaps[1:]])
-                return merged_text_line.rescale(image_size, page_size)
+                # This is to cover for the special case where multiple detected lines fall under the same provider line
+                # This happens sometimes since providers lines are long, and will merge across whitespace
+                # We merge in all detected lines into a single polygon before assigning to the provider line
+                idx = merge_section[0]
+                overlap_idxs = np.nonzero(overlaps[idx])[0]
+                # Account for lines that overlap, but have been assigned to a different provider line already
+                lines = [text_line] + [text_lines[i] for i in overlap_idxs if i not in merge_lines]
+
+                merged = lines[0] if len(lines) == 1 else lines[0].merge(lines[1:])
+                return merged.rescale(image_size, page_size)
             else:
                 poly = None
                 for section_idx in merge_section:
