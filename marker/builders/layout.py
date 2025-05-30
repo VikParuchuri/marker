@@ -35,10 +35,10 @@ class LayoutBuilder(BaseBuilder):
         List[BlockTypes],
         "Block types whose bounds should be expanded to accomodate missing regions"
     ] = [BlockTypes.Picture, BlockTypes.Figure, BlockTypes.ComplexRegion] # Does not include groups since they are only injected later
-    expand_frac: Annotated[
+    max_expand_frac: Annotated[
         float,
-        "The fraction to expand the layout box bounds by"
-    ] = 0.02
+        "The maximum fraction to expand the layout box bounds by"
+    ] = 0.05
 
     def __init__(self, layout_model: LayoutPredictor, config=None):
         self.layout_model = layout_model
@@ -52,6 +52,7 @@ class LayoutBuilder(BaseBuilder):
         else:
             layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
+        self.expand_layout_blocks(document)
 
     def get_batch_size(self):
         if self.layout_batch_size is not None:
@@ -87,6 +88,31 @@ class LayoutBuilder(BaseBuilder):
         )
         return layout_results
 
+    def expand_layout_blocks(self, document: Document):
+        for page in document.pages:
+            # Collect all blocks on this page as PolygonBox for easy access
+            page_blocks = [document.get_block(bid) for bid in page.structure]
+
+            for block_id in page.structure:
+                block = document.get_block(block_id)
+                if block.block_type in self.expand_block_types:
+                    other_blocks = [b for b in page_blocks if b != block]
+                    if not other_blocks:
+                        print(f'Expanding {block_id} by {(self.max_expand_frac, self.max_expand_frac)}')
+                        block.polygon = block.polygon.expand(self.max_expand_frac, self.max_expand_frac)
+                        continue
+
+                    min_gap = min(block.polygon.minimum_gap(other.polygon) for other in other_blocks)
+                    if min_gap <= 0:
+                        print(f'Cannot expand {block_id}')
+                        continue
+
+                    x_expand_frac = min_gap / block.polygon.width if block.polygon.width > 0 else 0
+                    y_expand_frac = min_gap / block.polygon.height if block.polygon.height > 0 else 0
+
+                    print(f'Expanding {block_id} by {(min(x_expand_frac, self.max_expand_frac), min(y_expand_frac, self.max_expand_frac))}')
+                    block.polygon = block.polygon.expand(x_expand_frac, y_expand_frac)
+
     def add_blocks_to_pages(
         self, pages: List[PageGroup], layout_results: List[LayoutResult]
     ):
@@ -104,8 +130,6 @@ class LayoutBuilder(BaseBuilder):
                 layout_block.polygon = layout_block.polygon.rescale(
                     layout_page_size, provider_page_size
                 )
-                if layout_block.block_type in self.expand_block_types:
-                    layout_block.polygon = layout_block.polygon.expand(self.expand_frac, self.expand_frac)
                 layout_block.top_k = {
                     BlockTypes[label]: prob for (label, prob) in bbox.top_k.items()
                 }
