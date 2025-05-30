@@ -31,6 +31,14 @@ class LayoutBuilder(BaseBuilder):
         bool,
         "Disable tqdm progress bars.",
     ] = False
+    expand_block_types: Annotated[
+        List[BlockTypes],
+        "Block types whose bounds should be expanded to accomodate missing regions"
+    ] = [BlockTypes.Picture, BlockTypes.Figure, BlockTypes.ComplexRegion] # Does not include groups since they are only injected later
+    expand_frac: Annotated[
+        float,
+        "The fraction to expand the layout box bounds by"
+    ] = 0.02
 
     def __init__(self, layout_model: LayoutPredictor, config=None):
         self.layout_model = layout_model
@@ -96,6 +104,8 @@ class LayoutBuilder(BaseBuilder):
                 layout_block.polygon = layout_block.polygon.rescale(
                     layout_page_size, provider_page_size
                 )
+                if layout_block.block_type in self.expand_block_types:
+                    layout_block.polygon = layout_block.polygon.expand(self.expand_frac, self.expand_frac)
                 layout_block.top_k = {
                     BlockTypes[label]: prob for (label, prob) in bbox.top_k.items()
                 }
