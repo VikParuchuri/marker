@@ -68,6 +68,11 @@ class TableProcessor(BaseProcessor):
         bool,
         "Whether to format the lines.",
     ] = False
+    ocr_error_batch_size: Annotated[
+        int,
+        "The batch size to use for the ocr error detection model.",
+        "Default is None, which will use the default batch size for the model.",
+    ] = None
 
     def __init__(
         self,
@@ -101,8 +106,13 @@ class TableProcessor(BaseProcessor):
                         "table_image": image,
                         "table_bbox": image_poly.bbox,
                         "img_size": page.get_image(highres=True).size,
-                        "ocr_block": page.text_extraction_method == "surya"
-                        or self.format_lines,
+                        "ocr_block": any(
+                            [
+                                page.text_extraction_method == "surya",
+                                page.ocr_errors_detected,
+                                self.format_lines,
+                            ]
+                        ),
                     }
                 )
 
