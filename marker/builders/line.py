@@ -394,9 +394,29 @@ class LineBuilder(BaseBuilder):
         page_size,
         page_id,
     ):
-        # When provider lines is empty or no lines detected, return provider lines
-        if not provider_lines or not text_lines:
-            return provider_lines
+        # If no lines detected, skip the merging
+        if not text_lines:
+            return provider_lines, []
+        
+        # If no provider lines, return all detected text lines
+        if not provider_lines:
+            detected_only_lines = []
+            LineClass: Line = get_block_class(BlockTypes.Line)
+            for text_line in text_lines:
+                text_line_polygon = PolygonBox(polygon=text_line.polygon).rescale(image_size, page_size)
+                detected_only_lines.append(
+                    ProviderOutput(
+                        line=LineClass(
+                            polygon=text_line_polygon,
+                            page_id=page_id,
+                            text_extraction_method="surya"
+                        ),
+                        spans=[],
+                        chars=[]
+                    )
+                )
+
+            return out_provider_lines, detected_only_lines
 
         out_provider_lines = []
         horizontal_provider_lines = []
