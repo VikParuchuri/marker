@@ -98,19 +98,16 @@ class LayoutBuilder(BaseBuilder):
                 if block.block_type in self.expand_block_types:
                     other_blocks = [b for b in page_blocks if b != block]
                     if not other_blocks:
-                        print(f'Expanding {block_id} by {(self.max_expand_frac, self.max_expand_frac)}')
                         block.polygon = block.polygon.expand(self.max_expand_frac, self.max_expand_frac)
                         continue
 
                     min_gap = min(block.polygon.minimum_gap(other.polygon) for other in other_blocks)
                     if min_gap <= 0:
-                        print(f'Cannot expand {block_id}')
                         continue
 
                     x_expand_frac = min_gap / block.polygon.width if block.polygon.width > 0 else 0
                     y_expand_frac = min_gap / block.polygon.height if block.polygon.height > 0 else 0
 
-                    print(f'Expanding {block_id} by {(min(x_expand_frac, self.max_expand_frac), min(y_expand_frac, self.max_expand_frac))}')
                     block.polygon = block.polygon.expand(x_expand_frac, y_expand_frac)
 
     def add_blocks_to_pages(
