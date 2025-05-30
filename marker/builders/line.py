@@ -156,13 +156,14 @@ class LineBuilder(BaseBuilder):
         for document_page, ocr_error_detection_label in zip(
             document.pages, ocr_error_detection_results.labels
         ):
+            document_page.ocr_errors_detected = ocr_error_detection_label == "bad"
             provider_lines: List[ProviderOutput] = provider.page_lines.get(
                 document_page.page_id, []
             )
             provider_lines_good = all(
                 [
                     bool(provider_lines),
-                    ocr_error_detection_label != "bad",
+                    not document_page.ocr_errors_detected,
                     self.check_layout_coverage(document_page, provider_lines),
                 ]
             )
