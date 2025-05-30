@@ -68,11 +68,6 @@ class TableProcessor(BaseProcessor):
         bool,
         "Whether to format the lines.",
     ] = False
-    ocr_error_batch_size: Annotated[
-        int,
-        "The batch size to use for the ocr error detection model.",
-        "Default is None, which will use the default batch size for the model.",
-    ] = None
 
     def __init__(
         self,
