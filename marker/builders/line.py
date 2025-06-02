@@ -539,14 +539,14 @@ class LineBuilder(BaseBuilder):
 
                 # Find other detected lines within this provider line, and merge them
                 # Track used lines to ensure no duplicates
-                other_merge_detected_lines = [
-                    detected_lines[i]
-                    for i in overlap_idxs
+                other_merge_detected_idxs = [
+                    i for i in overlap_idxs
                     if i not in provider_lines_within_detected_lines
                     and i not in detected_lines_remerged
                 ]
+                other_merge_detected_lines = [detected_lines[i] for i in other_merge_detected_idxs]
                 lines += other_merge_detected_lines
-                detected_lines_remerged.update(set(other_merge_detected_lines))
+                detected_lines_remerged.update(set(other_merge_detected_idxs))
 
                 merged = lines[0] if len(lines) == 1 else lines[0].merge(lines[1:])
                 return merged.rescale(image_size, page_size)
