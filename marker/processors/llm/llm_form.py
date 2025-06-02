@@ -102,7 +102,7 @@ Comparison: The html representation has the labels in the first row and the valu
         corrected_html = response["corrected_html"]
 
         # The original table is okay
-        if "no corrections" in corrected_html.lower():
+        if "no corrections needed" in corrected_html.lower():
             return
 
         # Potentially a partial response

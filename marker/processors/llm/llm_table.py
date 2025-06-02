@@ -198,7 +198,7 @@ No corrections needed.
         corrected_html = response["corrected_html"]
 
         # The original table is okay
-        if "no corrections" in corrected_html.lower():
+        if "no corrections needed" in corrected_html.lower():
             return
 
         corrected_html = corrected_html.strip().lstrip("```html").rstrip("```").strip()
