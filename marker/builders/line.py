@@ -417,7 +417,7 @@ class LineBuilder(BaseBuilder):
                     )
                 )
 
-            return out_provider_lines, detected_only_lines
+            return [], detected_only_lines
 
         out_provider_lines = []
         horizontal_provider_lines = []

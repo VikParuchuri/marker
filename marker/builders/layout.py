@@ -90,7 +90,6 @@ class LayoutBuilder(BaseBuilder):
 
     def expand_layout_blocks(self, document: Document):
         for page in document.pages:
-            # Collect all blocks on this page as PolygonBox for easy access
             page_blocks = [document.get_block(bid) for bid in page.structure]
 
             for block_id in page.structure:
@@ -108,7 +107,7 @@ class LayoutBuilder(BaseBuilder):
                     x_expand_frac = min_gap / block.polygon.width if block.polygon.width > 0 else 0
                     y_expand_frac = min_gap / block.polygon.height if block.polygon.height > 0 else 0
 
-                    block.polygon = block.polygon.expand(x_expand_frac, y_expand_frac)
+                    block.polygon = block.polygon.expand(max(x_expand_frac, self.max_expand_frac), max(y_expand_frac, self.max_expand_frac))
 
     def add_blocks_to_pages(
         self, pages: List[PageGroup], layout_results: List[LayoutResult]
