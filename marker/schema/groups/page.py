@@ -12,7 +12,7 @@ from marker.schema.blocks import Block, BlockId, Text
 from marker.schema.blocks.base import BlockMetadata
 from marker.schema.groups.base import Group
 from marker.schema.polygon import PolygonBox
-from marker.util import matrix_intersection_area
+from marker.util import matrix_intersection_area, sort_text_lines
 
 LINE_MAPPING_TYPE = List[Tuple[int, ProviderOutput]]
 
@@ -33,6 +33,7 @@ class PageGroup(Group):
     maximum_assignment_distance: float = 20  # pixels
     block_description: str = "A single page in the document."
     refs: List[Reference] | None = None
+    ocr_errors_detected: bool = False
 
     def incr_block_id(self):
         if self.block_id is None:
@@ -244,9 +245,19 @@ class PageGroup(Group):
     ):
         # Add lines to the proper blocks, sorted in order
         for block_id, lines in block_lines.items():
-            lines = sorted(lines, key=lambda x: x[0])
+            line_extraction_methods = set([l[1].line.text_extraction_method for l in lines])
+            if len(line_extraction_methods) == 1:
+                lines = sorted(lines, key=lambda x: x[0])
+                lines = [l for _, l in lines]
+            else:
+                lines = [l for _, l in lines]
+                line_polygons = [l.line.polygon for l in lines]
+                sorted_line_polygons = sort_text_lines(line_polygons)
+                argsort = [line_polygons.index(p) for p in sorted_line_polygons]
+                lines = [lines[i] for i in argsort]
+
             block = self.get_block(block_id)
-            for line_idx, provider_output in lines:
+            for provider_output in lines:
                 line = provider_output.line
                 spans = provider_output.spans
                 self.add_full_block(line)

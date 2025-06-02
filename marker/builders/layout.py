@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List
 
 from surya.layout import LayoutPredictor
 from surya.layout.schema import LayoutResult, LayoutBox
@@ -19,7 +19,7 @@ class LayoutBuilder(BaseBuilder):
     """
 
     layout_batch_size: Annotated[
-        Optional[int],
+        int,
         "The batch size to use for the layout model.",
         "Default is None, which will use the default batch size for the model.",
     ] = None
@@ -31,6 +31,17 @@ class LayoutBuilder(BaseBuilder):
         bool,
         "Disable tqdm progress bars.",
     ] = False
+    expand_block_types: Annotated[
+        List[BlockTypes],
+        "Block types whose bounds should be expanded to accomodate missing regions",
+    ] = [
+        BlockTypes.Picture,
+        BlockTypes.Figure,
+        BlockTypes.ComplexRegion,
+    ]  # Does not include groups since they are only injected later
+    max_expand_frac: Annotated[
+        float, "The maximum fraction to expand the layout box bounds by"
+    ] = 0.05
 
     def __init__(self, layout_model: LayoutPredictor, config=None):
         self.layout_model = layout_model
@@ -44,6 +55,7 @@ class LayoutBuilder(BaseBuilder):
         else:
             layout_results = self.surya_layout(document.pages)
         self.add_blocks_to_pages(document.pages, layout_results)
+        self.expand_layout_blocks(document)
 
     def get_batch_size(self):
         if self.layout_batch_size is not None:
@@ -78,6 +90,42 @@ class LayoutBuilder(BaseBuilder):
             batch_size=int(self.get_batch_size()),
         )
         return layout_results
+
+    def expand_layout_blocks(self, document: Document):
+        for page in document.pages:
+            # Collect all blocks on this page as PolygonBox for easy access
+            page_blocks = [document.get_block(bid) for bid in page.structure]
+
+            for block_id in page.structure:
+                block = document.get_block(block_id)
+                if block.block_type in self.expand_block_types:
+                    other_blocks = [b for b in page_blocks if b != block]
+                    if not other_blocks:
+                        block.polygon = block.polygon.expand(
+                            self.max_expand_frac, self.max_expand_frac
+                        )
+                        continue
+
+                    min_gap = min(
+                        block.polygon.minimum_gap(other.polygon)
+                        for other in other_blocks
+                    )
+                    if min_gap <= 0:
+                        continue
+
+                    x_expand_frac = (
+                        min_gap / block.polygon.width if block.polygon.width > 0 else 0
+                    )
+                    y_expand_frac = (
+                        min_gap / block.polygon.height
+                        if block.polygon.height > 0
+                        else 0
+                    )
+
+                    block.polygon = block.polygon.expand(
+                        min(self.max_expand_frac, x_expand_frac),
+                        min(self.max_expand_frac, y_expand_frac),
+                    )
 
     def add_blocks_to_pages(
         self, pages: List[PageGroup], layout_results: List[LayoutResult]

@@ -1,5 +1,5 @@
 import copy
-from typing import Annotated, List, Optional
+from typing import Annotated, List
 
 from ftfy import fix_text
 from PIL import Image
@@ -27,7 +27,7 @@ class OcrBuilder(BaseBuilder):
     """
 
     recognition_batch_size: Annotated[
-        Optional[int],
+        int,
         "The batch size to use for the recognition model.",
         "Default is None, which will use the default batch size for the model.",
     ] = None
@@ -35,11 +35,12 @@ class OcrBuilder(BaseBuilder):
         bool,
         "Disable tqdm progress bars.",
     ] = False
+    # We can skip tables here, since the TableProcessor will re-OCR
     skip_ocr_blocks: Annotated[
         List[BlockTypes],
         "Blocktypes for which contained lines are not processed by the OCR model"
-        "By default, this avoids recognizing lines inside equations",
-    ] = BlockTypes.Equation
+        "By default, this avoids recognizing lines inside equations, figures, and pictures",
+    ] = [BlockTypes.Equation, BlockTypes.Figure, BlockTypes.FigureGroup, BlockTypes.Picture, BlockTypes.PictureGroup, BlockTypes.Table]
     ocr_task_name: Annotated[
         str,
         "The OCR mode to use, see surya for details.  Set to 'ocr_without_boxes' for potentially better performance, at the expense of formatting.",
@@ -99,7 +100,7 @@ class OcrBuilder(BaseBuilder):
                 block_lines_to_ocr = [
                     block_line
                     for block_line in block_lines
-                    if block_line.text_extraction_method == "surya"
+                    if block_line.text_extraction_method in ["surya", "hybrid"]
                 ]
 
                 # Set extraction method of OCR-only pages
