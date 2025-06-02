@@ -212,8 +212,14 @@ class LineBuilder(BaseBuilder):
 
                 # Add in the provider lines - merge ones that get broken by pdftext
                 # Also track the lines that were detected but have no provider overlaps
-                merged_provider_lines, detected_only_lines = self.merge_provider_lines_detected_lines(
-                    provider_lines, detection_boxes, image_size, page_size, document_page.page_id
+                merged_provider_lines, detected_only_lines = (
+                    self.merge_provider_lines_detected_lines(
+                        provider_lines,
+                        detection_boxes,
+                        image_size,
+                        page_size,
+                        document_page.page_id,
+                    )
                 )
 
                 # If fixing lines, mark every line to be passed to the OCR model
@@ -221,7 +227,9 @@ class LineBuilder(BaseBuilder):
                     provider_line.line.text_extraction_method = (
                         "hybrid" if self.format_lines else "pdftext"
                     )
-                page_lines[document_page.page_id] = merged_provider_lines + detected_only_lines
+                page_lines[document_page.page_id] = (
+                    merged_provider_lines + detected_only_lines
+                )
             else:
                 document_page.text_extraction_method = "surya"
                 boxes_to_ocr[document_page.page_id].extend(detection_boxes)
@@ -398,26 +406,28 @@ class LineBuilder(BaseBuilder):
         # If no lines detected, skip the merging
         if not text_lines:
             return provider_lines, []
-        
+
         # If no provider lines, return all detected text lines
         if not provider_lines:
             detected_only_lines = []
             LineClass: Line = get_block_class(BlockTypes.Line)
             for text_line in text_lines:
-                text_line_polygon = PolygonBox(polygon=text_line.polygon).rescale(image_size, page_size)
+                text_line_polygon = PolygonBox(polygon=text_line.polygon).rescale(
+                    image_size, page_size
+                )
                 detected_only_lines.append(
                     ProviderOutput(
                         line=LineClass(
                             polygon=text_line_polygon,
                             page_id=page_id,
-                            text_extraction_method="surya"
+                            text_extraction_method="surya",
                         ),
                         spans=[],
-                        chars=[]
+                        chars=[],
                     )
                 )
 
-            return out_provider_lines, detected_only_lines
+            return [], detected_only_lines
 
         out_provider_lines = []
         horizontal_provider_lines = []
@@ -437,7 +447,7 @@ class LineBuilder(BaseBuilder):
         ]
 
         overlaps = matrix_intersection_area(provider_line_boxes, detected_line_boxes)
-        
+
         # Find potential merges
         merge_lines = defaultdict(list)
         for i in range(len(provider_line_boxes)):
@@ -507,7 +517,9 @@ class LineBuilder(BaseBuilder):
                 idx = merge_section[0]
                 overlap_idxs = np.nonzero(overlaps[idx])[0]
                 # Account for lines that overlap, but have been assigned to a different provider line already
-                lines = [text_line] + [text_lines[i] for i in overlap_idxs if i not in merge_lines]
+                lines = [text_line] + [
+                    text_lines[i] for i in overlap_idxs if i not in merge_lines
+                ]
 
                 merged = lines[0] if len(lines) == 1 else lines[0].merge(lines[1:])
                 return merged.rescale(image_size, page_size)

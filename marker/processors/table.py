@@ -103,7 +103,7 @@ class TableProcessor(BaseProcessor):
                         "img_size": page.get_image(highres=True).size,
                         "ocr_block": any(
                             [
-                                page.text_extraction_method == "surya",
+                                page.text_extraction_method in ["surya", "hybrid"],
                                 page.ocr_errors_detected,
                                 self.format_lines,
                             ]
