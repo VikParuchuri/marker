@@ -398,27 +398,27 @@ class LineBuilder(BaseBuilder):
     def merge_provider_lines_detected_lines(
         self,
         provider_lines: List[ProviderOutput],
-        text_lines: List[PolygonBox],
+        detected_lines: List[PolygonBox],
         image_size,
         page_size,
         page_id,
     ):
         # If no lines detected, skip the merging
-        if not text_lines:
+        if not detected_lines:
             return provider_lines, []
 
         # If no provider lines, return all detected text lines
         if not provider_lines:
             detected_only_lines = []
             LineClass: Line = get_block_class(BlockTypes.Line)
-            for text_line in text_lines:
-                text_line_polygon = PolygonBox(polygon=text_line.polygon).rescale(
-                    image_size, page_size
-                )
+            for detected_line in detected_lines:
+                detected_line_polygon = PolygonBox(
+                    polygon=detected_line.polygon
+                ).rescale(image_size, page_size)
                 detected_only_lines.append(
                     ProviderOutput(
                         line=LineClass(
-                            polygon=text_line_polygon,
+                            polygon=detected_line_polygon,
                             page_id=page_id,
                             text_extraction_method="surya",
                         ),
@@ -443,29 +443,37 @@ class LineBuilder(BaseBuilder):
         ]
         detected_line_boxes = [
             PolygonBox(polygon=line.polygon).rescale(image_size, page_size).bbox
-            for line in text_lines
+            for line in detected_lines
         ]
 
-        overlaps = matrix_intersection_area(provider_line_boxes, detected_line_boxes)
+        provider_detected_overlaps = matrix_intersection_area(
+            provider_line_boxes, detected_line_boxes
+        )
 
-        # Find potential merges
-        merge_lines = defaultdict(list)
+        # Find provider lines to merge together
+        # Merge lines has keys of detected line index, and values are lists of provider line indices
+        # The provider lines overlap with the detected line index
+        provider_lines_within_detected_lines = defaultdict(list)
         for i in range(len(provider_line_boxes)):
-            max_overlap_pct = np.max(overlaps[i]) / max(
+            max_overlap_pct = np.max(provider_detected_overlaps[i]) / max(
                 1, horizontal_provider_lines[i][1].line.polygon.area
             )
             if max_overlap_pct <= self.provider_line_detected_line_min_overlap_pct:
                 continue
 
-            best_overlap = np.argmax(overlaps[i])
-            merge_lines[best_overlap].append(i)
+            best_overlap_detected_line = np.argmax(provider_detected_overlaps[i])
+            provider_lines_within_detected_lines[best_overlap_detected_line].append(i)
 
-        # Filter to get rid of detected lines that include multiple provider lines
-        filtered_merge_lines = defaultdict(list)
-        for line_idx in merge_lines:
+        # If a detected line contains multiple provider lines, group them by vertical proximity
+        # Only merge provider lines that are vertically close together (within threshold)
+        # This prevents merging separate text lines that happen to fall under one detected region
+        # We only want to merge a single line of text horizontally, not multiple lines vertically
+        # For example, small math symbols, etc, can get broken in separate lines in PDFs
+        filtered_provider_lines_within_detected_lines = defaultdict(list)
+        for line_idx in provider_lines_within_detected_lines:
             merge_segment = []
             prev_line = None
-            for ml in merge_lines[line_idx]:
+            for ml in provider_lines_within_detected_lines[line_idx]:
                 line = horizontal_provider_lines[ml][1].line.polygon
                 if prev_line:
                     close = (
@@ -483,16 +491,24 @@ class LineBuilder(BaseBuilder):
                     merge_segment.append(ml)
                 else:
                     if merge_segment:
-                        filtered_merge_lines[line_idx].append(merge_segment)
+                        filtered_provider_lines_within_detected_lines[line_idx].append(
+                            merge_segment
+                        )
                     merge_segment = [ml]
             if merge_segment:
-                filtered_merge_lines[line_idx].append(merge_segment)
+                filtered_provider_lines_within_detected_lines[line_idx].append(
+                    merge_segment
+                )
 
-        # Handle the merging
+        # Find all the potential merges of provider lines
         already_merged = set()
         potential_merges = []
-        for line_idx in filtered_merge_lines:
-            potential_merges.extend(chain.from_iterable(filtered_merge_lines[line_idx]))
+        for line_idx in filtered_provider_lines_within_detected_lines:
+            potential_merges.extend(
+                chain.from_iterable(
+                    filtered_provider_lines_within_detected_lines[line_idx]
+                )
+            )
         potential_merges = set(potential_merges)
 
         # Provider lines that are not in any merge group should be outputted as-is
@@ -504,22 +520,33 @@ class LineBuilder(BaseBuilder):
             ]
         )
 
+        detected_lines_remerged = set()
+
         def bbox_for_merge_section(
             merge_section: List[int],
             all_merge_sections: List[List[int]],
             text_line: PolygonBox,
         ):
             # Don't just take the whole detected line if we have multiple sections inside
-            if len(all_merge_sections) == 1:
+            if len(all_merge_sections) == 1 and len(all_merge_sections[0]) == 1:
                 # This is to cover for the special case where multiple detected lines fall under the same provider line
                 # This happens sometimes since providers lines are long, and will merge across whitespace
                 # We merge in all detected lines into a single polygon before assigning to the provider line
                 idx = merge_section[0]
-                overlap_idxs = np.nonzero(overlaps[idx])[0]
+                overlap_idxs = np.nonzero(provider_detected_overlaps[idx])[0]
                 # Account for lines that overlap, but have been assigned to a different provider line already
-                lines = [text_line] + [
-                    text_lines[i] for i in overlap_idxs if i not in merge_lines
+                lines = [text_line]
+
+                # Find other detected lines within this provider line, and merge them
+                # Track used lines to ensure no duplicates
+                other_merge_detected_lines = [
+                    detected_lines[i]
+                    for i in overlap_idxs
+                    if i not in provider_lines_within_detected_lines
+                    and i not in detected_lines_remerged
                 ]
+                lines += other_merge_detected_lines
+                detected_lines_remerged.update(set(other_merge_detected_lines))
 
                 merged = lines[0] if len(lines) == 1 else lines[0].merge(lines[1:])
                 return merged.rescale(image_size, page_size)
@@ -535,9 +562,11 @@ class LineBuilder(BaseBuilder):
                         poly = poly.merge([section_polygon])
                 return poly
 
-        for line_idx in filtered_merge_lines:
-            text_line = text_lines[line_idx]
-            for merge_section in filtered_merge_lines[line_idx]:
+        for line_idx in filtered_provider_lines_within_detected_lines:
+            detected_line = detected_lines[line_idx]
+            for merge_section in filtered_provider_lines_within_detected_lines[
+                line_idx
+            ]:
                 merge_section = [m for m in merge_section if m not in already_merged]
                 if len(merge_section) == 0:
                     continue
@@ -549,7 +578,9 @@ class LineBuilder(BaseBuilder):
                     # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
                     # TODO Add metadata for this
                     merged_line.line.polygon = bbox_for_merge_section(
-                        merge_section, filtered_merge_lines[line_idx], text_line
+                        merge_section,
+                        filtered_provider_lines_within_detected_lines[line_idx],
+                        detected_line,
                     )
                     out_provider_lines.append((out_idx, merged_line))
                     already_merged.add(merge_section[0])
@@ -569,7 +600,9 @@ class LineBuilder(BaseBuilder):
                     # Set the polygon to the detected line - This is because provider polygons are sometimes incorrect
                     # TODO Add metadata for this
                     merged_line.line.polygon = bbox_for_merge_section(
-                        merge_section, filtered_merge_lines[line_idx], text_line
+                        merge_section,
+                        filtered_provider_lines_within_detected_lines[line_idx],
+                        detected_line,
                     )
                     out_provider_lines.append((out_idx, merged_line))
 
@@ -581,7 +614,7 @@ class LineBuilder(BaseBuilder):
         detected_only_lines = []
         LineClass: Line = get_block_class(BlockTypes.Line)
         for j in range(len(detected_line_boxes)):
-            if np.max(overlaps[:, j]) == 0:
+            if np.max(provider_detected_overlaps[:, j]) == 0:
                 detected_line_polygon = PolygonBox.from_bbox(detected_line_boxes[j])
                 detected_only_lines.append(
                     ProviderOutput(
