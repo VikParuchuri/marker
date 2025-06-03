@@ -32,7 +32,7 @@ class PdfProvider(BaseProvider):
     """
 
     page_range: Annotated[
-        Optional[List[int]],
+        List[int],
         "The range of pages to process.",
         "Default is None, which will process all pages.",
     ] = None
@@ -75,6 +75,10 @@ class PdfProvider(BaseProvider):
     disable_links: Annotated[
         bool,
         "Whether to disable links.",
+    ] = False
+    keep_chars: Annotated[
+        bool,
+        "Whether to keep character-level information in the output.",
     ] = False
 
     def __init__(self, filepath: str, config=None):
@@ -200,7 +204,7 @@ class PdfProvider(BaseProvider):
         page_char_blocks = dictionary_output(
             self.filepath,
             page_range=self.page_range,
-            keep_chars=True,
+            keep_chars=self.keep_chars,
             workers=self.pdftext_workers,
             flatten_pdf=self.flatten_pdf,
             quote_loosebox=False,
@@ -213,6 +217,7 @@ class PdfProvider(BaseProvider):
 
         SpanClass: Span = get_block_class(BlockTypes.Span)
         LineClass: Line = get_block_class(BlockTypes.Line)
+        CharClass: Char = get_block_class(BlockTypes.Char)
 
         for page in page_char_blocks:
             page_id = page["page"]
@@ -236,16 +241,6 @@ class PdfProvider(BaseProvider):
                         polygon = PolygonBox.from_bbox(
                             span["bbox"], ensure_nonzero_area=True
                         )
-                        span_chars = [
-                            Char(
-                                char=c["char"],
-                                polygon=PolygonBox.from_bbox(
-                                    c["bbox"], ensure_nonzero_area=True
-                                ),
-                                char_idx=c["char_idx"],
-                            )
-                            for c in span["chars"]
-                        ]
                         superscript = span.get("superscript", False)
                         subscript = span.get("subscript", False)
                         text = self.normalize_spaces(fix_text(span["text"]))
@@ -269,11 +264,29 @@ class PdfProvider(BaseProvider):
                                 has_subscript=subscript,
                             )
                         )
-                        chars.append(span_chars)
+
+                        if self.keep_chars:
+                            span_chars = [
+                                CharClass(
+                                    text=c["char"],
+                                    polygon=PolygonBox.from_bbox(
+                                        c["bbox"], ensure_nonzero_area=True
+                                    ),
+                                    idx=c["char_idx"],
+                                )
+                                for c in span["chars"]
+                            ]
+                            chars.append(span_chars)
+                        else:
+                            chars.append([])
+
                     polygon = PolygonBox.from_bbox(
                         line["bbox"], ensure_nonzero_area=True
                     )
-                    assert len(spans) == len(chars)
+
+                    assert len(spans) == len(chars), (
+                        f"Spans and chars length mismatch on page {page_id}: {len(spans)} spans, {len(chars)} chars"
+                    )
                     lines.append(
                         ProviderOutput(
                             line=LineClass(polygon=polygon, page_id=page_id),

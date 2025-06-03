@@ -112,6 +112,10 @@ analysis: The equations are not formatted as LaTeX, or enclosed in math tags.
             return
 
         html_equation = response["corrected_equation"]
+
+        if "no corrections needed" in html_equation.lower():
+            return
+
         balanced_tags = html_equation.count("<math") == html_equation.count("</math>")
         if not all([
             html_equation,

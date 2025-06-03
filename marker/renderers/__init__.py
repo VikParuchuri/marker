@@ -15,13 +15,14 @@ from marker.util import assign_config
 
 
 class BaseRenderer:
-    image_blocks: Annotated[Tuple[BlockTypes, ...], "The block types to consider as images."] = (BlockTypes.Picture, BlockTypes.Figure)
+    image_blocks: Annotated[
+        Tuple[BlockTypes, ...], "The block types to consider as images."
+    ] = (BlockTypes.Picture, BlockTypes.Figure)
     extract_images: Annotated[bool, "Extract images from the document."] = True
     image_extraction_mode: Annotated[
         Literal["lowres", "highres"],
         "The mode to use for extracting images.",
     ] = "highres"
-
 
     def __init__(self, config: Optional[BaseModel | dict] = None):
         assign_config(self, config)
@@ -32,22 +33,30 @@ class BaseRenderer:
 
     def extract_image(self, document: Document, image_id, to_base64=False):
         image_block = document.get_block(image_id)
-        cropped = image_block.get_image(document, highres=self.image_extraction_mode == "highres")
+        cropped = image_block.get_image(
+            document, highres=self.image_extraction_mode == "highres"
+        )
 
         if to_base64:
             image_buffer = io.BytesIO()
+            # RGBA to RGB
+            if not cropped.mode == "RGB":
+                cropped = cropped.convert("RGB")
+
             cropped.save(image_buffer, format=settings.OUTPUT_IMAGE_FORMAT)
-            cropped = base64.b64encode(image_buffer.getvalue()).decode(settings.OUTPUT_ENCODING)
+            cropped = base64.b64encode(image_buffer.getvalue()).decode(
+                settings.OUTPUT_ENCODING
+            )
         return cropped
 
     @staticmethod
     def merge_consecutive_math(html, tag="math"):
         if not html:
             return html
-        pattern = fr'-</{tag}>(\s*)<{tag}>'
+        pattern = rf"-</{tag}>(\s*)<{tag}>"
         html = re.sub(pattern, " ", html)
 
-        pattern = fr'-</{tag}>(\s*)<{tag} display="inline">'
+        pattern = rf'-</{tag}>(\s*)<{tag} display="inline">'
         html = re.sub(pattern, " ", html)
         return html
 
@@ -63,7 +72,7 @@ class BaseRenderer:
             else:
                 return " "
 
-        pattern = fr'</{tag}>(\s*)<{tag}>'
+        pattern = rf"</{tag}>(\s*)<{tag}>"
 
         while True:
             new_merged = re.sub(pattern, replace_whitespace, html)
@@ -76,14 +85,18 @@ class BaseRenderer:
     def generate_page_stats(self, document: Document, document_output):
         page_stats = []
         for page in document.pages:
-            block_counts = Counter([str(block.block_type) for block in page.children]).most_common()
+            block_counts = Counter(
+                [str(block.block_type) for block in page.children]
+            ).most_common()
             block_metadata = page.aggregate_block_metadata()
-            page_stats.append({
-                "page_id": page.page_id,
-                "text_extraction_method": page.text_extraction_method,
-                "block_counts": block_counts,
-                "block_metadata": block_metadata.model_dump()
-            })
+            page_stats.append(
+                {
+                    "page_id": page.page_id,
+                    "text_extraction_method": page.text_extraction_method,
+                    "block_counts": block_counts,
+                    "block_metadata": block_metadata.model_dump(),
+                }
+            )
         return page_stats
 
     def generate_document_metadata(self, document: Document, document_output):
@@ -97,13 +110,13 @@ class BaseRenderer:
         return metadata
 
     def extract_block_html(self, document: Document, block_output: BlockOutput):
-        soup = BeautifulSoup(block_output.html, 'html.parser')
+        soup = BeautifulSoup(block_output.html, "html.parser")
 
-        content_refs = soup.find_all('content-ref')
+        content_refs = soup.find_all("content-ref")
         ref_block_id = None
         images = {}
         for ref in content_refs:
-            src = ref.get('src')
+            src = ref.get("src")
             sub_images = {}
             for item in block_output.children:
                 if item.id == src:
@@ -113,12 +126,16 @@ class BaseRenderer:
                     break
 
             if ref_block_id.block_type in self.image_blocks and self.extract_images:
-                images[ref_block_id] = self.extract_image(document, ref_block_id, to_base64=True)
+                images[ref_block_id] = self.extract_image(
+                    document, ref_block_id, to_base64=True
+                )
             else:
                 images.update(sub_images)
-                ref.replace_with(BeautifulSoup(content, 'html.parser'))
+                ref.replace_with(BeautifulSoup(content, "html.parser"))
 
         if block_output.id.block_type in self.image_blocks and self.extract_images:
-            images[block_output.id] = self.extract_image(document, block_output.id, to_base64=True)
+            images[block_output.id] = self.extract_image(
+                document, block_output.id, to_base64=True
+            )
 
         return str(soup), images
