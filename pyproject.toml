@@ -35,8 +35,6 @@ markdown2 = "^2.5.2"
 filetype = "^1.2.0"
 google-genai = "^1.0.0"
 anthropic = "^0.46.0"
-langchain-core = "^0.2.40"
-langchain-openai = "^0.1.25"
 pre-commit = "^4.2.0"
 scikit-learn = "^1.6.1"
 

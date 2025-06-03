@@ -4,15 +4,17 @@ import time
 from io import BytesIO
 from typing import Annotated, List, Union
 
-from langchain_openai import AzureChatOpenAI
-from openai import AzureOpenAI, APITimeoutError, RateLimitError
 import PIL
+from marker.logger import get_logger
+from openai import AzureOpenAI, APITimeoutError, RateLimitError
 from PIL import Image
-from pydantic import BaseModel, Field
-from langchain_core.messages import HumanMessage
+from pydantic import BaseModel
 
 from marker.schema.blocks import Block
 from marker.services import BaseService
+
+logger = get_logger()
+
 
 class AzureOpenAIService(BaseService):
     azure_endpoint: Annotated[
@@ -26,7 +28,7 @@ class AzureOpenAIService(BaseService):
     azure_api_version: Annotated[
         str,
         "The Azure OpenAI API version to use."
-    ] = "2024-02-01"
+    ] = None
     deployment_name: Annotated[
         str,
         "The deployment name for the Azure OpenAI model."
@@ -73,70 +75,47 @@ class AzureOpenAIService(BaseService):
         if not isinstance(image, list):
             image = [image]
 
-        # Set up AzureChatOpenAI client
-        llm = AzureChatOpenAI(
-            azure_endpoint=self.azure_endpoint,
-            azure_deployment=self.deployment_name,
-            api_key=self.azure_api_key,
-            api_version=self.azure_api_version,
-            temperature=0.0,
-            request_timeout=timeout,
-        )
-        
-        # Create a structured output wrapper using the provided response_schema
-        structured_llm = llm.with_structured_output(
-            response_schema,
-            include_raw=False
-        )
-        
-        # Create message content with the correct format for LangChain
-        # LangChain expects messages with 'role' and 'content'
-        # For multimodal content, we need to use a specific format
-        message_content = []
-        for img in image:
-            message_content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/webp;base64,{self.image_to_base64(img)}"
-                }
-            })
-        
-        # Add the text prompt at the end
-        message_content.append({"type": "text", "text": prompt})
-        
-        # Create a proper LangChain message
-        message = HumanMessage(content=message_content)
-        
+        client = self.get_client()
+        image_data = self.prepare_images(image)
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    *image_data,
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+
         tries = 0
         while tries < max_retries:
             try:
-                # Use the structured output LLM to get a response
-                response = structured_llm.invoke([message])
-                
-                # If successful, return the structured output directly
-                block.update_metadata(llm_tokens_used=4000, llm_request_count=1)  # Approximate token usage
-                
-                # Convert Pydantic model to dict
-                result = response.model_dump()
-                
-                return result
-                
+                response = client.beta.chat.completions.parse(
+                    extra_headers={
+                        "X-Title": "Marker",
+                        "HTTP-Referer": "https://github.com/VikParuchuri/marker",
+                    },
+                    model=self.deployment_name,
+                    messages=messages,
+                    timeout=timeout,
+                    response_format=response_schema,
+                )
+                response_text = response.choices[0].message.content
+                total_tokens = response.usage.total_tokens
+                block.update_metadata(llm_tokens_used=total_tokens, llm_request_count=1)
+                return json.loads(response_text)
             except (APITimeoutError, RateLimitError) as e:
                 # Rate limit exceeded
                 tries += 1
-                wait_time = tries * 3
-                print(
+                wait_time = tries * self.retry_wait_time
+                logger.warning(
                     f"Rate limit error: {e}. Retrying in {wait_time} seconds... (Attempt {tries}/{max_retries})"
                 )
                 time.sleep(wait_time)
             except Exception as e:
-                print(f"Error: {str(e)}")
-                tries += 1
-                if tries < max_retries:
-                    wait_time = tries * 2
-                    time.sleep(wait_time)
-                else:
-                    break
+                logger.error(f"Azure OpenAI inference failed: {e}")
+                break
 
         return {}
 
