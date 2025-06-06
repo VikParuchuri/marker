@@ -33,8 +33,12 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def TORCH_DEVICE_MODEL(self) -> str:
+        return "xpu"
         if self.TORCH_DEVICE is not None:
             return self.TORCH_DEVICE
+
+        if torch.xpu.is_available():
+            return "xpu"
 
         if torch.cuda.is_available():
             return "cuda"

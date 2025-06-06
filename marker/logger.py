@@ -27,6 +27,5 @@ def configure_logging():
     logging.getLogger("fontTools.ttLib.ttFont").setLevel(logging.ERROR)
     logging.getLogger("weasyprint").setLevel(logging.CRITICAL)
 
-
 def get_logger():
     return logging.getLogger("marker")

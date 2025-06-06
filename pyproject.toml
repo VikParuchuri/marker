@@ -2,19 +2,36 @@
 name = "marker-pdf"
 version = "1.7.4"
 description = "Convert documents to markdown with high speed and accuracy."
-authors = ["Vik Paruchuri <github@vikas.sh>"]
+authors = ["SNOOD <github@vikas.sh>"]
 readme = "README.md"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/VikParuchuri/marker"
-keywords = ["pdf", "markdown", "ocr", "nlp"]
-packages = [
-    {include = "marker"}
-]
+repository = "https://github.com/snodeplannen/marker-snood"
+keywords = ["pdf", "markdown", "ocr", "nlp", "xpu"]
+packages = [{include = "marker"}]
 include = [
     "marker/scripts/*.sh",
     "marker/scripts/*.html",
 ]
 
+# --- BRONNEN VOOR PYTORCH ---
+# Poetry zal eerst in deze expliciete bronnen zoeken voor de packages
+# die hiernaar verwijzen, voordat het naar PyPI gaat.
+
+# Bron voor officiële PyTorch CUDA wielen (pas cu121 aan indien nodig)
+[[tool.poetry.source]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+# Bron voor Intel XPU nightly wielen
+[[tool.poetry.source]]
+name = "pytorch-xpu"
+url = "https://download.pytorch.org/whl/nightly/xpu"
+priority = "explicit"
+
+
+# --- STANDAARD DEPENDENCIES ---
+# torch is hier verwijderd en verplaatst naar de optionele groepen.
 [tool.poetry.dependencies]
 python = "^3.10"
 Pillow = "^10.1.0"
@@ -22,7 +39,6 @@ pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
 transformers = "^4.45.2"
 python-dotenv = "^1.0.0"
-torch = "^2.7.0"
 tqdm = "^4.66.1"
 ftfy = "^6.1.1"
 rapidfuzz = "^3.8.1"
@@ -36,16 +52,37 @@ filetype = "^1.2.0"
 scikit-learn = "^1.6.1"
 google-genai = "^1.0.0"
 anthropic = "^0.46.0"
-pre-commit = "^4.2.0"
+ebooklib = "^0.18"
 
-# Optional dependencies for documents
+# Optional dependencies
 mammoth = {version = "^1.9.0", optional = true}
 openpyxl = {version = "^3.1.5", optional = true}
 python-pptx = {version = "^1.0.2", optional = true}
-ebooklib = {version = "^0.18", optional = true}
 weasyprint = {version = "^63.1", optional = true}
-openai = "^1.65.2"
 
+
+# --- OPTIONELE GROEP VOOR CUDA SUPPORT ---
+[tool.poetry.group.cuda]
+optional = true
+
+[tool.poetry.group.cuda.dependencies]
+# Deze packages worden gedownload van de "pytorch-cuda" bron.
+torch = { version = "^2.7.0", source = "pytorch-cuda" }
+torchvision = { version = "^0.18.0", source = "pytorch-cuda" }
+torchaudio = { version = "^2.4.0", source = "pytorch-cuda" }
+
+
+# --- OPTIONELE GROEP VOOR XPU SUPPORT ---
+[tool.poetry.group.xpu]
+optional = true
+
+[tool.poetry.group.xpu.dependencies]
+# Deze packages worden gedownload van de "pytorch-xpu" bron.
+torch = { url = "https://download.pytorch.org/whl/nightly/xpu/torch-2.7.0.dev20250312%2Bxpu-cp311-cp311-win_amd64.whl" }
+pytorch-triton-xpu = { url = "https://download.pytorch.org/whl/nightly/pytorch_triton_xpu-3.3.0%2Bgit83111ab2-cp311-cp311-win_amd64.whl" }
+
+
+# --- DEV DEPENDENCIES ---
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
 datasets = "^2.21.0"
@@ -63,7 +100,7 @@ latex2mathml = "^3.77.0"
 playwright = "^1.49.1"
 
 [tool.poetry.extras]
-full = ["mammoth", "openpyxl", "python-pptx", "ebooklib", "weasyprint"]
+full = ["mammoth", "openpyxl", "python-pptx", "weasyprint"]
 
 [tool.poetry.scripts]
 marker = "marker.scripts.convert:convert_cli"
@@ -74,5 +111,5 @@ marker_extract = "marker.scripts.run_streamlit_app:extraction_app_cli"
 marker_server = "marker.scripts.server:server_cli"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
