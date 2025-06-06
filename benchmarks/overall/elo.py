@@ -176,7 +176,7 @@ def display_win_rates_table(win_rates: dict):
 @click.argument("dataset", type=str)
 @click.option("--methods", type=str, help="List of methods to compare: comma separated like marker,mathpix")
 @click.option("--row_samples", type=int, default=2, help="Number of samples per row")
-@click.option("--max_rows", type=int, default=100, help="Maximum number of rows to process")
+@click.option("--max_rows", type=int, default=None, help="Maximum number of rows to process")
 def main(
     dataset: str,
     methods: str,
@@ -187,8 +187,9 @@ def main(
     method_lst = methods.split(",")
     win_rates = {m: defaultdict(lambda: defaultdict(int)) for m in method_lst}
     comparer = Comparer()
+    max_rows = max_rows or len(ds)
 
-    for i in tqdm(range(min(len(ds), max_rows)), desc="Calculating win rates..."):
+    for i in tqdm(range(max_rows), desc="Calculating win rates..."):
         row = ds[i]
         # Avoid any bias in ordering
         random.shuffle(method_lst)

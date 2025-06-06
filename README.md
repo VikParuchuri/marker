@@ -3,6 +3,7 @@
 Marker converts documents to markdown, JSON, and HTML quickly and accurately.
 
 - Converts PDF, image, PPTX, DOCX, XLSX, HTML, EPUB files in all languages
+- Does structured extraction, given a JSON schema (beta)
 - Formats tables, forms, equations, inline math, links, references, and code blocks
 - Extracts and saves images
 - Removes headers/footers/other artifacts
@@ -42,15 +43,17 @@ As you can see, the use_llm mode offers higher accuracy than marker or gemini al
 
 I want marker to be as widely accessible as possible, while still funding my development/training costs.  Research and personal usage is always okay, but there are some restrictions on commercial usage.
 
-The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under \$5M USD in gross revenue in the most recent 12-month period AND under $5M in lifetime VC/angel funding raised. You also must not be competitive with the [Datalab API](https://www.datalab.to/).  If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
+The weights for the models are licensed `cc-by-nc-sa-4.0`, but I will waive that for any organization under \$2M USD in gross revenue in the most recent 12-month period AND under \$2M in lifetime VC/angel funding raised. You also must not be competitive with the [Datalab API](https://www.datalab.to/).  If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options [here](https://www.datalab.to).
 
 # Hosted API
 
 There's a hosted API for marker available [here](https://www.datalab.to/):
 
-- Supports PDFs, word documents, and powerpoints 
+- Supports PDF, image, PPT, PPTX, DOC, DOCX, XLS, XLSX, HTML, EPUB files
 - 1/4th the price of leading cloud-based competitors
-- High uptime (99.99%), quality, and speed (around 15 seconds to convert a 250 page PDF)
+- Fast - ~15s for a 250 page PDF
+- Supports LLM mode
+- High uptime (99.99%)
 
 # Community
 
@@ -77,14 +80,14 @@ pip install marker-pdf[full]
 First, some configuration:
 
 - Your torch device will be automatically detected, but you can override this.  For example, `TORCH_DEVICE=cuda`.
-- Some PDFs, even digital ones, have bad text in them.  Set the `force_ocr` flag to ensure your PDF runs through OCR, or the `strip_existing_ocr` to keep all digital text, and strip out any existing OCR text.
+- Some PDFs, even digital ones, have bad text in them.  Set the `format_lines` flag to ensure the bad lines are fixed and formatted. You can also set `--force_ocr` to force OCR on all lines, or the `strip_existing_ocr` to keep all digital text, and strip out any existing OCR text.
 
 ## Interactive App
 
 I've included a streamlit app that lets you interactively try marker with some basic options.  Run it with:
 
 ```shell
-pip install streamlit
+pip install streamlit streamlit-ace
 marker_gui
 ```
 
@@ -97,19 +100,19 @@ marker_single /path/to/file.pdf
 You can pass in PDFs or images.
 
 Options:
-- `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
-- `--output_format [markdown|json|html]`: Specify the format for the output results.
-- `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n` 
-- `--use_llm`: Uses an LLM to improve accuracy.  You must set your Gemini API key using the `GOOGLE_API_KEY` env var.
-- `--redo_inline_math`: If you want the highest quality inline math conversion, use this along with `--use_llm`.
-- `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--page_range TEXT`: Specify which pages to process. Accepts comma-separated page numbers and ranges. Example: `--page_range "0,5-10,20"` will process pages 0, 5 through 10, and page 20.
+- `--output_format [markdown|json|html]`: Specify the format for the output results.
+- `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
+- `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n` 
+- `--use_llm`: Uses an LLM to improve accuracy.  You will need to configure the LLM backend - see [below](#llm-services).
+- `--format_lines`: Reformat all lines using a local OCR model (inline math, underlines, bold, etc.).  This will give very good quality math output.
 - `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
 - `--strip_existing_ocr`: Remove all existing OCR text in the document and re-OCR with surya.
+- `--redo_inline_math`: If you want the absolute highest quality inline math conversion, use this along with `--use_llm`.
+- `--disable_image_extraction`: Don't extract images from the PDF.  If you also specify `--use_llm`, then images will be replaced with a description.
 - `--debug`: Enable debug mode for additional logging and diagnostic information.
 - `--processors TEXT`: Override the default processors by providing their full module paths, separated by commas. Example: `--processors "module1.processor1,module2.processor2"`
 - `--config_json PATH`: Path to a JSON configuration file containing additional settings.
-- `--languages TEXT`: Optionally specify which languages to use for OCR processing. Accepts a comma-separated list. Example: `--languages "en,fr,de"` for English, French, and German.
 - `config --help`: List all available builders, processors, and converters, and their associated configuration.  These values can be used to build a JSON configuration file for additional tweaking of marker defaults.
 - `--converter_cls`: One of `marker.converters.pdf.PdfConverter` (default) or `marker.converters.table.TableConverter`.  The `PdfConverter` will convert the whole PDF, the `TableConverter` will only extract and convert tables.
 - `--llm_service`: Which llm service to use if `--use_llm` is passed.  This defaults to `marker.services.gemini.GoogleGeminiService`.
@@ -225,6 +228,53 @@ You can also run this via the CLI with
 marker_single FILENAME --use_llm --force_layout_block Table --converter_cls marker.converters.table.TableConverter --output_format json
 ```
 
+### OCR Only
+
+If you only want to run OCR, you can also do that through the `OCRConverter`.  Set `--keep_chars` to keep individual characters and bounding boxes.  You can also set `--force_ocr` and `--format_lines` with this converter.
+
+```python
+from marker.converters.ocr import OCRConverter
+from marker.models import create_model_dict
+
+converter = OCRConverter(
+    artifact_dict=create_model_dict(),
+)
+rendered = converter("FILEPATH")
+```
+
+This takes all the same configuration as the PdfConverter.
+
+You can also run this via the CLI with 
+```shell
+marker_single FILENAME --converter_cls marker.converters.ocr.OCRConverter
+```
+
+### Structured Extraction (beta)
+
+You can run structured extraction via the `ExtractionConverter`.  This requires an llm service to be setup first (see [here](#llm-services) for details).  You'll get a JSON output with the extracted values.
+
+```python
+from marker.converters.extraction import ExtractionConverter
+from marker.models import create_model_dict
+from marker.config.parser import ConfigParser
+from pydantic import BaseModel
+
+class Links(BaseModel):
+    links: list[str]
+    
+schema = Links.model_json_schema()
+config_parser = ConfigParser({
+    "page_schema": schema
+})
+
+converter = ExtractionConverter(
+    artifact_dict=create_model_dict(),
+    config=config_parser.generate_config_dict(),
+    llm_service=config_parser.get_llm_service(),
+)
+rendered = converter("FILEPATH")
+```
+
 # Output Formats
 
 ## Markdown
@@ -328,6 +378,7 @@ When running with the `--use_llm` flag, you have a choice of services you can us
 - `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
 - `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.ollama.OllamaService`.
 - `Claude` - this will use the anthropic API.  You can configure `--claude_api_key`, and `--claude_model_name`.  To use it, set `--llm_service=marker.services.claude.ClaudeService`.
+- `OpenAI` - this supports any openai-like endpoint. You can configure `--openai_api_key`, `--openai_model`, and `--openai_base_url`. To use it, set `--llm_service=marker.services.openai.OpenAIService`.
 
 These services may have additional optional configuration as well - you can see it by viewing the classes.
 
@@ -496,15 +547,4 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 - Very complex layouts, with nested tables and forms, may not work
 - Forms may not be rendered well
 
-Note: Passing the `--use_llm` flag will mostly solve these issues.
-
-# Thanks
-
-This work would not have been possible without amazing open source models and datasets, including (but not limited to):
-
-- Surya
-- Texify
-- Pypdfium2/pdfium
-- DocLayNet from IBM
-
-Thank you to the authors of these models and datasets for making them available to the community!
+Note: Passing the `--use_llm` and `--format_lines` flags will mostly solve these issues.

@@ -172,7 +172,7 @@ class PolygonBox(BaseModel):
         for corner in new_corners:
             corner[0] = max(min(corner[0], bounds[2]), bounds[0])
             corner[1] = max(min(corner[1], bounds[3]), bounds[1])
-        self.polygon = new_corners
+        return PolygonBox(polygon=new_corners)
 
     def overlap_x(self, other: PolygonBox):
         return max(0, min(self.bbox[2], other.bbox[2]) - max(self.bbox[0], other.bbox[0]))

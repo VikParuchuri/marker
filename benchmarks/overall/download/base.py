@@ -32,10 +32,10 @@ class Downloader:
             "uuid": datasets.Value("string"),
             "time": datasets.Value("float"),
         }))
-        out_ds.push_to_hub(f"datalab-to/marker_benchmark_{self.service}")
+        out_ds.push_to_hub(f"datalab-to/marker_benchmark_{self.service}", private=True)
 
     def generate_data(self):
-        max_rows = 2200
+        max_rows = self.max_rows
         for idx, sample in tqdm(enumerate(self.ds), desc=f"Saving {self.service} results"):
             cache_file = self.cache_path / f"{idx}.json"
             if cache_file.exists():
@@ -45,6 +45,9 @@ class Downloader:
             try:
                 out_data = self.get_html(pdf_bytes)
             except JSONDecodeError as e:
+                print(f"Error with sample {idx}: {e}")
+                continue
+            except Exception as e:
                 print(f"Error with sample {idx}: {e}")
                 continue
             out_data["uuid"] = sample["uuid"]

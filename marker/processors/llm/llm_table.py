@@ -2,6 +2,7 @@ from typing import Annotated, List, Tuple
 
 from bs4 import BeautifulSoup
 from PIL import Image
+from marker.logger import get_logger
 from pydantic import BaseModel
 
 from marker.processors.llm import BaseLLMComplexBlockProcessor
@@ -10,6 +11,8 @@ from marker.schema.blocks import Block, TableCell, Table
 from marker.schema.document import Document
 from marker.schema.groups.page import PageGroup
 from marker.schema.polygon import PolygonBox
+
+logger = get_logger()
 
 
 class LLMTableProcessor(BaseLLMComplexBlockProcessor):
@@ -36,7 +39,7 @@ class LLMTableProcessor(BaseLLMComplexBlockProcessor):
     table_rewriting_prompt: Annotated[
         str,
         "The prompt to use for rewriting text.",
-        "Default is a string containing the Gemini rewriting prompt."
+        "Default is a string containing the Gemini rewriting prompt.",
     ] = """You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image and an html representation of the table in the image.
 Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table image as possible.  The table image may be rotated, but ensure the html representation is not rotated.  Make sure to include HTML for the full table, including the opening and closing table tags.
@@ -109,10 +112,10 @@ No corrections needed.
         else:
             return image.rotate(90, expand=True)
 
-
-
     def process_rewriting(self, document: Document, page: PageGroup, block: Table):
-        children: List[TableCell] = block.contained_blocks(document, (BlockTypes.TableCell,))
+        children: List[TableCell] = block.contained_blocks(
+            document, (BlockTypes.TableCell,)
+        )
         if not children:
             # Happens if table/form processors didn't run
             return
@@ -129,17 +132,24 @@ No corrections needed.
         parsed_cells = []
         row_shift = 0
         block_image = self.extract_image(document, block)
-        block_rescaled_bbox = block.polygon.rescale(page.polygon.size, page.get_image(highres=True).size).bbox
+        block_rescaled_bbox = block.polygon.rescale(
+            page.polygon.size, page.get_image(highres=True).size
+        ).bbox
         for i in range(0, row_count, self.max_rows_per_batch):
-            batch_row_idxs = row_idxs[i:i + self.max_rows_per_batch]
+            batch_row_idxs = row_idxs[i : i + self.max_rows_per_batch]
             batch_cells = [cell for cell in children if cell.row_id in batch_row_idxs]
-            batch_cell_bboxes = [cell.polygon.rescale(page.polygon.size, page.get_image(highres=True).size).bbox for cell in batch_cells]
+            batch_cell_bboxes = [
+                cell.polygon.rescale(
+                    page.polygon.size, page.get_image(highres=True).size
+                ).bbox
+                for cell in batch_cells
+            ]
             # bbox relative to the block
             batch_bbox = [
                 min([bbox[0] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[0],
                 min([bbox[1] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[1],
                 max([bbox[2] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[0],
-                max([bbox[3] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[1]
+                max([bbox[3] for bbox in batch_cell_bboxes]) - block_rescaled_bbox[1],
             ]
             if i == 0:
                 # Ensure first image starts from the beginning
@@ -153,9 +163,11 @@ No corrections needed.
             batch_image = block_image.crop(batch_bbox)
             block_html = block.format_cells(document, [], batch_cells)
             batch_image = self.handle_image_rotation(batch_cells, batch_image)
-            batch_parsed_cells = self.rewrite_single_chunk(page, block, block_html, batch_cells, batch_image)
+            batch_parsed_cells = self.rewrite_single_chunk(
+                page, block, block_html, batch_cells, batch_image
+            )
             if batch_parsed_cells is None:
-                return # Error occurred or no corrections needed
+                return  # Error occurred or no corrections needed
 
             for cell in batch_parsed_cells:
                 cell.row_id += row_shift
@@ -167,7 +179,14 @@ No corrections needed.
             page.add_full_block(cell)
             block.add_structure(cell)
 
-    def rewrite_single_chunk(self, page: PageGroup, block: Block, block_html: str, children: List[TableCell], image: Image.Image):
+    def rewrite_single_chunk(
+        self,
+        page: PageGroup,
+        block: Block,
+        block_html: str,
+        children: List[TableCell],
+        image: Image.Image,
+    ):
         prompt = self.table_rewriting_prompt.replace("{block_html}", block_html)
 
         response = self.llm_service(prompt, image, block, TableSchema)
@@ -179,7 +198,7 @@ No corrections needed.
         corrected_html = response["corrected_html"]
 
         # The original table is okay
-        if "no corrections" in corrected_html.lower():
+        if "no corrections needed" in corrected_html.lower():
             return
 
         corrected_html = corrected_html.strip().lstrip("```html").rstrip("```").strip()
@@ -195,36 +214,38 @@ No corrections needed.
         parsed_cell_text = "".join([cell.text for cell in parsed_cells])
         orig_cell_text = "".join([cell.text for cell in children])
         # Potentially a partial response
-        if len(parsed_cell_text) < len(orig_cell_text) * .5:
+        if len(parsed_cell_text) < len(orig_cell_text) * 0.5:
             block.update_metadata(llm_error_count=1)
             return
 
         return parsed_cells
 
     @staticmethod
-    def get_cell_text(element, keep_tags=('br','i', 'b', 'span', 'math')) -> str:
+    def get_cell_text(element, keep_tags=("br", "i", "b", "span", "math")) -> str:
         for tag in element.find_all(True):
             if tag.name not in keep_tags:
                 tag.unwrap()
         return element.decode_contents()
 
-    def parse_html_table(self, html_text: str, block: Block, page: PageGroup) -> List[TableCell]:
-        soup = BeautifulSoup(html_text, 'html.parser')
-        table = soup.find('table')
+    def parse_html_table(
+        self, html_text: str, block: Block, page: PageGroup
+    ) -> List[TableCell]:
+        soup = BeautifulSoup(html_text, "html.parser")
+        table = soup.find("table")
         if not table:
             return []
 
         # Initialize grid
-        rows = table.find_all('tr')
+        rows = table.find_all("tr")
         cells = []
 
         # Find maximum number of columns in colspan-aware way
         max_cols = 0
         for row in rows:
-            row_tds = row.find_all(['td', 'th'])
+            row_tds = row.find_all(["td", "th"])
             curr_cols = 0
             for cell in row_tds:
-                colspan = int(cell.get('colspan', 1))
+                colspan = int(cell.get("colspan", 1))
                 curr_cols += colspan
             if curr_cols > max_cols:
                 max_cols = curr_cols
@@ -233,23 +254,23 @@ No corrections needed.
 
         for i, row in enumerate(rows):
             cur_col = 0
-            row_cells = row.find_all(['td', 'th'])
+            row_cells = row.find_all(["td", "th"])
             for j, cell in enumerate(row_cells):
                 while cur_col < max_cols and not grid[i][cur_col]:
                     cur_col += 1
 
                 if cur_col >= max_cols:
-                    print("Table parsing warning: too many columns found")
+                    logger.info("Table parsing warning: too many columns found")
                     break
 
                 cell_text = self.get_cell_text(cell).strip()
-                rowspan = min(int(cell.get('rowspan', 1)), len(rows) - i)
-                colspan = min(int(cell.get('colspan', 1)), max_cols - cur_col)
+                rowspan = min(int(cell.get("rowspan", 1)), len(rows) - i)
+                colspan = min(int(cell.get("colspan", 1)), max_cols - cur_col)
                 cell_rows = list(range(i, i + rowspan))
                 cell_cols = list(range(cur_col, cur_col + colspan))
 
                 if colspan == 0 or rowspan == 0:
-                    print("Table parsing warning: invalid colspan or rowspan")
+                    logger.info("Table parsing issue: invalid colspan or rowspan")
                     continue
 
                 for r in cell_rows:
@@ -260,7 +281,7 @@ No corrections needed.
                     block.polygon.bbox[0] + cur_col,
                     block.polygon.bbox[1] + i,
                     block.polygon.bbox[0] + cur_col + colspan,
-                    block.polygon.bbox[1] + i + rowspan
+                    block.polygon.bbox[1] + i + rowspan,
                 ]
                 cell_polygon = PolygonBox.from_bbox(cell_bbox)
 
@@ -270,7 +291,7 @@ No corrections needed.
                     col_id=cur_col,
                     rowspan=rowspan,
                     colspan=colspan,
-                    is_header=cell.name == 'th',
+                    is_header=cell.name == "th",
                     polygon=cell_polygon,
                     page_id=page.page_id,
                 )
@@ -278,6 +299,7 @@ No corrections needed.
                 cur_col += colspan
 
         return cells
+
 
 class TableSchema(BaseModel):
     comparison: str
