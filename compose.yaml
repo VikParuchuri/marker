@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  marker-pdf:
+    image: datalab/maker:latest
+    container_name: marker-pdf
+    build:
+      context: .
+    ports:
+      - "8080:80"
