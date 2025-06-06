@@ -49,6 +49,7 @@ from marker.processors.order import OrderProcessor
 from marker.services.gemini import GoogleGeminiService
 from marker.processors.line_merge import LineMergeProcessor
 from marker.processors.llm.llm_mathblock import LLMMathBlockProcessor
+from marker.processors.llm.llm_hierarchy import LLMHierarchyProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -81,15 +82,16 @@ class PdfConverter(BaseConverter):
         PageHeaderProcessor,
         SectionHeaderProcessor,
         TableProcessor,
-        LLMTableProcessor,
-        LLMTableMergeProcessor,
-        LLMFormProcessor,
+        # LLMTableProcessor,
+        # LLMTableMergeProcessor,
+        # LLMFormProcessor,
         TextProcessor,
-        LLMComplexRegionProcessor,
-        LLMImageDescriptionProcessor,
-        LLMEquationProcessor,
-        LLMHandwritingProcessor,
-        LLMMathBlockProcessor,
+        # LLMComplexRegionProcessor,
+        # LLMImageDescriptionProcessor,
+        # LLMEquationProcessor,
+        # LLMHandwritingProcessor,
+        # LLMMathBlockProcessor,
+        LLMHierarchyProcessor,
         ReferenceProcessor,
         DebugProcessor,
     )

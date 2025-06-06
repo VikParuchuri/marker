@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 from pydantic import BaseModel
 
@@ -28,6 +28,7 @@ class Document(BaseModel):
     block_type: BlockTypes = BlockTypes.Document
     table_of_contents: List[TocItem] | None = None
     debug_data_path: str | None = None # Path that debug data was saved to
+    llm_hierarchy: Optional[List] = None
 
     def get_block(self, block_id: BlockId):
         page = self.get_page(block_id.page_id)

@@ -1,4 +1,4 @@
-from typing import Annotated, Dict, List, Tuple
+from typing import Annotated, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -24,6 +24,7 @@ class JSONOutput(BaseModel):
     children: List[JSONBlockOutput]
     block_type: str = str(BlockTypes.Document)
     metadata: dict
+    llm_hierarchy: Optional[List] = None
 
 
 def reformat_section_hierarchy(section_hierarchy):
@@ -82,5 +83,6 @@ class JSONRenderer(BaseRenderer):
             json_output.append(self.extract_json(document, page_output))
         return JSONOutput(
             children=json_output,
-            metadata=self.generate_document_metadata(document, document_output)
+            metadata=self.generate_document_metadata(document, document_output),
+            llm_hierarchy=document.llm_hierarchy
         )
