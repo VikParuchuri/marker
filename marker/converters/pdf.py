@@ -10,6 +10,7 @@ from marker.providers.registry import provider_from_filepath
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
 from marker.builders.llm_layout import LLMLayoutBuilder
+from marker.builders.molecule_layout import MoleculeLayoutBuilder
 from marker.builders.line import LineBuilder
 from marker.builders.ocr import OcrBuilder
 from marker.builders.structure import StructureBuilder
@@ -47,7 +48,9 @@ from marker.processors.llm.llm_mathblock import LLMMathBlockProcessor
 
 from datetime import datetime
 from marker.utils import send_callback, flush_cuda_memory
+from marker import settings
 import pytz
+import traceback
 # 获取北京时区
 beijing_tz = pytz.timezone('Asia/Shanghai')
 
@@ -56,17 +59,15 @@ class PdfConverter(BaseConverter):
     """
     A converter for processing and rendering PDF files into Markdown, JSON, HTML and other formats.
     """
-    override_map: Annotated[
-        Dict[BlockTypes, Type[Block]],
-        "A mapping to override the default block classes for specific block types.",
-        "The keys are `BlockTypes` enum values, representing the types of blocks,",
-        "and the values are corresponding `Block` class implementations to use",
-        "instead of the defaults."
-    ] = defaultdict()
-    use_llm: Annotated[
-        bool,
-        "Enable higher quality processing with LLMs.",
-    ] = False
+    # A mapping to override the default block classes for specific block types
+    override_map: Dict[BlockTypes, Type[Block]] = defaultdict()
+    
+    # Enable higher quality processing with LLMs
+    use_llm: bool = False
+    
+    # Enable chemical molecule detection using specialized layout model
+    use_molecule_detection: bool = False
+    
     default_processors: Tuple[BaseProcessor, ...] = (
         OrderProcessor,
         LineMergeProcessor,
@@ -143,6 +144,25 @@ class PdfConverter(BaseConverter):
         if self.use_llm:
             self.layout_builder_class = LLMLayoutBuilder
         
+        # 分子layout builder
+        self.molecule_layout_builder = None
+        if config.get("use_molecule_detection", False) or self.use_molecule_detection:
+            # img2mol processor的配置
+            processor_config = artifact_dict.get("processor_config", {})
+            
+            # 设置默认配置
+            if not processor_config.get("device"):
+                processor_config["device"] = "cuda" if settings.TORCH_DEVICE_MODEL == "cuda" else "cpu"
+            
+            try:
+                self.molecule_layout_builder = self.resolve_dependencies(
+                    MoleculeLayoutBuilder
+                )
+            except Exception as e:
+                traceback.print_exc()
+                print(f"Warning: Failed to initialize MoleculeLayoutBuilder: {e}")
+                self.molecule_layout_builder = None
+        
         self.callback_url = callback_url
         self.docId = docId
 
@@ -152,7 +172,15 @@ class PdfConverter(BaseConverter):
         line_builder = self.resolve_dependencies(LineBuilder)
         ocr_builder = self.resolve_dependencies(OcrBuilder)
         provider = provider_cls(filepath, self.config)
-        document = DocumentBuilder(self.config)(provider, layout_builder, line_builder, ocr_builder, callback_url=self.callback_url, docId=self.docId)
+        document = DocumentBuilder(self.config)(
+            provider, 
+            layout_builder, 
+            line_builder, 
+            ocr_builder, 
+            callback_url=self.callback_url, 
+            docId=self.docId,
+            second_layout_builder=self.molecule_layout_builder
+        )
         
         flush_cuda_memory()
         time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")

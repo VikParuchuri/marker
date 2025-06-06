@@ -51,6 +51,7 @@ class ConfigParser:
         config = {}
         output_dir = self.cli_options.get("output_dir", settings.OUTPUT_DIR)
         for k, v in self.cli_options.items():
+            print('k', k, 'v', v)
             if not v:
                 continue
 
@@ -65,8 +66,9 @@ class ConfigParser:
                 case "languages":
                     config["languages"] = v.split(",")
                 case "config_json":
-                    with open(v, "r", encoding="utf-8") as f:
-                        config.update(json.load(f))
+                    # with open(v, "r", encoding="utf-8") as f:
+                        # config.update(json.load(f))
+                    config.update(v)
                 case "disable_multiprocessing":
                     config["pdftext_workers"] = 1
                 case "disable_image_extraction":

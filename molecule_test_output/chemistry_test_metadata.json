@@ -1,0 +1,1901 @@
+{
+  "table_of_contents": [
+    {
+      "title": "European Journal of Medicinal Chemistry",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          164.1328125,
+          96.5361328125
+        ],
+        [
+          443.5078125,
+          96.5361328125
+        ],
+        [
+          443.5078125,
+          112.0970458984375
+        ],
+        [
+          164.1328125,
+          112.0970458984375
+        ]
+      ]
+    },
+    {
+      "title": "Synthesis, biological evaluation, QSAR and molecular dynamics\nsimulation studies of potential fibroblast growth factor receptor 1\ninhibitors for the treatment of gastric cancer",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          41.615234375,
+          176.304443359375
+        ],
+        [
+          467.77984619140625,
+          176.304443359375
+        ],
+        [
+          467.77984619140625,
+          226.02636718749997
+        ],
+        [
+          41.615234375,
+          226.02636718749997
+        ]
+      ]
+    },
+    {
+      "title": "article info",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          41.433349609375,
+          324.8083190917969
+        ],
+        [
+          139.5419921875,
+          324.8083190917969
+        ],
+        [
+          139.5419921875,
+          334.193359375
+        ],
+        [
+          41.433349609375,
+          334.193359375
+        ]
+      ]
+    },
+    {
+      "title": "abstract",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          206.0390625,
+          324.8083190917969
+        ],
+        [
+          275.009765625,
+          324.8083190917969
+        ],
+        [
+          275.009765625,
+          334.77490234375
+        ],
+        [
+          206.0390625,
+          334.77490234375
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          42.12451171875,
+          509.43164062499994
+        ],
+        [
+          105.056640625,
+          509.43164062499994
+        ],
+        [
+          105.056640625,
+          517.9609375
+        ],
+        [
+          42.12451171875,
+          517.9609375
+        ]
+      ]
+    },
+    {
+      "title": "2. Results and discussion",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          41.7607421875,
+          129.14129638671875
+        ],
+        [
+          144.22161865234375,
+          129.14129638671875
+        ],
+        [
+          144.22161865234375,
+          137.43011474609375
+        ],
+        [
+          41.7607421875,
+          137.43011474609375
+        ]
+      ]
+    },
+    {
+      "title": "2.1. Chemistry",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          41.724365234375,
+          150.0606689453125
+        ],
+        [
+          95.70146942138672,
+          150.0606689453125
+        ],
+        [
+          95.70146942138672,
+          158.76123046875
+        ],
+        [
+          41.724365234375,
+          158.76123046875
+        ]
+      ]
+    },
+    {
+      "title": "2.2. The inhibitory activity of synthetic compounds on FGFR1 kinase",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          41.90625,
+          495.08691406249994
+        ],
+        [
+          287.6133117675781,
+          495.08691406249994
+        ],
+        [
+          287.6133117675781,
+          503.55340576171875
+        ],
+        [
+          41.90625,
+          503.55340576171875
+        ]
+      ]
+    },
+    {
+      "title": "2.3. Quantitative evaluation of structure-activity relationship\n(QSAR)",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          310.8046875,
+          285.92529296875
+        ],
+        [
+          537.796875,
+          285.92529296875
+        ],
+        [
+          537.796875,
+          304.7886962890625
+        ],
+        [
+          310.8046875,
+          304.7886962890625
+        ]
+      ]
+    },
+    {
+      "title": "2.4. D12 and D15 inhibit FGFR1 through an ATP-independent\nmechanism",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          311.52783203125,
+          545.7848968505859
+        ],
+        [
+          539.833984375,
+          545.7848968505859
+        ],
+        [
+          539.833984375,
+          566.3106231689453
+        ],
+        [
+          311.52783203125,
+          566.3106231689453
+        ]
+      ]
+    },
+    {
+      "title": "2.5. Molecular docking and molecular dynamics simulation",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          41.615234375,
+          447.01269531249994
+        ],
+        [
+          263.078125,
+          447.01269531249994
+        ],
+        [
+          263.078125,
+          456.4413757324219
+        ],
+        [
+          41.615234375,
+          456.4413757324219
+        ]
+      ]
+    },
+    {
+      "title": "2.6. D12 and D15 suppress the growth of GC cell lines",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          41.97900390625,
+          639.9525909423828
+        ],
+        [
+          243.580078125,
+          639.9525909423828
+        ],
+        [
+          243.580078125,
+          650.1650390625
+        ],
+        [
+          41.97900390625,
+          650.1650390625
+        ]
+      ]
+    },
+    {
+      "title": "2.7. D12 and D15 inhibit the phosphorylation of FGFR1 and the\ndownstream signaling",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          311.52764892578125,
+          650.4423370361328
+        ],
+        [
+          547.400390625,
+          650.4423370361328
+        ],
+        [
+          547.400390625,
+          671.1005859375
+        ],
+        [
+          311.52764892578125,
+          671.1005859375
+        ]
+      ]
+    },
+    {
+      "title": "2.8. D12 and D15 arrest the cell cycle at G0/G1 phase",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          31.50244140625,
+          365.3900146484375
+        ],
+        [
+          232.09129333496094,
+          365.3900146484375
+        ],
+        [
+          232.09129333496094,
+          375.427734375
+        ],
+        [
+          31.50244140625,
+          375.427734375
+        ]
+      ]
+    },
+    {
+      "title": "2.9. D12 and D15 induce apoptosis of GC cell lines",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          31.8662109375,
+          555.1395874023438
+        ],
+        [
+          220.1533203125,
+          555.1395874023438
+        ],
+        [
+          220.1533203125,
+          565.1773223876953
+        ],
+        [
+          31.8662109375,
+          565.1773223876953
+        ]
+      ]
+    },
+    {
+      "title": "3. Conclusion",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          301.83282470703125,
+          524.939453125
+        ],
+        [
+          357.94921875,
+          524.939453125
+        ],
+        [
+          357.94921875,
+          533.7709045410156
+        ],
+        [
+          301.83282470703125,
+          533.7709045410156
+        ]
+      ]
+    },
+    {
+      "title": "4. Experimental section",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          310.8046875,
+          638.146484375
+        ],
+        [
+          408.5859375,
+          638.146484375
+        ],
+        [
+          408.5859375,
+          647.6088256835938
+        ],
+        [
+          310.8046875,
+          647.6088256835938
+        ]
+      ]
+    },
+    {
+      "title": "4.1. Chemistry",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          311.52862548828125,
+          659.857421875
+        ],
+        [
+          364.71038818359375,
+          659.857421875
+        ],
+        [
+          364.71038818359375,
+          668.5282135009766
+        ],
+        [
+          311.52862548828125,
+          668.5282135009766
+        ]
+      ]
+    },
+    {
+      "title": "4.1.1. General procedure for preparation of the intermediates 3a-3d",
+      "heading_level": null,
+      "page_id": 10,
+      "polygon": [
+        [
+          42.197265625,
+          127.3927001953125
+        ],
+        [
+          287.6087646484375,
+          127.3927001953125
+        ],
+        [
+          287.6087646484375,
+          137.6318359375
+        ],
+        [
+          42.197265625,
+          137.6318359375
+        ]
+      ]
+    },
+    {
+      "title": "4.1.2. General procedure for synthesis of compounds A1-A7",
+      "heading_level": null,
+      "page_id": 10,
+      "polygon": [
+        [
+          41.97900390625,
+          252.9097900390625
+        ],
+        [
+          261.33203125,
+          252.9097900390625
+        ],
+        [
+          261.33203125,
+          262.94757080078125
+        ],
+        [
+          41.97900390625,
+          262.94757080078125
+        ]
+      ]
+    },
+    {
+      "title": "4.1.3. Synthesis of the intermediates 5e and 5b",
+      "heading_level": null,
+      "page_id": 10,
+      "polygon": [
+        [
+          42.27001953125,
+          357.5101623535156
+        ],
+        [
+          215.84536743164062,
+          357.5101623535156
+        ],
+        [
+          215.84536743164062,
+          367.9228515625
+        ],
+        [
+          42.27001953125,
+          367.9228515625
+        ]
+      ]
+    },
+    {
+      "title": "4.1.4. Synthesis of the intermediates 7e and 7b",
+      "heading_level": null,
+      "page_id": 10,
+      "polygon": [
+        [
+          42.518890380859375,
+          451.6757507324219
+        ],
+        [
+          215.84432983398438,
+          451.6757507324219
+        ],
+        [
+          215.84432983398438,
+          461.7134704589844
+        ],
+        [
+          42.518890380859375,
+          461.7134704589844
+        ]
+      ]
+    },
+    {
+      "title": "4.1.5. General procedure for synthesis of compounds 8e1-8e14 and\n8b1-8b5",
+      "heading_level": null,
+      "page_id": 10,
+      "polygon": [
+        [
+          41.83349609375,
+          566.7053375244141
+        ],
+        [
+          288.396484375,
+          566.7053375244141
+        ],
+        [
+          288.396484375,
+          586.970703125
+        ],
+        [
+          41.83349609375,
+          586.970703125
+        ]
+      ]
+    },
+    {
+      "title": "4.1.6. General procedure for synthesis of compounds B1eB14",
+      "heading_level": null,
+      "page_id": 10,
+      "polygon": [
+        [
+          41.83349609375,
+          681.7930221557617
+        ],
+        [
+          269.189453125,
+          681.7930221557617
+        ],
+        [
+          269.189453125,
+          691.8307647705078
+        ],
+        [
+          41.83349609375,
+          691.8307647705078
+        ]
+      ]
+    },
+    {
+      "title": "4.1.7. General procedure for synthesis of compounds C1eC5",
+      "heading_level": null,
+      "page_id": 10,
+      "polygon": [
+        [
+          311.5270080566406,
+          451.6757507324219
+        ],
+        [
+          532.55859375,
+          451.6757507324219
+        ],
+        [
+          532.55859375,
+          461.7134704589844
+        ],
+        [
+          311.5270080566406,
+          461.7134704589844
+        ]
+      ]
+    },
+    {
+      "title": "4.1.8. General procedure for synthesis of compounds D1-D13",
+      "heading_level": null,
+      "page_id": 11,
+      "polygon": [
+        [
+          32.37548828125,
+          702.7132339477539
+        ],
+        [
+          256.67578125,
+          702.7132339477539
+        ],
+        [
+          256.67578125,
+          712.7509765625
+        ],
+        [
+          32.37548828125,
+          712.7509765625
+        ]
+      ]
+    },
+    {
+      "title": "4.1.9. Preparation of the protected vanillin 10",
+      "heading_level": null,
+      "page_id": 11,
+      "polygon": [
+        [
+          301.83319091796875,
+          221.50311279296875
+        ],
+        [
+          469.5670166015625,
+          221.50311279296875
+        ],
+        [
+          469.5670166015625,
+          231.5408935546875
+        ],
+        [
+          301.83319091796875,
+          231.5408935546875
+        ]
+      ]
+    },
+    {
+      "title": "4.1.10. Preparation of the unilateral substituted intermediate 11",
+      "heading_level": null,
+      "page_id": 11,
+      "polygon": [
+        [
+          300.328125,
+          305.2381591796875
+        ],
+        [
+          535.8410034179688,
+          305.2381591796875
+        ],
+        [
+          535.8410034179688,
+          315.27587890625
+        ],
+        [
+          300.328125,
+          315.27587890625
+        ]
+      ]
+    },
+    {
+      "title": "4.1.11. General procedure for synthesis of compounds D14-D15",
+      "heading_level": null,
+      "page_id": 11,
+      "polygon": [
+        [
+          301.8357238769531,
+          399.3470764160156
+        ],
+        [
+          533.140625,
+          399.3470764160156
+        ],
+        [
+          533.140625,
+          409.3847961425781
+        ],
+        [
+          301.8357238769531,
+          409.3847961425781
+        ]
+      ]
+    },
+    {
+      "title": "4.2. In vitro kinase assay",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          41.797119140625,
+          160.1181640625
+        ],
+        [
+          135.4677734375,
+          160.1181640625
+        ],
+        [
+          135.4677734375,
+          168.7818603515625
+        ],
+        [
+          41.797119140625,
+          168.7818603515625
+        ]
+      ]
+    },
+    {
+      "title": "Inhibition % ¼ (max  conversion)/(max  min)  100%,",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          41.90625,
+          410.95703125
+        ],
+        [
+          258.421875,
+          410.95703125
+        ],
+        [
+          258.421875,
+          422.720458984375
+        ],
+        [
+          41.90625,
+          422.720458984375
+        ]
+      ]
+    },
+    {
+      "title": "4.3. Quantitative structure-activity relationships analysis",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          41.90625,
+          516.0224609375
+        ],
+        [
+          252.6015625,
+          516.0224609375
+        ],
+        [
+          252.6015625,
+          524.4728088378906
+        ],
+        [
+          41.90625,
+          524.4728088378906
+        ]
+      ]
+    },
+    {
+      "title": "4.3.1. Materials and descriptors selection",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          42.0517578125,
+          536.1826171875
+        ],
+        [
+          193.0888671875,
+          536.1826171875
+        ],
+        [
+          193.0888671875,
+          545.3921813964844
+        ],
+        [
+          42.0517578125,
+          545.3921813964844
+        ]
+      ]
+    },
+    {
+      "title": "4.3.2. Multiple linear regression (MLR) analysis",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          42.12451171875,
+          673.0390625
+        ],
+        [
+          216.97254943847656,
+          673.0390625
+        ],
+        [
+          216.97254943847656,
+          681.568359375
+        ],
+        [
+          42.12451171875,
+          681.568359375
+        ]
+      ]
+    },
+    {
+      "title": "4.3.3. Validation of the models",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          311.38671875,
+          159.827392578125
+        ],
+        [
+          424.9178161621094,
+          159.827392578125
+        ],
+        [
+          424.9178161621094,
+          168.77471923828125
+        ],
+        [
+          311.38671875,
+          168.77471923828125
+        ]
+      ]
+    },
+    {
+      "title": "4.4. ATP competitive inhibition assay",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          310.8046875,
+          264.7958984375
+        ],
+        [
+          447.985107421875,
+          264.7958984375
+        ],
+        [
+          447.985107421875,
+          273.38018798828125
+        ],
+        [
+          310.8046875,
+          273.38018798828125
+        ]
+      ]
+    },
+    {
+      "title": "4.5. Molecular docking",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          310.8046875,
+          369.74688720703125
+        ],
+        [
+          396.9453125,
+          369.74688720703125
+        ],
+        [
+          396.9453125,
+          378.0356750488281
+        ],
+        [
+          310.8046875,
+          378.0356750488281
+        ]
+      ]
+    },
+    {
+      "title": "4.5.1. Molecular dynamics (MD) simulations",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          311.5289306640625,
+          610.29150390625
+        ],
+        [
+          476.392578125,
+          610.29150390625
+        ],
+        [
+          476.392578125,
+          618.5802917480469
+        ],
+        [
+          311.5289306640625,
+          618.5802917480469
+        ]
+      ]
+    },
+    {
+      "title": "to neutralize these two systems.",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          32.411865234375,
+          108.22186279296875
+        ],
+        [
+          158.021484375,
+          108.22186279296875
+        ],
+        [
+          158.021484375,
+          119.31323242187499
+        ],
+        [
+          32.411865234375,
+          119.31323242187499
+        ]
+      ]
+    },
+    {
+      "title": "4.5.2. Binding free energy calculations and decomposition analysis",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          31.93896484375,
+          328.9812927246094
+        ],
+        [
+          277.6880187988281,
+          328.9812927246094
+        ],
+        [
+          277.6880187988281,
+          337.87646484375
+        ],
+        [
+          31.93896484375,
+          337.87646484375
+        ]
+      ]
+    },
+    {
+      "title": "4.6. Biological activity experiments",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          32.775634765625,
+          566.4228515625
+        ],
+        [
+          162.08982849121094,
+          566.4228515625
+        ],
+        [
+          162.08982849121094,
+          575.6666564941406
+        ],
+        [
+          32.775634765625,
+          575.6666564941406
+        ]
+      ]
+    },
+    {
+      "title": "4.6.1. Cell culture",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          32.82513427734375,
+          587.74609375
+        ],
+        [
+          97.28547668457031,
+          587.74609375
+        ],
+        [
+          97.28547668457031,
+          596.5860290527344
+        ],
+        [
+          32.82513427734375,
+          596.5860290527344
+        ]
+      ]
+    },
+    {
+      "title": "4.6.2. MTT cytotoxicity assay",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          32.557373046875,
+          682.34375
+        ],
+        [
+          140.1240234375,
+          682.34375
+        ],
+        [
+          140.1240234375,
+          691.8309936523438
+        ],
+        [
+          32.557373046875,
+          691.8309936523438
+        ]
+      ]
+    },
+    {
+      "title": "sulfoxide (sigma) and quantified at 490 nm.",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.783203125,
+          64.63177490234375
+        ],
+        [
+          468.15350341796875,
+          64.63177490234375
+        ],
+        [
+          468.15350341796875,
+          75.01904296875
+        ],
+        [
+          301.783203125,
+          75.01904296875
+        ]
+      ]
+    },
+    {
+      "title": "4.6.3. Western blot analysis",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.4921875,
+          87.0860595703125
+        ],
+        [
+          406.83984375,
+          87.0860595703125
+        ],
+        [
+          406.83984375,
+          95.58892822265625
+        ],
+        [
+          301.4921875,
+          95.58892822265625
+        ]
+      ]
+    },
+    {
+      "title": "4.6.4. Hoechst 33342 staining",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.8329162597656,
+          295.8115234375
+        ],
+        [
+          413.2421875,
+          295.8115234375
+        ],
+        [
+          413.2421875,
+          304.7828063964844
+        ],
+        [
+          301.8329162597656,
+          304.7828063964844
+        ]
+      ]
+    },
+    {
+      "title": "4.6.5. Cell cycle analysis",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.4921875,
+          390.021484375
+        ],
+        [
+          391.6457214355469,
+          390.021484375
+        ],
+        [
+          391.6457214355469,
+          398.9544677734375
+        ],
+        [
+          301.4921875,
+          398.9544677734375
+        ]
+      ]
+    },
+    {
+      "title": "4.6.6. Statistical analysis",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.4921875,
+          484.23144531249994
+        ],
+        [
+          394.03515625,
+          484.23144531249994
+        ],
+        [
+          394.03515625,
+          493.0648193359375
+        ],
+        [
+          301.4921875,
+          493.0648193359375
+        ]
+      ]
+    },
+    {
+      "title": "Conflict of interest",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.4921875,
+          556.2740020751953
+        ],
+        [
+          377.73828125,
+          556.2740020751953
+        ],
+        [
+          377.73828125,
+          566.810546875
+        ],
+        [
+          301.4921875,
+          566.810546875
+        ]
+      ]
+    },
+    {
+      "title": "Acknowledgment",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.783203125,
+          599.8617248535156
+        ],
+        [
+          371.626953125,
+          599.8617248535156
+        ],
+        [
+          371.626953125,
+          608.1505126953125
+        ],
+        [
+          301.783203125,
+          608.1505126953125
+        ]
+      ]
+    },
+    {
+      "title": "Appendix A. Supplementary data",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          301.783203125,
+          683.119140625
+        ],
+        [
+          436.232421875,
+          683.119140625
+        ],
+        [
+          436.232421875,
+          691.8288650512695
+        ],
+        [
+          301.783203125,
+          691.8288650512695
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": null,
+      "page_id": 14,
+      "polygon": [
+        [
+          42.197265625,
+          66.38311767578125
+        ],
+        [
+          85.63134765625,
+          66.38311767578125
+        ],
+        [
+          85.63134765625,
+          74.67193603515625
+        ],
+        [
+          42.197265625,
+          74.67193603515625
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          301
+        ],
+        [
+          "Line",
+          86
+        ],
+        [
+          "Text",
+          17
+        ],
+        [
+          "SectionHeader",
+          5
+        ],
+        [
+          "Footnote",
+          3
+        ],
+        [
+          "Molecule",
+          3
+        ],
+        [
+          "Picture",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "European Journal of Medicinal Chemistry 127 (2017) 885e899\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          158
+        ],
+        [
+          "Line",
+          50
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Molecule",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "",
+      "page_footer": ""
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          484
+        ],
+        [
+          "Line",
+          124
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "SectionHeader",
+          5
+        ],
+        [
+          "Molecule",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899 887\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          34
+        ],
+        [
+          "Line",
+          12
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "Molecule",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "888 S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          413
+        ],
+        [
+          "Line",
+          103
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Molecule",
+          4
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899 889\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          216
+        ],
+        [
+          "Line",
+          209
+        ],
+        [
+          "Molecule",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885\ne\n899 890\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          173
+        ],
+        [
+          "Line",
+          35
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Molecule",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899 891\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          322
+        ],
+        [
+          "Line",
+          54
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Molecule",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "MoleculeTable",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "",
+      "page_footer": ""
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          111
+        ],
+        [
+          "Line",
+          22
+        ],
+        [
+          "Molecule",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899 893\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          115
+        ],
+        [
+          "Line",
+          14
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "Molecule",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "",
+      "page_footer": ""
+    },
+    {
+      "page_id": 10,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          828
+        ],
+        [
+          "Line",
+          143
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "SectionHeader",
+          7
+        ],
+        [
+          "TextInlineMath",
+          5
+        ],
+        [
+          "Molecule",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899 895\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 11,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1054
+        ],
+        [
+          "Line",
+          156
+        ],
+        [
+          "TextInlineMath",
+          8
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Molecule",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "",
+      "page_footer": ""
+    },
+    {
+      "page_id": 12,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          430
+        ],
+        [
+          "Line",
+          123
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "SectionHeader",
+          9
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "TextInlineMath",
+          2
+        ],
+        [
+          "Molecule",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899 897\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 13,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          404
+        ],
+        [
+          "Line",
+          116
+        ],
+        [
+          "SectionHeader",
+          13
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "Molecule",
+          4
+        ],
+        [
+          "TextInlineMath",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "898 S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899\n",
+      "page_footer": ""
+    },
+    {
+      "page_id": 14,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          524
+        ],
+        [
+          "Line",
+          141
+        ],
+        [
+          "ListItem",
+          46
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Molecule",
+          2
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      },
+      "page_header": "S. Ying et al. / European Journal of Medicinal Chemistry 127 (2017) 885e899 899\n",
+      "page_footer": ""
+    }
+  ]
+}

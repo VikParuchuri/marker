@@ -74,6 +74,8 @@ class PageGroup(Group):
     @computed_field
     @property
     def current_children(self) -> List[Block]:
+        if self.children is None:
+            return []
         return [child for child in self.children if not child.removed]
 
     def get_next_block(

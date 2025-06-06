@@ -7,6 +7,7 @@ from marker.schema.blocks import Block, Caption, Code, Equation, Figure, \
     ListItem, PageFooter, PageHeader, Picture, \
     SectionHeader, Table, TableOfContents, \
     Text, ComplexRegion, TableCell, Reference
+from marker.schema.blocks.molecule import Molecule, MoleculeTable
 from marker.schema.document import Document
 from marker.schema.groups import FigureGroup, ListGroup, PageGroup, \
     PictureGroup, TableGroup
@@ -30,6 +31,8 @@ register_block_class(BlockTypes.Line, Line)
 register_block_class(BlockTypes.Span, Span)
 register_block_class(BlockTypes.FigureGroup, FigureGroup)
 register_block_class(BlockTypes.TableGroup, TableGroup)
+register_block_class(BlockTypes.Molecule, Molecule)
+register_block_class(BlockTypes.MoleculeTable, MoleculeTable)
 register_block_class(BlockTypes.ListGroup, ListGroup)
 register_block_class(BlockTypes.PictureGroup, PictureGroup)
 register_block_class(BlockTypes.Page, PageGroup)

@@ -29,6 +29,8 @@ class BlockTypes(str, Enum):
     ComplexRegion = auto()
     TableCell = auto()
     Reference = auto()
+    Molecule = auto()
+    MoleculeTable = auto()
 
     def __str__(self):
         return self.name

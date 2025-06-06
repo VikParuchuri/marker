@@ -33,7 +33,7 @@ class DocumentBuilder(BaseBuilder):
         "Disable OCR processing.",
     ] = False
 
-    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, line_builder: LineBuilder, ocr_builder: OcrBuilder, callback_url: str | None = None, docId: str | None = None):
+    def __call__(self, provider: PdfProvider, layout_builder: LayoutBuilder, line_builder: LineBuilder, ocr_builder: OcrBuilder, callback_url: str | None = None, docId: str | None = None, second_layout_builder = None):
         document = self.build_document(provider)
         flush_cuda_memory()
         time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
@@ -46,6 +46,11 @@ class DocumentBuilder(BaseBuilder):
         })
 
         layout_builder(document, provider)
+        # 如果有第二个layout_builder（分子识别），则调用第二个layout_builder
+        if second_layout_builder:
+            second_layout_builder(document, provider)
+            flush_cuda_memory()
+        
         line_builder(document, provider)
 
         flush_cuda_memory()
@@ -60,6 +65,7 @@ class DocumentBuilder(BaseBuilder):
 
         if not self.disable_ocr:
             ocr_builder(document, provider)
+        
         return document
 
     def build_document(self, provider: PdfProvider):
