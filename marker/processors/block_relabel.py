@@ -29,11 +29,12 @@ class BlockRelabelProcessor(BaseProcessor):
         super().__init__(config)
         
         self.block_relabel_map = {}
-        for block_config_str in self.block_relabel_str.split(','):
-            block_config_str = block_config_str.strip()
-            block_label, block_relabel, confidence_thresh = block_config_str.split(':')
-            confidence_thresh = float(confidence_thresh)
-            self.block_relabel_map[BlockTypes[block_label]] = (confidence_thresh, BlockTypes[block_relabel])
+        if self.block_relabel_str:
+            for block_config_str in self.block_relabel_str.split(','):
+                block_config_str = block_config_str.strip()
+                block_label, block_relabel, confidence_thresh = block_config_str.split(':')
+                confidence_thresh = float(confidence_thresh)
+                self.block_relabel_map[BlockTypes[block_label]] = (confidence_thresh, BlockTypes[block_relabel])
 
     def __call__(self, document: Document):
         if len(self.block_relabel_map) == 0:
