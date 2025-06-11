@@ -56,6 +56,10 @@ class PageGroup(Group):
     ):
         image = self.highres_image if highres else self.lowres_image
 
+        # Check if RGB, convert if needed
+        if isinstance(image, Image.Image) and image.mode != "RGB":
+            image = image.convert("RGB")
+
         # Avoid double OCR for certain elements
         if remove_blocks:
             image = image.copy()
@@ -245,13 +249,15 @@ class PageGroup(Group):
     ):
         # Add lines to the proper blocks, sorted in order
         for block_id, lines in block_lines.items():
-            line_extraction_methods = set([l[1].line.text_extraction_method for l in lines])
+            line_extraction_methods = set(
+                [line[1].line.text_extraction_method for line in lines]
+            )
             if len(line_extraction_methods) == 1:
                 lines = sorted(lines, key=lambda x: x[0])
-                lines = [l for _, l in lines]
+                lines = [line for _, line in lines]
             else:
-                lines = [l for _, l in lines]
-                line_polygons = [l.line.polygon for l in lines]
+                lines = [line for _, line in lines]
+                line_polygons = [line.line.polygon for line in lines]
                 sorted_line_polygons = sort_text_lines(line_polygons)
                 argsort = [line_polygons.index(p) for p in sorted_line_polygons]
                 lines = [lines[i] for i in argsort]
