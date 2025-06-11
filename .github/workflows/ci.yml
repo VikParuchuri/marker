@@ -7,6 +7,10 @@ jobs:
     runs-on: t4_gpu
     steps:
       - uses: actions/checkout@v3
+      - name: Install apt requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpango-1.0-0 libpango1.0-dev
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
