@@ -24,17 +24,36 @@ class BlockRelabelProcessor(BaseProcessor):
         "Each rule defines how blocks of a certain type should be relabeled when the confidence exceeds the threshold.",
         "Example: 'Table:Picture:0.85,Form:Picture:0.9'"
     ] = ""
-    block_relabel_str: str = ""
-    def __init__(self, config = None):
+
+    def __init__(self, config=None):
         super().__init__(config)
-        
         self.block_relabel_map = {}
-        if self.block_relabel_str:
-            for block_config_str in self.block_relabel_str.split(','):
-                block_config_str = block_config_str.strip()
-                block_label, block_relabel, confidence_thresh = block_config_str.split(':')
-                confidence_thresh = float(confidence_thresh)
-                self.block_relabel_map[BlockTypes[block_label]] = (confidence_thresh, BlockTypes[block_relabel])
+
+        if not self.block_relabel_str:
+            return
+
+        for i, block_config_str in enumerate(self.block_relabel_str.split(',')):
+            block_config_str = block_config_str.strip()
+            if not block_config_str:
+                continue  # Skip empty segments
+
+            try:
+                parts = block_config_str.split(':')
+                if len(parts) != 3:
+                    raise ValueError(f"Expected 3 parts, got {len(parts)}")
+
+                block_label, block_relabel, confidence_str = parts
+                confidence_thresh = float(confidence_str)
+
+                block_type = BlockTypes[block_label]
+                relabel_block_type = BlockTypes[block_relabel]
+
+                self.block_relabel_map[block_type] = (
+                    confidence_thresh,
+                    relabel_block_type
+                )
+            except Exception as e:
+                logger.warning(f"Failed to parse relabel rule '{block_config_str}' at index {i}: {e}. Expected format is <original_label>:<new_label>:<confidence_threshold>")
 
     def __call__(self, document: Document):
         if len(self.block_relabel_map) == 0:
