@@ -38,6 +38,7 @@ from marker.processors.reference import ReferenceProcessor
 from marker.processors.sectionheader import SectionHeaderProcessor
 from marker.processors.table import TableProcessor
 from marker.processors.text import TextProcessor
+from marker.processors.block_relabel import BlockRelabelProcessor
 from marker.processors.llm.llm_equation import LLMEquationProcessor
 from marker.renderers.markdown import MarkdownRenderer
 from marker.schema import BlockTypes
@@ -69,6 +70,7 @@ class PdfConverter(BaseConverter):
     ] = False
     default_processors: Tuple[BaseProcessor, ...] = (
         OrderProcessor,
+        BlockRelabelProcessor,
         LineMergeProcessor,
         BlockquoteProcessor,
         CodeProcessor,
