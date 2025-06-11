@@ -11,7 +11,8 @@ class BlankPageProcessor(BaseProcessor):
     """
     A processor to filter out blank pages detected as a single layout block
     """
-    max_full_block_intersection_pct: float = 0.8
+    full_page_block_intersection_threshold: float = 0.8
+    filter_blank_pages: bool = False
     
     def is_blank(self, image: Image.Image):
         image = np.asarray(image)
@@ -45,6 +46,9 @@ class BlankPageProcessor(BaseProcessor):
         return b.sum() == 0
 
     def __call__(self, document: Document):
+        if not self.filter_blank_pages:
+            return
+
         for page in document.pages:
             structure_blocks = page.structure_blocks()
             if not structure_blocks or len(structure_blocks) > 1:
@@ -56,7 +60,7 @@ class BlankPageProcessor(BaseProcessor):
             conditions = [
                 full_page_block.block_type in [BlockTypes.Picture, BlockTypes.Figure],
                 self.is_blank(full_page_block.lowres_image),
-                page.polygon.intersection_area(full_page_block.polygon) > self.max_full_block_intersection_pct
+                page.polygon.intersection_area(full_page_block.polygon) > self.full_page_block_intersection_threshold
             ]
 
             if all(conditions):
