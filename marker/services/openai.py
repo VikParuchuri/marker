@@ -27,15 +27,39 @@ class OpenAIService(BaseService):
     openai_api_key: Annotated[
         str, "The API key to use for the OpenAI-like service."
     ] = None
+    openai_image_format: Annotated[
+        str, "The image format to use for the OpenAI-like service. Use 'png' for better compatability"
+    ] = 'webp'
 
-    def image_to_base64(self, image: PIL.Image.Image):
+    def image_to_base64(self, image: PIL.Image.Image) -> str:
+        """
+        Convert PIL image to base64 string
+
+        Args:
+            image: Input PIL Image
+            format: Format to use for the image; use "png" for better compatability.
+
+        Returns:
+            Base-64 encoded image (in PNG format) to pass to LLM.
+        """
         image_bytes = BytesIO()
-        image.save(image_bytes, format="WEBP")
+        image.save(image_bytes, format=self.openai_image_format)
         return base64.b64encode(image_bytes.getvalue()).decode("utf-8")
 
     def prepare_images(
         self, images: Union[Image.Image, List[Image.Image]]
     ) -> List[dict]:
+        """
+        Generate the base-64 encoded message to send to an
+        openAI-compatabile multimodal model.
+
+        Args:
+            images: Image or list of PIL images to include
+            format: Format to use for the image; use "png" for better compatability.
+
+        Returns:
+
+        """
         if isinstance(images, Image.Image):
             images = [images]
 
@@ -43,7 +67,8 @@ class OpenAIService(BaseService):
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": "data:image/webp;base64,{}".format(
+                    "url": "data:image/{};base64,{}".format(
+                        self.openai_image_format,
                         self.image_to_base64(img)
                     ),
                 },
