@@ -58,7 +58,7 @@ class OpenAIService(BaseService):
             format: Format to use for the image; use "png" for better compatability.
 
         Returns:
-
+            A list of OpenAI-compatbile multimodal messages containing the base64-encoded images.
         """
         if isinstance(images, Image.Image):
             images = [images]
