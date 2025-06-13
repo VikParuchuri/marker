@@ -101,18 +101,18 @@ Your output **must be a single JSON array**. Each element in the array represent
       return f"{block.id}:\n{block_raw_text[:20]}" + "\n\n"
 
     def __call__(self, document: Document, **kwargs):
-        text = ""
-        for page in document.pages:
-            for block in page.structure_blocks(document):
-                if block.ignore_for_output:
-                    continue
-                text += self.formatted_block(block, document)
-                if block.block_type == BlockTypes.ListGroup:
-                    for sub_block in block.structure_blocks(document):
-                        text += self.formatted_block(sub_block, document)
+      if not self.use_llm or self.llm_service is None:
+          return
 
-        start = time.time()
-        response = self.llm_service(self.llm_hierarchy_prompt + text, None, None, LLMHierarchySchema)
-        document.llm_hierarchy = response['document']
-        end = time.time()
-        print(f'Took {end - start}')
+      text = ""
+      for page in document.pages:
+          for block in page.structure_blocks(document):
+              if block.ignore_for_output:
+                  continue
+              text += self.formatted_block(block, document)
+              if block.block_type == BlockTypes.ListGroup:
+                  for sub_block in block.structure_blocks(document):
+                      text += self.formatted_block(sub_block, document)
+
+      response = self.llm_service(self.llm_hierarchy_prompt + text, None, None, LLMHierarchySchema)
+      document.llm_hierarchy = response['document']
