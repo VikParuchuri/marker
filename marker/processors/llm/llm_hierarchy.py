@@ -1,11 +1,12 @@
 from __future__ import annotations
-import json
 import time
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel
 
-from marker.processors.llm import BaseLLMProcessor
+from marker.schema import BlockTypes
+from marker.schema.blocks import Block
 from marker.schema.document import Document
+from marker.processors.llm import BaseLLMProcessor
 
 class DocumentItem(BaseModel):
     block_id: str
@@ -63,6 +64,8 @@ Your output **must be a single JSON array**. Each element in the array represent
 * **Numbered Sections/Subsections:** Pay close attention to numbering schemes (e.g., "1. Software License.", "1.1 Definitions.", "1.2 License Grant."). These indicate hierarchical relationships. Blocks pertaining to a subsection (e.g., "1.1 Definitions.") should be nested under their parent section (e.g., "1. Software License.").
 * **Tables and Pictures:** If a `Table` or `Picture` block is directly associated with a specific semantic section (e.g., a table listing licensed software under a heading), it should be nested under that section.
 * **Standalone Blocks:** Blocks that do not logically fall under any specific section but are part of the overall document should have no parent id
+* **Main Document Title:** If there is a main document title, it should be the parent for all top level section headers
+* **Lists:** ListItem elements should always have a parent - Either another listitem (In the case of nested lists), or a ListGroup
 
 ## Example Output
 
@@ -93,6 +96,9 @@ Your output **must be a single JSON array**. Each element in the array represent
 
 ## Input
 """
+    def formatted_block(self, block: Block, document: Document):
+      block_raw_text = block.raw_text(document)
+      return f"{block.id}:\n{block_raw_text[:20]}" + "\n\n"
 
     def __call__(self, document: Document, **kwargs):
         text = ""
@@ -100,8 +106,10 @@ Your output **must be a single JSON array**. Each element in the array represent
             for block in page.structure_blocks(document):
                 if block.ignore_for_output:
                     continue
-                block_raw_text = block.raw_text(document)
-                text += f"{block.id}:\n{block_raw_text[:20]}" + "\n\n"
+                text += self.formatted_block(block, document)
+                if block.block_type == BlockTypes.ListGroup:
+                    for sub_block in block.structure_blocks(document):
+                        text += self.formatted_block(sub_block, document)
 
         start = time.time()
         response = self.llm_service(self.llm_hierarchy_prompt + text, None, None, LLMHierarchySchema)
