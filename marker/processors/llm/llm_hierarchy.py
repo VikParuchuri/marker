@@ -44,12 +44,12 @@ Your output **must be a single JSON array**. Each element in the array represent
 {
     "document": [
         {
-            "block_id": "/page/0/SectionHeader/1",
-            "parent_block_ids": []
+            "block_id": "/page/0/SectionHeader/0",
+            "parent_block_id": null
         },
         {
             "block_id": "/page/0/SectionHeader/1",
-            "parent_block_ids": []
+            "parent_block_id": "/page/0/SectionHeader/0"
         },
         ...
     ]
@@ -88,10 +88,6 @@ Your output **must be a single JSON array**. Each element in the array represent
     "block_id": "/page/0/Text/4",
     "parent_block_id": "/page/0/SectionHeader/3"
   },
-  {
-    "block_id": "/page/0/Text/5",
-    "parent_block_id": "/page/0/SectionHeader/3"
-  }
 ]
 ```
 
