@@ -41,8 +41,6 @@ In this figure, a bar chart titled "Fruit Preference Survey" is showing the numb
 
     def inference_blocks(self, document: Document) -> List[BlockData]:
         blocks = super().inference_blocks(document)
-        if self.extract_images:
-            return []
         return blocks
 
     def block_prompts(self, document: Document) -> List[PromptData]:
