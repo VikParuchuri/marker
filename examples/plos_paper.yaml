@@ -1,0 +1,14 @@
+version: "1.0"
+rules:
+  layout:
+    type: "plos_paper"
+    # Automatically detect and exclude the metadata gutter on the left
+    exclude_metadata_gutter: true
+    # Main content is a single column, read top-down
+    main_content:
+      type: "single_column"
+      order: "top_down"
+    # Optional: Can specify custom width thresholds if needed
+    thresholds:
+      gutter_width_ratio: 0.4  # Typical width ratio of the metadata gutter
+      main_content_width_ratio: 0.6  # Typical width ratio of the main content 
