@@ -21,7 +21,7 @@ class RuleEngine:
         with open(rules_path, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
 
-    def get_rules(self, stage: str) -> Optional[Dict[str, Any]]:
+    def get_rules(self, stage: str, default: Any = None) -> Optional[Any]:
         if not self.rules:
-            return None
-        return self.rules.get("rules", {}).get(stage) 
+            return default
+        return self.rules.get("rules", {}).get(stage, default)
