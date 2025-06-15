@@ -1,0 +1,11 @@
+version: "1.0"
+rules:
+  layout:
+    - type: "exclude_gutter"
+      # Exclude the left-hand metadata gutter
+      position: "left"
+      # The width of the gutter as a ratio of the page width
+      width_ratio: 0.25
+  footnotes:
+    # Move all footnotes to the end of the document, not just the page
+    strategy: "move_to_end"
