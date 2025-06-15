@@ -50,6 +50,7 @@ from marker.processors.order import OrderProcessor
 from marker.services.gemini import GoogleGeminiService
 from marker.processors.line_merge import LineMergeProcessor
 from marker.processors.llm.llm_mathblock import LLMMathBlockProcessor
+from marker.rules import RuleEngine
 
 
 class PdfConverter(BaseConverter):
@@ -109,6 +110,9 @@ class PdfConverter(BaseConverter):
 
         if config is None:
             config = {}
+
+        self.rule_engine = RuleEngine(config.get("rules_path"))
+        artifact_dict["rule_engine"] = self.rule_engine
 
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
