@@ -6,7 +6,6 @@ rules:
       position: "left"
       # The width of the gutter as a ratio of the page width
       width_ratio: 0.4
-    # Main content is a single column, read top-down
-    main_content:
-      type: "single_column"
+    - type: "main_content"
+      # Main content is a single column, read top-down
       order: "top_down"
