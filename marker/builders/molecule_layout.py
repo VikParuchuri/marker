@@ -188,6 +188,8 @@ class MoleculeLayoutBuilder(BaseBuilder):
             detection_results = self.generate_mock_detection_results(document.pages)
         else:
             if self.processor is None:
+                self._initialize_processor()
+            if self.processor is None:
                 print("Molecule processor not available, skipping molecule detection")
                 return
             detection_results = self.detect_molecules_and_tables(document.pages)

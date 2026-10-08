@@ -480,7 +480,7 @@ def main():
     processes = []
     
     # 启动4个常规解析消费者进程（处理速度快，需要更多并发）
-    for _ in range(2):
+    for _ in range(3):
         process = multiprocessing.Process(
             target=regular_document_proc,
             args=(
@@ -493,7 +493,7 @@ def main():
         processes.append(process)
 
     # 启动2个分子识别消费者进程（处理速度慢，占用资源多，减少并发数）
-    for _ in range(1):
+    for _ in range(2):
         process = multiprocessing.Process(
             target=molecule_document_proc,
             args=(
