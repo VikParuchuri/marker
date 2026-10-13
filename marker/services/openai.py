@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from typing import Annotated, List
 
@@ -24,7 +25,7 @@ class OpenAIService(BaseService):
     )
     openai_api_key: Annotated[
         str, "The API key to use for the OpenAI-like service."
-    ] = None
+    ] = os.environ.get("OPENAI_API_KEY")
     openai_image_format: Annotated[
         str,
         "The image format to use for the OpenAI-like service. Use 'png' for better compatability",
@@ -101,7 +102,7 @@ class OpenAIService(BaseService):
                     response_format=response_schema,
                 )
                 response_text = response.choices[0].message.content
-                total_tokens = response.usage.total_tokens
+                total_tokens = response.usage.total_tokens if response.usage else 0
                 if block:
                     block.update_metadata(
                         llm_tokens_used=total_tokens, llm_request_count=1

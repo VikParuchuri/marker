@@ -389,24 +389,27 @@ When running with the `--use_llm` flag, you have a choice of services you can us
 - `Google Vertex` - this will use vertex, which can be more reliable.  You'll need to pass `--vertex_project_id`.  To use it, set `--llm_service=marker.services.vertex.GoogleVertexService`.
 - `Ollama` - this will use local models.  You can configure `--ollama_base_url` and `--ollama_model`. To use it, set `--llm_service=marker.services.ollama.OllamaService`.
 - `Claude` - this will use the anthropic API.  You can configure `--claude_api_key`, and `--claude_model_name`.  To use it, set `--llm_service=marker.services.claude.ClaudeService`.
-- `OpenAI` - this supports any openai-like endpoint. You can configure `--openai_api_key`, `--openai_model`, and `--openai_base_url`. To use it, set `--llm_service=marker.services.openai.OpenAIService`.
+- `OpenAI` - this supports any openai-like endpoint. You can configure `--openai_api_key` (or `OPENAI_API_KEY`), `--openai_model`, and `--openai_base_url`. To use it, set `--llm_service=marker.services.openai.OpenAIService`.
 - `Azure OpenAI` - this uses the Azure OpenAI service. You can configure `--azure_endpoint`, `--azure_api_key`, and `--deployment_name`. To use it, set `--llm_service=marker.services.azure_openai.AzureOpenAIService`.
 - `OpenRouter` - this uses [OpenRouter](https://openrouter.ai)'s OpenAI-compatible API.  You can configure `--openrouter_api_key` (or the `OPENROUTER_API_KEY` env var), `--openrouter_model` (default `google/gemini-3.5-flash`), and `--openrouter_base_url`.  To use it, set `--llm_service=marker.services.openrouter.OpenRouterService`.
 
-For local OCR correction with a vision model, first download `gemma4:31b` with `ollama pull gemma4:31b` and start the Ollama server. Then run:
+For cloud OCR correction with Ollama's vision model, run `ScriptMacOS-Ollama.sh` from your PDF folder. It prompts for an Ollama API key, installs this Marker fork once from GitHub, reads PDFs from `PDF/`, and writes Markdown and images into `Output/`. No local Ollama installation or model download is needed. The model runs on Ollama's cloud API.
+
+For a direct `marker_single` invocation, set your key in `OPENAI_API_KEY` and run:
 
 ```shell
 marker_single input.pdf \
   --use_llm \
-  --llm_service marker.services.ollama.OllamaService \
-  --ollama_base_url http://localhost:11434 \
-  --ollama_model gemma4:31b \
+  --llm_service marker.services.openai.OpenAIService \
+  --openai_base_url https://ollama.com/v1 \
+  --openai_model gemma4:31b \
+  --openai_image_format png \
   --max_concurrency 1 \
   --page_batch_size 30 \
   --output_format markdown
 ```
 
-The local server does not need an API key. `https://ollama.com/v1` uses Ollama's cloud API, not local inference. Images inside HTML tables are saved beside the Markdown file when the model supplies a valid box for the image. Review technical formulas against the PDF where a misread symbol would matter.
+Images inside HTML tables are saved beside the Markdown file when the model supplies a valid box for the image. Review technical formulas against the PDF where a misread symbol would matter.
 
 These services may have additional optional configuration as well - you can see it by viewing the classes.
 
