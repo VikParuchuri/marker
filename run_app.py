@@ -5,6 +5,7 @@ import logging
 # import torch.multiprocessing as multiprocessing
 # multiprocessing.set_start_method('spawn')
 import multiprocessing
+from queue import Full
 import torch
 import tempfile
 import json
@@ -84,8 +85,11 @@ def terminate_children(pid):
         pass
 
 # 任务队列：常规解析 + 分子识别（结果直接走 callback，不经过结果队列）
-regular_queue = multiprocessing.Queue()  # 常规解析队列
-molecule_queue = multiprocessing.Queue()  # 分子识别解析队列
+# 任务队列带最大容量：满则拒绝新任务(背压)，防止超大/大量文档把主进程内存与积压撑爆
+QUEUE_MAX = int(os.getenv("QUEUE_MAX", "20"))
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(200 * 1024 * 1024)))  # 默认200MB
+regular_queue = multiprocessing.Queue(maxsize=QUEUE_MAX)  # 常规解析队列
+molecule_queue = multiprocessing.Queue(maxsize=QUEUE_MAX)  # 分子识别解析队列
 
 # 常规解析消费者进程
 def regular_document_proc(
@@ -398,7 +402,15 @@ async def document_extract(request):
         file = form.get("file", None)
 
         if file:
+            # 大小上限：超大文档会独占 worker 数小时并拖垮排队，入口直接拒绝
+            upload_size = getattr(file, "size", None)
+            if upload_size is not None and upload_size > MAX_UPLOAD_BYTES:
+                return do_response(
+                    ExtractionResponse(413, False, f"File too large ({upload_size} bytes > {MAX_UPLOAD_BYTES})")
+                )
             file_content = await file.read()  # 读取文件内容
+            if file_content is not None and len(file_content) > MAX_UPLOAD_BYTES:
+                return do_response(ExtractionResponse(413, False, "File too large"))
         else:
             file_content = None
 
@@ -418,10 +430,14 @@ async def document_extract(request):
             "skip_layout": skip_layout,
         })
 
-        if mol_detect:
-            molecule_queue.put(params)
-        else:
-            regular_queue.put(params)
+        # 有界队列 + 非阻塞入队：队列满即拒绝(背压)，避免积压无限膨胀、主进程内存被排队文件撑爆
+        try:
+            if mol_detect:
+                molecule_queue.put_nowait(params)
+            else:
+                regular_queue.put_nowait(params)
+        except Full:
+            return do_response(ExtractionResponse(503, False, "Server busy: 解析队列已满，请稍后重试"))
 
         return do_response(ExtractionResponse(200, True, "Task accepted"))
     except Exception as e:
