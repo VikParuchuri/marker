@@ -83,15 +83,13 @@ def terminate_children(pid):
     except psutil.NoSuchProcess:
         pass
 
-# 任务队列和结果队列 - 拆分成两个队列
+# 任务队列：常规解析 + 分子识别（结果直接走 callback，不经过结果队列）
 regular_queue = multiprocessing.Queue()  # 常规解析队列
 molecule_queue = multiprocessing.Queue()  # 分子识别解析队列
-result_queue = multiprocessing.Queue()
 
 # 常规解析消费者进程
 def regular_document_proc(
     regular_queue: multiprocessing.Queue,
-    result_queue: multiprocessing.Queue,
     stop_current_proc: Value,
 ):
     setup_otel("gpt-marker")
@@ -175,7 +173,6 @@ def regular_document_proc(
             else:
                 raise Exception("Unsupported file type")
             
-            result_queue.put({"docId": docId, "result": extraction_outputs})
             if callback_url:
                 time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
                 
@@ -217,16 +214,6 @@ def regular_document_proc(
                 })
         except Exception as e:
             traceback.print_exc()
-            result_queue.put({
-                "docId": docId, 
-                "markdown": ' ', 
-                "metadata": json.dumps({}),
-                'images': json.dumps({}),
-                'mol_images': json.dumps({}),
-                'table_contents': json.dumps({}),
-                'status': False,
-                'messages': 'success'
-            })
             if callback_url:
                 time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
                 send_callback(callback_url, {
@@ -243,7 +230,6 @@ def regular_document_proc(
 # 分子识别消费者进程
 def molecule_document_proc(
     molecule_queue: multiprocessing.Queue,
-    result_queue: multiprocessing.Queue,
     stop_current_proc: Value,
 ):
     setup_otel("gpt-marker")
@@ -327,7 +313,6 @@ def molecule_document_proc(
             else:
                 raise Exception("Unsupported file type")
             
-            result_queue.put({"docId": docId, "result": extraction_outputs})
             if callback_url:
                 time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
                 
@@ -369,16 +354,6 @@ def molecule_document_proc(
                 })
         except Exception as e:
             traceback.print_exc()
-            result_queue.put({
-                "docId": docId, 
-                "markdown": ' ', 
-                "metadata": json.dumps({}),
-                'images': json.dumps({}),
-                'mol_images': json.dumps({}),
-                'table_contents': json.dumps({}),
-                'status': False,
-                'messages': 'success'
-            })
             if callback_url:
                 time_str = datetime.now(beijing_tz).strftime("%H:%M:%S")
                 send_callback(callback_url, {
@@ -479,13 +454,12 @@ def main():
     # 启动消费者进程
     processes = []
     
-    # 启动4个常规解析消费者进程（处理速度快，需要更多并发）
+    # 启动3个常规解析消费者进程（处理速度快，需要更多并发）
     for _ in range(3):
         process = multiprocessing.Process(
             target=regular_document_proc,
             args=(
                 regular_queue,
-                result_queue,
                 stop_current_proc,
             ),
         )
@@ -498,7 +472,6 @@ def main():
             target=molecule_document_proc,
             args=(
                 molecule_queue,
-                result_queue,
                 stop_current_proc,
             ),
         )
@@ -509,10 +482,10 @@ def main():
     try:
         uvicorn.run(app, host=os.getenv("HOST"), port=int(os.getenv("PORT")))
     finally:
-        # Shutdown consumers
-        for _ in range(2):  # 关闭常规解析进程
+        # Shutdown consumers：None 数量必须与 worker 数量一致，否则部分 worker 永久阻塞在 get()
+        for _ in range(3):  # 关闭常规解析进程
             regular_queue.put(None)
-        for _ in range(1):  # 关闭分子识别进程
+        for _ in range(2):  # 关闭分子识别进程
             molecule_queue.put(None)
         for process in processes:
             process.join()
