@@ -127,6 +127,10 @@ class Markdownify(MarkdownConverter):
 
     def convert_table(self, el, text, parent_tags):
         if self.html_tables_in_markdown:
+            # LaTeX in a raw HTML table must remain readable in Markdown.
+            for math in el.find_all("math"):
+                delimiter = "$$" if math.get("display") == "block" else "$"
+                math.replace_with(NavigableString(f"{delimiter}{math.get_text()}{delimiter}"))
             return "\n\n" + str(el) + "\n\n"
 
         total_rows = len(el.find_all("tr"))
@@ -283,7 +287,7 @@ class MarkdownRenderer(HTMLRenderer):
     ] = ("$$", "$$")
     html_tables_in_markdown: Annotated[
         bool, "Return tables formatted as HTML, instead of in markdown"
-    ] = False
+    ] = True
 
     @property
     def md_cls(self):

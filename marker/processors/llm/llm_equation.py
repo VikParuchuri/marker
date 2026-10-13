@@ -34,6 +34,7 @@ Some guidelines:
 - Output valid html, where all the equations can render properly.
 - Use <math display="block"> as a block equation delimiter and <math> for inline equations.  Do not use $ or $$ as delimiters.
 - Keep the LaTeX code inside the math tags simple, concise, and KaTeX compatible.
+- Copy Greek symbols by their printed shape (in particular distinguish \phi and \varphi), and preserve every subscript, superscript and fraction bar.
 - Enclose all equations in the correct math tags. Use multiple math tags inside the html to represent multiple equations.
 - Only use the html tags math, i, b, p, and br.
 - Make sure to include all the equations in the image in the html output.

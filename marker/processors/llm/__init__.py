@@ -123,6 +123,12 @@ class BaseLLMProcessor(BaseProcessor):
                     continue
 
                 if hasattr(block, "html"):
+                    embedded_images = getattr(block, "embedded_images", {})
+                    if embedded_images and any(
+                        name not in block_data["html"] for name in embedded_images
+                    ):
+                        logger.warning(f"Ignoring rewrite that removes table images from {block.id}")
+                        continue
                     block.html = block_data["html"]
             except Exception as e:
                 logger.debug(f"Error parsing block ID {block_data['id']}: {e}")

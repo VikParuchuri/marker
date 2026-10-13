@@ -47,8 +47,7 @@ class TableConverter(PdfConverter):
                 p for p in page.structure if p.block_type in self.converter_block_types
             ]
 
-        for processor in self.processor_list:
-            processor(document)
+        self.run_processors(document)
 
         return document
 

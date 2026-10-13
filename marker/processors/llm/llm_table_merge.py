@@ -53,13 +53,13 @@ class LLMTableMergeProcessor(BaseLLMComplexBlockProcessor):
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt.",
     ] = """You're a text correction expert specializing in accurately reproducing tables from PDFs.
-You'll receive two images of tables from successive pages of a PDF.  Table 1 is from the first page, and Table 2 is from the second page.  Both tables may actually be part of the same larger table. Your job is to decide if Table 2 should be merged with Table 1, and how they should be joined.  The should only be merged if they're part of the same larger table, and Table 2 cannot be interpreted without merging.
+You'll receive two images of tables from a PDF. Both tables may be parts of the same larger table, including a table continued across a page break. Decide whether they are one table and how to join them. A repeated heading on the second page does not make it a new table. Use captions, column alignment, numbering, and row content to decide. Keep unrelated tables separate.
 
 You'll specify your judgement in json format - first whether Table 2 should be merged with Table 1, then the direction of the merge, either `bottom` or `right`.  A bottom merge means that the rows of Table 2 are joined to the rows of Table 1. A right merge means that the columns of Table 2 are joined to the columns of Table 1.  (bottom merge is equal to np.vstack, right merge is equal to np.hstack)
 
-Table 2 should be merged at the bottom of Table 1 if Table 2 has no headers, and the rows have similar values, meaning that Table 2 continues Table 1. Table 2 should be merged to the right of Table 1 if each row in Table 2 matches a row in Table 1, meaning that Table 2 contains additional columns that augment Table 1.
+Table 2 should be merged at the bottom of Table 1 when its rows continue Table 1, even if its column headings are repeated. Table 2 should be merged to the right of Table 1 if each row in Table 2 matches a row in Table 1 and contains additional columns.
 
-Only merge Table 1 and Table 2 if Table 2 cannot be interpreted without merging.  Only merge Table 1 and Table 2 if you can read both images properly.
+Only merge when the images and HTML support that they are parts of one table. Preserve formulas and pictures in their original cells.
 
 **Instructions:**
 1. Carefully examine the provided table images.  Table 1 is the first image, and Table 2 is the second image.
@@ -199,6 +199,26 @@ Table 2
                         ]
                     )
 
+                    # A continued table may occupy only a short part of each
+                    # page. Its edges and columns are stronger clues than area.
+                    prev_page = document.get_page(prev_block.page_id)
+                    prev_width = prev_block.polygon.width
+                    curr_width = block.polygon.width
+                    x_overlap = max(
+                        0,
+                        min(prev_block.polygon.x_end, block.polygon.x_end)
+                        - max(prev_block.polygon.x_start, block.polygon.x_start),
+                    )
+                    edge_continuation = all(
+                        [
+                            prev_block.page_id == block.page_id - 1,
+                            prev_block.polygon.y_end >= prev_page.polygon.y_end - prev_page.polygon.height * 0.15,
+                            block.polygon.y_start <= page.polygon.y_start + page.polygon.height * 0.15,
+                            x_overlap >= min(prev_width, curr_width) * 0.75,
+                            col_match,
+                        ]
+                    )
+
                     same_page_vertical_table = all(
                         [
                             prev_block.page_id == block.page_id,  # On the same page
@@ -250,6 +270,7 @@ Table 2
                     merge_condition = any(
                         [
                             subsequent_page_table,
+                            edge_continuation,
                             same_page_vertical_table,
                             same_page_new_column,
                             same_page_horizontal_table,
@@ -351,10 +372,12 @@ Table 2
                     start_block = curr_block
                     continue
                 start_block.html = merged_html
+                start_block.embedded_images.update(curr_block.embedded_images)
                 start_block.lowres_image = self.join_images(
                     start_image, curr_image, direction
                 )
                 curr_block.html = None
+                curr_block.embedded_images.clear()
                 curr_block.structure = []
                 curr_block.ignore_for_output = True
                 continue
@@ -384,6 +407,18 @@ Table 2
         rows2 = table2.find_all("tr")
         if not rows2:
             return None
+        # Skip repeated leading header rows when a page break repeats them.
+        rows1 = table1.find_all("tr")
+        while rows2 and rows1:
+            first = rows1[0]
+            repeated = rows2[0]
+            if not first.find("th") or not repeated.find("th"):
+                break
+            if first.get_text(" ", strip=True) != repeated.get_text(" ", strip=True):
+                break
+            repeated.extract()
+            rows1 = rows1[1:]
+            rows2 = rows2[1:]
         for row in rows2:
             container.append(row)
         return str(soup1)

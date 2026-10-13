@@ -134,6 +134,8 @@ Options:
 - `--output_dir PATH`: Directory where output files will be saved. Defaults to the value specified in settings.OUTPUT_DIR.
 - `--paginate_output`: Paginates the output, using `\n\n{PAGE_NUMBER}` followed by `-` * 48, then `\n\n`
 - `--use_llm`: Uses an LLM to improve accuracy.  You will need to configure the LLM backend - see [below](#llm-services).
+- `--page_batch_size N`: Build and OCR pages, recognize tables, and run page-level LLM corrections in groups of N pages (default: 30). The result is one document; table merging still sees adjacent pages across group boundaries.
+- `--html_tables_in_markdown false`: Convert tables to Markdown pipe syntax. By default, Markdown output keeps tables as HTML so merged cells and pictures remain in their cells.
 - `--force_ocr`: Force OCR processing on the entire document, even for pages that might contain extractable text.
 - `--block_correction_prompt`: if LLM mode is active, an optional prompt that will be used to correct the output of marker.  This is useful for custom formatting or logic that you want to apply to the output.
 - `--strip_existing_ocr`: Remove all existing OCR text in the document and re-OCR with surya.
@@ -390,6 +392,21 @@ When running with the `--use_llm` flag, you have a choice of services you can us
 - `OpenAI` - this supports any openai-like endpoint. You can configure `--openai_api_key`, `--openai_model`, and `--openai_base_url`. To use it, set `--llm_service=marker.services.openai.OpenAIService`.
 - `Azure OpenAI` - this uses the Azure OpenAI service. You can configure `--azure_endpoint`, `--azure_api_key`, and `--deployment_name`. To use it, set `--llm_service=marker.services.azure_openai.AzureOpenAIService`.
 - `OpenRouter` - this uses [OpenRouter](https://openrouter.ai)'s OpenAI-compatible API.  You can configure `--openrouter_api_key` (or the `OPENROUTER_API_KEY` env var), `--openrouter_model` (default `google/gemini-3.5-flash`), and `--openrouter_base_url`.  To use it, set `--llm_service=marker.services.openrouter.OpenRouterService`.
+
+For local OCR correction with a vision model, first download `gemma4:31b` with `ollama pull gemma4:31b` and start the Ollama server. Then run:
+
+```shell
+marker_single input.pdf \
+  --use_llm \
+  --llm_service marker.services.ollama.OllamaService \
+  --ollama_base_url http://localhost:11434 \
+  --ollama_model gemma4:31b \
+  --max_concurrency 1 \
+  --page_batch_size 30 \
+  --output_format markdown
+```
+
+The local server does not need an API key. `https://ollama.com/v1` uses Ollama's cloud API, not local inference. Images inside HTML tables are saved beside the Markdown file when the model supplies a valid box for the image. Review technical formulas against the PDF where a misread symbol would matter.
 
 These services may have additional optional configuration as well - you can see it by viewing the classes.
 

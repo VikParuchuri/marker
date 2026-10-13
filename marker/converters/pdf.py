@@ -13,6 +13,8 @@ import tempfile
 from marker.processors import BaseProcessor
 from marker.services import BaseService
 from marker.processors.llm.llm_table_merge import LLMTableMergeProcessor
+from marker.processors.llm import BaseLLMProcessor
+from marker.processors.llm.llm_sectionheader import LLMSectionHeaderProcessor
 from marker.providers.registry import provider_from_filepath
 from marker.builders.document import DocumentBuilder
 from marker.builders.layout import LayoutBuilder
@@ -53,7 +55,6 @@ from marker.services.gemini import GoogleGeminiService
 from marker.processors.line_merge import LineMergeProcessor
 from marker.processors.llm.llm_mathblock import LLMMathBlockProcessor
 from marker.processors.llm.llm_page_correction import LLMPageCorrectionProcessor
-from marker.processors.llm.llm_sectionheader import LLMSectionHeaderProcessor
 
 
 class PdfConverter(BaseConverter):
@@ -72,6 +73,10 @@ class PdfConverter(BaseConverter):
         bool,
         "Enable higher quality processing with LLMs.",
     ] = False
+    page_batch_size: Annotated[
+        int,
+        "Number of PDF pages to recognize in each batch. Tables are joined across batch boundaries.",
+    ] = 30
     mode: Annotated[
         str,
         "Conversion mode. 'balanced' uses the VLM layout model and full-page OCR;",
@@ -133,6 +138,8 @@ class PdfConverter(BaseConverter):
             )
         self.config = config
         self.mode = config["mode"]
+        if self.page_batch_size < 1:
+            raise ValueError("page_batch_size must be at least 1")
 
         for block_type, override_block_type in self.override_map.items():
             register_block_class(block_type, override_block_type)
@@ -203,10 +210,29 @@ class PdfConverter(BaseConverter):
         structure_builder_cls = self.resolve_dependencies(StructureBuilder)
         structure_builder_cls(document)
 
-        for processor in self.processor_list:
-            processor(document)
+        self.run_processors(document)
 
         return document
+
+    def run_processors(self, document: Document):
+        for processor in self.processor_list:
+            # LLM processors work on individual blocks/pages. Restrict each
+            # invocation to a bounded set of pages, while the table merge
+            # processor sees the complete document across those boundaries.
+            if (
+                isinstance(processor, (BaseLLMProcessor, TableProcessor))
+                and not isinstance(
+                    processor, (LLMTableMergeProcessor, LLMSectionHeaderProcessor)
+                )
+            ):
+                for start in range(0, len(document.pages), self.page_batch_size):
+                    batch = document.model_copy(
+                        update={"pages": document.pages[start:start + self.page_batch_size]}
+                    )
+                    batch._page_index = None
+                    processor(batch)
+            else:
+                processor(document)
 
     def __call__(self, filepath: str | io.BytesIO):
         with self.filepath_to_str(filepath) as temp_path:

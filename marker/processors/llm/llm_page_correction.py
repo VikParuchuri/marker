@@ -57,8 +57,10 @@ Here are the types of changes you can make in response to the prompt:
 
 Guidelines:
 - Only use the following tags: {{format_tags}}.  Do not use any other tags.  
-- The math tag can have the attribute `display="block"` to indicate display math, the a tag can have the attribute `href="..."` to indicate a link, and td and th tags can have the attribute `colspan="..."` and `rowspan="..."` to indicate table cells that span multiple columns or rows.  There can be a "block-type" attribute on p tags.  Do not use any other attributes.
+- The math tag can have `display="block"`, the a tag can have `href="..."`, the img tag can have `src="..."`, and td and th can have `colspan="..."` and `rowspan="..."`. There can be a "block-type" attribute on p tags. Do not use any other attributes.
 - Keep LaTeX formulas inside <math> tags - these are important for downstream processing.
+- Preserve the original language and every existing <img src="..."> inside table cells. Keep each image in its original cell; do not replace it with a description.
+- Compare Greek symbols, subscripts, superscripts and fractions with the page image. Preserve distinct symbols such as \\phi and \\varphi as printed.
 - Bboxes are normalized 0-1000
 - The order of the JSON list is the reading order for the blocks
 - Follow the user prompt faithfully, and only make additional changes if there is a significant issue with correctness.

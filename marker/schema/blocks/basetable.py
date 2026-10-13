@@ -1,4 +1,7 @@
-from typing import List
+from typing import Dict, List
+
+from PIL import Image
+from pydantic import Field
 
 from marker.schema import BlockTypes
 from marker.schema.blocks import Block, BlockOutput
@@ -8,6 +11,7 @@ from marker.schema.blocks.tablecell import TableCell
 class BaseTable(Block):
     block_type: BlockTypes | None = None
     html: str | None = None
+    embedded_images: Dict[str, Image.Image] = Field(default_factory=dict)
 
     @staticmethod
     def format_cells(

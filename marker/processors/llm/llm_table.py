@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from marker.logger import get_logger
 from pydantic import BaseModel
+from marker.settings import settings
 
 from marker.processors.llm import BaseLLMComplexBlockProcessor
 from marker.schema import BlockTypes
@@ -16,6 +17,7 @@ logger = get_logger()
 
 
 class LLMTableProcessor(BaseLLMComplexBlockProcessor):
+    extract_images: Annotated[bool, "Save pictures found inside table cells."] = True
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",
@@ -40,7 +42,7 @@ class LLMTableProcessor(BaseLLMComplexBlockProcessor):
         str,
         "The prompt to use for rewriting text.",
         "Default is a string containing the Gemini rewriting prompt.",
-    ] = """You are a text correction expert specializing in accurately reproducing text from images.
+    ] = r"""You are a text correction expert specializing in accurately reproducing text from images.
 You will receive an image and an html representation of the table in the image.
 Your task is to correct any errors in the html representation.  The html representation should be as faithful to the original table image as possible.  The table image may be rotated, but ensure the html representation is not rotated.  Make sure to include HTML for the full table, including the opening and closing table tags.
 
@@ -48,9 +50,11 @@ Some guidelines:
 - Reproduce the original values from the image as faithfully as possible.  
 - There may be stray characters in the html representation that don't match the image - fix these.
 - Ensure column headers match the correct column values.
-- If you see any inline math in a table cell, fence it with the <math> tag.  Block math should be fenced with <math display="block">.
-- Replace any images in table cells with a description, like "Image: [description]".
-- Only use the tags th, td, tr, br, span, sup, sub, i, b, math, and table.  Only use the attributes display, style, colspan, and rowspan if necessary.  You can use br to break up text lines in cells.
+- Preserve every formula in LaTeX inside <math> (or <math display="block">). Read superscripts, subscripts, fractions, and Greek glyphs from the image. In particular, distinguish \phi from \varphi by the printed shape; never replace one systematically with the other. Do not flatten a formula into plain text.
+- Preserve the original language, including Russian text. Do not translate text or describe formulas instead of transcribing them.
+- Preserve diagrams and other pictures inside their original cells. Insert <img data-bbox="x1,y1,x2,y2"> at the right point in the cell. Coordinates are integers from 0 to 1000 relative to the supplied table image, with origin at the top left. Enclose the entire picture but avoid neighboring formulas and table borders. Do not replace pictures with descriptions such as "Image: ...".
+- Preserve merged cells with colspan and rowspan. Do not split or invent rows or columns.
+- Only use the tags th, td, tr, br, span, sup, sub, i, b, math, img, tbody, and table. Only use the attributes display, style, colspan, rowspan, and data-bbox if necessary. You can use br to break up text lines in cells.
 - Make sure the columns and rows match the image faithfully, and are easily readable and interpretable by a human.
 
 **Instructions:**
@@ -223,6 +227,8 @@ score: 5
 
         block.html = block_html
 
+        block.html = self.embed_table_images(block, block.html, block_image)
+
     def rewrite_single_chunk(
         self,
         page: PageGroup,
@@ -275,10 +281,53 @@ score: 5
             block.update_metadata(llm_error_count=1)
             return
 
+        corrected_html = self.embed_table_images(block, corrected_html, image)
+        parsed_cells = self.parse_html_table(corrected_html, block, page)
+
         return parsed_cells
 
+    def embed_table_images(self, block: Table, html: str, image: Image.Image) -> str:
+        """Replace model-provided image boxes with crops from the source PDF."""
+        soup = BeautifulSoup(html, "html.parser")
+        for img in soup.find_all("img"):
+            if not self.extract_images:
+                img.decompose()
+                continue
+            bbox_text = img.get("data-bbox", "")
+            try:
+                coords = [int(value.strip()) for value in bbox_text.split(",")]
+                if len(coords) != 4:
+                    raise ValueError("expected four image coordinates")
+                x1, y1, x2, y2 = coords
+                if not (0 <= x1 < x2 <= 1000 and 0 <= y1 < y2 <= 1000):
+                    raise ValueError("image box outside the table image")
+            except (ValueError, TypeError):
+                img.decompose()
+                block.update_metadata(llm_error_count=1)
+                continue
+
+            crop = image.crop((
+                round(x1 * image.width / 1000),
+                round(y1 * image.height / 1000),
+                round(x2 * image.width / 1000),
+                round(y2 * image.height / 1000),
+            ))
+            if crop.width == 0 or crop.height == 0:
+                img.decompose()
+                block.update_metadata(llm_error_count=1)
+                continue
+
+            image_name = (
+                f"{block.id.to_path()}_cell_{len(block.embedded_images) + 1}."
+                f"{settings.OUTPUT_IMAGE_FORMAT.lower()}"
+            )
+            block.embedded_images[image_name] = crop
+            img.attrs.clear()
+            img["src"] = image_name
+        return str(soup)
+
     @staticmethod
-    def get_cell_text(element, keep_tags=("br", "i", "b", "span", "math")) -> str:
+    def get_cell_text(element, keep_tags=("br", "i", "b", "span", "math", "img")) -> str:
         for tag in element.find_all(True):
             if tag.name not in keep_tags:
                 tag.unwrap()

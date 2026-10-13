@@ -120,6 +120,10 @@ class HTMLRenderer(BaseRenderer):
                     )
             else:
                 content = self.splice_content_refs(document, child, images)
+                if block_id.block_type in (BlockTypes.Table, BlockTypes.TableOfContents):
+                    table = document.get_block(block_id)
+                    if self.extract_images and table is not None:
+                        images.update(getattr(table, "embedded_images", {}))
             if self.add_block_ids:
                 content = self.insert_block_id_str(content, block_id)
             return content

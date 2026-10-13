@@ -19,7 +19,7 @@ class OllamaService(BaseService):
     ollama_model: Annotated[str, "The model name to use for ollama."] = "gemma3"
 
     def process_images(self, images):
-        image_bytes = [self.img_to_base64(img) for img in images]
+        image_bytes = [self.img_to_base64(img, format="PNG") for img in images]
         return image_bytes
 
     def __call__(

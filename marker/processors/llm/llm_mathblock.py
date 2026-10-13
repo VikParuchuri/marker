@@ -46,7 +46,7 @@ Your task is to correct any errors in the extracted text, including math, format
 4. Write a short analysis of the text block, including any errors you see in the extracted text.
 5. If there are no errors in any of the extracted text, output "No corrections needed".
 6. Correct any errors in the extracted text, including:
-    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered.  Surround them with <math>...</math> tags.  The math expressions should be rendered in simple, concise, KaTeX-compatible LaTeX.  Do not use $ or $$ as delimiters.
+    * Inline math: Ensure all mathematical expressions are correctly formatted and rendered. Surround them with <math>...</math> tags. Render them in KaTeX-compatible LaTeX. Distinguish Greek glyphs by shape, including \\phi and \\varphi; preserve subscripts, superscripts, and fraction bars. Do not use $ or $$ as delimiters.
     * If a math expression is not in LaTeX format, convert it to LaTeX format, and surround it with <math>...</math> tags.
     * Formatting: Maintain consistent formatting with the text block image, including spacing, indentation, subscripts/superscripts, and special characters.  Use the <i>, <b>, <sup>, <sub>, and <span> tags to format the text as needed.
     * Other inaccuracies:  If the image is handwritten then you may correct any spelling errors, or other discrepancies.

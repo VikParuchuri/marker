@@ -24,6 +24,9 @@ class DocumentBuilder(BaseBuilder):
         int,
         "DPI setting for high-resolution page images used for OCR.",
     ] = 192
+    page_batch_size: Annotated[
+        int, "Number of pages to build and OCR in each batch."
+    ] = 30
     disable_ocr: Annotated[
         bool,
         "Disable OCR processing.",
@@ -52,16 +55,20 @@ class DocumentBuilder(BaseBuilder):
         line_builder: LineBuilder,
         ocr_builder: OcrBuilder,
     ):
+        if self.page_batch_size < 1:
+            raise ValueError("page_batch_size must be at least 1")
         document = self.build_document(provider)
-        layout_builder(document, provider)
-        line_builder(document, provider)
-        # Now that layout + the OCR decision are known, render high-res only for
-        # the pages that actually need it (one batched pass). Anything missed
-        # (e.g. opt-in LLM processors touching a clean page) falls back to the
-        # per-page lazy loader set in build_document.
-        self.render_highres(document, provider)
-        if not self.disable_ocr:
-            ocr_builder(document, provider)
+        for start in range(0, len(document.pages), self.page_batch_size):
+            batch = document.model_copy(
+                update={"pages": document.pages[start:start + self.page_batch_size]}
+            )
+            batch._page_index = None
+            layout_builder(batch, provider)
+            line_builder(batch, provider)
+            # Render high-res only for pages that need OCR or table/equation crops.
+            self.render_highres(batch, provider)
+            if not self.disable_ocr:
+                ocr_builder(batch, provider)
         return document
 
     def page_needs_highres(self, page: PageGroup) -> bool:
@@ -86,24 +93,25 @@ class DocumentBuilder(BaseBuilder):
 
     def build_document(self, provider: PdfProvider):
         PageGroupClass: PageGroup = get_block_class(BlockTypes.Page)
-        lowres_images = provider.get_images(provider.page_range, self.lowres_image_dpi)
-
         def make_loader(prov: PdfProvider):
             # Non-persistent: get_images opens/renders/closes per call.
             return lambda page_id: prov.get_images([page_id], self.highres_image_dpi)[0]
 
         loader = make_loader(provider)
         initial_pages = []
-        for i, p in enumerate(provider.page_range):
-            page = PageGroupClass(
-                page_id=p,
-                lowres_image=lowres_images[i],
-                highres_image=None,
-                polygon=provider.get_page_bbox(p),
-                refs=provider.get_page_refs(p),
-                pdftext_page=getattr(provider, "raw_pdftext_pages", {}).get(p),
-            )
-            page._highres_loader = loader
-            initial_pages.append(page)
+        for start in range(0, len(provider.page_range), self.page_batch_size):
+            page_ids = provider.page_range[start:start + self.page_batch_size]
+            lowres_images = provider.get_images(page_ids, self.lowres_image_dpi)
+            for p, image in zip(page_ids, lowres_images):
+                page = PageGroupClass(
+                    page_id=p,
+                    lowres_image=image,
+                    highres_image=None,
+                    polygon=provider.get_page_bbox(p),
+                    refs=provider.get_page_refs(p),
+                    pdftext_page=getattr(provider, "raw_pdftext_pages", {}).get(p),
+                )
+                page._highres_loader = loader
+                initial_pages.append(page)
         DocumentClass: Document = get_block_class(BlockTypes.Document)
         return DocumentClass(filepath=provider.filepath, pages=initial_pages)
