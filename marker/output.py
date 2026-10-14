@@ -63,7 +63,7 @@ def text_from_rendered(rendered: BaseModel):
     elif isinstance(rendered, HTMLOutput):
         return rendered.html, "html", rendered.images
     elif isinstance(rendered, JSONOutput):
-        return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", {}
+        return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", rendered._table_images
     elif isinstance(rendered, ChunkOutput):
         return rendered.model_dump_json(exclude=["metadata"], indent=2), "json", {}
     elif isinstance(rendered, OCRJSONOutput):
@@ -90,12 +90,17 @@ def save_output(rendered: BaseModel, output_dir: str, fname_base: str):
         encoding=settings.OUTPUT_ENCODING,
     ) as f:
         f.write(text)
+    metadata = rendered.metadata.copy()
+    table_archive = metadata.pop("table_reconstruction", None)
+    if table_archive is not None:
+        with open(os.path.join(output_dir, f"{fname_base}_tables.json"), "w", encoding=settings.OUTPUT_ENCODING) as f:
+            json.dump(table_archive, f, ensure_ascii=False, indent=2, allow_nan=False)
     with open(
         os.path.join(output_dir, f"{fname_base}_meta.json"),
         "w+",
         encoding=settings.OUTPUT_ENCODING,
     ) as f:
-        f.write(json.dumps(rendered.metadata, indent=2))
+        f.write(json.dumps(metadata, indent=2))
 
     for img_name, img in images.items():
         img = convert_if_not_rgb(img)  # RGBA images can't save as JPG

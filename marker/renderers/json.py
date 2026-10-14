@@ -1,6 +1,6 @@
 from typing import Annotated, Dict, List, Tuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 from marker.renderers import BaseRenderer
 from marker.schema import BlockTypes
@@ -18,12 +18,14 @@ class JSONBlockOutput(BaseModel):
     children: List["JSONBlockOutput"] | None = None
     section_hierarchy: Dict[int, str] | None = None
     images: dict | None = None
+    table_json: dict | None = None
 
 
 class JSONOutput(BaseModel):
     children: List[JSONBlockOutput]
     block_type: str = str(BlockTypes.Document)
     metadata: dict
+    _table_images: dict = PrivateAttr(default_factory=dict)
 
 
 def reformat_section_hierarchy(section_hierarchy):
@@ -58,6 +60,8 @@ class JSONRenderer(BaseRenderer):
                 id=str(block_output.id),
                 block_type=str(block_output.id.block_type),
                 images=images,
+                table_json=(getattr(document.get_block(block_output.id), "table_json", None)
+                            if block_output.id.block_type == BlockTypes.Table else None),
                 section_hierarchy=reformat_section_hierarchy(
                     block_output.section_hierarchy
                 ),
@@ -75,6 +79,8 @@ class JSONRenderer(BaseRenderer):
                 id=str(block_output.id),
                 block_type=str(block_output.id.block_type),
                 children=children,
+                table_json=(getattr(document.get_block(block_output.id), "table_json", None)
+                            if block_output.id.block_type == BlockTypes.Table else None),
                 section_hierarchy=reformat_section_hierarchy(
                     block_output.section_hierarchy
                 ),
@@ -85,7 +91,11 @@ class JSONRenderer(BaseRenderer):
         json_output = []
         for page_output in document_output.children:
             json_output.append(self.extract_json(document, page_output))
-        return JSONOutput(
+        result = JSONOutput(
             children=json_output,
             metadata=self.generate_document_metadata(document, document_output),
         )
+        result._table_images = {name: image for page in document.pages for block in page.current_children
+                                if not block.ignore_for_output and self.extract_images
+                                for name, image in getattr(block, "embedded_images", {}).items()}
+        return result

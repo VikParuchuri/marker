@@ -2,6 +2,7 @@ import json
 import os
 import time
 from typing import Annotated, List
+from urllib.parse import urlparse
 
 import openai
 import PIL
@@ -90,24 +91,36 @@ class OpenAIService(BaseService):
         total_tries = max_retries + 1
         for tries in range(1, total_tries + 1):
             try:
-                # parse() is GA in openai>=1.92 - use it directly (not beta)
-                response = client.chat.completions.parse(
-                    extra_headers={
-                        "X-Title": "Marker",
-                        "HTTP-Referer": "https://github.com/datalab-to/marker",
-                    },
-                    model=self.openai_model,
-                    messages=messages,
-                    timeout=timeout,
-                    response_format=response_schema,
-                )
+                # Ollama Cloud does not enforce JSON Schema / structured outputs.
+                # Include the schema in the request and validate locally instead.
+                if urlparse(self.openai_base_url).hostname == "ollama.com":
+                    schema_prompt = (prompt + "\n\nReturn only JSON matching this schema:\n"
+                                     + json.dumps(response_schema.model_json_schema(), ensure_ascii=False))
+                    cloud_messages = [{"role": "user", "content": [*image_data, {"type": "text", "text": schema_prompt}]}]
+                    options = {"max_tokens": self.max_output_tokens} if self.max_output_tokens else {}
+                    response = client.chat.completions.create(
+                        model=self.openai_model, messages=cloud_messages,
+                        timeout=timeout, temperature=0, **options,
+                    )
+                    if response.choices[0].finish_reason == "length":
+                        raise ValueError("Cloud response was truncated before completing the JSON")
+                else:
+                    response = client.chat.completions.parse(
+                        extra_headers={"X-Title": "Marker", "HTTP-Referer": "https://github.com/datalab-to/marker"},
+                        model=self.openai_model, messages=messages, timeout=timeout,
+                        response_format=response_schema,
+                    )
                 response_text = response.choices[0].message.content
                 total_tokens = response.usage.total_tokens if response.usage else 0
                 if block:
                     block.update_metadata(
                         llm_tokens_used=total_tokens, llm_request_count=1
                     )
-                return json.loads(response_text)
+                # Some providers wrap JSON in one code fence despite the prompt.
+                response_text = (response_text or "").strip()
+                if response_text.startswith("```json\n") and response_text.endswith("```"):
+                    response_text = response_text[8:-3].strip()
+                return response_schema.model_validate_json(response_text).model_dump()
             except (APITimeoutError, RateLimitError) as e:
                 # Rate limit exceeded
                 if tries == total_tries:

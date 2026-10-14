@@ -3,6 +3,7 @@
 # Положите скрипт рядом с прежним ScriptMacOS.sh в хранилище PolytechBrain.
 # Источник:  <папка скрипта>/PDF/*.pdf
 # Результат: <папка скрипта>/Output/<имя PDF>/<имя PDF>.md и изображения рядом.
+# Проверенные таблицы и отчёт: <имя PDF>_tables.json в той же папке.
 # Готовые результаты пропускаются; FORCE=1 ./ScriptMacOS-Ollama.sh пересобирает их.
 
 set -u
@@ -10,6 +11,7 @@ set -o pipefail
 
 # Настройки
 MARKER_REPO="https://github.com/EyesHead/marker.git"
+MARKER_REF="codex/my-change"
 MARKER_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/eyeshead-marker"
 MARKER_ROOT="$MARKER_CACHE/source"
 MARKER_VENV="$MARKER_CACHE/venv"
@@ -18,7 +20,7 @@ OLLAMA_BASE_URL="https://ollama.com/v1"
 PAGE_BATCH_SIZE=30
 REDO_INLINE_MATH=1
 MODE=""                         # "", "fast" или "balanced"
-FORCE_OCR=0                     # 1 — распознавать заново все страницы
+FORCE_OCR="${FORCE_OCR:-0}"     # 1 — распознавать заново все страницы
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PDF_DIR="$SCRIPT_DIR/PDF"
@@ -113,8 +115,8 @@ if [ ! -d "$MARKER_ROOT/.git" ]; then
     fi
     mkdir -p "$MARKER_CACHE" || exit 1
     clone_dir="$(mktemp -d "$MARKER_CACHE/source.XXXXXX")" || exit 1
-    echo "Один раз скачиваю Marker из $MARKER_REPO..."
-    if ! git clone --depth 1 "$MARKER_REPO" "$clone_dir"; then
+    echo "Один раз скачиваю Marker из $MARKER_REPO (ветка $MARKER_REF)..."
+    if ! git clone --depth 1 --branch "$MARKER_REF" "$MARKER_REPO" "$clone_dir"; then
         rm -rf "$clone_dir"
         echo "Ошибка: не удалось скачать Marker. Проверьте доступ к GitHub." >&2
         exit 1
@@ -131,13 +133,13 @@ if [ "$repo_origin" != "$MARKER_REPO" ]; then
     echo "Ошибка: кэш $MARKER_ROOT принадлежит другому репозиторию: $repo_origin" >&2
     exit 1
 fi
-if ! grep -Fq 'os.environ.get("OPENAI_API_KEY")' "$MARKER_ROOT/marker/services/openai.py"; then
+if [ ! -f "$MARKER_ROOT/marker/processors/llm/llm_table_json.py" ]; then
     if [ -n "$(git -C "$MARKER_ROOT" status --porcelain)" ]; then
         echo "Ошибка: в кэше Marker есть изменения; обновите его вручную: $MARKER_ROOT" >&2
         exit 1
     fi
-    echo "Однократно обновляю ранее установленный Marker для облачного Ollama API..."
-    if ! git -C "$MARKER_ROOT" fetch --depth 1 origin master || \
+    echo "Однократно обновляю Marker для реконструкции таблиц в JSON..."
+    if ! git -C "$MARKER_ROOT" fetch --depth 1 origin "$MARKER_REF" || \
        ! git -C "$MARKER_ROOT" checkout --detach FETCH_HEAD; then
         echo "Ошибка: не удалось обновить кэш Marker." >&2
         exit 1
@@ -200,6 +202,8 @@ for pdf in "${pending[@]}"; do
         --page_batch_size "$PAGE_BATCH_SIZE"
         --max_concurrency 1
         --timeout 180
+        --table_json_reconstruction
+        --max_output_tokens 32768
     )
     if [ "$REDO_INLINE_MATH" = "1" ]; then args+=(--redo_inline_math); fi
     if [ -n "$MODE" ]; then args+=(--mode "$MODE"); fi
@@ -232,7 +236,7 @@ for pdf in "${pending[@]}"; do
     for asset in "$generated_dir"/*; do
         [ -f "$asset" ] || continue
         case "$asset" in
-            *.md|*.json) ;;
+            *.md|*_meta.json) ;;
             *)
                 if ! mv -f "$asset" "$note_dir/"; then
                     assets_ok=0

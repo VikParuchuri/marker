@@ -15,6 +15,7 @@ from marker.schema.document import Document
 from marker.schema.labels import block_type_to_surya_label
 from marker.util import matrix_intersection_area
 from marker.logger import get_logger
+from marker.tables.geometry import capture_geometry
 
 logger = get_logger()
 
@@ -54,6 +55,9 @@ class TableProcessor(BaseProcessor):
         "Whether to disable the tqdm progress bar.",
     ] = False
     disable_ocr: Annotated[bool, "Disable OCR entirely."] = False
+    table_json_reconstruction: Annotated[bool, "Capture source geometry for validated table JSON."] = False
+    table_geometry_ocr: Annotated[bool, "Use coordinate OCR when a table has no text layer."] = True
+    table_geometry_ocr_languages: Annotated[str, "Tesseract languages for table coordinate OCR."] = "rus+eng"
 
     def __init__(
         self,
@@ -75,6 +79,14 @@ class TableProcessor(BaseProcessor):
         ocr_fallback = []  # (page, block) digital tables the heuristics missed
         for page in document.pages:
             for block in tables_by_page.get(page.page_id, []):
+                if self.table_json_reconstruction and block.block_type == BlockTypes.Table:
+                    # Capture before HTML reconstruction clears child structure
+                    # and before raw pdftext pages are released below.
+                    block.table_geometry = capture_geometry(
+                        document, page, block,
+                        use_ocr=self.table_geometry_ocr and not self.disable_ocr,
+                        languages=self.table_geometry_ocr_languages,
+                    )
                 # Scanned/garbled pages: the full-page OCR already produced the
                 # table HTML - trust it, don't redo.
                 if block.html:

@@ -123,6 +123,10 @@ class BaseLLMProcessor(BaseProcessor):
                     continue
 
                 if hasattr(block, "html"):
+                    if getattr(block, "table_json", None) is not None:
+                        # Later page-wide edits cannot invalidate verified cells
+                        # and their provenance after table JSON has been accepted.
+                        continue
                     embedded_images = getattr(block, "embedded_images", {})
                     if embedded_images and any(
                         name not in block_data["html"] for name in embedded_images

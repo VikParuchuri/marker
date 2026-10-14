@@ -12,6 +12,9 @@ class BaseTable(Block):
     block_type: BlockTypes | None = None
     html: str | None = None
     embedded_images: Dict[str, Image.Image] = Field(default_factory=dict)
+    table_geometry: dict | None = None
+    table_json: dict | None = None
+    table_json_report: dict | None = None
 
     @staticmethod
     def format_cells(

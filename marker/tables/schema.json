@@ -1,0 +1,547 @@
+{
+  "$defs": {
+    "Cell": {
+      "additionalProperties": false,
+      "properties": {
+        "r": {
+          "minimum": 0,
+          "title": "R",
+          "type": "integer"
+        },
+        "c": {
+          "minimum": 0,
+          "title": "C",
+          "type": "integer"
+        },
+        "rowspan": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Rowspan",
+          "type": "integer"
+        },
+        "colspan": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Colspan",
+          "type": "integer"
+        },
+        "role": {
+          "enum": [
+            "header",
+            "stub",
+            "data",
+            "group"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "text",
+            "math",
+            "mixed",
+            "number",
+            "dash",
+            "figure",
+            "empty"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/Region"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "blocks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blocks",
+          "type": "array"
+        },
+        "flags": {
+          "items": {
+            "enum": [
+              "inferred_span",
+              "ditto_resolved",
+              "formula_from_image",
+              "dehyphenated",
+              "continuation_line",
+              "spans_page_break",
+              "header_split_across_pages",
+              "ambiguous_alignment",
+              "unreadable",
+              "text_mismatch",
+              "shared_note"
+            ],
+            "type": "string"
+          },
+          "title": "Flags",
+          "type": "array"
+        },
+        "resolved_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved Text"
+        },
+        "num": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Num"
+        },
+        "indent": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Indent",
+          "type": "integer"
+        },
+        "figures": {
+          "items": {
+            "$ref": "#/$defs/Figure"
+          },
+          "title": "Figures",
+          "type": "array"
+        }
+      },
+      "required": [
+        "r",
+        "c",
+        "role",
+        "kind",
+        "text",
+        "regions",
+        "blocks"
+      ],
+      "title": "Cell",
+      "type": "object"
+    },
+    "ColumnRegion": {
+      "additionalProperties": false,
+      "properties": {
+        "region_id": {
+          "title": "Region Id",
+          "type": "string"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox",
+          "type": "array"
+        },
+        "c": {
+          "minimum": 0,
+          "title": "C",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "region_id",
+        "page",
+        "bbox",
+        "c"
+      ],
+      "title": "ColumnRegion",
+      "type": "object"
+    },
+    "Figure": {
+      "additionalProperties": false,
+      "properties": {
+        "region_id": {
+          "title": "Region Id",
+          "type": "string"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox",
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "src": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Src"
+        }
+      },
+      "required": [
+        "region_id",
+        "page",
+        "bbox"
+      ],
+      "title": "Figure",
+      "type": "object"
+    },
+    "Note": {
+      "additionalProperties": false,
+      "properties": {
+        "marker": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Marker"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "inside_frame": {
+          "title": "Inside Frame",
+          "type": "boolean"
+        },
+        "blocks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blocks",
+          "type": "array"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/Region"
+          },
+          "title": "Regions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text",
+        "inside_frame",
+        "blocks",
+        "regions"
+      ],
+      "title": "Note",
+      "type": "object"
+    },
+    "Region": {
+      "additionalProperties": false,
+      "properties": {
+        "region_id": {
+          "title": "Region Id",
+          "type": "string"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox",
+          "type": "array"
+        }
+      },
+      "required": [
+        "region_id",
+        "page",
+        "bbox"
+      ],
+      "title": "Region",
+      "type": "object"
+    },
+    "RowRegion": {
+      "additionalProperties": false,
+      "properties": {
+        "region_id": {
+          "title": "Region Id",
+          "type": "string"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox",
+          "type": "array"
+        },
+        "r": {
+          "minimum": 0,
+          "title": "R",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "region_id",
+        "page",
+        "bbox",
+        "r"
+      ],
+      "title": "RowRegion",
+      "type": "object"
+    },
+    "Table": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "caption_raw": {
+          "default": "",
+          "title": "Caption Raw",
+          "type": "string"
+        },
+        "caption_blocks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Caption Blocks",
+          "type": "array"
+        },
+        "amendment_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amendment Note"
+        },
+        "amendment_blocks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Amendment Blocks",
+          "type": "array"
+        },
+        "pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/Region"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "truncated_start": {
+          "title": "Truncated Start",
+          "type": "boolean"
+        },
+        "truncated_end": {
+          "title": "Truncated End",
+          "type": "boolean"
+        },
+        "n_rows": {
+          "maximum": 2000,
+          "minimum": 0,
+          "title": "N Rows",
+          "type": "integer"
+        },
+        "n_cols": {
+          "maximum": 128,
+          "minimum": 0,
+          "title": "N Cols",
+          "type": "integer"
+        },
+        "header_rows": {
+          "minimum": 0,
+          "title": "Header Rows",
+          "type": "integer"
+        },
+        "row_regions": {
+          "items": {
+            "$ref": "#/$defs/RowRegion"
+          },
+          "title": "Row Regions",
+          "type": "array"
+        },
+        "column_regions": {
+          "items": {
+            "$ref": "#/$defs/ColumnRegion"
+          },
+          "title": "Column Regions",
+          "type": "array"
+        },
+        "cells": {
+          "items": {
+            "$ref": "#/$defs/Cell"
+          },
+          "title": "Cells",
+          "type": "array"
+        },
+        "notes": {
+          "items": {
+            "$ref": "#/$defs/Note"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "pages",
+        "regions",
+        "truncated_start",
+        "truncated_end",
+        "n_rows",
+        "n_cols",
+        "header_rows",
+        "row_regions",
+        "column_regions",
+        "cells"
+      ],
+      "title": "Table",
+      "type": "object"
+    },
+    "UnassignedBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "reason"
+      ],
+      "title": "UnassignedBlock",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "tables": {
+      "items": {
+        "$ref": "#/$defs/Table"
+      },
+      "title": "Tables",
+      "type": "array"
+    },
+    "unassigned_blocks": {
+      "items": {
+        "$ref": "#/$defs/UnassignedBlock"
+      },
+      "title": "Unassigned Blocks",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "tables",
+    "unassigned_blocks",
+    "warnings"
+  ],
+  "title": "TableReconstruction",
+  "type": "object"
+}

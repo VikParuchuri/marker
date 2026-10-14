@@ -18,6 +18,7 @@ CONTENT_REF_RE = re.compile(r"<content-ref src='([^']*)'></content-ref>")
 
 
 class BaseRenderer:
+    table_json_reconstruction: Annotated[bool, "Export table JSON and validation reports alongside output."] = False
     image_blocks: Annotated[
         Tuple[BlockTypes, ...], "The block types to consider as images."
     ] = (BlockTypes.Picture, BlockTypes.Figure, BlockTypes.Diagram)
@@ -124,6 +125,20 @@ class BaseRenderer:
         }
         if document.debug_data_path is not None:
             metadata["debug_data_path"] = document.debug_data_path
+
+        tables = [b for page in document.pages for b in page.current_children
+                  if getattr(b, "table_geometry", None) is not None]
+        if tables or self.table_json_reconstruction:
+            metadata["table_reconstruction"] = {
+                "reconstruction": {
+                    "schema_version": "1.1",
+                    "tables": [b.table_json for b in tables if b.table_json and not b.ignore_for_output],
+                    "unassigned_blocks": [],
+                    "warnings": [],
+                },
+                "validation": [b.table_json_report for b in tables if b.table_json_report],
+                "sources": [b.table_geometry for b in tables],
+            }
 
         return metadata
 

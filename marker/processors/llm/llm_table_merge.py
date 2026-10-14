@@ -17,6 +17,7 @@ logger = get_logger()
 
 
 class LLMTableMergeProcessor(BaseLLMComplexBlockProcessor):
+    table_json_reconstruction: Annotated[bool, "Let JSON reconstruction join table continuations."] = False
     block_types: Annotated[
         Tuple[BlockTypes],
         "The block types to process.",
@@ -176,6 +177,8 @@ Table 2
         prev_page_block_count = None
         for page in document.pages:
             page_blocks = page.contained_blocks(document, self.block_types)
+            if self.table_json_reconstruction:
+                page_blocks = [b for b in page_blocks if b.block_type != BlockTypes.Table]
             for block in page_blocks:
                 merge_condition = False
                 if prev_block is not None:
