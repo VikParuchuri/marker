@@ -32,11 +32,13 @@ Marker converts documents to markdown, JSON, chunks, and HTML quickly and accura
 
 ## Try Datalab's Managed Platform
 
-Our managed platform runs a version of our latest open source model, [Chandra](https://github.com/datalab-to/chandra) — higher accuracy than Marker, with zero data retention by default, SOC 2 Type 2, and custom BAAs.
+Our managed platform uses [Chandra](https://github.com/datalab-to/chandra), our latest open source model, and other models — higher accuracy than Marker, with opt-in zero data retention, SOC 2 Type 2, and custom BAAs.
 
-If you have high volume workloads, we offer a batch processing service that has processed 1B+ pages per week — we manage the infrastructure so your workloads finish on time.
+If you have high volume workloads, we offer a batch processing service that has processed 1B+ pages in a day at peak — we manage the infrastructure so your workloads finish on time.
 
-Get started with **$5 in free credits** — [sign up](https://www.datalab.to/?utm_source=gh-marker).
+The Datalab API turns documents into verifiable knowledge your agents act on. Every result traces back to its page and position, and one API can parse, extract, fill and edit documents.
+
+Get started with **about 5,000 free convert pages every month** (work email) — [sign up](https://www.datalab.to/?utm_source=gh-marker).
 
 ## Performance
 
@@ -56,9 +58,9 @@ For the highest accuracy, pass the `--use_llm` flag to use an LLM alongside mark
 
 | PDF | File type | Markdown                                                                                                                     | JSON                                                                                                   |
 |-----|-----------|------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/thinkpython/thinkpython.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/thinkpython.json)         |
-| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/switch_transformers/switch_trans.md) | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/switch_trans.json) |
-| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/markdown/multicolcnn/multicolcnn.md)                 | [View](https://github.com/VikParuchuri/marker/blob/master/data/examples/json/multicolcnn.json)         |
+| [Think Python](https://greenteapress.com/thinkpython/thinkpython.pdf) | Textbook | [View](https://github.com/datalab-to/marker/blob/master/data/examples/markdown/thinkpython/thinkpython.md)                 | [View](https://github.com/datalab-to/marker/blob/master/data/examples/json/thinkpython.json)         |
+| [Switch Transformers](https://arxiv.org/pdf/2101.03961.pdf) | arXiv paper | [View](https://github.com/datalab-to/marker/blob/master/data/examples/markdown/switch_transformers/switch_trans.md) | [View](https://github.com/datalab-to/marker/blob/master/data/examples/json/switch_trans.json) |
+| [Multi-column CNN](https://arxiv.org/pdf/1804.07821.pdf) | arXiv paper | [View](https://github.com/datalab-to/marker/blob/master/data/examples/markdown/multicolcnn/multicolcnn.md)                 | [View](https://github.com/datalab-to/marker/blob/master/data/examples/json/multicolcnn.json)         |
 
 # Commercial usage
 
@@ -433,9 +435,9 @@ post_data = {
 requests.post("http://localhost:8001/marker", data=json.dumps(post_data)).json()
 ```
 
-The server accepts only the params listed above (`page_range`, `mode`, `force_ocr`, `paginate_output`, `output_format`).  The `--use_llm` hybrid path and `--disable_ocr` are not exposed over the API — use the CLI or the Python API for those, or the hosted [Datalab API](https://www.datalab.to/plans).
+The server accepts only the params listed above (`page_range`, `mode`, `force_ocr`, `paginate_output`, `output_format`).  The `--use_llm` hybrid path and `--disable_ocr` are not exposed over the API — use the CLI or the Python API for those, or the hosted [Datalab API](https://www.datalab.to/plans?utm_source=gh-marker).
 
-Note that this is not a very robust API, and is only intended for small-scale use.  If you want to use this server, but want a more robust conversion option, you can use the hosted [Datalab API](https://www.datalab.to/plans).
+Note that this is not a very robust API, and is only intended for small-scale use.  If you want to use this server, but want a more robust conversion option, you can use the hosted [Datalab API](https://www.datalab.to/plans?utm_source=gh-marker).
 
 # Troubleshooting
 
@@ -445,6 +447,7 @@ There are some settings that you may find useful if things aren't working the wa
 - Make sure to set `force_ocr` if you see garbled text - this will re-OCR the document.
 - `TORCH_DEVICE` - set this to force the small local models (ocr error detection) onto a given torch device.  The VLM runs in the inference server - control its placement with `SURYA_INFERENCE_BACKEND` / `VLLM_GPUS`.
 - If you're getting out of memory errors, decrease worker count.  You can also try splitting up long PDFs into multiple files.
+- For hard documents or large volumes, try the hosted [Datalab API](https://www.datalab.to/?utm_source=gh-marker), which uses Chandra and other models and manages the infrastructure for you.
 
 ## Debugging
 
@@ -564,11 +567,11 @@ PDF is a tricky format, so marker will not always work perfectly.  Here are some
 - Very complex layouts, with nested tables and forms, may not work
 - Forms may not be rendered well
 
-Note: Passing the `--use_llm` and `--force_ocr` flags will mostly solve these issues.
+Note: Passing the `--use_llm` and `--force_ocr` flags will mostly solve these issues.  For documents that still fail, the hosted [Datalab API](https://www.datalab.to/?utm_source=gh-marker) uses Chandra and other models, with higher accuracy than Marker.
 
 # Usage and Deployment Examples
 
 You can always run `marker` locally, but if you wanted to expose it as an API, we have a few options:
-- Our platform API which is powered by `marker` and `surya` and is easy to test out - it's free to sign up, and we'll include credits, [try it out here](https://datalab.to)
-- Our painless on-prem solution for commercial use, which you can [read about here](https://www.datalab.to/blog/self-serve-on-prem-licensing) and gives you privacy guarantees with high throughput inference optimizations.
+- Our platform API, which uses Chandra and other models and is easy to test out - it's free to sign up, and you get about 5,000 free convert pages every month with a work email, [try it out here](https://www.datalab.to/?utm_source=gh-marker)
+- Our painless on-prem solution for commercial use, which you can [ask us about here](https://www.datalab.to/contact?utm_source=gh-marker-onprem) and gives you privacy guarantees with high throughput inference optimizations.
 - [Deployment example with Modal](./examples/README_MODAL.md) that shows you how to deploy and access `marker` through a web endpoint using [`Modal`](https://modal.com). Modal is an AI compute platform that enables developers to deploy and scale models on GPUs in minutes.
